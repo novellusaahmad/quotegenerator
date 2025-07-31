@@ -1,0 +1,510 @@
+/* Document Theme - Professional Financial Calculator Interface */
+
+/* Theme Toggle Switch */
+.theme-switch-wrapper {
+    display: flex;
+    align-items: center;
+    margin-right: 15px;
+}
+
+.theme-switch {
+    display: inline-block;
+    height: 20px;
+    position: relative;
+    width: 40px;
+}
+
+.theme-switch input {
+    display: none;
+}
+
+.theme-switch-slider {
+    background-color: #ccc;
+    bottom: 0;
+    cursor: pointer;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    transition: .4s;
+    border-radius: 20px;
+}
+
+.theme-switch-slider:before {
+    background-color: #fff;
+    bottom: 2px;
+    content: "";
+    height: 16px;
+    left: 2px;
+    position: absolute;
+    transition: .4s;
+    width: 16px;
+    border-radius: 50%;
+}
+
+.theme-switch input:checked + .theme-switch-slider {
+    background-color: #2196F3;
+}
+
+.theme-switch input:checked + .theme-switch-slider:before {
+    transform: translateX(20px);
+}
+
+.theme-switch-label {
+    color: white;
+    font-size: 12px;
+    margin-left: 8px;
+}
+
+/* Document Theme Color Variables */
+[data-theme="document"] {
+    --primary-color: #4a90a4;        /* Professional teal/blue */
+    --secondary-color: #c8a882;      /* Warm tan/brown */
+    --background-color: #f8f9fa;     /* Light gray background */
+    --card-background: #ffffff;      /* Pure white cards */
+    --text-color: #2c3e50;          /* Dark blue-gray text */
+    --text-muted: #6c757d;          /* Muted gray text */
+    --border-color: #dee2e6;        /* Light border */
+    --accent-color: #007bff;        /* Blue accent */
+    --success-color: #28a745;       /* Green success */
+    --warning-color: #ffc107;       /* Yellow warning */
+    --danger-color: #dc3545;        /* Red danger */
+    --summary-header: #4a90a4;      /* Teal for summary headers */
+    --summary-background: #c8a882;  /* Tan for summary panels */
+    --form-background: #ffffff;     /* White form background */
+}
+
+/* Document Theme Navigation */
+[data-theme="document"] .navbar {
+    background: linear-gradient(135deg, #4a90a4 0%, #3a7a8a 100%) !important;
+    border-bottom: none;
+    box-shadow: 0 2px 8px rgba(74, 144, 164, 0.2);
+}
+
+[data-theme="document"] .navbar-brand,
+[data-theme="document"] .nav-link {
+    color: white !important;
+}
+
+[data-theme="document"] .nav-link:hover {
+    color: #e8f4f8 !important;
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 4px;
+}
+
+[data-theme="document"] .navbar-toggler {
+    border-color: rgba(255,255,255,0.3);
+}
+
+[data-theme="document"] .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.8%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='m4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Document Theme Body */
+[data-theme="document"] body {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+}
+
+/* Document Theme Cards */
+[data-theme="document"] .card {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-radius: 8px;
+}
+
+[data-theme="document"] .card-header {
+    background: linear-gradient(135deg, var(--summary-header) 0%, #3a7a8a 100%);
+    border-bottom: none;
+    font-weight: 600;
+    color: white;
+    border-radius: 8px 8px 0 0;
+}
+
+/* Special styling for loan summary */
+[data-theme="document"] .loan-summary-card .card-header {
+    background: linear-gradient(135deg, var(--summary-background) 0%, #b89668 100%);
+    color: white;
+}
+
+[data-theme="document"] .result-card {
+    background: linear-gradient(135deg, var(--summary-background) 0%, #b89668 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(200, 168, 130, 0.3);
+}
+
+/* Document Theme Tables */
+[data-theme="document"] .table {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+[data-theme="document"] .table th {
+    background: linear-gradient(135deg, var(--summary-header) 0%, #3a7a8a 100%);
+    border-bottom: none;
+    font-weight: 600;
+    color: white;
+    padding: 12px;
+}
+
+[data-theme="document"] .table td {
+    border-top: 1px solid #f0f0f0;
+    color: var(--text-color);
+    padding: 10px 12px;
+}
+
+[data-theme="document"] .table-hover tbody tr:hover {
+    background-color: rgba(74, 144, 164, 0.05);
+}
+
+/* Loan Summary Table Special Styling */
+[data-theme="document"] .loan-summary-table th {
+    background: linear-gradient(135deg, var(--summary-background) 0%, #b89668 100%);
+    color: white;
+}
+
+[data-theme="document"] .loan-summary-table tbody tr:nth-child(even) {
+    background-color: #fafbfc;
+}
+
+/* Document Theme Forms */
+[data-theme="document"] .form-control,
+[data-theme="document"] .form-select {
+    background-color: var(--form-background);
+    border: 2px solid #e9ecef;
+    color: var(--text-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    transition: all 0.3s ease;
+}
+
+[data-theme="document"] .form-control:focus,
+[data-theme="document"] .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(74, 144, 164, 0.25);
+    background-color: #ffffff;
+}
+
+[data-theme="document"] .form-label {
+    color: var(--text-color);
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+/* Calculator Form Styling */
+[data-theme="document"] .calculator-form {
+    background-color: var(--form-background);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+/* Document Theme Buttons */
+[data-theme="document"] .btn-primary {
+    background: linear-gradient(135deg, var(--accent-color) 0%, #0056b3 100%);
+    border-color: var(--accent-color);
+    color: white;
+    font-weight: 500;
+    border-radius: 6px;
+    padding: 8px 20px;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+}
+
+[data-theme="document"] .btn-primary:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    border-color: #004085;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+[data-theme="document"] .btn-outline-primary {
+    color: var(--accent-color);
+    border-color: var(--accent-color);
+    border-width: 2px;
+    font-weight: 500;
+}
+
+[data-theme="document"] .btn-outline-primary:hover {
+    background: linear-gradient(135deg, var(--accent-color) 0%, #0056b3 100%);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Generate Quote / Export Buttons */
+[data-theme="document"] .btn-success {
+    background: linear-gradient(135deg, var(--summary-header) 0%, #3a7a8a 100%);
+    border-color: var(--summary-header);
+    color: white;
+    font-weight: 500;
+}
+
+[data-theme="document"] .btn-info {
+    background: linear-gradient(135deg, var(--summary-background) 0%, #b89668 100%);
+    border-color: var(--summary-background);
+    color: white;
+    font-weight: 500;
+}
+
+/* Document Theme Typography */
+[data-theme="document"] h1, 
+[data-theme="document"] h2, 
+[data-theme="document"] h3, 
+[data-theme="document"] h4, 
+[data-theme="document"] h5, 
+[data-theme="document"] h6 {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+[data-theme="document"] .text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Document Theme Loan Calculator Specific */
+[data-theme="document"] .calculator-form {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+[data-theme="document"] .loan-summary-table {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="document"] .loan-summary-table th {
+    background-color: #f8f9fa;
+    color: var(--text-color);
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+}
+
+/* Document Theme Footer */
+[data-theme="document"] footer {
+    background-color: #f8f9fa !important;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Document Theme Alerts */
+[data-theme="document"] .alert-success {
+    background-color: rgba(40, 167, 69, 0.1);
+    border-color: var(--success-color);
+    color: #155724;
+}
+
+[data-theme="document"] .alert-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-color: var(--warning-color);
+    color: #856404;
+}
+
+[data-theme="document"] .alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: var(--danger-color);
+    color: #721c24;
+}
+
+[data-theme="document"] .alert-info {
+    background-color: rgba(23, 162, 184, 0.1);
+    border-color: #17a2b8;
+    color: #0c5460;
+}
+
+/* Document Theme Dropdowns */
+[data-theme="document"] .dropdown-menu {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+[data-theme="document"] .dropdown-item {
+    color: var(--text-color);
+}
+
+[data-theme="document"] .dropdown-item:hover {
+    background-color: rgba(0,123,255,0.1);
+    color: var(--accent-color);
+}
+
+/* Document Theme Badge */
+[data-theme="document"] .badge {
+    font-weight: 500;
+}
+
+/* Document Theme Tabs */
+[data-theme="document"] .nav-tabs {
+    border-bottom: 2px solid var(--border-color);
+}
+
+[data-theme="document"] .nav-tabs .nav-link {
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    border-bottom: 2px solid transparent;
+    font-weight: 500;
+    padding: 12px 20px;
+    background-color: transparent;
+}
+
+[data-theme="document"] .nav-tabs .nav-link:hover {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background-color: rgba(74, 144, 164, 0.05);
+}
+
+[data-theme="document"] .nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    background-color: var(--card-background);
+    border-color: var(--border-color);
+    border-bottom-color: var(--card-background);
+    font-weight: 600;
+}
+
+/* Document Theme Progress Indicators */
+[data-theme="document"] .progress {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    height: 8px;
+}
+
+[data-theme="document"] .progress-bar {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3a7a8a 100%);
+    border-radius: 10px;
+}
+
+/* Document Theme Badges */
+[data-theme="document"] .badge {
+    font-weight: 500;
+    border-radius: 6px;
+}
+
+[data-theme="document"] .badge-success {
+    background: linear-gradient(135deg, var(--summary-header) 0%, #3a7a8a 100%);
+}
+
+[data-theme="document"] .badge-info {
+    background: linear-gradient(135deg, var(--summary-background) 0%, #b89668 100%);
+}
+
+/* Document Theme Charts and Visualizations */
+[data-theme="document"] .chart-container {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+[data-theme="document"] .chart-header {
+    background: linear-gradient(135deg, var(--summary-header) 0%, #3a7a8a 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 6px 6px 0 0;
+    margin: -20px -20px 20px -20px;
+    font-weight: 600;
+}
+
+/* Document Theme Input Groups */
+[data-theme="document"] .input-group-text {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #e9ecef;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+[data-theme="document"] .input-group .form-control {
+    border-left: none;
+}
+
+[data-theme="document"] .input-group .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(74, 144, 164, 0.25);
+}
+
+/* Document Theme Special Elements */
+[data-theme="document"] .text-success {
+    color: var(--summary-header) !important;
+}
+
+[data-theme="document"] .text-info {
+    color: var(--summary-background) !important;
+}
+
+[data-theme="document"] .text-primary {
+    color: var(--primary-color) !important;
+}
+
+/* Document Theme Loan Type Sections */
+[data-theme="document"] .loan-type-section {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+[data-theme="document"] .loan-type-header {
+    background: linear-gradient(135deg, var(--summary-background) 0%, #b89668 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px 8px 0 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+[data-theme="document"] .loan-type-content {
+    padding: 20px;
+}
+
+/* Document Theme List Groups */
+[data-theme="document"] .list-group-item {
+    background-color: var(--card-background);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="document"] .list-group-item:hover {
+    background-color: rgba(74, 144, 164, 0.05);
+}
+
+[data-theme="document"] .list-group-item.active {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #3a7a8a 100%);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* Responsive Design for Document Theme */
+@media (max-width: 768px) {
+    .theme-switch-wrapper {
+        margin-right: 10px;
+    }
+    
+    .theme-switch-label {
+        display: none;
+    }
+    
+    [data-theme="document"] .calculator-form {
+        padding: 15px;
+    }
+    
+    [data-theme="document"] .nav-tabs .nav-link {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+    
+    [data-theme="document"] .loan-type-header {
+        padding: 12px 15px;
+        font-size: 1rem;
+    }
+    
+    [data-theme="document"] .loan-type-content {
+        padding: 15px;
+    }
+}

@@ -1,0 +1,524 @@
+/* Novellus Loan Management System - Custom Styles */
+
+/* Import Brother1816 Font */
+@import url('https://fonts.googleapis.com/css2?family=Brother1816:wght@400;700&display=swap');
+
+/* Root Variables */
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #0dcaf0;
+    --light-color: #f8f9fa;
+    --dark-color: #212529;
+    --gbp-color: #AD965F;
+    --eur-color: #509195;
+    --font-family: 'Brother1816', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --border-radius: 0.375rem;
+    --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    --box-shadow-lg: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Global Styles */
+body {
+    font-family: var(--font-family);
+    line-height: 1.6;
+    color: var(--dark-color);
+    background-color: #f5f7fa;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-family);
+    font-weight: 700;
+}
+
+/* Custom Button Styles */
+.btn {
+    font-family: var(--font-family);
+    font-weight: 500;
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-gbp {
+    background-color: var(--gbp-color);
+    border-color: var(--gbp-color);
+    color: white;
+}
+
+.btn-gbp:hover {
+    background-color: #9a8352;
+    border-color: #9a8352;
+    color: white;
+}
+
+.btn-eur {
+    background-color: var(--eur-color);
+    border-color: var(--eur-color);
+    color: white;
+}
+
+.btn-eur:hover {
+    background-color: #467e82;
+    border-color: #467e82;
+    color: white;
+}
+
+/* Card Styles */
+.card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: var(--box-shadow-lg);
+}
+
+.card-header {
+    background-color: white;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 600;
+}
+
+/* Navigation Styles */
+.navbar-brand {
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+.nav-link {
+    font-family: var(--font-family);
+    font-weight: 500;
+}
+
+/* Form Styles */
+.form-label {
+    font-family: var(--font-family);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.form-control, .form-select {
+    font-family: var(--font-family);
+    border-radius: var(--border-radius);
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Calculator Styles */
+.calculator-form {
+    background: var(--light-color);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--box-shadow);
+}
+
+.results-section {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.currency-switch {
+    display: inline-block;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
+}
+
+.currency-switch input[type="radio"] {
+    display: none;
+}
+
+.currency-switch label {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    margin: 0;
+    background: #e9ecef;
+    border: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.currency-switch label:first-of-type {
+    border-right: none;
+}
+
+.currency-switch input[type="radio"]:checked + label {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.loan-summary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.fee-breakdown {
+    background: var(--light-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+/* Payment Schedule Styles */
+.payment-schedule-table {
+    max-height: 400px;
+    overflow-y: auto;
+    border-radius: var(--border-radius);
+}
+
+.payment-schedule-table::-webkit-scrollbar {
+    width: 8px;
+}
+
+.payment-schedule-table::-webkit-scrollbar-track {
+    background: var(--light-color);
+    border-radius: var(--border-radius);
+}
+
+.payment-schedule-table::-webkit-scrollbar-thumb {
+    background: var(--secondary-color);
+    border-radius: var(--border-radius);
+}
+
+.payment-schedule-table::-webkit-scrollbar-thumb:hover {
+    background: var(--dark-color);
+}
+
+/* Chart Styles */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+/* Table Styles */
+.table {
+    font-family: var(--font-family);
+}
+
+.table th {
+    font-weight: 700;
+    border-top: none;
+    background-color: var(--light-color);
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Badge Styles */
+.badge {
+    font-family: var(--font-family);
+    font-weight: 500;
+}
+
+/* Alert Styles */
+.alert {
+    font-family: var(--font-family);
+    border-radius: var(--border-radius);
+    border: none;
+    box-shadow: var(--box-shadow);
+}
+
+/* Timeline Styles */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -23px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    margin-left: 10px;
+}
+
+/* Feature Icon Styles */
+.feature-icon {
+    width: 80px;
+    height: 80px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #0056b3 100%);
+    color: white;
+    padding: 4rem 0;
+    margin-bottom: 2rem;
+}
+
+/* Utility Classes */
+.text-gbp {
+    color: var(--gbp-color) !important;
+}
+
+.text-eur {
+    color: var(--eur-color) !important;
+}
+
+.bg-gbp {
+    background-color: var(--gbp-color) !important;
+}
+
+.bg-eur {
+    background-color: var(--eur-color) !important;
+}
+
+.border-gbp {
+    border-color: var(--gbp-color) !important;
+}
+
+.border-eur {
+    border-color: var(--eur-color) !important;
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-up {
+    animation: slideUp 0.6s ease-out;
+}
+
+/* Loading States */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+    .calculator-form {
+        padding: 1rem;
+    }
+    
+    .loan-summary {
+        padding: 1rem;
+    }
+    
+    .hero-section {
+        padding: 2rem 0;
+    }
+    
+    .display-4 {
+        font-size: 2.5rem;
+    }
+    
+    .currency-switch label {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-group-vertical .btn {
+        margin-bottom: 0.5rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #dee2e6;
+    }
+    
+    .btn {
+        display: none;
+    }
+    
+    .navbar {
+        display: none;
+    }
+    
+    body {
+        background: white;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --light-color: #343a40;
+        --dark-color: #f8f9fa;
+    }
+    
+    body {
+        background-color: #121212;
+        color: var(--dark-color);
+    }
+    
+    .card {
+        background-color: #1e1e1e;
+        color: var(--dark-color);
+    }
+    
+    .calculator-form {
+        background-color: #2d3748;
+    }
+    
+    .form-control, .form-select {
+        background-color: #2d3748;
+        border-color: #4a5568;
+        color: var(--dark-color);
+    }
+    
+    .table {
+        color: var(--dark-color);
+    }
+    
+    .table th {
+        background-color: #2d3748;
+    }
+}
+
+/* Accessibility Improvements */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    .btn {
+        border-width: 2px;
+    }
+    
+    .card {
+        border: 2px solid var(--dark-color);
+    }
+    
+    .form-control,
+    .form-select {
+        border-width: 2px;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

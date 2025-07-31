@@ -1,0 +1,111 @@
+/* Enhanced Chart Styling for Better Visibility */
+
+/* Chart container styling for better visibility */
+.chart-container {
+    position: relative;
+    height: 350px !important;
+    width: 100% !important;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure canvas elements have proper dimensions */
+.chart-container canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+
+/* Chart title styling */
+.chart-title {
+    font-size: 18px !important;
+    font-weight: bold !important;
+    color: #333 !important;
+    margin-bottom: 10px !important;
+    text-align: center !important;
+}
+
+/* Enhanced legend styling */
+.chart-legend {
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+}
+
+/* Data label enhancements */
+.chart-data-labels {
+    font-size: 16px !important;
+    font-weight: bold !important;
+    color: #333 !important;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Fullscreen chart enhancements */
+.chart-container:fullscreen {
+    height: 90vh !important;
+    padding: 20px !important;
+}
+
+.chart-container:fullscreen .chart-title {
+    font-size: 24px !important;
+}
+
+.chart-container:fullscreen .chart-legend {
+    font-size: 20px !important;
+}
+
+.chart-container:fullscreen .chart-data-labels {
+    font-size: 20px !important;
+}
+
+/* Chart row spacing */
+.chart-row {
+    margin-bottom: 30px !important;
+}
+
+/* Individual chart styling */
+#loanBreakdownChart,
+#balanceOverTimeChart,
+#monthlyBreakdownChart,
+#compoundInterestChart,
+#trancheReleaseChart {
+    min-height: 350px !important;
+}
+
+/* Responsive chart adjustments */
+@media (max-width: 768px) {
+    .chart-container {
+        height: 300px !important;
+        padding: 5px !important;
+    }
+    
+    .chart-title {
+        font-size: 16px !important;
+    }
+    
+    .chart-legend {
+        font-size: 14px !important;
+    }
+    
+    .chart-data-labels {
+        font-size: 14px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .chart-container {
+        height: 250px !important;
+    }
+    
+    .chart-title {
+        font-size: 14px !important;
+    }
+    
+    .chart-legend {
+        font-size: 12px !important;
+    }
+    
+    .chart-data-labels {
+        font-size: 12px !important;
+    }
+}
