@@ -1,0 +1,976 @@
+{% extends "base.html" %}
+
+{% block title %}Loan History - Novellus Financial{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/currency-themes.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Notification container for consistent notifications -->
+<div id="notification-container" style="position: fixed; top: 80px; right: 20px; z-index: 9999;"></div>
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-novellus-navy mb-0">
+                    <i class="fas fa-history me-2"></i>Saved Loan Calculations
+                </h2>
+                <div>
+                    <button class="btn btn-outline-primary me-2" onclick="loanHistory.loadLoans(true)" title="Refresh loan list">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </button>
+                    <a href="{{ url_for('calculator_page') }}" class="btn btn-novellus-gold">
+                        <i class="fas fa-calculator me-2"></i>New Calculation
+                    </a>
+                </div>
+            </div>
+
+            <!-- Search and Filter Controls -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Search loan names...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="loanTypeFilter">
+                                <option value="">All Loan Types</option>
+                                <option value="bridge">Bridge Loans</option>
+                                <option value="term">Term Loans</option>
+                                <option value="development">Development Loans</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-secondary w-100" id="clearFilters">
+                                <i class="fas fa-times me-2"></i>Clear Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="text-center py-5">
+                <div class="spinner-border text-novellus-gold" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading saved loans...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="alert alert-danger d-none" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <span id="errorMessage">Error loading loans</span>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-5 d-none">
+                <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No Saved Loans Found</h4>
+                <p class="text-muted">Start by creating and saving your first loan calculation.</p>
+                <a href="{{ url_for('calculator_page') }}" class="btn btn-novellus-gold">
+                    <i class="fas fa-plus me-2"></i>Create New Loan
+                </a>
+            </div>
+
+            <!-- Loans Table -->
+            <div id="loansTable" class="d-none">
+                <div class="card">
+                    <div class="card-header bg-novellus-navy text-white">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">Saved Loans</h5>
+                            </div>
+                            <div class="col-auto">
+                                <span id="totalCount" class="badge bg-novellus-gold text-dark">0 loans</span>
+                                <small class="text-light ms-2">Last updated: <span id="updateTime">-</span></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Loan Name</th>
+                                    <th>Type</th>
+                                    <th>Gross Amount</th>
+                                    <th>Interest Rate</th>
+                                    <th>Term</th>
+                                    <th>Total Interest</th>
+                                    <th>Created</th>
+                                    <th>Power BI Report</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="loansTableBody">
+                                <!-- Loan rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loan Details Modal -->
+<div class="modal fade" id="loanDetailsModal" tabindex="-1" aria-labelledby="loanDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" style="max-width: 95%; margin: 1rem auto; min-height: 80vh;">
+        <div class="modal-content" style="height: 90vh; overflow-y: auto;">
+            <div class="modal-header bg-novellus-navy text-white">
+                <h5 class="modal-title" id="loanDetailsModalLabel">Loan Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="loanDetailsContent" style="max-height: 75vh; overflow-y: auto;">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-novellus-gold" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-novellus-gold" id="editLoanButton">
+                    <i class="fas fa-edit me-2"></i>Edit & Recalculate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS already loaded in base template -->
+<script>
+class LoanHistoryManager {
+    constructor() {
+        this.loans = [];
+        this.filteredLoans = [];
+        this.currentLoanId = null;
+        this.powerBIReports = {};
+        this.init();
+    }
+
+    async init() {
+        this.bindEvents();
+        await this.loadPowerBIReports();
+        this.loadLoans();
+        // BIRT status check removed for simplified deployment
+        
+        // Test Bootstrap functionality
+        console.log('Bootstrap version:', bootstrap.Tooltip.VERSION);
+        console.log('Bootstrap object:', typeof bootstrap);
+    }
+
+    bindEvents() {
+        // Search and filter events
+        document.getElementById('searchInput').addEventListener('input', () => this.applyFilters());
+        document.getElementById('loanTypeFilter').addEventListener('change', () => this.applyFilters());
+        document.getElementById('clearFilters').addEventListener('click', () => this.clearFilters());
+
+        // Edit loan event
+        document.getElementById('editLoanButton').addEventListener('click', () => this.editLoan());
+    }
+
+    async loadLoans(isManualRefresh = false) {
+        try {
+            this.isManualRefresh = isManualRefresh;
+            console.log('Starting to load loans...');
+            this.showState('loading');
+            
+            console.log('Fetching loans from API...');
+            const response = await fetch('/api/saved-loans?_t=' + Date.now()); // Add cache buster
+            const data = await response.json();
+            
+            console.log('API response:', {
+                ok: response.ok,
+                status: response.status,
+                dataKeys: Object.keys(data),
+                loansCount: data.loans ? data.loans.length : 0
+            });
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to load loans');
+            }
+            
+            this.loans = data.loans || [];
+            this.filteredLoans = [...this.loans];
+            
+            console.log(`Loaded ${this.loans.length} loans successfully`);
+            
+            if (this.loans.length === 0) {
+                console.log('No loans found, showing empty state');
+                this.showState('empty');
+            } else {
+                console.log(`Loans found: ${this.loans.length}, showing table and rendering`);
+                console.log('First few loan names:', this.loans.slice(0, 3).map(l => l.loan_name));
+                this.showState('table');
+                this.renderLoansTable();
+                this.updateTimestamp();
+                
+                // Show success notification for manual refresh
+                if (window.notifications && this.isManualRefresh) {
+                    window.notifications.success(`Refreshed: ${this.loans.length} loans loaded`);
+                    this.isManualRefresh = false;
+                }
+            }
+            
+        } catch (error) {
+            console.error('Error loading loans:', error);
+            this.showError(error.message);
+            if (window.notifications) {
+                window.notifications.error(`Failed to load loans: ${error.message}`);
+            }
+        }
+    }
+
+    applyFilters() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const loanTypeFilter = document.getElementById('loanTypeFilter').value;
+
+        this.filteredLoans = this.loans.filter(loan => {
+            const matchesSearch = loan.loan_name.toLowerCase().includes(searchTerm);
+            const matchesType = !loanTypeFilter || loan.loan_type === loanTypeFilter;
+            return matchesSearch && matchesType;
+        });
+
+        if (this.filteredLoans.length === 0 && this.loans.length > 0) {
+            this.showState('empty');
+        } else {
+            this.showState('table');
+            this.renderLoansTable();
+        }
+    }
+
+    // BIRT integration removed for simplified deployment
+
+    // Power BI Report Configuration - Loaded dynamically from API
+    powerBIReports = {};
+    
+    async loadPowerBIReports() {
+        try {
+            const response = await fetch('/api/powerbi/reports');
+            const data = await response.json();
+            if (data.success) {
+                this.powerBIReports = data.reports;
+                console.log('Power BI reports loaded:', this.powerBIReports);
+            } else {
+                console.error('Failed to load Power BI reports:', data.error);
+                // Fallback to default configuration
+                this.powerBIReports = {
+                    'main': {
+                        name: 'Loan Summary Report',
+                        baseUrl: 'https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/3bcd8dd2-4773-4372-9a19-1174c108aee5?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21',
+                        icon: 'fas fa-chart-bar'
+                    }
+                };
+            }
+        } catch (error) {
+            console.error('Error loading Power BI reports:', error);
+            // Fallback to default configuration
+            this.powerBIReports = {
+                'main': {
+                    name: 'Loan Summary Report',
+                    baseUrl: 'https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/3bcd8dd2-4773-4372-9a19-1174c108aee5?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21',
+                    icon: 'fas fa-chart-bar'
+                }
+            };
+        }
+    }
+
+    getPowerBIReports() {
+        return this.powerBIReports;
+    }
+
+    generatePowerBIUrl(loan, format = 'standard', reportKey = 'main') {
+        const reports = this.getPowerBIReports();
+        const report = reports[reportKey];
+        
+        if (!report) {
+            console.error(`Power BI report '${reportKey}' not found`);
+            return '#';
+        }
+
+        const baseUrl = report.baseUrl;
+        const parameters = report.parameters || [];
+        
+        // Build parameter string dynamically
+        let paramString = '';
+        
+        if (parameters.length > 0) {
+            parameters.forEach(param => {
+                let value = '';
+                
+                // Get value based on parameter source
+                switch(param.source) {
+                    case 'loan_name':
+                        value = loan.loan_name || param.defaultValue || '';
+                        break;
+                    case 'currency':
+                        // Template based on currency
+                        if (param.name.toLowerCase().includes('template')) {
+                            value = loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited';
+                        } else {
+                            value = loan.currency || param.defaultValue || '';
+                        }
+                        break;
+                    case 'gross_amount':
+                        value = loan.gross_amount?.toString() || param.defaultValue || '';
+                        break;
+                    case 'loan_type':
+                        value = loan.loan_type || param.defaultValue || '';
+                        break;
+                    case 'property_value':
+                        value = loan.property_value?.toString() || param.defaultValue || '';
+                        break;
+                    case 'custom':
+                    default:
+                        value = param.defaultValue || '';
+                        break;
+                }
+                
+                if (value) {
+                    const encodedValue = encodeURIComponent(value);
+                    paramString += `&rp:${param.name}=${encodedValue}`;
+                }
+            });
+        } else {
+            // Fallback to legacy parameters if no dynamic parameters configured
+            const template = loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited';
+            const encodedTemplate = encodeURIComponent(template);
+            const encodedLoanName = encodeURIComponent(loan.loan_name);
+            paramString = `&rp:Template=${encodedTemplate}&rp:loansummaryloanname=${encodedLoanName}`;
+        }
+        
+        // Debug logging for parameter verification
+        console.log('Power BI URL Generation:', {
+            reportKey: reportKey,
+            reportName: report.name,
+            loanName: loan.loan_name,
+            currency: loan.currency,
+            format: format,
+            parametersUsed: parameters.length,
+            paramString: paramString
+        });
+        
+        // Build final URL with dynamic parameters
+        let finalUrl = baseUrl + paramString;
+        
+        // Add Power BI specific command if needed
+        if (format === 'powerbi') {
+            finalUrl = baseUrl + '&rs:Command=Render' + paramString;
+        }
+        
+        console.log(`Generated Power BI URL (${reportKey} - ${format}):`, finalUrl);
+        return finalUrl;
+    }
+
+    generateReportDropdownItems(loan) {
+        const reports = this.getPowerBIReports();
+        let items = [];
+        
+        console.log('Generating dropdown for loan:', loan.loan_name);
+        console.log('Available reports:', Object.keys(reports));
+        console.log('Reports object:', reports);
+        
+        // Add report sections
+        Object.keys(reports).forEach(reportKey => {
+            const report = reports[reportKey];
+            console.log(`Adding report: ${reportKey} - ${report.name}`);
+            items.push(`<li><h6 class="dropdown-header"><i class="${report.icon} me-2"></i>${report.name}</h6></li>`);
+            items.push(`<li><a class="dropdown-item ps-4" href="${this.generatePowerBIUrl(loan, 'standard', reportKey)}" target="_blank">Standard Format</a></li>`);
+            items.push(`<li><a class="dropdown-item ps-4" href="${this.generatePowerBIUrl(loan, 'double', reportKey)}" target="_blank">Double Encoded</a></li>`);
+            items.push(`<li><a class="dropdown-item ps-4" href="${this.generatePowerBIUrl(loan, 'powerbi', reportKey)}" target="_blank">Power BI Specific</a></li>`);
+            items.push(`<li><hr class="dropdown-divider"></li>`);
+        });
+        
+        // Add template info
+        items.push(`<li><span class="dropdown-item-text small">Template: ${loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited'}</span></li>`);
+        items.push(`<li><span class="dropdown-item-text small">Loan: ${loan.loan_name}</span></li>`);
+        
+        console.log('Generated dropdown items:', items);
+        return items.join('');
+    }
+
+    clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('loanTypeFilter').value = '';
+        this.applyFilters();
+    }
+
+    updateTimestamp() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+        const updateTimeEl = document.getElementById('updateTime');
+        if (updateTimeEl) {
+            updateTimeEl.textContent = timeString;
+        }
+    }
+
+    renderLoansTable() {
+        const tbody = document.getElementById('loansTableBody');
+        const totalCount = document.getElementById('totalCount');
+        
+        totalCount.textContent = `${this.filteredLoans.length} loan${this.filteredLoans.length === 1 ? '' : 's'}`;
+        
+        if (this.filteredLoans.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No loans match your filters</td></tr>';
+            return;
+        }
+
+        console.log('Rendering loans table with', this.filteredLoans.length, 'loans');
+        console.log('Power BI reports available:', Object.keys(this.powerBIReports));
+
+        const tableHTML = this.filteredLoans.map(loan => `
+            <tr>
+                <td>
+                    <div class="fw-bold text-novellus-navy">${loan.loan_name}</div>
+                    <small class="text-muted">v${loan.version}</small>
+                </td>
+                <td>
+                    <span class="badge bg-${this.getLoanTypeBadgeColor(loan.loan_type)} text-dark">
+                        ${this.formatLoanType(loan.loan_type)}
+                    </span>
+                </td>
+                <td>
+                    <strong>${loan.currency === 'GBP' ? '£' : '€'}${loan.gross_amount.toLocaleString('en-GB', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</strong>
+                </td>
+                <td>${loan.interest_rate}%</td>
+                <td>${loan.loan_term} months</td>
+                <td>${loan.currency === 'GBP' ? '£' : '€'}${loan.total_interest.toLocaleString('en-GB', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</td>
+                <td>
+                    <div>${new Date(loan.created_at).toLocaleDateString('en-GB')}</div>
+                    <small class="text-muted">${new Date(loan.created_at).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'})}</small>
+                </td>
+                <td>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-info dropdown-toggle" type="button" id="powerbi-dropdown-${loan.id}" data-bs-toggle="dropdown" aria-expanded="false" title="Power BI Reports - ${loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited'}" onclick="console.log('Dropdown clicked for loan:', '${loan.loan_name}')">
+                            <i class="fas fa-chart-bar me-1"></i>Reports
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="powerbi-dropdown-${loan.id}">
+                            ${this.generateReportDropdownItems(loan)}
+                        </ul>
+                    </div>
+                    <div class="small text-muted mt-1">${loan.currency}</div>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="loanHistory.viewLoanDetails(${loan.id})" title="View Details">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <div class="btn-group me-1">
+                        <button type="button" class="btn btn-sm btn-novellus-gold" onclick="loanHistory.editLoanFromTable(${loan.id})" title="Edit Loan">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="loanHistory.deleteLoan(${loan.id}, '${loan.loan_name.replace(/'/g, '\\\'')}')" title="Delete Loan">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                </td>
+            </tr>
+        `).join('');
+        
+        tbody.innerHTML = tableHTML;
+        
+        // Manually initialize Bootstrap dropdowns after table render
+        setTimeout(() => {
+            console.log('Initializing dropdowns manually...');
+            const dropdownElements = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+            console.log('Found dropdown elements:', dropdownElements.length);
+            
+            dropdownElements.forEach((element, index) => {
+                console.log('Initializing dropdown', index, element.id);
+                try {
+                    new bootstrap.Dropdown(element);
+                    console.log('Dropdown', index, 'initialized successfully');
+                } catch (error) {
+                    console.error('Error initializing dropdown', index, ':', error);
+                }
+            });
+        }, 100);
+    }
+
+    async viewLoanDetails(loanId) {
+        try {
+            this.currentLoanId = loanId;
+            const modal = new bootstrap.Modal(document.getElementById('loanDetailsModal'));
+            
+            // Show loading state
+            document.getElementById('loanDetailsContent').innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-novellus-gold" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+            
+            modal.show();
+            
+            const response = await fetch(`/api/loan/${loanId}`);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to load loan details');
+            }
+            
+            this.renderLoanDetails(data.loan);
+            
+        } catch (error) {
+            console.error('Error loading loan details:', error);
+            document.getElementById('loanDetailsContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error loading loan details: ${error.message}
+                </div>
+            `;
+            if (window.notifications) {
+                window.notifications.error(`Error loading loan details: ${error.message}`);
+            }
+        }
+    }
+
+    renderLoanDetails(loan) {
+        const content = document.getElementById('loanDetailsContent');
+        const currencySymbol = loan.currency_symbol || '£';
+        
+        content.innerHTML = `
+            <!-- User Input Values Section -->
+            <div class="card mb-4">
+                <div class="card-header" style="background: linear-gradient(135deg, #1E2B3A 0%, #2C3E50 100%); color: white; text-align: center; font-weight: bold; border: 1px solid #000;">
+                    User Input Parameters
+                </div>
+                <div class="card-body p-0">
+                    <table class="table mb-0" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+                        <tbody>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Loan Type</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${loan.loan_type.charAt(0).toUpperCase() + loan.loan_type.slice(1)}</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Amount Input Type</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${loan.amountInputType === 'gross' ? 'Gross Amount' : 'Net Amount'}</td>
+                            </tr>
+                            ${loan.amountInputType === 'gross' ? `
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">User Input Gross Amount</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${currencySymbol}${(loan.grossAmount || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            </tr>
+                            ` : `
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">User Input Net Amount</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${currencySymbol}${(loan.netAmount || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            </tr>
+                            `}
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Interest Rate (Annual)</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.interestRate || 0).toFixed(2)}%</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Repayment Option</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${this.formatRepaymentOption(loan.repaymentOption)}</td>
+                            </tr>
+                            ${loan.paymentTiming ? `
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Payment Timing</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${loan.paymentTiming === 'in_advance' ? 'In Advance' : 'In Arrears'}</td>
+                            </tr>
+                            ` : ''}
+                            ${loan.paymentFrequency ? `
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Payment Frequency</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${loan.paymentFrequency.charAt(0).toUpperCase() + loan.paymentFrequency.slice(1)}</td>
+                            </tr>
+                            ` : ''}
+                            ${loan.capitalRepayment > 0 ? `
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Capital Repayment</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${currencySymbol}${(loan.capitalRepayment || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            </tr>
+                            ` : ''}
+                            ${loan.flexiblePayment > 0 ? `
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Flexible Payment Amount</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${currencySymbol}${(loan.flexiblePayment || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            </tr>
+                            ` : ''}
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Arrangement Fee %</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.arrangementFeePercentage || 0).toFixed(2)}%</td>
+                            </tr>
+                            ${loan.userInputDay1Advance > 0 ? `
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Day 1 Advance (User Input)</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${currencySymbol}${(loan.userInputDay1Advance || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                            </tr>
+                            ` : ''}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Loan Summary Section (Same format as calculator) -->
+            <div class="card mb-4">
+                <div class="card-header" style="background: linear-gradient(135deg, #B8860B 0%, #DAA520 100%); color: white; text-align: center; font-weight: bold; border: 1px solid #000;">
+                    Loan Summary
+                </div>
+                <div class="card-body p-0">
+                    <table class="table mb-0" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+                            <tbody>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Valuation</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">${currencySymbol}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${(loan.propertyValue || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Gross Amount</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${currencySymbol}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.grossAmount || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Date of First Drawdown</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${loan.startDate}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">End Date</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${loan.endDate}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Months)</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${(loan.loanTerm || 0).toFixed(2)}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Days)</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${loan.loanTermDays || 0}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Arrangement Fee</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">2.00% ${currencySymbol}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${(loan.arrangementFee || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Legal Costs</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${currencySymbol}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.legalCosts || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Site Visit Fee</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">${currencySymbol}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${(loan.siteVisitFee || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Title Insurance</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">0.01% ${currencySymbol}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.titleInsurance || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">12.00% ${currencySymbol}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${(loan.totalInterest || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Net Advance</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${currencySymbol}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.netAdvance || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Total Net Advance</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">${currencySymbol}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${(loan.totalNetAdvance || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Start LTV</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${((loan.startLtv || 0) * 100).toFixed(1)}%</td>
+                                </tr>
+                                <tr style="border: 1px solid #000;">
+                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">End LTV</td>
+                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${((loan.endLtv || 0) * 100).toFixed(1)}%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detailed Payment Schedule Section (Same format as calculator) -->
+            <div class="card border-0 mt-4">
+                <div class="card-header bg-novellus-navy text-white">
+                    <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Detailed Payment Schedule</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0" style="font-size: 0.8rem;">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th style="min-width: 100px;">Payment Date</th>
+                                    <th style="min-width: 120px;">Opening Balance</th>
+                                    <th style="min-width: 100px;">Interest</th>
+                                    <th style="min-width: 100px;">Principal</th>
+                                    <th style="min-width: 120px;">Total Payment</th>
+                                    <th style="min-width: 120px;">Closing Balance</th>
+                                    <th style="min-width: 120px;">Balance Change</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${loan.detailed_payment_schedule.map(payment => `
+                                    <tr>
+                                        <td>${payment.payment_date}</td>
+                                        <td>${payment.opening_balance}</td>
+                                        <td class="text-danger">${payment.interest_amount}</td>
+                                        <td class="text-primary">${payment.principal_payment}</td>
+                                        <td class="fw-bold text-success">${payment.total_payment}</td>
+                                        <td>${payment.closing_balance}</td>
+                                        <td><small class="text-muted">${payment.balance_change}</small></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                </div>
+            </div>
+        `;
+    }
+
+    editLoan() {
+        try {
+            if (!this.currentLoanId) {
+                if (window.notifications) {
+                    window.notifications.error('No loan selected for editing');
+                } else {
+                    alert('No loan selected');
+                }
+                return;
+            }
+
+            const loan = this.loans.find(l => l.id === this.currentLoanId);
+            if (!loan) {
+                console.error('Selected loan not found');
+                return;
+            }
+
+            // Navigate to calculator with loan data for editing
+            const params = this.buildEditParams(loan);
+            const queryString = new URLSearchParams(params).toString();
+            window.location.href = `/calculator?edit=true&loanId=${this.currentLoanId}&loanName=${encodeURIComponent(loan.loan_name)}&${queryString}`;
+
+        } catch (error) {
+            console.error('Edit loan error:', error);
+            if (window.notifications) {
+                window.notifications.error(`Edit loan failed: ${error.message}`);
+            }
+        }
+    }
+
+    editLoanFromTable(loanId) {
+        this.currentLoanId = loanId;
+        this.editLoan();
+    }
+
+    buildEditParams(loan) {
+        const params = {
+            // Core loan parameters
+            loan_type: loan.loan_type || 'bridge',
+            amount_input_type: loan.amountInputType || loan.amount_input_type || 'gross',
+            gross_amount: loan.grossAmount || loan.gross_amount || '',
+            net_amount: loan.netAmount || loan.net_amount || '',
+            property_value: loan.propertyValue || loan.property_value || '',
+            annual_rate: loan.interestRate || loan.interest_rate || '',
+            loan_term: loan.loanTerm || loan.loan_term || '',
+            start_date: loan.startDate || loan.start_date || '',
+            end_date: loan.endDate || loan.end_date || '',
+            
+            // Repayment and fee parameters
+            repayment_option: loan.repaymentOption || loan.repayment_option || 'none',
+            arrangement_fee_percentage: loan.arrangementFeePercentage || loan.arrangement_fee_percentage || '2',
+            legal_fees: loan.legalFees || loan.legal_fees || '1500',
+            site_visit_fee: loan.siteVisitFee || loan.site_visit_fee || '500',
+            title_insurance_rate: loan.titleInsuranceRate || loan.title_insurance_rate || '0.01',
+            
+            // Payment parameters
+            payment_timing: loan.paymentTiming || loan.payment_timing || 'advance',
+            payment_frequency: loan.paymentFrequency || loan.payment_frequency || 'monthly',
+            capital_repayment: loan.capitalRepayment || loan.capital_repayment || '',
+            flexible_payment: loan.flexiblePayment || loan.flexible_payment || '',
+            
+            // Development loan parameters
+            day1_advance: loan.day1Advance || loan.day1_advance || '',
+            tranche_mode: loan.trancheMode || loan.tranche_mode || 'manual',
+            
+            // Currency
+            currency: loan.currency || 'GBP'
+        };
+        
+        // Handle tranches for development loans
+        if (loan.loan_type === 'development' && loan.tranches && Array.isArray(loan.tranches)) {
+            loan.tranches.forEach((tranche, index) => {
+                params[`tranche_amounts[${index}]`] = tranche.amount || '';
+                params[`tranche_dates[${index}]`] = tranche.date || '';
+                params[`tranche_rates[${index}]`] = tranche.rate || '';
+                params[`tranche_descriptions[${index}]`] = tranche.description || '';
+            });
+        }
+        
+        console.log('Edit params built:', params);
+        return params;
+    }
+
+    showState(state) {
+        console.log(`Changing loan history state to: ${state}`);
+        
+        const states = ['loading', 'error', 'empty', 'table'];
+        states.forEach(s => {
+            let element;
+            if (s === 'table') {
+                element = document.getElementById('loansTable');
+            } else {
+                element = document.getElementById(`${s}State`);
+            }
+            console.log(`State element ${s}:`, element ? 'found' : 'NOT FOUND');
+            if (element) {
+                element.classList.toggle('d-none', s !== state);
+            }
+        });
+        
+        console.log(`Successfully changed to state: ${state}`);
+    }
+
+    showError(message) {
+        this.showState('error');
+        document.getElementById('errorMessage').textContent = message;
+    }
+
+    getLoanTypeBadgeColor(type) {
+        switch(type) {
+            case 'bridge': return 'warning';
+            case 'term': return 'info';
+            case 'development': return 'success';
+            default: return 'secondary';
+        }
+    }
+
+    formatLoanType(type) {
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    }
+
+    formatRepaymentOption(option) {
+        const repaymentMapping = {
+            'none': 'Retained Interest',
+            'service_only': 'Service Only (Interest Payments)',
+            'service_and_capital': 'Service + Capital',
+            'flexible_payment': 'Flexible Payment Schedule'
+        };
+        return repaymentMapping[option] || option;
+    }
+
+    async deleteLoan(loanId, loanName) {
+        // Use the same notification system as calculator page
+        if (window.notifications) {
+            // Create a custom confirmation notification
+            const confirmMessage = `
+                <div style="margin-top: 8px;">
+                    <button class="btn btn-sm btn-danger me-2" onclick="loanHistory.performDelete(${loanId}, '${loanName.replace(/'/g, '\\\'')}')" style="font-size: 0.8rem;">Yes, Delete</button>
+                    <button class="btn btn-sm btn-secondary" onclick="this.closest('.notification').remove()" style="font-size: 0.8rem;">Cancel</button>
+                </div>
+            `;
+            window.notifications.show(
+                `Are you sure you want to delete the loan "${loanName}"? This action cannot be undone.` + confirmMessage,
+                'warning',
+                15000
+            );
+        } else {
+            if (!confirm(`Are you sure you want to delete the loan "${loanName}"? This action cannot be undone.`)) {
+                return;
+            }
+            this.performDelete(loanId, loanName);
+        }
+    }
+
+    async performDelete(loanId, loanName) {
+        // Close any open notifications
+        const notifications = document.querySelectorAll('.notification');
+        notifications.forEach(n => n.remove());
+
+        
+        try {
+            const response = await fetch(`/api/loan/${loanId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to delete loan');
+            }
+
+            // Show success notification using notifications system
+            if (window.notifications) {
+                window.notifications.success(data.message);
+            } else {
+                alert(data.message);
+            }
+
+            // Reload the loans list
+            this.loadLoans();
+
+        } catch (error) {
+            console.error('Error deleting loan:', error);
+            if (window.notifications) {
+                window.notifications.error(`Error deleting loan: ${error.message}`);
+            } else {
+                alert(`Error deleting loan: ${error.message}`);
+            }
+        }
+    }
+}
+
+// Initialize the loan history manager
+const loanHistory = new LoanHistoryManager();
+
+// Initialize notifications system
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the notification system from calculator
+    if (typeof NotificationSystem !== 'undefined') {
+        window.notifications = new NotificationSystem();
+    }
+});
+</script>
+
+<style>
+.btn-novellus-gold {
+    background-color: #B8860B;
+    border-color: #B8860B;
+    color: white;
+}
+.btn-novellus-gold:hover {
+    background-color: #9A7209;
+    border-color: #9A7209;
+    color: white;
+}
+.text-novellus-navy {
+    color: #1E2B3A;
+}
+.bg-novellus-navy {
+    background-color: #1E2B3A !important;
+}
+.bg-novellus-gold {
+    background-color: #B8860B !important;
+}
+</style>
+
+<!-- Include notifications JavaScript -->
+<script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+
+<!-- Currency Theme Manager -->
+<script src="{{ url_for('static', filename='js/currency-theme-simple.js') }}"></script>
+
+{% endblock %}

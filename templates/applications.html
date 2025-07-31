@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Applications - Novellus{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-file-alt me-2"></i>
+            {% if current_user.role == 'borrower' %}
+                My Applications
+            {% else %}
+                Loan Applications
+            {% endif %}
+        </h2>
+        <p class="text-muted">
+            {% if current_user.role == 'borrower' %}
+                Manage your loan applications and track their progress
+            {% else %}
+                Review and manage loan applications from borrowers
+            {% endif %}
+        </p>
+    </div>
+    {% if current_user.role == 'borrower' %}
+    <div>
+        <a href="{{ url_for('new_application') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>New Application
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-end">
+            <div class="col-md-3">
+                <label for="statusFilter" class="form-label">Status</label>
+                <select class="form-select" id="statusFilter">
+                    <option value="">All Statuses</option>
+                    <option value="draft">Draft</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="under_review">Under Review</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="typeFilter" class="form-label">Loan Type</label>
+                <select class="form-select" id="typeFilter">
+                    <option value="">All Types</option>
+                    <option value="bridge">Bridge Loan</option>
+                    <option value="term">Term Loan</option>
+                    <option value="development">Development Loan</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="searchFilter" class="form-label">Search</label>
+                <input type="text" class="form-control" id="searchFilter" placeholder="Property address...">
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                    <i class="fas fa-times me-2"></i>Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Applications Table -->
+{% if applications %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="applicationsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>Application ID</th>
+                        <th>Type</th>
+                        <th>Property Address</th>
+                        <th>Loan Amount</th>
+                        <th>Property Value</th>
+                        <th>LTV</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        {% if current_user.role == 'lender' %}
+                        <th>Borrower</th>
+                        {% endif %}
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr data-status="{{ app.status }}" data-type="{{ app.loan_type }}">
+                        <td>
+                            <span class="badge bg-secondary">#{{ app.id }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ app.loan_type.title() }}</span>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 200px;" title="{{ app.property_address }}">
+                                {{ app.property_address }}
+                            </div>
+                        </td>
+                        <td>
+                            <strong>£{{ "{:,.0f}".format(app.loan_amount) }}</strong>
+                        </td>
+                        <td>
+                            £{{ "{:,.0f}".format(app.property_value) }}
+                        </td>
+                        <td>
+                            {% if app.ltv_ratio %}
+                                <span class="badge {% if app.ltv_ratio > 80 %}bg-warning{% elif app.ltv_ratio > 70 %}bg-info{% else %}bg-success{% endif %}">
+                                    {{ "{:.1f}".format(app.ltv_ratio) }}%
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set status_colors = {
+                                'draft': 'secondary',
+                                'submitted': 'primary',
+                                'under_review': 'warning',
+                                'approved': 'success',
+                                'rejected': 'danger'
+                            } %}
+                            <span class="badge bg-{{ status_colors.get(app.status, 'secondary') }}">
+                                {{ app.status.replace('_', ' ').title() }}
+                            </span>
+                        </td>
+                        <td>
+                            <small>{{ app.created_at.strftime('%d/%m/%Y') }}</small>
+                            {% if app.submitted_at %}
+                                <br><small class="text-muted">Submitted: {{ app.submitted_at.strftime('%d/%m/%Y') }}</small>
+                            {% endif %}
+                        </td>
+                        {% if current_user.role == 'lender' %}
+                        <td>
+                            <div>{{ app.user.full_name }}</div>
+                            <small class="text-muted">{{ app.user.email }}</small>
+                        </td>
+                        {% endif %}
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary" onclick="viewApplication({{ app.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if current_user.role == 'borrower' and app.status == 'draft' %}
+                                    <button type="button" class="btn btn-outline-secondary" onclick="editApplication({{ app.id }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                {% endif %}
+                                {% if current_user.role == 'lender' and app.status in ['submitted', 'under_review'] %}
+                                    <button type="button" class="btn btn-outline-success" onclick="createQuote({{ app.id }})">
+                                        <i class="fas fa-quote-left"></i>
+                                    </button>
+                                {% endif %}
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown">
+                                        <span class="visually-hidden">Toggle Dropdown</span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="downloadPDF({{ app.id }})">
+                                            <i class="fas fa-file-pdf me-2"></i>Download PDF
+                                        </a></li>
+                                        {% if current_user.role == 'lender' %}
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item" href="#" onclick="updateStatus({{ app.id }}, 'under_review')">
+                                                <i class="fas fa-clock me-2"></i>Mark Under Review
+                                            </a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="updateStatus({{ app.id }}, 'approved')">
+                                                <i class="fas fa-check me-2"></i>Approve
+                                            </a></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="updateStatus({{ app.id }}, 'rejected')">
+                                                <i class="fas fa-times me-2"></i>Reject
+                                            </a></li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+<nav aria-label="Applications pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        <li class="page-item disabled">
+            <a class="page-link" href="#" tabindex="-1">Previous</a>
+        </li>
+        <li class="page-item active">
+            <a class="page-link" href="#">1</a>
+        </li>
+        <li class="page-item disabled">
+            <a class="page-link" href="#">Next</a>
+        </li>
+    </ul>
+</nav>
+
+{% else %}
+<!-- Empty State -->
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-file-alt fa-4x text-muted mb-4"></i>
+        <h4 class="text-muted">No Applications Found</h4>
+        <p class="text-muted mb-4">
+            {% if current_user.role == 'borrower' %}
+                You haven't created any loan applications yet.
+            {% else %}
+                No loan applications have been submitted yet.
+            {% endif %}
+        </p>
+        {% if current_user.role == 'borrower' %}
+            <a href="{{ url_for('new_application') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create Your First Application
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Application Detail Modal -->
+<div class="modal fade" id="applicationModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Application Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="applicationModalBody">
+                <!-- Application details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Filter functionality
+document.getElementById('statusFilter').addEventListener('change', filterApplications);
+document.getElementById('typeFilter').addEventListener('change', filterApplications);
+document.getElementById('searchFilter').addEventListener('input', filterApplications);
+
+function filterApplications() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const typeFilter = document.getElementById('typeFilter').value;
+    const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+    
+    const rows = document.querySelectorAll('#applicationsTable tbody tr');
+    
+    rows.forEach(row => {
+        const status = row.dataset.status;
+        const type = row.dataset.type;
+        const address = row.cells[2].textContent.toLowerCase();
+        
+        const statusMatch = !statusFilter || status === statusFilter;
+        const typeMatch = !typeFilter || type === typeFilter;
+        const searchMatch = !searchFilter || address.includes(searchFilter);
+        
+        if (statusMatch && typeMatch && searchMatch) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function clearFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('typeFilter').value = '';
+    document.getElementById('searchFilter').value = '';
+    filterApplications();
+}
+
+function viewApplication(id) {
+    // Load application details in modal
+    fetch(`/api/applications/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            // Populate modal with application details
+            document.getElementById('applicationModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Basic Information</h6>
+                        <p><strong>Type:</strong> ${data.loan_type}</p>
+                        <p><strong>Purpose:</strong> ${data.loan_purpose || 'Not specified'}</p>
+                        <p><strong>Status:</strong> ${data.status}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Property Details</h6>
+                        <p><strong>Address:</strong> ${data.property_address}</p>
+                        <p><strong>Value:</strong> £${data.property_value.toLocaleString()}</p>
+                        <p><strong>Type:</strong> ${data.property_type || 'Not specified'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Loan Details</h6>
+                        <p><strong>Amount:</strong> £${data.loan_amount.toLocaleString()}</p>
+                        <p><strong>Term:</strong> ${data.loan_term} months</p>
+                        <p><strong>LTV:</strong> ${data.ltv_ratio ? data.ltv_ratio.toFixed(1) + '%' : 'Not calculated'}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('applicationModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading application:', error);
+            alert('Error loading application details');
+        });
+}
+
+function editApplication(id) {
+    window.location.href = `/applications/edit/${id}`;
+}
+
+function createQuote(id) {
+    window.location.href = `/quotes/new/${id}`;
+}
+
+function updateStatus(id, status) {
+    if (confirm(`Are you sure you want to change the status to ${status.replace('_', ' ')}?`)) {
+        fetch(`/api/applications/${id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error updating status');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating status:', error);
+            alert('Error updating status');
+        });
+    }
+}
+
+function downloadPDF(id) {
+    window.open(`/applications/${id}/pdf`, '_blank');
+}
+</script>
+{% endblock %}

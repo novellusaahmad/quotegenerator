@@ -1,0 +1,539 @@
+{% extends "base.html" %}
+
+{% block title %}Application #{{ application.id }} - Novellus Loan Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">Application #{{ application.id }}</h1>
+                    <p class="text-muted mb-0">
+                        {{ application.loan_type.value.title() }} Loan - 
+                        <span class="badge bg-{% if application.status.value == 'approved' %}success{% elif application.status.value == 'rejected' %}danger{% elif application.status.value == 'under_review' %}warning{% elif application.status.value == 'funded' %}primary{% else %}secondary{% endif %}">
+                            {{ application.status.value.replace('_', ' ').title() }}
+                        </span>
+                    </p>
+                </div>
+                <div>
+                    {% if user.role.value == 'lender' %}
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#statusModal">
+                            <i class="bi bi-pencil me-2"></i>Update Status
+                        </button>
+                        <button type="button" class="btn btn-success" onclick="generateQuote()">
+                            <i class="bi bi-file-earmark-bar-graph me-2"></i>Generate Quote
+                        </button>
+                    </div>
+                    {% endif %}
+                    <a href="{{ url_for('applications') }}" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Applications
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Application Details -->
+        <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Application Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Borrower</label>
+                                <div class="fw-bold">{{ application.user.first_name }} {{ application.user.last_name }}</div>
+                                <small class="text-muted">{{ application.user.email }}</small>
+                                {% if application.user.company_name %}
+                                <div><small class="text-muted">{{ application.user.company_name }}</small></div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Loan Type</label>
+                                <div><span class="badge bg-secondary">{{ application.loan_type.value.title() }}</span></div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Currency</label>
+                                <div class="fw-bold">{{ application.currency }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Loan Amount</label>
+                                <div class="fw-bold fs-5">{{ format_currency(application.loan_amount, application.currency) }}</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Loan Term</label>
+                                <div class="fw-bold">{{ application.loan_term }} months</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Property Value</label>
+                                <div class="fw-bold">{{ format_currency(application.property_value, application.currency) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>LTV Ratio:</strong>
+                                        {% set ltv = (application.loan_amount / application.property_value * 100) if application.property_value > 0 else 0 %}
+                                        <span class="badge bg-{% if ltv > 80 %}warning{% else %}success{% endif %} ms-2">
+                                            {{ "%.1f"|format(ltv) }}%
+                                        </span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Created:</strong> {{ application.created_at.strftime('%d %b %Y') if application.created_at else '-' }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Submitted:</strong> {{ application.submitted_at.strftime('%d %b %Y') if application.submitted_at else 'Not submitted' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Property Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Property Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Property Address</label>
+                                <div>{{ application.property_address or 'Not provided' }}</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Property Type</label>
+                                <div>{{ application.property_type.replace('_', ' ').title() if application.property_type else 'Not specified' }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Property Value</label>
+                                <div class="fw-bold">{{ format_currency(application.property_value, application.currency) }}</div>
+                            </div>
+                            
+                            {% if application.existing_mortgage %}
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Existing Mortgage</label>
+                                <div>{{ format_currency(application.existing_mortgage, application.currency) }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if application.property_description %}
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label text-muted">Property Description</label>
+                            <div class="border rounded p-3 bg-light">{{ application.property_description }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Development Information (if applicable) -->
+            {% if application.loan_type.value == 'development' %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Development Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% if application.construction_start_date %}
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Construction Start</label>
+                                <div>{{ application.construction_start_date.strftime('%d %b %Y') }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if application.total_units %}
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Total Units</label>
+                                <div class="fw-bold">{{ application.total_units }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6">
+                            {% if application.construction_end_date %}
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Construction End</label>
+                                <div>{{ application.construction_end_date.strftime('%d %b %Y') }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if application.gd_value %}
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Gross Development Value</label>
+                                <div class="fw-bold">{{ format_currency(application.gd_value, application.currency) }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if application.development_description %}
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label text-muted">Development Description</label>
+                            <div class="border rounded p-3 bg-light">{{ application.development_description }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Financial Information -->
+            {% if application.monthly_income or application.monthly_expenses %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Financial Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if application.monthly_income %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Monthly Income</label>
+                                <div class="fw-bold">{{ format_currency(application.monthly_income, 'GBP') }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if application.monthly_expenses %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Monthly Expenses</label>
+                                <div class="fw-bold">{{ format_currency(application.monthly_expenses, 'GBP') }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if application.monthly_income and application.monthly_expenses %}
+                    <div class="alert alert-info">
+                        <strong>Net Monthly Income:</strong> 
+                        {{ format_currency(application.monthly_income - application.monthly_expenses, 'GBP') }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Quotes -->
+            {% if quotes %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Generated Quotes</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Quote Ref</th>
+                                    <th>Gross Amount</th>
+                                    <th>Net Amount</th>
+                                    <th>Interest Rate</th>
+                                    <th>LTV</th>
+                                    <th>Generated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for quote in quotes %}
+                                <tr>
+                                    <td>{{ quote.quote_reference or 'N/A' }}</td>
+                                    <td>{{ format_currency(quote.gross_amount, application.currency) }}</td>
+                                    <td>{{ format_currency(quote.net_amount, application.currency) }}</td>
+                                    <td><span class="badge bg-info">{{ format_percentage(quote.interest_rate) }}</span></td>
+                                    <td><span class="badge bg-{% if quote.ltv_ratio > 80 %}warning{% else %}success{% endif %}">{{ format_percentage(quote.ltv_ratio) }}</span></td>
+                                    <td>{{ quote.created_at.strftime('%d %b %Y') if quote.created_at else '-' }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary" onclick="viewQuote({{ quote.id }})">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            {% if application.currency == 'GBP' %}
+                                            <button type="button" class="btn btn-outline-success" onclick="downloadQuote({{ quote.id }})">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Status Timeline -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Application Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Application Created</h6>
+                                <small class="text-muted">{{ application.created_at.strftime('%d %b %Y at %H:%M') if application.created_at else '-' }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if application.submitted_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-info"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Application Submitted</h6>
+                                <small class="text-muted">{{ application.submitted_at.strftime('%d %b %Y at %H:%M') }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if application.reviewed_at %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-{% if application.status.value == 'approved' %}success{% elif application.status.value == 'rejected' %}danger{% else %}warning{% endif %}"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Application {{ application.status.value.replace('_', ' ').title() }}</h6>
+                                <small class="text-muted">{{ application.reviewed_at.strftime('%d %b %Y at %H:%M') }}</small>
+                                {% if application.reviewer_notes %}
+                                <div class="mt-1"><small>{{ application.reviewer_notes }}</small></div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Documents -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Documents</h5>
+                    {% if user.role.value == 'lender' or application.user_id == user.id %}
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        <i class="bi bi-cloud-upload me-1"></i>Upload
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if documents %}
+                        {% for document in documents %}
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                            <div>
+                                <div class="fw-bold">{{ document.original_filename }}</div>
+                                <small class="text-muted">{{ document.document_type.replace('_', ' ').title() }}</small>
+                                <small class="text-muted d-block">{{ document.uploaded_at.strftime('%d %b %Y') if document.uploaded_at else '-' }}</small>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('download_document', doc_id=document.id) }}" class="btn btn-outline-primary">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                {% if user.role.value == 'lender' %}
+                                <button type="button" class="btn btn-outline-danger" onclick="deleteDocument({{ document.id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-file-earmark fs-3 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">No documents uploaded</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if user.role.value == 'lender' %}
+                        <button type="button" class="btn btn-success" onclick="generateQuote()">
+                            <i class="bi bi-file-earmark-bar-graph me-2"></i>Generate Quote
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#statusModal">
+                            <i class="bi bi-pencil me-2"></i>Update Status
+                        </button>
+                        <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#notesModal">
+                            <i class="bi bi-chat-left-text me-2"></i>Add Notes
+                        </button>
+                        {% endif %}
+                        <a href="/calculator?application_id={{ application.id }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-calculator me-2"></i>Open Calculator
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('upload_document') }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="hidden" name="application_id" value="{{ application.id }}">
+                    
+                    <div class="mb-3">
+                        <label for="document_type" class="form-label">Document Type</label>
+                        <select class="form-select" name="document_type" id="document_type" required>
+                            <option value="">Select document type</option>
+                            <option value="valuation">Valuation Report</option>
+                            <option value="financial_statement">Financial Statement</option>
+                            <option value="id_document">ID Document</option>
+                            <option value="bank_statement">Bank Statement</option>
+                            <option value="proof_of_income">Proof of Income</option>
+                            <option value="planning_permission">Planning Permission</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Choose File</label>
+                        <input type="file" class="form-control" name="file" id="file" required>
+                        <div class="form-text">Maximum file size: 16MB. Allowed types: PDF, Word, Excel, Images</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-cloud-upload me-2"></i>Upload
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Status Update Modal -->
+{% if user.role.value == 'lender' %}
+<div class="modal fade" id="statusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Application Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="/api/application/{{ application.id }}/status">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">New Status</label>
+                        <select class="form-select" name="status" id="status" required>
+                            <option value="draft" {% if application.status.value == 'draft' %}selected{% endif %}>Draft</option>
+                            <option value="submitted" {% if application.status.value == 'submitted' %}selected{% endif %}>Submitted</option>
+                            <option value="under_review" {% if application.status.value == 'under_review' %}selected{% endif %}>Under Review</option>
+                            <option value="approved" {% if application.status.value == 'approved' %}selected{% endif %}>Approved</option>
+                            <option value="rejected" {% if application.status.value == 'rejected' %}selected{% endif %}>Rejected</option>
+                            <option value="funded" {% if application.status.value == 'funded' %}selected{% endif %}>Funded</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reviewer_notes" class="form-label">Notes</label>
+                        <textarea class="form-control" name="reviewer_notes" id="reviewer_notes" rows="3">{{ application.reviewer_notes or '' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.timeline {
+    position: relative;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 2rem;
+    padding-bottom: 1rem;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 1.5rem;
+    bottom: -1rem;
+    width: 2px;
+    background-color: #dee2e6;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 0;
+    top: 0.25rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    margin-left: 0.5rem;
+}
+</style>
+
+<script>
+function generateQuote() {
+    window.location.href = `/calculator?application_id={{ application.id }}`;
+}
+
+function viewQuote(quoteId) {
+    window.location.href = `/quotes/${quoteId}`;
+}
+
+function downloadQuote(quoteId) {
+    window.open(`/api/quote/${quoteId}/download`, '_blank');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+
+{% block title %}Lender Dashboard - Novellus Loan Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">Lender Dashboard</h1>
+                    <p class="text-muted mb-0">Review applications and manage loan portfolio</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('calculator_page') }}" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-calculator me-2"></i>Calculator
+                    </a>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newQuoteModal">
+                        <i class="bi bi-plus me-2"></i>Generate Quote
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card novellus-stat-card-gold text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Total Applications</h6>
+                            <h2 class="mb-0">{{ stats.pending_applications }}</h2>
+                        </div>
+                        <i class="bi bi-file-earmark-text fs-1 opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card novellus-stat-card-navy text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Active Quotes</h6>
+                            <h2 class="mb-0">{{ stats.under_review }}</h2>
+                        </div>
+                        <i class="bi bi-quote fs-1 opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card novellus-stat-card-gold-light text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Recent Payments</h6>
+                            <h2 class="mb-0">{{ stats.approved_this_month }}</h2>
+                        </div>
+                        <i class="bi bi-credit-card fs-1 opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card novellus-stat-card-navy-light text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-0">Account Type</h6>
+                            <h2 class="mb-0">Lender</h2>
+                        </div>
+                        <i class="bi bi-person-badge fs-1 opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Applications Requiring Attention -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Applications Requiring Attention</h5>
+                    <a href="{{ url_for('applications') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-eye me-1"></i>View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if applications %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Borrower</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                        <th>Submitted</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for application in applications[:10] %}
+                                    <tr>
+                                        <td>
+                                            <span class="fw-bold">#{{ application.id }}</span>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <div class="fw-bold">{{ application.user.first_name }} {{ application.user.last_name }}</div>
+                                                <small class="text-muted">{{ application.user.email }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ application.loan_type.value.title() }}</span>
+                                        </td>
+                                        <td>{{ format_currency(application.loan_amount, application.currency) }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if application.status.value == 'submitted' %}warning{% elif application.status.value == 'under_review' %}info{% else %}secondary{% endif %}">
+                                                {{ application.status.value.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ application.submitted_at.strftime('%d %b') if application.submitted_at else '-' }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('view_application', app_id=application.id) }}" class="btn btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-success" onclick="generateQuoteForApp({{ application.id }})">
+                                                    <i class="bi bi-file-earmark-bar-graph"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-outline-info" onclick="updateStatus({{ application.id }})">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-check-circle fs-1 text-success"></i>
+                            <p class="text-muted mt-2">All applications are up to date</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Quotes & Quick Actions -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card mb-4 novellus-quick-actions-card">
+                <div class="card-header">
+                    <h5 class="mb-0 text-white"><i class="bi bi-lightning-charge me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        <a href="{{ url_for('calculator_page') }}" class="btn novellus-action-btn-gold">
+                            <i class="bi bi-calculator me-2"></i>Loan Calculator
+                        </a>
+                        <button type="button" class="btn novellus-action-btn-navy" data-bs-toggle="modal" data-bs-target="#newQuoteModal">
+                            <i class="bi bi-file-earmark-plus me-2"></i>Generate Quote
+                        </button>
+                        <a href="{{ url_for('applications') }}" class="btn novellus-action-btn-gold-light">
+                            <i class="bi bi-file-earmark-text me-2"></i>Review Applications
+                        </a>
+                        <a href="{{ url_for('quotes') }}" class="btn novellus-action-btn-navy-light">
+                            <i class="bi bi-file-earmark-bar-graph me-2"></i>Manage Quotes
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Quotes -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Quotes</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_quotes %}
+                        {% for quote in recent_quotes[:5] %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <div class="fw-bold">{{ quote.quote_reference or 'N/A' }}</div>
+                                <small class="text-muted">{{ format_currency(quote.gross_amount, quote.application.currency) }}</small>
+                            </div>
+                            <div class="text-end">
+                                <div class="small">{{ quote.created_at.strftime('%d %b') if quote.created_at else '-' }}</div>
+                                <span class="badge bg-info">{{ format_percentage(quote.ltv_ratio) }} LTV</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('quotes') }}" class="btn btn-sm btn-outline-primary">
+                                View All Quotes
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-file-earmark-bar-graph fs-3 text-muted"></i>
+                            <p class="text-muted mt-2 mb-0">No quotes generated yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Quote Modal -->
+<div class="modal fade" id="newQuoteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Generate New Quote</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newQuoteForm">
+                    <div class="mb-3">
+                        <label for="application_select" class="form-label">Select Application</label>
+                        <select class="form-select" id="application_select" required>
+                            <option value="">Choose an application...</option>
+                            {% for application in applications %}
+                            <option value="{{ application.id }}">
+                                #{{ application.id }} - {{ application.user.first_name }} {{ application.user.last_name }} - 
+                                {{ format_currency(application.loan_amount, application.currency) }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quote_interest_rate" class="form-label">Interest Rate (%)</label>
+                        <input type="number" class="form-control" id="quote_interest_rate" step="0.01" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quote_notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="quote_notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitQuote()">
+                    <i class="bi bi-file-earmark-bar-graph me-2"></i>Generate Quote
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function generateQuoteForApp(appId) {
+    // Pre-select application in modal
+    document.getElementById('application_select').value = appId;
+    new bootstrap.Modal(document.getElementById('newQuoteModal')).show();
+}
+
+function updateStatus(appId) {
+    // Redirect to application view for status update
+    window.location.href = `/application/${appId}`;
+}
+
+function submitQuote() {
+    const form = document.getElementById('newQuoteForm');
+    const formData = new FormData(form);
+    
+    const appId = document.getElementById('application_select').value;
+    const interestRate = document.getElementById('quote_interest_rate').value;
+    const notes = document.getElementById('quote_notes').value;
+    
+    if (!appId || !interestRate) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    // Redirect to calculator with pre-filled data
+    const params = new URLSearchParams({
+        application_id: appId,
+        interest_rate: interestRate,
+        notes: notes
+    });
+    
+    window.location.href = `/calculator?${params.toString()}`;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>One-Click Scenario Comparison - Novellus Loan Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        :root {
+            --novellus-gold: #B8860B;
+            --novellus-navy: #1E2B3A;
+            --novellus-light-gold: #DAA520;
+            --novellus-dark-navy: #0F1419;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-dark-navy) 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, var(--novellus-navy) 0%, var(--novellus-dark-navy) 100%);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+        }
+
+        .container-fluid {
+            padding: 2rem 0;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .card-header {
+            background: linear-gradient(90deg, var(--novellus-gold) 0%, var(--novellus-light-gold) 100%);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 1.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--novellus-gold) 0%, var(--novellus-light-gold) 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(45deg, var(--novellus-light-gold) 0%, var(--novellus-gold) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(184, 134, 11, 0.4);
+        }
+
+        .btn-outline-primary {
+            border: 2px solid var(--novellus-gold);
+            color: var(--novellus-gold);
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--novellus-gold);
+            border-color: var(--novellus-gold);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .table thead th {
+            background: var(--novellus-navy);
+            color: white;
+            border: none;
+            font-weight: 600;
+            padding: 1rem;
+        }
+
+        .table tbody td {
+            padding: 0.75rem 1rem;
+            vertical-align: middle;
+            border-color: rgba(0,0,0,0.1);
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(184, 134, 11, 0.1);
+        }
+
+        .scenario-card {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        .scenario-card:hover {
+            border-color: var(--novellus-gold);
+            box-shadow: 0 5px 15px rgba(184, 134, 11, 0.2);
+        }
+
+        .scenario-header {
+            background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 1rem;
+            border-radius: 8px 8px 0 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: var(--novellus-navy);
+        }
+
+        .metric-positive {
+            color: #28a745;
+        }
+
+        .metric-negative {
+            color: #dc3545;
+        }
+
+        .best-scenario {
+            background: linear-gradient(45deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+            border-color: #28a745;
+        }
+
+        .loading-spinner {
+            display: none;
+        }
+
+        .template-btn {
+            margin: 0.25rem;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--novellus-gold);
+            box-shadow: 0 0 0 0.2rem rgba(184, 134, 11, 0.25);
+        }
+
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='novellus_logo.png') }}" alt="Novellus" height="40" class="me-2">
+                <span class="fw-bold">Novellus Loan Management</span>
+            </a>
+            <div class="d-flex">
+                <a href="{{ url_for('calculator_page') }}" class="btn btn-outline-light me-2">
+                    <i class="fas fa-calculator"></i> Calculator
+                </a>
+                <a href="{{ url_for('loan_history') }}" class="btn btn-outline-light">
+                    <i class="fas fa-history"></i> History
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container-fluid">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header text-center">
+                            <h1 class="mb-0">
+                                <i class="fas fa-chart-line me-2"></i>
+                                One-Click Scenario Comparison Tool
+                            </h1>
+                            <p class="mb-0 mt-2">Compare multiple loan scenarios side-by-side with predefined templates</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Template Selection -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="mb-0"><i class="fas fa-template me-2"></i>Quick Start Templates</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Base Parameters -->
+                                <div class="col-md-6">
+                                    <h5>Base Parameters</h5>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Loan Type</label>
+                                            <select id="baseLoanType" class="form-select">
+                                                <option value="bridge">Bridge Loan</option>
+                                                <option value="term">Term Loan</option>
+                                                <option value="development">Development Loan</option>
+                                                <option value="development2">Development 2 Loan</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Loan Amount (£)</label>
+                                            <input type="number" id="baseLoanAmount" class="form-control" value="1000000">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Interest Rate (%)</label>
+                                            <input type="number" id="baseInterestRate" class="form-control" value="12" step="0.1">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Loan Term (months)</label>
+                                            <input type="number" id="baseLoanTerm" class="form-control" value="12">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Property Value (£)</label>
+                                            <input type="number" id="basePropertyValue" class="form-control" value="2000000">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Currency</label>
+                                            <select id="baseCurrency" class="form-select">
+                                                <option value="GBP">GBP (£)</option>
+                                                <option value="EUR">EUR (€)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Repayment Option</label>
+                                            <select id="baseRepaymentOption" class="form-select">
+                                                <option value="none">Retained Interest</option>
+                                                <option value="service_only">Service Only</option>
+                                                <option value="service_and_capital">Service + Capital</option>
+                                                <option value="flexible_payment">Flexible Payment</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Interest Type</label>
+                                            <select id="baseInterestType" class="form-select">
+                                                <option value="simple">Simple Interest</option>
+                                                <option value="compound_daily">Compound Daily</option>
+                                                <option value="compound_monthly">Compound Monthly</option>
+                                                <option value="compound_quarterly">Compound Quarterly</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Arrangement Fee (%)</label>
+                                            <input type="number" id="baseArrangementFee" class="form-control" value="2.0" step="0.1">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Legal Fees (£)</label>
+                                            <input type="number" id="baseLegalFees" class="form-control" value="1500">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Site Visit Fee (£)</label>
+                                            <input type="number" id="baseSiteVisitFee" class="form-control" value="500">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Title Insurance Rate (%)</label>
+                                            <input type="number" id="baseTitleInsuranceRate" class="form-control" value="0.01" step="0.001">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Start Date</label>
+                                            <input type="date" id="baseStartDate" class="form-control">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">End Date</label>
+                                            <input type="date" id="baseEndDate" class="form-control">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Payment Timing</label>
+                                            <select id="basePaymentTiming" class="form-select">
+                                                <option value="advance">In Advance</option>
+                                                <option value="arrears">In Arrears</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Payment Frequency</label>
+                                            <select id="basePaymentFrequency" class="form-select">
+                                                <option value="monthly">Monthly</option>
+                                                <option value="quarterly">Quarterly</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Template Buttons -->
+                                <div class="col-md-6">
+                                    <h5>Generate Scenarios</h5>
+                                    <p class="text-muted">Click a template to customize and generate comparison scenarios:</p>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-outline-primary template-btn" onclick="openInterestRateModal()">
+                                            <i class="fas fa-percentage me-2"></i>Compare Interest Rates
+                                        </button>
+                                        <button class="btn btn-outline-primary template-btn" onclick="openLoanTermModal()">
+                                            <i class="fas fa-calendar-alt me-2"></i>Compare Loan Terms
+                                        </button>
+                                        <button class="btn btn-outline-primary template-btn" onclick="openRepaymentModal()">
+                                            <i class="fas fa-credit-card me-2"></i>Compare Repayment Options
+                                        </button>
+                                        <button class="btn btn-outline-primary template-btn" onclick="openLoanAmountModal()">
+                                            <i class="fas fa-pound-sign me-2"></i>Compare Loan Amounts
+                                        </button>
+                                        <button class="btn btn-success template-btn" onclick="openCustomScenarioModal()">
+                                            <i class="fas fa-plus me-2"></i>Create Custom 4-Scenario Comparison
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div class="row loading-spinner" id="loadingSpinner">
+                <div class="col-12 text-center">
+                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Calculating scenarios...</p>
+                </div>
+            </div>
+
+            <!-- Comparison Results -->
+            <div class="row" id="comparisonResults" style="display: none;">
+                <!-- Best Scenario Analysis -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="mb-0"><i class="fas fa-trophy me-2"></i>Best Scenario Analysis</h3>
+                        </div>
+                        <div class="card-body" id="bestScenarioAnalysis">
+                            <!-- Analysis will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3 class="mb-0"><i class="fas fa-table me-2"></i>Detailed Comparison</h3>
+                            <button class="btn btn-primary" onclick="exportComparison()">
+                                <i class="fas fa-download me-2"></i>Export Results
+                            </button>
+                        </div>
+                        <div class="card-body table-responsive">
+                            <table class="table table-hover" id="comparisonTable">
+                                <thead>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <!-- Scenario columns will be added dynamically -->
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Comparison data will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="notificationToast" class="toast" role="alert">
+            <div class="toast-header">
+                <i class="fas fa-bell text-primary me-2"></i>
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="toastMessage">
+                <!-- Notification message will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Interest Rate Comparison Modal -->
+    <div class="modal fade" id="interestRateModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-percentage me-2"></i>Interest Rate Comparison</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Enter four interest rates to compare:</p>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Rate 1 (%)</label>
+                            <input type="number" id="rate1" class="form-control" value="10" step="0.1">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Rate 2 (%)</label>
+                            <input type="number" id="rate2" class="form-control" value="12" step="0.1">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Rate 3 (%)</label>
+                            <input type="number" id="rate3" class="form-control" value="15" step="0.1">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Rate 4 (%)</label>
+                            <input type="number" id="rate4" class="form-control" value="18" step="0.1">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="generateInterestRateComparison()">Generate Comparison</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loan Term Comparison Modal -->
+    <div class="modal fade" id="loanTermModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-calendar-alt me-2"></i>Loan Term Comparison</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Enter four loan terms (in months) to compare:</p>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Term 1 (months)</label>
+                            <input type="number" id="term1" class="form-control" value="6">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Term 2 (months)</label>
+                            <input type="number" id="term2" class="form-control" value="12">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Term 3 (months)</label>
+                            <input type="number" id="term3" class="form-control" value="18">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Term 4 (months)</label>
+                            <input type="number" id="term4" class="form-control" value="24">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="generateLoanTermComparison()">Generate Comparison</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loan Amount Comparison Modal -->
+    <div class="modal fade" id="loanAmountModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-pound-sign me-2"></i>Loan Amount Comparison</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Enter four loan amounts to compare:</p>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Amount 1 (£)</label>
+                            <input type="number" id="amount1" class="form-control" value="500000">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Amount 2 (£)</label>
+                            <input type="number" id="amount2" class="form-control" value="750000">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Amount 3 (£)</label>
+                            <input type="number" id="amount3" class="form-control" value="1000000">
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Amount 4 (£)</label>
+                            <input type="number" id="amount4" class="form-control" value="1500000">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="generateLoanAmountComparison()">Generate Comparison</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Repayment Options Modal -->
+    <div class="modal fade" id="repaymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-credit-card me-2"></i>Repayment Options Comparison</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Select four repayment options to compare:</p>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Option 1</label>
+                            <select id="repayment1" class="form-select">
+                                <option value="none">Retained Interest</option>
+                                <option value="service_only">Service Only</option>
+                                <option value="service_and_capital">Service + Capital</option>
+                                <option value="flexible_payment">Flexible Payment</option>
+                            </select>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Option 2</label>
+                            <select id="repayment2" class="form-select">
+                                <option value="none">Retained Interest</option>
+                                <option value="service_only" selected>Service Only</option>
+                                <option value="service_and_capital">Service + Capital</option>
+                                <option value="flexible_payment">Flexible Payment</option>
+                            </select>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Option 3</label>
+                            <select id="repayment3" class="form-select">
+                                <option value="none">Retained Interest</option>
+                                <option value="service_only">Service Only</option>
+                                <option value="service_and_capital" selected>Service + Capital</option>
+                                <option value="flexible_payment">Flexible Payment</option>
+                            </select>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Option 4</label>
+                            <select id="repayment4" class="form-select">
+                                <option value="none">Retained Interest</option>
+                                <option value="service_only">Service Only</option>
+                                <option value="service_and_capital">Service + Capital</option>
+                                <option value="flexible_payment" selected>Flexible Payment</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="generateRepaymentComparison()">Generate Comparison</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom 4-Scenario Modal -->
+    <div class="modal fade" id="customScenarioModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Create Custom 4-Scenario Comparison</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Define four completely custom scenarios to compare:</p>
+                    
+                    <!-- Scenario Tabs -->
+                    <ul class="nav nav-tabs" id="scenarioTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="scenario1-tab" data-bs-toggle="tab" data-bs-target="#scenario1" type="button" role="tab">Scenario 1</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="scenario2-tab" data-bs-toggle="tab" data-bs-target="#scenario2" type="button" role="tab">Scenario 2</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="scenario3-tab" data-bs-toggle="tab" data-bs-target="#scenario3" type="button" role="tab">Scenario 3</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="scenario4-tab" data-bs-toggle="tab" data-bs-target="#scenario4" type="button" role="tab">Scenario 4</button>
+                        </li>
+                    </ul>
+                    
+                    <!-- Tab Content -->
+                    <div class="tab-content mt-3" id="scenarioTabContent">
+                        <!-- Scenario 1 -->
+                        <div class="tab-pane fade show active" id="scenario1" role="tabpanel">
+                            <div id="scenario1Form"></div>
+                        </div>
+                        <!-- Scenario 2 -->
+                        <div class="tab-pane fade" id="scenario2" role="tabpanel">
+                            <div id="scenario2Form"></div>
+                        </div>
+                        <!-- Scenario 3 -->
+                        <div class="tab-pane fade" id="scenario3" role="tabpanel">
+                            <div id="scenario3Form"></div>
+                        </div>
+                        <!-- Scenario 4 -->
+                        <div class="tab-pane fade" id="scenario4" role="tabpanel">
+                            <div id="scenario4Form"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="generateCustomScenarios()">Generate Custom Comparison</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentComparison = null;
+        
+        // Load parameters from URL on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadParametersFromURL();
+        });
+        
+        function loadParametersFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Populate form fields with URL parameters if they exist
+            if (urlParams.get('loan_type')) {
+                document.getElementById('baseLoanType').value = urlParams.get('loan_type');
+            }
+            if (urlParams.get('gross_amount')) {
+                document.getElementById('baseLoanAmount').value = urlParams.get('gross_amount');
+            }
+            if (urlParams.get('annual_rate')) {
+                document.getElementById('baseInterestRate').value = urlParams.get('annual_rate');
+            }
+            if (urlParams.get('loan_term')) {
+                document.getElementById('baseLoanTerm').value = urlParams.get('loan_term');
+            }
+            if (urlParams.get('property_value')) {
+                document.getElementById('basePropertyValue').value = urlParams.get('property_value');
+            }
+            if (urlParams.get('currency')) {
+                document.getElementById('baseCurrency').value = urlParams.get('currency');
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('comparisonResults').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSpinner').style.display = 'none';
+        }
+
+        function showNotification(message, type = 'info') {
+            const toast = document.getElementById('notificationToast');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = message;
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        }
+
+        function getBaseParameters() {
+            // Get parameters from URL first (if navigated from calculator)
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // If parameters exist in URL, use them; otherwise use form values
+            return {
+                loan_type: urlParams.get('loan_type') || document.getElementById('baseLoanType').value,
+                gross_amount: parseFloat(urlParams.get('gross_amount') || document.getElementById('baseLoanAmount').value),
+                annual_rate: parseFloat(urlParams.get('annual_rate') || document.getElementById('baseInterestRate').value),
+                loan_term: parseInt(urlParams.get('loan_term') || document.getElementById('baseLoanTerm').value),
+                property_value: parseFloat(urlParams.get('property_value') || document.getElementById('basePropertyValue').value),
+                currency: urlParams.get('currency') || document.getElementById('baseCurrency').value,
+                repayment_option: urlParams.get('repayment_option') || document.getElementById('baseRepaymentOption')?.value || 'none',
+                interest_type: urlParams.get('interest_type') || document.getElementById('baseInterestType')?.value || 'simple',
+                arrangement_fee_rate: parseFloat(urlParams.get('arrangement_fee_rate') || document.getElementById('baseArrangementFee')?.value || '2.0'),
+                legal_fees: parseFloat(urlParams.get('legal_fees') || document.getElementById('baseLegalFees')?.value || '1500'),
+                site_visit_fee: parseFloat(urlParams.get('site_visit_fee') || document.getElementById('baseSiteVisitFee')?.value || '500'),
+                title_insurance_rate: parseFloat(urlParams.get('title_insurance_rate') || document.getElementById('baseTitleInsuranceRate')?.value || '0.01'),
+                start_date: urlParams.get('start_date') || document.getElementById('baseStartDate')?.value || '',
+                end_date: urlParams.get('end_date') || document.getElementById('baseEndDate')?.value || '',
+                payment_timing: urlParams.get('payment_timing') || document.getElementById('basePaymentTiming')?.value || 'arrears',
+                payment_frequency: urlParams.get('payment_frequency') || document.getElementById('basePaymentFrequency')?.value || 'monthly',
+                amount_input_type: urlParams.get('amount_input_type') || 'gross',
+                rate_input_type: urlParams.get('rate_input_type') || 'annual'
+            };
+        }
+
+        // Modal functions
+        function openInterestRateModal() {
+            const modal = new bootstrap.Modal(document.getElementById('interestRateModal'));
+            modal.show();
+        }
+
+        function openLoanTermModal() {
+            const modal = new bootstrap.Modal(document.getElementById('loanTermModal'));
+            modal.show();
+        }
+
+        function openLoanAmountModal() {
+            const modal = new bootstrap.Modal(document.getElementById('loanAmountModal'));
+            modal.show();
+        }
+
+        function openRepaymentModal() {
+            const modal = new bootstrap.Modal(document.getElementById('repaymentModal'));
+            modal.show();
+        }
+
+        function openCustomScenarioModal() {
+            // Generate forms for all 4 scenarios
+            for (let i = 1; i <= 4; i++) {
+                generateScenarioForm(i);
+            }
+            const modal = new bootstrap.Modal(document.getElementById('customScenarioModal'));
+            modal.show();
+        }
+
+        // Generate Interest Rate Comparison
+        async function generateInterestRateComparison() {
+            const rates = [
+                parseFloat(document.getElementById('rate1').value),
+                parseFloat(document.getElementById('rate2').value),
+                parseFloat(document.getElementById('rate3').value),
+                parseFloat(document.getElementById('rate4').value)
+            ];
+            
+            await generateCustomTemplate('interest_rates', rates);
+            bootstrap.Modal.getInstance(document.getElementById('interestRateModal')).hide();
+        }
+
+        // Generate Loan Term Comparison
+        async function generateLoanTermComparison() {
+            const terms = [
+                parseInt(document.getElementById('term1').value),
+                parseInt(document.getElementById('term2').value),
+                parseInt(document.getElementById('term3').value),
+                parseInt(document.getElementById('term4').value)
+            ];
+            
+            await generateCustomTemplate('loan_terms', terms);
+            bootstrap.Modal.getInstance(document.getElementById('loanTermModal')).hide();
+        }
+
+        // Generate Loan Amount Comparison
+        async function generateLoanAmountComparison() {
+            const amounts = [
+                parseFloat(document.getElementById('amount1').value),
+                parseFloat(document.getElementById('amount2').value),
+                parseFloat(document.getElementById('amount3').value),
+                parseFloat(document.getElementById('amount4').value)
+            ];
+            
+            await generateCustomTemplate('loan_amounts', amounts);
+            bootstrap.Modal.getInstance(document.getElementById('loanAmountModal')).hide();
+        }
+
+        // Generate Repayment Options Comparison
+        async function generateRepaymentComparison() {
+            const options = [
+                document.getElementById('repayment1').value,
+                document.getElementById('repayment2').value,
+                document.getElementById('repayment3').value,
+                document.getElementById('repayment4').value
+            ];
+            
+            await generateCustomTemplate('repayment_options', options);
+            bootstrap.Modal.getInstance(document.getElementById('repaymentModal')).hide();
+        }
+
+        // Generate custom template with user values
+        async function generateCustomTemplate(templateType, values) {
+            showLoading();
+            
+            try {
+                const baseParams = getBaseParameters();
+                
+                // Create scenarios based on template type and user values
+                let scenarios = [];
+                
+                if (templateType === 'interest_rates') {
+                    scenarios = values.map((rate, index) => ({
+                        name: `${rate}% Interest Rate`,
+                        parameters: { ...baseParams, annual_rate: rate }
+                    }));
+                } else if (templateType === 'loan_terms') {
+                    scenarios = values.map((term, index) => ({
+                        name: `${term}-Month Term`,
+                        parameters: { ...baseParams, loan_term: term }
+                    }));
+                } else if (templateType === 'loan_amounts') {
+                    scenarios = values.map((amount, index) => ({
+                        name: `£${(amount/1000000).toFixed(1)}M Loan`,
+                        parameters: { ...baseParams, gross_amount: amount }
+                    }));
+                } else if (templateType === 'repayment_options') {
+                    const repaymentNames = {
+                        'none': 'Retained Interest',
+                        'service_only': 'Service Only',
+                        'service_and_capital': 'Service + Capital',
+                        'flexible_payment': 'Flexible Payment'
+                    };
+                    scenarios = values.map((option, index) => ({
+                        name: repaymentNames[option],
+                        parameters: { ...baseParams, repayment_option: option }
+                    }));
+                }
+                
+                await createScenarioComparison(scenarios);
+                
+            } catch (error) {
+                console.error('Template generation failed:', error);
+                showNotification('Failed to generate template: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function createScenarioComparison(scenarios) {
+            try {
+                const response = await fetch('/api/scenario-comparison/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ scenarios: scenarios })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentComparison = data;
+                    displayComparisonResults(data);
+                    showNotification('Scenario comparison generated successfully!', 'success');
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                console.error('Scenario comparison failed:', error);
+                showNotification('Failed to create comparison: ' + error.message, 'error');
+            }
+        }
+
+        function displayComparisonResults(data) {
+            displayBestScenarioAnalysis(data.best_scenario_analysis);
+            displayComparisonTable(data.comparison_table);
+            document.getElementById('comparisonResults').style.display = 'block';
+        }
+
+        function displayBestScenarioAnalysis(analysis) {
+            const container = document.getElementById('bestScenarioAnalysis');
+            
+            let html = '<div class="row">';
+            
+            if (analysis.lowest_total_cost) {
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-success">
+                            <div class="card-body">
+                                <h5 class="card-title text-success">
+                                    <i class="fas fa-coins me-2"></i>Lowest Total Cost
+                                </h5>
+                                <p class="card-text">
+                                    <strong>${analysis.lowest_total_cost.scenario}</strong><br>
+                                    Total Cost: £${analysis.lowest_total_cost.total_cost.toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (analysis.highest_net_advance) {
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-info">
+                            <div class="card-body">
+                                <h5 class="card-title text-info">
+                                    <i class="fas fa-arrow-up me-2"></i>Highest Net Advance
+                                </h5>
+                                <p class="card-text">
+                                    <strong>${analysis.highest_net_advance.scenario}</strong><br>
+                                    Net Advance: £${analysis.highest_net_advance.net_advance.toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (analysis.lowest_interest) {
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-primary">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">
+                                    <i class="fas fa-percentage me-2"></i>Lowest Interest
+                                </h5>
+                                <p class="card-text">
+                                    <strong>${analysis.lowest_interest.scenario}</strong><br>
+                                    Total Interest: £${analysis.lowest_interest.interest.toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (analysis.best_ltv) {
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-warning">
+                            <div class="card-body">
+                                <h5 class="card-title text-warning">
+                                    <i class="fas fa-chart-pie me-2"></i>Best LTV
+                                </h5>
+                                <p class="card-text">
+                                    <strong>${analysis.best_ltv.scenario}</strong><br>
+                                    End LTV: ${analysis.best_ltv.ltv}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function displayComparisonTable(comparisonTable) {
+            const table = document.getElementById('comparisonTable');
+            const thead = table.querySelector('thead tr');
+            const tbody = table.querySelector('tbody');
+            
+            // Clear existing content
+            thead.innerHTML = '<th>Metric</th>';
+            tbody.innerHTML = '';
+            
+            if (comparisonTable.length === 0) return;
+            
+            // Add scenario columns to header
+            const scenarios = comparisonTable[0].scenarios;
+            scenarios.forEach(scenario => {
+                thead.innerHTML += `<th class="text-center">${scenario.name}</th>`;
+            });
+            
+            // Add comparison rows
+            comparisonTable.forEach(row => {
+                let rowHtml = `<td><strong>${row.metric}</strong></td>`;
+                
+                row.scenarios.forEach(scenario => {
+                    const valueClass = scenario.value.includes('£') && scenario.value.includes('-') ? 'metric-negative' : 
+                                     scenario.value.includes('savings') ? 'metric-positive' : 'metric-value';
+                    rowHtml += `<td class="text-center ${valueClass}">${scenario.value}</td>`;
+                });
+                
+                const tableRow = document.createElement('tr');
+                tableRow.innerHTML = rowHtml;
+                tbody.appendChild(tableRow);
+            });
+        }
+
+        async function exportComparison() {
+            if (!currentComparison) {
+                showNotification('No comparison data to export', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/scenario-comparison/export');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Create and download JSON file
+                    const blob = new Blob([data.export_data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `scenario_comparison_${new Date().toISOString().split('T')[0]}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    showNotification('Comparison data exported successfully!', 'success');
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                console.error('Export failed:', error);
+                showNotification('Failed to export comparison: ' + error.message, 'error');
+            }
+        }
+
+        // Generate scenario form for custom modal
+        function generateScenarioForm(scenarioNumber) {
+            const formHtml = `
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Scenario ${scenarioNumber} Configuration</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Scenario Name</label>
+                                <input type="text" id="customName${scenarioNumber}" class="form-control" value="Scenario ${scenarioNumber}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Loan Type</label>
+                                <select id="customLoanType${scenarioNumber}" class="form-select">
+                                    <option value="bridge">Bridge Loan</option>
+                                    <option value="term">Term Loan</option>
+                                    <option value="development">Development Loan</option>
+                                    <option value="development2">Development 2 Loan</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Currency</label>
+                                <select id="customCurrency${scenarioNumber}" class="form-select">
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Loan Amount (£)</label>
+                                <input type="number" id="customLoanAmount${scenarioNumber}" class="form-control" value="1000000">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Interest Rate (%)</label>
+                                <input type="number" id="customInterestRate${scenarioNumber}" class="form-control" value="12" step="0.1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Loan Term (months)</label>
+                                <input type="number" id="customLoanTerm${scenarioNumber}" class="form-control" value="12">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Property Value (£)</label>
+                                <input type="number" id="customPropertyValue${scenarioNumber}" class="form-control" value="2000000">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Repayment Option</label>
+                                <select id="customRepayment${scenarioNumber}" class="form-select">
+                                    <option value="none">Retained Interest</option>
+                                    <option value="service_only">Service Only</option>
+                                    <option value="service_and_capital">Service + Capital</option>
+                                    <option value="flexible_payment">Flexible Payment</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Interest Type</label>
+                                <select id="customInterestType${scenarioNumber}" class="form-select">
+                                    <option value="simple">Simple Interest</option>
+                                    <option value="compound_daily">Compound Daily</option>
+                                    <option value="compound_monthly">Compound Monthly</option>
+                                    <option value="compound_quarterly">Compound Quarterly</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Arrangement Fee (%)</label>
+                                <input type="number" id="customArrangementFee${scenarioNumber}" class="form-control" value="2.0" step="0.1">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Legal Fees (£)</label>
+                                <input type="number" id="customLegalFees${scenarioNumber}" class="form-control" value="1500">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Site Visit Fee (£)</label>
+                                <input type="number" id="customSiteVisitFee${scenarioNumber}" class="form-control" value="500">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Title Insurance Rate (%)</label>
+                                <input type="number" id="customTitleInsuranceRate${scenarioNumber}" class="form-control" value="0.01" step="0.001">
+                            </div>
+                        </div>
+                        
+                        <!-- Additional Configuration Options -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Amount Input Type</label>
+                                <select id="customAmountInputType${scenarioNumber}" class="form-select">
+                                    <option value="gross">Gross Amount</option>
+                                    <option value="net">Net Amount</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Rate Input Type</label>
+                                <select id="customRateInputType${scenarioNumber}" class="form-select">
+                                    <option value="annual">Annual Rate</option>
+                                    <option value="monthly">Monthly Rate</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Payment Timing</label>
+                                <select id="customPaymentTiming${scenarioNumber}" class="form-select">
+                                    <option value="advance">In Advance</option>
+                                    <option value="arrears">In Arrears</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Payment Frequency</label>
+                                <select id="customPaymentFrequency${scenarioNumber}" class="form-select">
+                                    <option value="monthly">Monthly</option>
+                                    <option value="quarterly">Quarterly</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Start Date</label>
+                                <input type="date" id="customStartDate${scenarioNumber}" class="form-control">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">End Date</label>
+                                <input type="date" id="customEndDate${scenarioNumber}" class="form-control">
+                            </div>
+                        </div>
+                        
+                        <!-- Additional Parameters for Different Repayment Types -->
+                        <div id="customAdditionalParams${scenarioNumber}" class="row" style="display: none;">
+                            <!-- Payment Timing Section (shown/hidden by logic) -->
+                            <div id="customPaymentTimingDiv${scenarioNumber}" class="col-12 mb-3" style="display: none;">
+                                <h6 class="mb-3">Payment Parameters</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Payment Timing</label>
+                                        <div class="btn-group w-100" role="group">
+                                            <input type="radio" class="btn-check" name="customPaymentTimingRadio${scenarioNumber}" id="customPaymentInAdvance${scenarioNumber}" value="advance" checked>
+                                            <label class="btn btn-outline-primary" for="customPaymentInAdvance${scenarioNumber}">Advance</label>
+                                            <input type="radio" class="btn-check" name="customPaymentTimingRadio${scenarioNumber}" id="customPaymentInArrears${scenarioNumber}" value="arrears">
+                                            <label class="btn btn-outline-primary" for="customPaymentInArrears${scenarioNumber}">Arrears</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Payment Frequency</label>
+                                        <div class="btn-group w-100" role="group">
+                                            <input type="radio" class="btn-check" name="customPaymentFrequencyRadio${scenarioNumber}" id="customPaymentMonthly${scenarioNumber}" value="monthly" checked>
+                                            <label class="btn btn-outline-primary" for="customPaymentMonthly${scenarioNumber}">Monthly</label>
+                                            <input type="radio" class="btn-check" name="customPaymentFrequencyRadio${scenarioNumber}" id="customPaymentQuarterly${scenarioNumber}" value="quarterly">
+                                            <label class="btn btn-outline-primary" for="customPaymentQuarterly${scenarioNumber}">Quarterly</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3" id="customCapitalRepaymentDiv${scenarioNumber}" style="display: none;">
+                                <label class="form-label">Capital Repayment Amount (£)</label>
+                                <input type="number" id="customCapitalRepayment${scenarioNumber}" class="form-control" value="10000">
+                            </div>
+                            <div class="col-md-4 mb-3" id="customFlexiblePaymentDiv${scenarioNumber}" style="display: none;">
+                                <label class="form-label">Flexible Payment Amount (£)</label>
+                                <input type="number" id="customFlexiblePayment${scenarioNumber}" class="form-control" value="20000">
+                            </div>
+                            <div class="col-md-4 mb-3" id="customDay1AdvanceDiv${scenarioNumber}" style="display: none;">
+                                <label class="form-label">Day 1 Net Advance (£)</label>
+                                <input type="number" id="customDay1Advance${scenarioNumber}" class="form-control" value="100000">
+                            </div>
+                        </div>
+                        
+                        <!-- Development Loan Tranches Section -->
+                        <div id="customTranchesSection${scenarioNumber}" class="mt-3" style="display: none;">
+                            <h6 class="border-bottom pb-2">Development Loan Tranches</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Number of Tranches</label>
+                                    <input type="number" id="customTrancheCount${scenarioNumber}" class="form-control" value="3" min="1" max="10" onchange="updateCustomTranches(${scenarioNumber})">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tranche Mode</label>
+                                    <select id="customTrancheMode${scenarioNumber}" class="form-select" onchange="updateCustomTrancheMode(${scenarioNumber})">
+                                        <option value="auto">Auto-Generate Equal Amounts</option>
+                                        <option value="manual">Manual Entry</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="customTrancheInputs${scenarioNumber}"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById(`scenario${scenarioNumber}Form`).innerHTML = formHtml;
+            
+            // Add event listeners for dynamic field management
+            const loanTypeSelect = document.getElementById(`customLoanType${scenarioNumber}`);
+            const repaymentSelect = document.getElementById(`customRepayment${scenarioNumber}`);
+            
+            loanTypeSelect.addEventListener('change', function() {
+                updateCustomRepaymentOptions(scenarioNumber);
+                toggleCustomTrancheSection(scenarioNumber, this.value);
+                toggleCustomAdditionalParams(scenarioNumber);
+            });
+            
+            repaymentSelect.addEventListener('change', function() {
+                toggleCustomAdditionalParams(scenarioNumber);
+            });
+            
+            // Set default start date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById(`customStartDate${scenarioNumber}`).value = today;
+            
+            // Calculate default end date based on loan term
+            calculateCustomEndDate(scenarioNumber);
+            
+            // Add end date calculation listener
+            const loanTermSelect = document.getElementById(`customLoanTerm${scenarioNumber}`);
+            const startDateInput = document.getElementById(`customStartDate${scenarioNumber}`);
+            
+            loanTermSelect.addEventListener('change', function() {
+                calculateCustomEndDate(scenarioNumber);
+            });
+            
+            startDateInput.addEventListener('change', function() {
+                calculateCustomEndDate(scenarioNumber);
+            });
+            
+            // Initialize sections based on default values
+            updateCustomRepaymentOptions(scenarioNumber);
+            toggleCustomTrancheSection(scenarioNumber, loanTypeSelect.value);
+            toggleCustomAdditionalParams(scenarioNumber);
+        }
+
+        // Toggle custom tranche section based on loan type
+        function toggleCustomTrancheSection(scenarioNumber, loanType) {
+            try {
+                const trancheSection = document.getElementById(`customTranchesSection${scenarioNumber}`);
+                if (!trancheSection) return;
+                
+                if (loanType === 'development' || loanType === 'development2') {
+                    trancheSection.style.display = 'block';
+                    updateCustomTranches(scenarioNumber);
+                } else {
+                    trancheSection.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error in toggleCustomTrancheSection:', error);
+            }
+        }
+
+        // Update custom tranche inputs
+        function updateCustomTranches(scenarioNumber) {
+            try {
+                const trancheCountElement = document.getElementById(`customTrancheCount${scenarioNumber}`);
+                const trancheModeElement = document.getElementById(`customTrancheMode${scenarioNumber}`);
+                const trancheInputsContainer = document.getElementById(`customTrancheInputs${scenarioNumber}`);
+                
+                if (!trancheCountElement || !trancheModeElement || !trancheInputsContainer) {
+                    console.warn(`Missing tranche elements for scenario ${scenarioNumber}`);
+                    return;
+                }
+                
+                const trancheCount = parseInt(trancheCountElement.value);
+                const trancheMode = trancheModeElement.value;
+            
+            let trancheHtml = '';
+            
+            if (trancheMode === 'manual') {
+                for (let i = 0; i < trancheCount; i++) {
+                    trancheHtml += `
+                        <div class="row mb-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Tranche ${i + 1} Amount (£)</label>
+                                <input type="number" id="customTrancheAmount${scenarioNumber}_${i}" class="form-control" value="70000">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Release Date</label>
+                                <input type="date" id="customTrancheDate${scenarioNumber}_${i}" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Interest Rate (%)</label>
+                                <input type="number" id="customTrancheRate${scenarioNumber}_${i}" class="form-control" value="12" step="0.1">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Description</label>
+                                <input type="text" id="customTrancheDesc${scenarioNumber}_${i}" class="form-control" value="Tranche ${i + 1}">
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                trancheHtml = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Tranches will be auto-generated with equal amounts based on the total loan amount divided by ${trancheCount} tranches.
+                    </div>
+                `;
+            }
+            
+                trancheInputsContainer.innerHTML = trancheHtml;
+            } catch (error) {
+                console.error('Error in updateCustomTranches:', error);
+            }
+        }
+
+        // Update custom tranche mode
+        function updateCustomTrancheMode(scenarioNumber) {
+            updateCustomTranches(scenarioNumber);
+        }
+
+        // Calculate end date for custom scenario
+        function calculateCustomEndDate(scenarioNumber) {
+            try {
+                const startDateElement = document.getElementById(`customStartDate${scenarioNumber}`);
+                const loanTermElement = document.getElementById(`customLoanTerm${scenarioNumber}`);
+                
+                if (!startDateElement || !loanTermElement) {
+                    console.warn(`Missing date elements for scenario ${scenarioNumber}`);
+                    return;
+                }
+                
+                const startDate = startDateElement.value;
+                const loanTerm = parseInt(loanTermElement.value);
+            
+                if (startDate && loanTerm && loanTerm > 0) {
+                const start = new Date(startDate);
+                
+                // Calculate exact days for consistent loan terms
+                let daysToAdd;
+                switch (loanTerm) {
+                    case 6:
+                        daysToAdd = 181; // 6 months = 181 days
+                        break;
+                    case 12:
+                        daysToAdd = 365; // 12 months = exactly 365 days
+                        break;
+                    case 18:
+                        daysToAdd = 548; // 18 months = 548 days
+                        break;
+                    case 24:
+                        daysToAdd = 730; // 24 months = exactly 730 days
+                        break;
+                    default:
+                        // For other terms, use month-based calculation
+                        const end = new Date(start);
+                        end.setMonth(end.getMonth() + loanTerm);
+                        end.setDate(end.getDate() - 1);
+                        const endDateInput = document.getElementById(`customEndDate${scenarioNumber}`);
+                        endDateInput.value = end.toISOString().split('T')[0];
+                        return;
+                }
+                
+                // Add the exact number of days
+                const end = new Date(start);
+                end.setDate(end.getDate() + daysToAdd);
+                
+                const endDateInput = document.getElementById(`customEndDate${scenarioNumber}`);
+                if (endDateInput) {
+                    endDateInput.value = end.toISOString().split('T')[0];
+                }
+                }
+            } catch (error) {
+                console.error('Error in calculateCustomEndDate:', error);
+            }
+        }
+
+        // Update repayment options based on loan type - EXACT same logic as calculator.js
+        function updateCustomRepaymentOptions(scenarioNumber) {
+            try {
+                const loanTypeElement = document.getElementById(`customLoanType${scenarioNumber}`);
+                const repaymentSelect = document.getElementById(`customRepayment${scenarioNumber}`);
+                
+                if (!loanTypeElement || !repaymentSelect) {
+                    console.warn(`Loan type or repayment option elements not found for scenario ${scenarioNumber}`);
+                    return;
+                }
+                
+                const loanType = loanTypeElement.value;
+                console.log(`Updating repayment options for scenario ${scenarioNumber}, loan type:`, loanType);
+                
+                // Store current selection to preserve it if possible
+                const currentValue = repaymentSelect.value;
+                
+                // Clear existing options
+                repaymentSelect.innerHTML = '';
+                
+                let options = [];
+                
+                if (loanType === 'bridge') {
+                    options = [
+                        { value: 'none', text: 'Retained Interest (Interest Only)' },
+                        { value: 'service_only', text: 'Service Only (Interest Payments)' },
+                        { value: 'service_and_capital', text: 'Service + Capital (Principal & Interest)' },
+                        { value: 'capital_payment_only', text: 'Capital Payment Only (Interest Retained)' },
+                        { value: 'flexible_payment', text: 'Flexible Payment Schedule' }
+                    ];
+                } else if (loanType === 'term') {
+                    options = [
+                        { value: 'none', text: 'Retained Interest (Interest Only)' },
+                        { value: 'service_only', text: 'Service Only (Interest Payments)' },
+                        { value: 'service_and_capital', text: 'Service + Capital (Principal & Interest)' },
+                        { value: 'capital_payment_only', text: 'Capital Payment Only (Interest Retained)' },
+                        { value: 'flexible_payment', text: 'Flexible Payment Schedule' }
+                    ];
+                } else if (loanType === 'development') {
+                    options = [
+                        { value: 'none', text: 'Retained Interest (Interest Only)' }
+                    ];
+                } else if (loanType === 'development2') {
+                    options = [
+                        { value: 'none', text: 'Retained Interest (Excel Goal Seek)' }
+                    ];
+                }
+                
+                // Add options to select
+                options.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option.value;
+                    optionElement.textContent = option.text;
+                    repaymentSelect.appendChild(optionElement);
+                });
+                
+                // Try to preserve the previous selection if it exists in new options
+                const validOption = options.find(opt => opt.value === currentValue);
+                if (validOption) {
+                    repaymentSelect.value = currentValue;
+                } else {
+                    repaymentSelect.value = options[0].value; // Default to first option
+                }
+                
+                console.log(`Repayment options updated successfully for scenario ${scenarioNumber}`);
+            } catch (error) {
+                console.error(`Error in updateCustomRepaymentOptions for scenario ${scenarioNumber}:`, error);
+            }
+        }
+
+        // Toggle additional parameters based on loan type and repayment option - EXACT same logic as calculator.js
+        function toggleCustomAdditionalParams(scenarioNumber) {
+            try {
+                const loanTypeElement = document.getElementById(`customLoanType${scenarioNumber}`);
+                const repaymentOptionElement = document.getElementById(`customRepayment${scenarioNumber}`);
+                
+                if (!loanTypeElement || !repaymentOptionElement) {
+                    console.warn(`Required elements not found for scenario ${scenarioNumber}`);
+                    return;
+                }
+                
+                const loanType = loanTypeElement.value;
+                const repaymentOption = repaymentOptionElement.value;
+                
+                console.log(`Updating additional params for scenario ${scenarioNumber}:`, loanType, repaymentOption);
+                console.log(`Day 1 advance section element for scenario ${scenarioNumber}:`, day1AdvanceSection);
+                
+                // Get all the sections
+                const additionalParamsContainer = document.getElementById(`customAdditionalParams${scenarioNumber}`);
+                const paymentTimingSection = document.getElementById(`customPaymentTimingDiv${scenarioNumber}`);
+                const capitalRepaymentSection = document.getElementById(`customCapitalRepaymentDiv${scenarioNumber}`);
+                const flexiblePaymentSection = document.getElementById(`customFlexiblePaymentDiv${scenarioNumber}`);
+                const day1AdvanceSection = document.getElementById(`customDay1AdvanceDiv${scenarioNumber}`);
+                
+                let showAdditionalParams = false;
+                
+                // EXACT LOGIC FROM CALCULATOR.JS:
+                
+                // Show payment timing for service only, capital+interest, capital payment only, flexible payment options
+                // AND for all development loans (development, development2) - they always show payment timing
+                if (paymentTimingSection) {
+                    if (repaymentOption === 'service_only' || repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment' || loanType === 'development' || loanType === 'development2') {
+                        console.log(`Showing payment timing for scenario ${scenarioNumber}, loan type: ${loanType}, repayment: ${repaymentOption}`);
+                        paymentTimingSection.style.display = 'block';
+                        showAdditionalParams = true;
+                    } else {
+                        console.log(`Hiding payment timing for scenario ${scenarioNumber}, loan type: ${loanType}, repayment: ${repaymentOption}`);
+                        paymentTimingSection.style.display = 'none';
+                    }
+                }
+                
+                // Show capital repayment section for service + capital and capital payment only options
+                if (capitalRepaymentSection) {
+                    if (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only') {
+                        capitalRepaymentSection.style.display = 'block';
+                        showAdditionalParams = true;
+                    } else {
+                        capitalRepaymentSection.style.display = 'none';
+                    }
+                }
+                
+                // Show flexible payment section for flexible payment option
+                if (flexiblePaymentSection) {
+                    if (repaymentOption === 'flexible_payment') {
+                        flexiblePaymentSection.style.display = 'block';
+                        showAdditionalParams = true;
+                    } else {
+                        flexiblePaymentSection.style.display = 'none';
+                    }
+                }
+                
+                // Show Day 1 advance for development loans (both types)
+                if (day1AdvanceSection) {
+                    if (loanType === 'development' || loanType === 'development2') {
+                        console.log(`Showing Day 1 advance for scenario ${scenarioNumber}, loan type: ${loanType}`);
+                        day1AdvanceSection.style.display = 'block';
+                        showAdditionalParams = true;
+                    } else {
+                        console.log(`Hiding Day 1 advance for scenario ${scenarioNumber}, loan type: ${loanType}`);
+                        day1AdvanceSection.style.display = 'none';
+                    }
+                } else {
+                    console.warn(`Day 1 advance section not found for scenario ${scenarioNumber}`);
+                }
+                
+                // Show/hide the additional parameters container - EXACT LOGIC FROM CALCULATOR.JS
+                if (additionalParamsContainer) {
+                    if (showAdditionalParams || loanType === 'development' || loanType === 'development2') {
+                        console.log(`Showing additional params container for scenario ${scenarioNumber}, showAdditionalParams: ${showAdditionalParams}, loanType: ${loanType}`);
+                        additionalParamsContainer.style.display = 'block';
+                    } else {
+                        console.log(`Hiding additional params container for scenario ${scenarioNumber}, showAdditionalParams: ${showAdditionalParams}, loanType: ${loanType}`);
+                        additionalParamsContainer.style.display = 'none';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error in toggleCustomAdditionalParams:', error);
+            }
+        }
+
+        // Generate Custom Scenarios
+        async function generateCustomScenarios() {
+            showLoading();
+            
+            try {
+                const scenarios = [];
+                
+                for (let i = 1; i <= 4; i++) {
+                    const loanType = document.getElementById(`customLoanType${i}`).value;
+                    const scenario = {
+                        name: document.getElementById(`customName${i}`).value,
+                        parameters: {
+                            loan_type: loanType,
+                            currency: document.getElementById(`customCurrency${i}`).value,
+                            gross_amount: parseFloat(document.getElementById(`customLoanAmount${i}`).value),
+                            annual_rate: parseFloat(document.getElementById(`customInterestRate${i}`).value),
+                            loan_term: parseInt(document.getElementById(`customLoanTerm${i}`).value),
+                            property_value: parseFloat(document.getElementById(`customPropertyValue${i}`).value),
+                            repayment_option: document.getElementById(`customRepayment${i}`).value,
+                            interest_type: document.getElementById(`customInterestType${i}`).value,
+                            arrangement_fee_rate: parseFloat(document.getElementById(`customArrangementFee${i}`).value),
+                            legal_fees: parseFloat(document.getElementById(`customLegalFees${i}`).value),
+                            site_visit_fee: parseFloat(document.getElementById(`customSiteVisitFee${i}`).value),
+                            title_insurance_rate: parseFloat(document.getElementById(`customTitleInsuranceRate${i}`).value),
+                            amount_input_type: document.getElementById(`customAmountInputType${i}`).value,
+                            rate_input_type: document.getElementById(`customRateInputType${i}`).value,
+                            payment_timing: document.querySelector(`input[name="customPaymentTimingRadio${i}"]:checked`)?.value || 'advance',
+                            payment_frequency: document.querySelector(`input[name="customPaymentFrequencyRadio${i}"]:checked`)?.value || 'monthly',
+                            start_date: document.getElementById(`customStartDate${i}`).value,
+                            end_date: document.getElementById(`customEndDate${i}`).value,
+                            capital_repayment: parseFloat(document.getElementById(`customCapitalRepayment${i}`).value) || 0,
+                            flexible_payment: parseFloat(document.getElementById(`customFlexiblePayment${i}`).value) || 0,
+                            day1_advance: parseFloat(document.getElementById(`customDay1Advance${i}`).value) || 100000
+                        }
+                    };
+                    
+                    // Add tranche data for development loans
+                    if (loanType === 'development' || loanType === 'development2') {
+                        const trancheMode = document.getElementById(`customTrancheMode${i}`).value;
+                        const trancheCount = parseInt(document.getElementById(`customTrancheCount${i}`).value);
+                        
+                        if (trancheMode === 'manual') {
+                            const tranches = [];
+                            for (let j = 0; j < trancheCount; j++) {
+                                const amountField = document.getElementById(`customTrancheAmount${i}_${j}`);
+                                const dateField = document.getElementById(`customTrancheDate${i}_${j}`);
+                                const rateField = document.getElementById(`customTrancheRate${i}_${j}`);
+                                const descField = document.getElementById(`customTrancheDesc${i}_${j}`);
+                                
+                                if (amountField && amountField.value) {
+                                    tranches.push({
+                                        amount: parseFloat(amountField.value),
+                                        date: dateField ? dateField.value : '',
+                                        rate: rateField ? parseFloat(rateField.value) : scenario.parameters.annual_rate,
+                                        description: descField ? descField.value : `Tranche ${j + 1}`
+                                    });
+                                }
+                            }
+                            scenario.parameters.tranches = tranches;
+                        } else {
+                            // Auto-generate tranches
+                            scenario.parameters.tranche_count = trancheCount;
+                            scenario.parameters.tranche_mode = 'auto';
+                        }
+                    }
+                    
+                    scenarios.push(scenario);
+                }
+                
+                await createScenarioComparison(scenarios);
+                bootstrap.Modal.getInstance(document.getElementById('customScenarioModal')).hide();
+                
+            } catch (error) {
+                console.error('Custom scenario generation failed:', error);
+                showNotification('Failed to generate custom scenarios: ' + error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Scenario Comparison Tool loaded');
+        });
+        // Page initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('One-Click Scenario Comparison Tool loaded');
+            
+            // Set default start date to today for base parameters
+            const today = new Date().toISOString().split('T')[0];
+            const baseStartDate = document.getElementById('baseStartDate');
+            if (baseStartDate) {
+                baseStartDate.value = today;
+                
+                // Calculate default end date based on base loan term
+                const baseLoanTerm = document.getElementById('baseLoanTerm');
+                if (baseLoanTerm) {
+                    calculateBaseEndDate();
+                    baseLoanTerm.addEventListener('change', calculateBaseEndDate);
+                    baseStartDate.addEventListener('change', calculateBaseEndDate);
+                }
+            }
+        });
+
+        // Calculate end date for base parameters
+        function calculateBaseEndDate() {
+            const startDate = document.getElementById('baseStartDate').value;
+            const loanTerm = parseInt(document.getElementById('baseLoanTerm').value);
+            
+            if (startDate && loanTerm && loanTerm > 0) {
+                const start = new Date(startDate);
+                
+                // Calculate exact days for consistent loan terms
+                let daysToAdd;
+                switch (loanTerm) {
+                    case 6:
+                        daysToAdd = 181; // 6 months = 181 days
+                        break;
+                    case 12:
+                        daysToAdd = 365; // 12 months = exactly 365 days
+                        break;
+                    case 18:
+                        daysToAdd = 548; // 18 months = 548 days
+                        break;
+                    case 24:
+                        daysToAdd = 730; // 24 months = exactly 730 days
+                        break;
+                    default:
+                        // For other terms, use month-based calculation
+                        const end = new Date(start);
+                        end.setMonth(end.getMonth() + loanTerm);
+                        end.setDate(end.getDate() - 1);
+                        const endDateInput = document.getElementById('baseEndDate');
+                        if (endDateInput) endDateInput.value = end.toISOString().split('T')[0];
+                        return;
+                }
+                
+                // Add the exact number of days
+                const end = new Date(start);
+                end.setDate(end.getDate() + daysToAdd);
+                
+                const endDateInput = document.getElementById('baseEndDate');
+                if (endDateInput) endDateInput.value = end.toISOString().split('T')[0];
+            }
+        }
+    </script>
+</body>
+</html>
