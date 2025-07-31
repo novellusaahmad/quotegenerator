@@ -1,0 +1,32 @@
+2025-07-30 16:04:34,598 - ERROR - Power BI credentials not configured. Please set POWERBI_USERNAME and POWERBI_PASSWORD environment variables.
+2025-07-30 16:04:34,599 - INFO - Notification: Power BI credentials not configured. Please set POWERBI_USERNAME and POWERBI_PASSWORD environment variables.
+2025-07-30 16:06:26,212 - ERROR - Power BI credentials not configured. Please set POWERBI_USERNAME and POWERBI_PASSWORD environment variables.
+2025-07-30 16:06:26,212 - INFO - Notification: Power BI credentials not configured. Please set POWERBI_USERNAME and POWERBI_PASSWORD environment variables.
+2025-07-30 16:07:19,468 - INFO - Setting up Chrome driver for Power BI automation...
+2025-07-30 16:07:19,470 - INFO - Notification: Initializing Chrome driver for Power BI automation
+2025-07-30 16:07:19,470 - INFO - Using Chrome binary: /nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium
+2025-07-30 16:07:19,471 - INFO - ====== WebDriver manager ======
+2025-07-30 16:07:19,799 - INFO - Get LATEST chromedriver version for google-chrome
+2025-07-30 16:07:19,849 - INFO - About to download new driver from https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip
+2025-07-30 16:07:19,889 - INFO - Driver downloading response is 200
+2025-07-30 16:07:20,169 - INFO - Get LATEST chromedriver version for google-chrome
+2025-07-30 16:07:20,563 - INFO - Get LATEST chromedriver version for google-chrome
+2025-07-30 16:07:20,760 - INFO - Driver has been saved in cache [/home/runner/.wdm/drivers/chromedriver/linux64/114.0.5735.90]
+2025-07-30 16:07:20,762 - INFO - ChromeDriver installed successfully
+2025-07-30 16:07:20,961 - ERROR - Failed to initialize Chrome driver: Message: Service /home/runner/.wdm/drivers/chromedriver/linux64/114.0.5735.90/chromedriver unexpectedly exited. Status code was: 127
+
+2025-07-30 16:07:20,962 - INFO - Notification: Failed to initialize Chrome driver: Message: Service /home/runner/.wdm/drivers/chromedriver/linux64/114.0.5735.90/chromedriver unexpectedly exited. Status code was: 127
+
+2025-07-30 16:07:20,962 - INFO - Notification: Chrome browser may not be installed or accessible
+2025-07-30 16:07:20,962 - INFO - Notification: Chrome binary may be incompatible with current system
+2025-07-30 16:08:36,736 - INFO - Setting up Chrome driver for Power BI automation...
+2025-07-30 16:08:36,736 - INFO - Notification: Initializing Chrome driver for Power BI automation
+2025-07-30 16:08:36,737 - INFO - Using Chrome binary: /nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium
+2025-07-30 16:08:37,171 - INFO - Downloading chromedriver (125.0.6422.141)...
+2025-07-30 16:08:37,632 - INFO - ChromeDriver auto-installed successfully
+2025-07-30 16:08:39,534 - ERROR - Failed to initialize Chrome driver: Message: Service /home/runner/.cache/selenium/chromedriver/linux64/125.0.6422.141/chromedriver unexpectedly exited. Status code was: 127
+
+2025-07-30 16:08:39,535 - INFO - Notification: Failed to initialize Chrome driver: Message: Service /home/runner/.cache/selenium/chromedriver/linux64/125.0.6422.141/chromedriver unexpectedly exited. Status code was: 127
+
+2025-07-30 16:08:39,537 - INFO - Notification: Chrome browser may not be installed or accessible
+2025-07-30 16:08:39,537 - INFO - Notification: Chrome binary may be incompatible with current system

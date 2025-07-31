@@ -1,0 +1,51 @@
+# Azure Container Apps Configuration Template
+# Replace placeholder values with your actual Azure resources
+
+apiVersion: apps/v1alpha1
+kind: ContainerApp
+metadata:
+  name: novellus-loan-calculator
+  resourceGroup: novellus-rg
+  location: eastus
+spec:
+  environmentId: /subscriptions/{subscription-id}/resourceGroups/novellus-rg/providers/Microsoft.App/managedEnvironments/novellus-env
+  template:
+    containers:
+    - name: novellus-app
+      image: {your-registry}.azurecr.io/novellus-loan-calculator:latest
+      resources:
+        cpu: 1.0
+        memory: 2Gi
+      env:
+      - name: DATABASE_URL
+        secretRef: database-url
+      - name: SESSION_SECRET
+        secretRef: session-secret
+      - name: JWT_SECRET_KEY
+        secretRef: jwt-secret
+      - name: FLASK_ENV
+        value: production
+      - name: FLASK_APP
+        value: main.py
+    scale:
+      minReplicas: 1
+      maxReplicas: 3
+      rules:
+      - name: http-rule
+        http:
+          metadata:
+            concurrentRequests: 100
+  ingress:
+    external: true
+    targetPort: 5000
+    allowInsecure: false
+    traffic:
+    - weight: 100
+      latestRevision: true
+  secrets:
+  - name: database-url
+    value: "postgresql://username:password@hostname:5432/database"
+  - name: session-secret
+    value: "your-session-secret-key"
+  - name: jwt-secret
+    value: "your-jwt-secret-key"

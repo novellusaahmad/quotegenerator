@@ -1,0 +1,46 @@
+# Docker Compose for Local Development and Testing
+# Novellus Loan Management System
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: novellus_loans
+      POSTGRES_USER: novellus_admin
+      POSTGRES_PASSWORD: NovellusSecure2025!
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novellus_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  novellus-app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://novellus_admin:NovellusSecure2025!@postgres:5432/novellus_loans
+      - SESSION_SECRET=dev-session-secret
+      - JWT_SECRET_KEY=dev-jwt-secret
+      - FLASK_ENV=development
+      - FLASK_APP=main.py
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads
+      - ./reports_output:/app/reports_output
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:

@@ -1,0 +1,41 @@
+modules = ["python-3.11", "python3", "postgresql-16", "java-11"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["atk", "cairo", "chromium", "cups", "curl", "expat", "ffmpeg-full", "fontconfig", "freetype", "geckodriver", "ghostscript", "glib", "glibcLocales", "gobject-introspection", "gtk3", "harfbuzz", "jdk", "libdrm", "libxcrypt", "mesa", "nspr", "nss", "openssl", "pango", "pkg-config", "postgresql", "qhull", "tcl", "tk", "unzip", "wget", "xsimd"]
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+waitForPort = 5000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 8080
+externalPort = 8080
+
+[agent]
+integrations = ["python_database==1.0.0"]
