@@ -503,27 +503,24 @@ class LoanCalculator {
         if (data.loan_type === 'development' || data.loan_type === 'development2') {
             const tranches = [];
             const trancheContainer = document.getElementById('tranchesContainer');
-            
             if (trancheContainer) {
-                const trancheInputs = trancheContainer.querySelectorAll('.tranche-item');
-                
-                trancheInputs.forEach((trancheItem, index) => {
-                    const amountInput = trancheItem.querySelector('.tranche-amount');
-                    const dateInput = trancheItem.querySelector('.tranche-date');
-                    const rateInput = trancheItem.querySelector('.tranche-rate');
-                    const descriptionInput = trancheItem.querySelector('.tranche-description');
-                    
-                    if (amountInput && dateInput && parseFloat(amountInput.value) > 0) {
-                        tranches.push({
-                            amount: parseFloat(amountInput.value),
-                            date: dateInput.value,
-                            rate: parseFloat(rateInput.value) || parseFloat(data.annual_rate) || 12,
-                            description: descriptionInput.value || `Tranche ${index + 1}`
-                        });
+                const rows = trancheContainer.querySelectorAll('tr[data-index]');
+                rows.forEach((row, index) => {
+                    const amountInput = row.querySelector("input[name='tranche_amounts[]']");
+                    const dateInput = row.querySelector("input[name='tranche_dates[]']");
+                    const rateInput = row.querySelector("input[name='tranche_rates[]']");
+                    const descInput = row.querySelector("input[name='tranche_descriptions[]']");
+
+                    const amount = parseFloat(amountInput?.value) || 0;
+                    const date = dateInput?.value || '';
+                    const rate = parseFloat(rateInput?.value) || parseFloat(data.annual_rate) || 12;
+                    const description = descInput?.value || `Tranche ${index + 1}`;
+
+                    if (amount > 0 && date) {
+                        tranches.push({ amount, date, rate, description });
                     }
                 });
             }
-            
             if (tranches.length > 0) {
                 data.tranches = tranches;
             }
