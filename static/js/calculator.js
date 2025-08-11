@@ -78,6 +78,9 @@ class LoanCalculator {
             this.currentResults = null;
             this.charts = {}; // Store chart instances for proper cleanup
             this.chartGenerationInProgress = false; // Prevent concurrent chart generation
+            this.currentTrancheIndex = null;
+            this.trancheBreakdownData = [];
+            this.trancheCurrency = '£';
             
             // Check if required elements exist
             if (!this.form) {
@@ -1511,7 +1514,7 @@ class LoanCalculator {
         console.log(`Creating tranche item ${number} in container`, container);
 
         const trancheHtml = `
-            <div class="tranche-item mb-2" data-tranche="${number}">
+            <div class="tranche-item mb-1" data-tranche="${number}">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">Tranche ${number}</h6>
@@ -1521,27 +1524,27 @@ class LoanCalculator {
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="row">
+                        <div class="row g-1">
                             <div class="col-md-6">
                                 <label class="form-label">Tranche Amount</label>
                                 <div class="input-group">
                                     <span class="input-group-text currency-symbol">£</span>
-                                    <input type="number" class="form-control tranche-amount" 
-                                           name="tranche_amounts[]" min="0" step="0.0001" 
+                                    <input type="number" class="form-control tranche-amount"
+                                           name="tranche_amounts[]" min="0" step="0.0001"
                                            value="${amount}" placeholder="0">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Release Date</label>
-                                <input type="date" class="form-control tranche-date" 
+                                <input type="date" class="form-control tranche-date"
                                        name="tranche_dates[]" value="${date}">
                             </div>
                         </div>
-                        <div class="row mt-2">
+                        <div class="row g-1 mt-1">
                             <div class="col-md-6">
                                 <label class="form-label">Interest Rate (%)</label>
-                                <input type="number" class="form-control tranche-rate" 
-                                       name="tranche_rates[]" min="0" max="50" step="0.0001" 
+                                <input type="number" class="form-control tranche-rate"
+                                       name="tranche_rates[]" min="0" max="50" step="0.0001"
                                        value="${rate}" placeholder="Annual rate">
                             </div>
                             <div class="col-md-6">
@@ -1777,7 +1780,9 @@ class LoanCalculator {
 
     displayTrancheBreakdown(trancheData, currency) {
         console.log('Displaying tranche breakdown:', trancheData);
-        
+        this.trancheBreakdownData = trancheData.map(t => ({...t}));
+        this.trancheCurrency = currency;
+
         // Find or create tranche breakdown table container
         let trancheContainer = document.getElementById('trancheBreakdownContainer');
         if (!trancheContainer) {
@@ -1786,14 +1791,14 @@ class LoanCalculator {
             if (resultsSection) {
                 trancheContainer = document.createElement('div');
                 trancheContainer.id = 'trancheBreakdownContainer';
-                trancheContainer.className = 'card mt-3';
+                trancheContainer.className = 'card mt-2';
                 resultsSection.appendChild(trancheContainer);
             } else {
                 console.error('Results section not found');
                 return;
             }
         }
-        
+
         // Build tranche breakdown table
         const tableHtml = `
             <div class="card-header">
@@ -1801,7 +1806,7 @@ class LoanCalculator {
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+                    <table class="table table-striped table-hover table-sm">
                         <thead class="table-dark">
                             <tr>
                                 <th>Tranche</th>
@@ -1810,10 +1815,11 @@ class LoanCalculator {
                                 <th>Description</th>
                                 <th>Cumulative</th>
                                 <th>Rate</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${trancheData.map(tranche => `
+                            ${this.trancheBreakdownData.map((tranche, index) => `
                                 <tr>
                                     <td>${tranche.tranche_number}</td>
                                     <td>${this.formatDate(tranche.release_date)}</td>
@@ -1821,6 +1827,10 @@ class LoanCalculator {
                                     <td>${tranche.description}</td>
                                     <td>${currency}${tranche.cumulative_amount.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                     <td>${tranche.interest_rate.toFixed(2)}%</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="window.loanCalculator.openEditTrancheModal(${index})"><i class="fas fa-edit"></i></button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="window.loanCalculator.openDeleteTrancheModal(${index})"><i class="fas fa-trash"></i></button>
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1828,9 +1838,50 @@ class LoanCalculator {
                 </div>
             </div>
         `;
-        
+
         trancheContainer.innerHTML = tableHtml;
         trancheContainer.style.display = 'block';
+    }
+
+    openEditTrancheModal(index) {
+        const data = this.trancheBreakdownData[index];
+        if (!data) return;
+        this.currentTrancheIndex = index;
+        document.getElementById('editTrancheNumber').textContent = data.tranche_number;
+        document.getElementById('editTrancheAmount').value = data.amount;
+        document.getElementById('editTrancheDate').value = data.release_date;
+        document.getElementById('editTrancheRate').value = data.interest_rate;
+        document.getElementById('editTrancheDescription').value = data.description;
+        const modal = new bootstrap.Modal(document.getElementById('trancheEditModal'));
+        modal.show();
+    }
+
+    saveTrancheEdits() {
+        const idx = this.currentTrancheIndex;
+        if (idx === null) return;
+        const data = this.trancheBreakdownData[idx];
+        data.amount = parseFloat(document.getElementById('editTrancheAmount').value) || 0;
+        data.release_date = document.getElementById('editTrancheDate').value;
+        data.interest_rate = parseFloat(document.getElementById('editTrancheRate').value) || 0;
+        data.description = document.getElementById('editTrancheDescription').value;
+        this.displayTrancheBreakdown(this.trancheBreakdownData, this.trancheCurrency);
+        const modalEl = document.getElementById('trancheEditModal');
+        bootstrap.Modal.getInstance(modalEl).hide();
+    }
+
+    openDeleteTrancheModal(index) {
+        this.currentTrancheIndex = index;
+        const modal = new bootstrap.Modal(document.getElementById('trancheDeleteModal'));
+        modal.show();
+    }
+
+    confirmDeleteTranche() {
+        const idx = this.currentTrancheIndex;
+        if (idx === null) return;
+        this.trancheBreakdownData.splice(idx, 1);
+        this.displayTrancheBreakdown(this.trancheBreakdownData, this.trancheCurrency);
+        const modalEl = document.getElementById('trancheDeleteModal');
+        bootstrap.Modal.getInstance(modalEl).hide();
     }
 
     populateBreakdownModal() {
