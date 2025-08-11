@@ -81,6 +81,7 @@ class LoanCalculator {
             this.currentTrancheIndex = null;
             this.trancheBreakdownData = [];
             this.trancheCurrency = '£';
+            this.editContext = 'breakdown';
             
             // Check if required elements exist
             if (!this.form) {
@@ -1477,6 +1478,7 @@ class LoanCalculator {
             const lastTranche = container.querySelector(`[data-tranche="${currentCount}"]`);
             if (lastTranche) {
                 lastTranche.remove();
+                this.renumberTranches();
             }
         }
     }
@@ -1489,30 +1491,11 @@ class LoanCalculator {
     }
 
     updateTranche(number) {
-        const msg = `Tranche ${number} updated`;
-        if (typeof showSuccess === 'function') {
-            showSuccess(msg);
-        } else {
-            console.log(msg);
-        }
+        this.openEditTrancheModal(number - 1, 'manual');
     }
 
     deleteTranche(number) {
-        if (!confirm('Are you sure you want to delete this tranche?')) {
-            return;
-        }
-        const container = document.getElementById('tranchesContainer');
-        const tranche = container ? container.querySelector(`[data-tranche="${number}"]`) : null;
-        if (tranche) {
-            tranche.remove();
-            this.renumberTranches();
-            const msg = `Tranche ${number} deleted`;
-            if (typeof showInfo === 'function') {
-                showInfo(msg);
-            } else {
-                console.log(msg);
-            }
-        }
+        this.openDeleteTrancheModal(number - 1, 'manual');
     }
 
     renumberTranches() {
@@ -1521,10 +1504,10 @@ class LoanCalculator {
         items.forEach((item, index) => {
             const num = index + 1;
             item.setAttribute('data-tranche', num);
-            const header = item.querySelector('.card-header h6');
-            if (header) header.textContent = `Tranche ${num}`;
-            item.querySelector('.update-tranche-btn')?.setAttribute('onclick', `window.loanCalculator.updateTranche(${num})`);
-            item.querySelector('.delete-tranche-btn')?.setAttribute('onclick', `window.loanCalculator.deleteTranche(${num})`);
+            const numberCell = item.querySelector('.tranche-number');
+            if (numberCell) numberCell.textContent = num;
+            item.querySelector('.edit-tranche-btn')?.setAttribute('onclick', `window.loanCalculator.openEditTrancheModal(${index}, 'manual')`);
+            item.querySelector('.delete-tranche-btn')?.setAttribute('onclick', `window.loanCalculator.openDeleteTrancheModal(${index}, 'manual')`);
         });
         const countElement = document.getElementById('trancheCount');
         if (countElement) countElement.textContent = items.length;
@@ -1540,56 +1523,34 @@ class LoanCalculator {
         console.log(`Creating tranche item ${number} in container`, container);
 
         const trancheHtml = `
-            <div class="tranche-item mb-1" data-tranche="${number}">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">Tranche ${number}</h6>
-                        <div>
-                            <button type="button" class="btn btn-sm btn-outline-primary me-1 update-tranche-btn" onclick="window.loanCalculator.updateTranche(${number})"><i class="fas fa-save"></i></button>
-                            <button type="button" class="btn btn-sm btn-outline-danger delete-tranche-btn" onclick="window.loanCalculator.deleteTranche(${number})"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-1">
-                            <div class="col-md-6">
-                                <label class="form-label">Tranche Amount</label>
-                                <div class="input-group">
-                                    <span class="input-group-text currency-symbol">£</span>
-                                    <input type="number" class="form-control tranche-amount"
-                                           name="tranche_amounts[]" min="0" step="0.0001"
-                                           value="${amount}" placeholder="0">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Release Date</label>
-                                <input type="date" class="form-control tranche-date"
-                                       name="tranche_dates[]" value="${date}">
-                            </div>
-                        </div>
-                        <div class="row g-1 mt-1">
-                            <div class="col-md-6">
-                                <label class="form-label">Interest Rate (%)</label>
-                                <input type="number" class="form-control tranche-rate"
-                                       name="tranche_rates[]" min="0" max="50" step="0.0001"
-                                       value="${rate}" placeholder="Annual rate">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Description</label>
-                                <input type="text" class="form-control tranche-description" 
-                                       name="tranche_descriptions[]" value="${description}" 
-                                       placeholder="e.g., Land Purchase">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <tr class="tranche-item" data-tranche="${number}">
+                <td class="tranche-number">${number}</td>
+                <td class="text-end">
+                    <span class="currency-symbol">£</span><span class="tranche-amount-display">${(amount || 0).toFixed(2)}</span>
+                    <input type="hidden" name="tranche_amounts[]" class="tranche-amount" value="${amount}">
+                </td>
+                <td>
+                    <span class="tranche-date-display">${date}</span>
+                    <input type="hidden" name="tranche_dates[]" class="tranche-date" value="${date}">
+                </td>
+                <td class="text-end">
+                    <span class="tranche-rate-display">${(rate || 0).toFixed(2)}</span>
+                    <input type="hidden" name="tranche_rates[]" class="tranche-rate" value="${rate}">
+                </td>
+                <td>
+                    <span class="tranche-description-display">${description}</span>
+                    <input type="hidden" name="tranche_descriptions[]" class="tranche-description" value="${description}">
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-primary me-1 edit-tranche-btn" onclick="window.loanCalculator.openEditTrancheModal(${number - 1}, 'manual')"><i class="fas fa-edit"></i></button>
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-tranche-btn" onclick="window.loanCalculator.openDeleteTrancheModal(${number - 1}, 'manual')"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
         `;
 
         container.insertAdjacentHTML('beforeend', trancheHtml);
         console.log(`Tranche item ${number} created successfully`);
-        
-        // Make sure the container is visible after adding content
-        container.style.display = 'block';
+        this.renumberTranches();
     }
 
     // Additional helper methods for form handling
@@ -1869,15 +1830,27 @@ class LoanCalculator {
         trancheContainer.style.display = 'block';
     }
 
-    openEditTrancheModal(index) {
-        const data = this.trancheBreakdownData[index];
-        if (!data) return;
+    openEditTrancheModal(index, context = 'breakdown') {
         this.currentTrancheIndex = index;
-        document.getElementById('editTrancheNumber').textContent = data.tranche_number;
-        document.getElementById('editTrancheAmount').value = data.amount;
-        document.getElementById('editTrancheDate').value = data.release_date;
-        document.getElementById('editTrancheRate').value = data.interest_rate;
-        document.getElementById('editTrancheDescription').value = data.description;
+        this.editContext = context;
+        if (context === 'manual') {
+            const rows = document.querySelectorAll('#tranchesContainer .tranche-item');
+            const row = rows[index];
+            if (!row) return;
+            document.getElementById('editTrancheNumber').textContent = row.querySelector('.tranche-number')?.textContent || index + 1;
+            document.getElementById('editTrancheAmount').value = row.querySelector('input.tranche-amount')?.value || 0;
+            document.getElementById('editTrancheDate').value = row.querySelector('input.tranche-date')?.value || '';
+            document.getElementById('editTrancheRate').value = row.querySelector('input.tranche-rate')?.value || 0;
+            document.getElementById('editTrancheDescription').value = row.querySelector('input.tranche-description')?.value || '';
+        } else {
+            const data = this.trancheBreakdownData[index];
+            if (!data) return;
+            document.getElementById('editTrancheNumber').textContent = data.tranche_number;
+            document.getElementById('editTrancheAmount').value = data.amount;
+            document.getElementById('editTrancheDate').value = data.release_date;
+            document.getElementById('editTrancheRate').value = data.interest_rate;
+            document.getElementById('editTrancheDescription').value = data.description;
+        }
         const modal = new bootstrap.Modal(document.getElementById('trancheEditModal'));
         modal.show();
     }
@@ -1885,18 +1858,37 @@ class LoanCalculator {
     saveTrancheEdits() {
         const idx = this.currentTrancheIndex;
         if (idx === null) return;
-        const data = this.trancheBreakdownData[idx];
-        data.amount = parseFloat(document.getElementById('editTrancheAmount').value) || 0;
-        data.release_date = document.getElementById('editTrancheDate').value;
-        data.interest_rate = parseFloat(document.getElementById('editTrancheRate').value) || 0;
-        data.description = document.getElementById('editTrancheDescription').value;
-        this.displayTrancheBreakdown(this.trancheBreakdownData, this.trancheCurrency);
+        if (this.editContext === 'manual') {
+            const rows = document.querySelectorAll('#tranchesContainer .tranche-item');
+            const row = rows[idx];
+            if (!row) return;
+            const amount = parseFloat(document.getElementById('editTrancheAmount').value) || 0;
+            const date = document.getElementById('editTrancheDate').value;
+            const rate = parseFloat(document.getElementById('editTrancheRate').value) || 0;
+            const description = document.getElementById('editTrancheDescription').value;
+            row.querySelector('input.tranche-amount').value = amount;
+            row.querySelector('.tranche-amount-display').textContent = amount.toFixed(2);
+            row.querySelector('input.tranche-date').value = date;
+            row.querySelector('.tranche-date-display').textContent = date;
+            row.querySelector('input.tranche-rate').value = rate;
+            row.querySelector('.tranche-rate-display').textContent = rate.toFixed(2);
+            row.querySelector('input.tranche-description').value = description;
+            row.querySelector('.tranche-description-display').textContent = description;
+        } else {
+            const data = this.trancheBreakdownData[idx];
+            data.amount = parseFloat(document.getElementById('editTrancheAmount').value) || 0;
+            data.release_date = document.getElementById('editTrancheDate').value;
+            data.interest_rate = parseFloat(document.getElementById('editTrancheRate').value) || 0;
+            data.description = document.getElementById('editTrancheDescription').value;
+            this.displayTrancheBreakdown(this.trancheBreakdownData, this.trancheCurrency);
+        }
         const modalEl = document.getElementById('trancheEditModal');
         bootstrap.Modal.getInstance(modalEl).hide();
     }
 
-    openDeleteTrancheModal(index) {
+    openDeleteTrancheModal(index, context = 'breakdown') {
         this.currentTrancheIndex = index;
+        this.editContext = context;
         const modal = new bootstrap.Modal(document.getElementById('trancheDeleteModal'));
         modal.show();
     }
@@ -1904,8 +1896,17 @@ class LoanCalculator {
     confirmDeleteTranche() {
         const idx = this.currentTrancheIndex;
         if (idx === null) return;
-        this.trancheBreakdownData.splice(idx, 1);
-        this.displayTrancheBreakdown(this.trancheBreakdownData, this.trancheCurrency);
+        if (this.editContext === 'manual') {
+            const rows = document.querySelectorAll('#tranchesContainer .tranche-item');
+            const row = rows[idx];
+            if (row) {
+                row.remove();
+                this.renumberTranches();
+            }
+        } else {
+            this.trancheBreakdownData.splice(idx, 1);
+            this.displayTrancheBreakdown(this.trancheBreakdownData, this.trancheCurrency);
+        }
         const modalEl = document.getElementById('trancheDeleteModal');
         bootstrap.Modal.getInstance(modalEl).hide();
     }
