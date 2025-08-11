@@ -16,10 +16,10 @@ const loanDonutLabels = {
         if (!total) return;
 
         // Determine currency symbol from UI
-        let symbol = '£';
+        let symbol = 'Â£';
         try {
             const cur = document.getElementById('currency')?.value || 'GBP';
-            symbol = (cur === 'EUR') ? '€' : '£';
+            symbol = (cur === 'EUR') ? 'Â€' : 'Â£';
         } catch(e) {}
 
         ctx.save();
@@ -706,12 +706,12 @@ class LoanCalculator {
                 
                 if (closingBalanceValue > 0) {
                     endLTV = (closingBalanceValue / propertyValue) * 100;
-                    console.log(`End LTV calculation: Final balance £${closingBalanceValue.toLocaleString()} / Property value £${propertyValue.toLocaleString()} = ${endLTV.toFixed(2)}%`);
+                    console.log(`End LTV calculation: Final balance Â£${closingBalanceValue.toLocaleString()} / Property value Â£${propertyValue.toLocaleString()} = ${endLTV.toFixed(2)}%`);
                 }
             } else {
                 // Fallback to gross amount if no payment schedule available
                 endLTV = (grossAmount / propertyValue) * 100;
-                console.log(`End LTV fallback: Gross amount £${grossAmount.toLocaleString()} / Property value £${propertyValue.toLocaleString()} = ${endLTV.toFixed(2)}%`);
+                console.log(`End LTV fallback: Gross amount Â£${grossAmount.toLocaleString()} / Property value Â£${propertyValue.toLocaleString()} = ${endLTV.toFixed(2)}%`);
             }
             
             endLTVEl.textContent = endLTV.toFixed(2) + '%';
@@ -852,13 +852,13 @@ class LoanCalculator {
             // Replace currency symbols in the row data to match current selection
             const fixedRow = {
                 payment_date: row.payment_date,
-                opening_balance: String(row.opening_balance || '').replace(/[£€]/g, currentSymbol),
-                tranche_release: String(row.tranche_release || '').replace(/[£€]/g, currentSymbol),
-                interest_calculation: String(row.interest_calculation || '').replace(/[£€]/g, currentSymbol),
-                interest_amount: String(row.interest_amount || '').replace(/[£€]/g, currentSymbol),
-                principal_payment: String(row.principal_payment || '').replace(/[£€]/g, currentSymbol),
-                total_payment: String(row.total_payment || '').replace(/[£€]/g, currentSymbol),
-                closing_balance: String(row.closing_balance || '').replace(/[£€]/g, currentSymbol),
+                opening_balance: String(row.opening_balance || '').replace(/[Â£Â€]/g, currentSymbol),
+                tranche_release: String(row.tranche_release || '').replace(/[Â£Â€]/g, currentSymbol),
+                interest_calculation: String(row.interest_calculation || '').replace(/[Â£Â€]/g, currentSymbol),
+                interest_amount: String(row.interest_amount || '').replace(/[Â£Â€]/g, currentSymbol),
+                principal_payment: String(row.principal_payment || '').replace(/[Â£Â€]/g, currentSymbol),
+                total_payment: String(row.total_payment || '').replace(/[Â£Â€]/g, currentSymbol),
+                closing_balance: String(row.closing_balance || '').replace(/[Â£Â€]/g, currentSymbol),
                 balance_change: row.balance_change
             };
             
@@ -902,7 +902,7 @@ class LoanCalculator {
     }
 
     getCurrencySymbol(currency) {
-        return currency === 'EUR' ? '€' : '£';
+        return currency === 'EUR' ? 'Â€' : 'Â£';
     }
 
     updateGBPQuoteButtonVisibility() {
@@ -1459,6 +1459,48 @@ class LoanCalculator {
         }
     }
 
+    updateTranche(number) {
+        const msg = `Tranche ${number} updated`;
+        if (typeof showSuccess === 'function') {
+            showSuccess(msg);
+        } else {
+            console.log(msg);
+        }
+    }
+
+    deleteTranche(number) {
+        if (!confirm('Are you sure you want to delete this tranche?')) {
+            return;
+        }
+        const container = document.getElementById('tranchesContainer');
+        const tranche = container ? container.querySelector(`[data-tranche="${number}"]`) : null;
+        if (tranche) {
+            tranche.remove();
+            this.renumberTranches();
+            const msg = `Tranche ${number} deleted`;
+            if (typeof showInfo === 'function') {
+                showInfo(msg);
+            } else {
+                console.log(msg);
+            }
+        }
+    }
+
+    renumberTranches() {
+        const container = document.getElementById('tranchesContainer');
+        const items = container ? container.querySelectorAll('.tranche-item') : [];
+        items.forEach((item, index) => {
+            const num = index + 1;
+            item.setAttribute('data-tranche', num);
+            const header = item.querySelector('.card-header h6');
+            if (header) header.textContent = `Tranche ${num}`;
+            item.querySelector('.update-tranche-btn')?.setAttribute('onclick', `window.loanCalculator.updateTranche(${num})`);
+            item.querySelector('.delete-tranche-btn')?.setAttribute('onclick', `window.loanCalculator.deleteTranche(${num})`);
+        });
+        const countElement = document.getElementById('trancheCount');
+        if (countElement) countElement.textContent = items.length;
+    }
+
     createTrancheItem(number, amount = 0, date = '', rate = 12, description = '') {
         const container = document.getElementById('tranchesContainer');
         if (!container) {
@@ -1469,17 +1511,21 @@ class LoanCalculator {
         console.log(`Creating tranche item ${number} in container`, container);
 
         const trancheHtml = `
-            <div class="tranche-item mb-3" data-tranche="${number}">
+            <div class="tranche-item mb-2" data-tranche="${number}">
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">Tranche ${number}</h6>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-primary me-1 update-tranche-btn" onclick="window.loanCalculator.updateTranche(${number})"><i class="fas fa-save"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger delete-tranche-btn" onclick="window.loanCalculator.deleteTranche(${number})"><i class="fas fa-trash"></i></button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <label class="form-label">Tranche Amount</label>
                                 <div class="input-group">
-                                    <span class="input-group-text currency-symbol">£</span>
+                                    <span class="input-group-text currency-symbol">Â£</span>
                                     <input type="number" class="form-control tranche-amount" 
                                            name="tranche_amounts[]" min="0" step="0.0001" 
                                            value="${amount}" placeholder="0">
@@ -1670,7 +1716,7 @@ class LoanCalculator {
 
     updateCurrencySymbols() {
         const currency = document.getElementById('currency').value;
-        const symbol = currency === 'EUR' ? '€' : '£';
+        const symbol = currency === 'EUR' ? 'Â€' : 'Â£';
         document.querySelectorAll('.currency-symbol').forEach(el => {
             el.textContent = symbol;
         });
@@ -1799,7 +1845,7 @@ class LoanCalculator {
         const r = this.currentResults;
         const currency = this.getCurrencySymbol(r.currency);
         const formatMoney = (val) => {
-            const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[,£€]/g, '')) || 0;
+            const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[,Â£Â€]/g, '')) || 0;
             return currency + num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
 
@@ -1822,7 +1868,7 @@ class LoanCalculator {
         let endLTV = startLTV;
         if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0 && propertyValue > 0) {
             const last = r.detailed_payment_schedule[r.detailed_payment_schedule.length - 1];
-            const closing = parseFloat(String(last.closing_balance || '').replace(/[,£€]/g, '')) || 0;
+            const closing = parseFloat(String(last.closing_balance || '').replace(/[,Â£Â€]/g, '')) || 0;
             endLTV = ((closing / propertyValue) * 100).toFixed(2);
         }
 
@@ -1872,16 +1918,16 @@ class LoanCalculator {
         let calcDescription = '';
         switch (interestType) {
             case 'compound_daily':
-                calcDescription = `Compound daily interest where <code>Interest = Principal × (1 + Rate / ${daysPerYear})<sup>${daysPerYear} × Time</sup> - Principal</code>`;
+                calcDescription = `Compound daily interest where <code>Interest = Principal Ã— (1 + Rate / ${daysPerYear})<sup>${daysPerYear} Ã— Time</sup> - Principal</code>`;
                 break;
             case 'compound_monthly':
-                calcDescription = 'Compound monthly interest where <code>Interest = Principal × (1 + Rate / 12)<sup>12 × Time</sup> - Principal</code>';
+                calcDescription = 'Compound monthly interest where <code>Interest = Principal Ã— (1 + Rate / 12)<sup>12 Ã— Time</sup> - Principal</code>';
                 break;
             case 'compound_quarterly':
-                calcDescription = 'Compound quarterly interest where <code>Interest = Principal × (1 + Rate / 4)<sup>4 × Time</sup> - Principal</code>';
+                calcDescription = 'Compound quarterly interest where <code>Interest = Principal Ã— (1 + Rate / 4)<sup>4 Ã— Time</sup> - Principal</code>';
                 break;
             default:
-                calcDescription = 'Simple interest where <code>Interest = Principal × Rate × Time</code>';
+                calcDescription = 'Simple interest where <code>Interest = Principal Ã— Rate Ã— Time</code>';
         }
 
         // Determine repayment method description
@@ -1891,19 +1937,19 @@ class LoanCalculator {
         switch (repaymentOption) {
             case 'none':
             case 'retained':
-                repaymentDescription = 'Interest retained — total interest is deducted at the start and repaid with the principal at the end.';
+                repaymentDescription = 'Interest retained Â— total interest is deducted at the start and repaid with the principal at the end.';
                 break;
             case 'service_only':
-                repaymentDescription = 'Serviced interest — interest is paid periodically while principal is repaid at maturity.';
+                repaymentDescription = 'Serviced interest Â— interest is paid periodically while principal is repaid at maturity.';
                 break;
             case 'service_and_capital':
-                repaymentDescription = 'Capital & interest — regular payments amortise the loan using <code>Payment = P × r / (1 - (1 + r)<sup>-n</sup>)</code>.';
+                repaymentDescription = 'Capital & interest Â— regular payments amortise the loan using <code>Payment = P Ã— r / (1 - (1 + r)<sup>-n</sup>)</code>.';
                 break;
             case 'capital_payment_only':
-                repaymentDescription = 'Capital payments only — interest is retained upfront and scheduled capital payments reduce the balance.';
+                repaymentDescription = 'Capital payments only Â— interest is retained upfront and scheduled capital payments reduce the balance.';
                 break;
             case 'flexible_payment':
-                repaymentDescription = 'Flexible payment — custom payments reduce the balance while any shortfall accrues interest.';
+                repaymentDescription = 'Flexible payment Â— custom payments reduce the balance while any shortfall accrues interest.';
                 break;
             default:
                 repaymentDescription = 'Standard repayment schedule.';
@@ -1923,7 +1969,7 @@ class LoanCalculator {
                     break;
                 default:
                     // none and capital_payment_only
-                    netToGrossDescription = 'Gross = (Net + Legal + Site) / (1 - Arrangement - Rate × Time - Title)';
+                    netToGrossDescription = 'Gross = (Net + Legal + Site) / (1 - Arrangement - Rate Ã— Time - Title)';
             }
         }
 
@@ -1963,7 +2009,7 @@ class LoanCalculator {
             <h6>Step by Step</h6>
             <ol>
                 <li>Starting gross loan amount: ${gross}.</li>
-                <li>Fees deducted – arrangement ${arrangement}, legal ${legal}, site visit ${site}, title insurance ${title}.</li>
+                <li>Fees deducted Â– arrangement ${arrangement}, legal ${legal}, site visit ${site}, title insurance ${title}.</li>
                 <li>Total interest charged: ${interest}.</li>
                 <li>Net advance on day one: ${day1} with a total net advance of ${totalNet}.</li>
                 <li>Loan to value begins at ${startLTV}% and ends at ${endLTV}%.</li>
@@ -2021,11 +2067,11 @@ class LoanCalculator {
                     const mockResults = {
                         detailed_payment_schedule: schedule,
                         loan_type: 'bridge', // Default assumption
-                        currencySymbol: '£', // Default to GBP
-                        grossAmount: grossAmountRow ? parseFloat(grossAmountRow.children[1].textContent.replace(/[£,]/g, '')) : 0,
-                        totalInterest: totalInterestRow ? parseFloat(totalInterestRow.children[1].textContent.replace(/[£,]/g, '')) : 0,
-                        arrangementFee: arrangementFeeRow ? parseFloat(arrangementFeeRow.children[1].textContent.replace(/[£,]/g, '')) : 0,
-                        netAdvance: netAdvanceRow ? parseFloat(netAdvanceRow.children[1].textContent.replace(/[£,]/g, '')) : 0
+                        currencySymbol: 'Â£', // Default to GBP
+                        grossAmount: grossAmountRow ? parseFloat(grossAmountRow.children[1].textContent.replace(/[Â£,]/g, '')) : 0,
+                        totalInterest: totalInterestRow ? parseFloat(totalInterestRow.children[1].textContent.replace(/[Â£,]/g, '')) : 0,
+                        arrangementFee: arrangementFeeRow ? parseFloat(arrangementFeeRow.children[1].textContent.replace(/[Â£,]/g, '')) : 0,
+                        netAdvance: netAdvanceRow ? parseFloat(netAdvanceRow.children[1].textContent.replace(/[Â£,]/g, '')) : 0
                     };
                     
                     console.log('Creating charts from existing payment schedule data with', schedule.length, 'entries');
@@ -2087,7 +2133,7 @@ class LoanCalculator {
                     // Get currency symbol from page or default to GBP
                     const currencyInput = document.getElementById('currency');
                     const currency = currencyInput ? currencyInput.value : 'GBP';
-                    const currencySymbol = currency === 'EUR' ? '€' : '£';
+                    const currencySymbol = currency === 'EUR' ? 'Â€' : 'Â£';
                     
                     // Create a results object for chart generation
                     const mockResults = {
@@ -2096,10 +2142,10 @@ class LoanCalculator {
                         currency: currency,
                         currencySymbol: currencySymbol,
                         currency_symbol: currencySymbol,
-                        grossAmount: grossAmountRow ? parseFloat(grossAmountRow.children[1].textContent.replace(/[£€,]/g, '')) : 0,
-                        totalInterest: totalInterestRow ? parseFloat(totalInterestRow.children[1].textContent.replace(/[£€,]/g, '')) : 0,
-                        arrangementFee: arrangementFeeRow ? parseFloat(arrangementFeeRow.children[1].textContent.replace(/[£€,]/g, '')) : 0,
-                        netAdvance: netAdvanceRow ? parseFloat(netAdvanceRow.children[1].textContent.replace(/[£€,]/g, '')) : 0
+                        grossAmount: grossAmountRow ? parseFloat(grossAmountRow.children[1].textContent.replace(/[Â£Â€,]/g, '')) : 0,
+                        totalInterest: totalInterestRow ? parseFloat(totalInterestRow.children[1].textContent.replace(/[Â£Â€,]/g, '')) : 0,
+                        arrangementFee: arrangementFeeRow ? parseFloat(arrangementFeeRow.children[1].textContent.replace(/[Â£Â€,]/g, '')) : 0,
+                        netAdvance: netAdvanceRow ? parseFloat(netAdvanceRow.children[1].textContent.replace(/[Â£Â€,]/g, '')) : 0
                     };
                     
                     console.log('Creating charts from existing payment schedule data with', schedule.length, 'entries');
@@ -2267,7 +2313,7 @@ class LoanCalculator {
                                 const value = context.parsed || 0;
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = ((value / total) * 100).toFixed(1);
-                                const currency = results.currencySymbol || '£';
+                                const currency = results.currencySymbol || 'Â£';
                                 return `${label}: ${currency}${value.toLocaleString('en-GB')} (${percentage}%)`;
                             }
                         }
@@ -2279,7 +2325,7 @@ class LoanCalculator {
         // Add enhanced data labels for better visibility
         if (typeof window.ChartDataLabelsEnhancer !== 'undefined') {
             chartConfig = window.ChartDataLabelsEnhancer.enhancePieChart(chartConfig, {
-                currency: results.currencySymbol || '£',
+                currency: results.currencySymbol || 'Â£',
                 baseFontSize: 20 // Increased to 20 for much better visibility
             });
         }
@@ -2344,7 +2390,7 @@ class LoanCalculator {
                     if (!entry.tranche_release) return false;
                     const trancheValue = typeof entry.tranche_release === 'number' ? 
                         entry.tranche_release : 
-                        parseFloat(String(entry.tranche_release).replace(/[£€,]/g, '')) || 0;
+                        parseFloat(String(entry.tranche_release).replace(/[Â£Â€,]/g, '')) || 0;
                     return trancheValue > 0;
                 }))) {
                 
@@ -2418,7 +2464,7 @@ class LoanCalculator {
             if (typeof interestRaw === 'number') {
                 return interestRaw;
             } else if (typeof interestRaw === 'string') {
-                return parseFloat(interestRaw.replace(/[£€,]/g, '')) || 0;
+                return parseFloat(interestRaw.replace(/[Â£Â€,]/g, '')) || 0;
             }
             return 0;
         });
@@ -2428,7 +2474,7 @@ class LoanCalculator {
             if (typeof principalRaw === 'number') {
                 return principalRaw;
             } else if (typeof principalRaw === 'string') {
-                return parseFloat(principalRaw.replace(/[£€,]/g, '')) || 0;
+                return parseFloat(principalRaw.replace(/[Â£Â€,]/g, '')) || 0;
             }
             return 0;
         });
@@ -2474,7 +2520,7 @@ class LoanCalculator {
                         stacked: true,
                         title: {
                             display: true,
-                            text: `Amount (${results.currencySymbol || results.currency_symbol || '£'})`
+                            text: `Amount (${results.currencySymbol || results.currency_symbol || 'Â£'})`
                         },
                         beginAtZero: true
                     }
@@ -2493,7 +2539,7 @@ class LoanCalculator {
                         intersect: false,
                         callbacks: {
                             label: function(context) {
-                                const currency = results.currencySymbol || results.currency_symbol || '£';
+                                const currency = results.currencySymbol || results.currency_symbol || 'Â£';
                                 return `${context.dataset.label}: ${currency}${context.parsed.y.toLocaleString('en-GB')}`;
                             }
                         }
@@ -2571,7 +2617,7 @@ class LoanCalculator {
             if (typeof balanceRaw === 'number') {
                 return balanceRaw;
             } else if (typeof balanceRaw === 'string') {
-                return parseFloat(balanceRaw.replace(/[£€,]/g, '')) || 0;
+                return parseFloat(balanceRaw.replace(/[Â£Â€,]/g, '')) || 0;
             }
             return 0;
         });
@@ -2622,7 +2668,7 @@ class LoanCalculator {
                             y: {
                                 title: {
                                     display: true,
-                                    text: `Balance (${results.currencySymbol || results.currency_symbol || '£'})`
+                                    text: `Balance (${results.currencySymbol || results.currency_symbol || 'Â£'})`
                                 },
                                 beginAtZero: true
                             }
@@ -2639,7 +2685,7 @@ class LoanCalculator {
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        const currency = results.currencySymbol || results.currency_symbol || '£';
+                                        const currency = results.currencySymbol || results.currency_symbol || 'Â£';
                                         return `${context.dataset.label}: ${currency}${context.parsed.y.toLocaleString('en-GB')}`;
                                     }
                                 }
@@ -2715,7 +2761,7 @@ class LoanCalculator {
             if (typeof interest === 'number') {
                 return interest;
             } else if (typeof interest === 'string') {
-                return parseFloat(interest.replace(/[£€,]/g, '')) || 0;
+                return parseFloat(interest.replace(/[Â£Â€,]/g, '')) || 0;
             }
             return 0;
         });
@@ -2726,7 +2772,7 @@ class LoanCalculator {
             if (typeof principal === 'number') {
                 return principal;
             } else if (typeof principal === 'string') {
-                return parseFloat(principal.replace(/[£€,]/g, '')) || 0;
+                return parseFloat(principal.replace(/[Â£Â€,]/g, '')) || 0;
             }
             return 0;
         });
@@ -2767,7 +2813,7 @@ class LoanCalculator {
                     y: {
                         title: {
                             display: true,
-                            text: `Amount (${results.currencySymbol || results.currency_symbol || '£'})`
+                            text: `Amount (${results.currencySymbol || results.currency_symbol || 'Â£'})`
                         },
                         beginAtZero: true
                     }
@@ -2784,7 +2830,7 @@ class LoanCalculator {
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                const currency = results.currencySymbol || results.currency_symbol || '£';
+                                const currency = results.currencySymbol || results.currency_symbol || 'Â£';
                                 return `${context.dataset.label}: ${currency}${context.parsed.y.toLocaleString('en-GB')}`;
                             }
                         }
@@ -2805,7 +2851,7 @@ class LoanCalculator {
             if (typeof trancheValue === 'number') {
                 return trancheValue > 0;
             } else if (typeof trancheValue === 'string') {
-                return parseFloat(trancheValue.replace(/[£€,]/g, '')) > 0;
+                return parseFloat(trancheValue.replace(/[Â£Â€,]/g, '')) > 0;
             }
             return false;
         });
@@ -2832,7 +2878,7 @@ class LoanCalculator {
             if (typeof trancheValue === 'number') {
                 return trancheValue;
             } else if (typeof trancheValue === 'string') {
-                return parseFloat(trancheValue.replace(/[£€,]/g, '')) || 0;
+                return parseFloat(trancheValue.replace(/[Â£Â€,]/g, '')) || 0;
             }
             return 0;
         });
@@ -2865,7 +2911,7 @@ class LoanCalculator {
                     y: {
                         title: {
                             display: true,
-                            text: `Amount (${results.currencySymbol || '£'})`
+                            text: `Amount (${results.currencySymbol || 'Â£'})`
                         },
                         beginAtZero: true
                     }
@@ -2882,7 +2928,7 @@ class LoanCalculator {
                     tooltip: {
                         callbacks: {
                             label: function(context) {
-                                const currency = results.currencySymbol || '£';
+                                const currency = results.currencySymbol || 'Â£';
                                 return `${context.dataset.label}: ${currency}${context.parsed.y.toLocaleString('en-GB')}`;
                             }
                         }
