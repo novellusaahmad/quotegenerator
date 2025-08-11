@@ -940,12 +940,12 @@ class LoanCalculator:
         # User tranches - CRITICAL FIX: Correct tranche numbering AND date calculation
         cumulative = net_advance_day1
         tranche_counter = 2  # Start from 2 since Day 1 advance is tranche 1
-        for i, amount in enumerate(additional_drawn):
+        for month_index, amount in enumerate(additional_drawn):
             if amount > 0:
-                month = i + 2  # CRITICAL FIX: additional_drawn[0] = month 2, additional_drawn[1] = month 3, etc.
-                release_date = start_date + relativedelta(months=month)
+                # additional_drawn[1] corresponds to month 2, so use the index directly
+                release_date = start_date + relativedelta(months=month_index)
                 cumulative += amount
-                
+
                 tranche_breakdown.append({
                     'tranche_number': tranche_counter,  # Use sequential counter instead of month + 1
                     'release_date': release_date.strftime('%Y-%m-%d'),
