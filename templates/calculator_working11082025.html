@@ -744,10 +744,14 @@
 </div>
 </div>
 <div id="tranchesContainer">
-<div class="tranche-item" data-tranche="1">
+<div class="tranche-item mb-2" data-tranche="1">
 <div class="card">
-<div class="card-header">
-<h6 class="">Tranche 1</h6>
+<div class="card-header d-flex justify-content-between align-items-center">
+<h6 class="mb-0">Tranche 1</h6>
+<div>
+<button type="button" class="btn btn-sm btn-outline-primary me-1 update-tranche-btn" onclick="window.loanCalculator.updateTranche(1)"><i class="fas fa-save"></i></button>
+<button type="button" class="btn btn-sm btn-outline-danger delete-tranche-btn" onclick="window.loanCalculator.deleteTranche(1)"><i class="fas fa-trash"></i></button>
+</div>
 </div>
 <div class="card-body">
 <div class="row">
