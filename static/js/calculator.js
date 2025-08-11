@@ -117,6 +117,7 @@ class LoanCalculator {
             setTimeout(() => {
                 try {
                     this.updatePercentageDisplays();
+                    this.updateRateEquivalenceNote();
                 } catch (error) {
                     console.error('Error updating percentage displays:', error);
                 }
@@ -275,6 +276,9 @@ class LoanCalculator {
             if (field) {
                 field.addEventListener('input', () => {
                     this.updatePercentageDisplays();
+                    if (fieldId === 'annualRateValue' || fieldId === 'monthlyRateValue') {
+                        this.updateRateEquivalenceNote();
+                    }
                 });
             }
         });
@@ -283,6 +287,7 @@ class LoanCalculator {
         document.querySelectorAll('input[name="rate_input_type"]').forEach(radio => {
             radio.addEventListener('change', () => {
                 this.updatePercentageDisplays();
+                this.updateRateEquivalenceNote();
             });
         });
 
@@ -1568,6 +1573,34 @@ class LoanCalculator {
             if (annualInput) {
                 annualInput.style.setProperty('display', 'flex', 'important');
                 console.log('Hiding monthly input, showing annual input');
+            }
+        }
+        this.updateRateEquivalenceNote();
+    }
+
+    updateRateEquivalenceNote() {
+        const noteEl = document.getElementById('rateEquivalenceNote');
+        if (!noteEl) return;
+
+        const rateType = document.querySelector('input[name="rate_input_type"]:checked')?.value || 'annual';
+        const annualInput = document.getElementById('annualRateValue');
+        const monthlyInput = document.getElementById('monthlyRateValue');
+
+        if (rateType === 'monthly') {
+            const monthly = parseFloat(monthlyInput?.value);
+            if (!isNaN(monthly)) {
+                const annual = monthly * 12;
+                noteEl.textContent = `Equivalent annual rate: ${annual.toFixed(2)}% p.a.`;
+            } else {
+                noteEl.textContent = '';
+            }
+        } else {
+            const annual = parseFloat(annualInput?.value);
+            if (!isNaN(annual)) {
+                const monthly = annual / 12;
+                noteEl.textContent = `Equivalent monthly rate: ${monthly.toFixed(2)}% pcm`;
+            } else {
+                noteEl.textContent = '';
             }
         }
     }
