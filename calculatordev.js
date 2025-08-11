@@ -502,27 +502,41 @@ class LoanCalculator {
         if (data.loan_type === 'development' || data.loan_type === 'development2') {
             const tranches = [];
             const trancheContainer = document.getElementById('tranchesContainer');
-            
+            const startDateValue = document.getElementById('startDate')?.value;
+
             if (trancheContainer) {
                 const trancheInputs = trancheContainer.querySelectorAll('.tranche-item');
-                
+
                 trancheInputs.forEach((trancheItem, index) => {
                     const amountInput = trancheItem.querySelector('.tranche-amount');
                     const dateInput = trancheItem.querySelector('.tranche-date');
                     const rateInput = trancheItem.querySelector('.tranche-rate');
                     const descriptionInput = trancheItem.querySelector('.tranche-description');
-                    
+
                     if (amountInput && dateInput && parseFloat(amountInput.value) > 0) {
+                        // The calculation engine expects a month index to align each tranche
+                        // with the loan schedule. Derive it from the release date when available
+                        // or fall back to sequential months starting at 2 (post Day 1 advance).
+                        let month = index + 2;
+                        if (dateInput.value && startDateValue) {
+                            const start = new Date(startDateValue);
+                            const release = new Date(dateInput.value);
+                            month = (release.getFullYear() - start.getFullYear()) * 12 +
+                                    (release.getMonth() - start.getMonth()) + 1;
+                            if (month < 2) month = 2;
+                        }
+
                         tranches.push({
                             amount: parseFloat(amountInput.value),
                             date: dateInput.value,
                             rate: parseFloat(rateInput.value) || parseFloat(data.annual_rate) || 12,
-                            description: descriptionInput.value || `Tranche ${index + 1}`
+                            description: descriptionInput.value || `Tranche ${index + 1}`,
+                            month: month
                         });
                     }
                 });
             }
-            
+
             if (tranches.length > 0) {
                 data.tranches = tranches;
             }
