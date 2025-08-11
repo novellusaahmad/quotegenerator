@@ -4712,17 +4712,45 @@ class LoanCalculator:
         # CRITICAL FIX: Calculate total interest directly from detailed payment schedule
         # This ensures perfect consistency between summary and detailed views
         import logging
-        
+
+        # Calculate loan term days before generating schedules so date changes impact calculations
+        from datetime import datetime, timedelta
+        from dateutil.relativedelta import relativedelta
+
+        start_date_str = params.get('start_date', datetime.now().strftime('%Y-%m-%d'))
+        end_date_str = params.get('end_date', '')
+
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if isinstance(start_date_str, str) else start_date_str
+
+            if end_date_str:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
+                loan_term_days = (end_date - start_date).days
+                avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
+                loan_term = max(1, round(loan_term_days / float(avg_days_per_month)))
+            else:
+                end_date = start_date + relativedelta(months=loan_term)
+                end_date = end_date - timedelta(days=1)
+                loan_term_days = (end_date - start_date).days + 1
+                end_date_str = end_date.strftime('%Y-%m-%d')
+
+            params['loan_term_days'] = loan_term_days
+        except Exception as e:
+            print(f"Error calculating loan term days: {e}")
+            loan_term_days = loan_term * 30
+            end_date_str = ''
+            params['loan_term_days'] = loan_term_days
+
         # Generate the detailed schedule to get the exact interest calculation
         currency_symbol = '£' if currency == 'GBP' else '€'
-        
+
         # Create temporary quote data for detailed schedule generation
         temp_quote_data = {
             'grossAmount': float(total_gross_amount),
             'loanTerm': loan_term,
             'interestRate': float(annual_rate),
             'repaymentOption': repayment_option,
-            'start_date': params.get('start_date', '2025-07-23'),
+            'start_date': start_date_str,
             'tranches': params.get('tranches', []),
             'arrangementFee': float(fees.get('arrangementFee', 0)),
             'totalLegalFees': float(fees.get('totalLegalFees', 0)),
@@ -4731,32 +4759,32 @@ class LoanCalculator:
             'userInputDay1Advance': float(params.get('day1_advance', day1_advance)),
             'siteVisitFee': float(fees.get('siteVisitFee', 0)),
             'titleInsurance': float(fees.get('titleInsurance', 0)),
-            'loanTermDays': params.get('loan_term_days', loan_term * 30)
+            'loanTermDays': loan_term_days
         }
-        
+
         # CRITICAL: Skip _generate_development_schedule entirely and use our fixed method directly
         # The issue is that _generate_development_schedule calls the old compound calculation
         # Let's bypass it and use our corrected method directly
-        
+
         logging.info("BYPASSING _generate_development_schedule - using fixed method directly")
-        
+
         # DEBUG: Log exact temp_quote_data being passed to our method
         logging.info(f"TEMP_QUOTE_DATA DEBUG:")
         logging.info(f"  day1_advance: {temp_quote_data.get('day1_advance')}")
         logging.info(f"  userInputDay1Advance: {temp_quote_data.get('userInputDay1Advance')}")
         logging.info(f"  arrangementFee: {temp_quote_data.get('arrangementFee')}")
         logging.info(f"  totalLegalFees: {temp_quote_data.get('totalLegalFees')}")
-        
+
         detailed_schedule = self._generate_detailed_payment_schedule(
-            temp_quote_data, params.get('start_date', '2025-07-23'), loan_term, annual_rate, 
-            params.get('tranches', []), currency_symbol, params.get('loan_term_days', loan_term * 30)
+            temp_quote_data, start_date_str, loan_term, annual_rate,
+            params.get('tranches', []), currency_symbol, loan_term_days
         )
-        
+
         if detailed_schedule and len(detailed_schedule) > 0:
             first_entry = detailed_schedule[0]
             day1_verification = first_entry.get('tranche_release', '—')
             logging.info(f"DIRECT METHOD VERIFICATION: Day 1 tranche = {day1_verification}")
-        
+
         if detailed_schedule:
             # Extract total interest from detailed schedule (this is very close to Excel)
             schedule_total_interest = sum(
@@ -4802,35 +4830,6 @@ class LoanCalculator:
         logging.info(f"  Title Insurance: £{fees.get('titleInsurance', 0):.2f}")
         logging.info(f"  Total Interest: £{total_interest:.2f}")
         logging.info(f"  CALCULATED NET ADVANCE: £{net_advance:.2f}")
-        
-        # Calculate loan term days
-        from datetime import datetime, timedelta
-        from dateutil.relativedelta import relativedelta
-        
-        start_date_str = params.get('start_date', datetime.now().strftime('%Y-%m-%d'))
-        end_date_str = params.get('end_date', '')
-        
-        try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if isinstance(start_date_str, str) else start_date_str
-            
-            # Priority 1: If both start and end dates are provided, use actual date range
-            if end_date_str:
-                end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
-                loan_term_days = (end_date - start_date).days
-                # Recalculate loan term in months based on actual days
-                avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
-                loan_term = max(1, round(loan_term_days / float(avg_days_per_month)))
-            else:
-                # Priority 2: Calculate end date from start date + loan term using Excel methodology
-                end_date = start_date + relativedelta(months=loan_term)
-                end_date = end_date - timedelta(days=1)  # Excel subtracts 1 day for loan term end dates
-                loan_term_days = (end_date - start_date).days + 1  # Add 1 to include both start and end date
-                end_date_str = end_date.strftime('%Y-%m-%d')
-            
-        except Exception as e:
-            print(f"Error calculating loan term days: {e}")
-            loan_term_days = loan_term * 30  # Default fallback
-            end_date_str = ''
         
         # Calculate total Day 1 advance (base amount + arrangement fee + legal fees only, excluding title insurance)
         total_day1_advance = day1_advance + fees.get('arrangementFee', 0) + fees.get('legalFees', 0)
@@ -5215,14 +5214,23 @@ class LoanCalculator:
             logging.info(f"DEBUG: Tranche {i+1}: {tranche}")
         
         schedule = []
-        
+
         # VISUAL DISPLAY FIX: For detailed payment schedule display, always show calculations based on gross amount
         # This is purely for visual purposes - calculation engine remains unchanged
         gross_amount_for_display = Decimal(str(quote_data.get('grossAmount', 0)))
         outstanding_balance = gross_amount_for_display  # Start with gross amount for visual consistency
-        
-        # Generate monthly schedule based on loan term
-        for month in range(1, loan_term + 1):
+
+        # Ensure we generate enough periods to cover all user tranches
+        total_months = max(loan_term, len(user_tranches) + 1)
+
+        # Determine loan end date based on provided day count
+        if loan_term_days is not None:
+            loan_end_date = start_date + timedelta(days=loan_term_days - 1)
+        else:
+            loan_end_date = start_date + relativedelta(months=total_months) - timedelta(days=1)
+
+        # Generate monthly schedule based on total_months
+        for month in range(1, total_months + 1):
             # Calculate payment date (1st of each month)
             if month == 1:
                 payment_date = start_date
@@ -5290,13 +5298,14 @@ class LoanCalculator:
                     logging.info(f"Month {month}: No user tranche available (index {tranche_index} out of {len(user_tranches)})")
             
             # Calculate days in this month for interest calculation
-            if month < loan_term:
+            if month < total_months:
                 next_payment_date = start_date + relativedelta(months=month)
+                if next_payment_date > loan_end_date:
+                    next_payment_date = loan_end_date
                 days_in_period = (next_payment_date - payment_date).days
             else:
-                # Last month - calculate to end date
-                end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
-                days_in_period = (end_date - payment_date).days + 1
+                # Last period ends on loan_end_date
+                days_in_period = (loan_end_date - payment_date).days + 1
             
             # CRITICAL FIX: For Month 1, use tranche_release directly to ensure perfect consistency with summary table
             # For subsequent months, use opening balance + tranche release as this represents the total amount earning interest
