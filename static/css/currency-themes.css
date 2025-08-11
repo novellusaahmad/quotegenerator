@@ -1,34 +1,34 @@
 /* Currency-Based Color Palettes */
 
-/* Pound Sterling Theme - Gold Variations (#B8860B) */
+/* Pound Sterling Theme - Gold Variations (#AD965F) */
 :root[data-currency="GBP"], 
 [data-currency="GBP"] {
     /* Primary Gold Palette */
-    --primary-color: #B8860B;
-    --primary-light: #CDA44C;
-    --primary-lighter: #E6C547;
-    --primary-lightest: #F2E185;
-    --primary-dark: #8B6914;
+    --primary-color: #AD965F;
+    --primary-light: #AD965F;
+    --primary-lighter: #AD965F;
+    --primary-lightest: #AD965F;
+    --primary-dark: #AD965F;
     --primary-darker: #5D4409;
     
     /* Secondary Gold Variations */
-    --secondary-color: #DAA520;
-    --secondary-light: #F4C842;
-    --secondary-dark: #B8860B;
+    --secondary-color: #AD965F;
+    --secondary-light: #AD965F;
+    --secondary-dark: #AD965F;
     
     /* Accent Colors */
-    --accent-color: #FFD700;
+    --accent-color: #AD965F;
     --accent-light: #FFEB3B;
     --accent-dark: #CCAA00;
     
     /* Background and Surface Colors */
-    --surface-primary: #B8860B;
-    --surface-secondary: #CDA44C;
+    --surface-primary: #AD965F;
+    --surface-secondary: #AD965F;
     --surface-light: #F2E185;
     --surface-background: #FFFDF5;
     
     /* Chart Colors */
-    --chart-primary: #B8860B;
+    --chart-primary: #AD965F;
     --chart-secondary: #DAA520;
     --chart-tertiary: #CDA44C;
     --chart-quaternary: #E6C547;
@@ -39,7 +39,7 @@
 :root[data-currency="EUR"], 
 [data-currency="EUR"] {
     /* Primary Teal Palette */
-    --primary-color: #42B89A;
+    --primary-color: #62906F;
     --primary-light: #5CC9B0;
     --primary-lighter: #76DAC6;
     --primary-lightest: #B8F0E5;
@@ -85,15 +85,15 @@
 [data-currency="GBP"] .calculate-button,
 [data-currency="GBP"] .btn-primary,
 .currency-gbp-btn {
-    background-color: #B8860B !important;
-    border-color: #B8860B !important;
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
     color: white !important;
 }
 
 [data-currency="GBP"] #saveLoanBtn,
 [data-currency="GBP"] .btn-success {
-    background-color: #8B6914 !important;
-    border-color: #8B6914 !important;
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
     color: white !important;
 }
 
@@ -117,7 +117,7 @@
 [data-currency="GBP"] .table thead th,
 [data-currency="GBP"] .card-header,
 [data-currency="GBP"] .bg-primary {
-    background-color: #B8860B !important;
+    background-color: #AD965F !important;
     border: 2px solid #000000 !important;
     color: white !important;
 }
@@ -143,7 +143,7 @@ body .table thead th {
 }
 
 body[data-currency="GBP"] .table thead th {
-    background-color: #B8860B !important;
+    background-color: #AD965F !important;
     border: 2px solid #000000 !important;
 }
 
@@ -167,7 +167,7 @@ html[data-currency="GBP"] body .table thead th,
 html[data-currency="GBP"] .table thead th,
 [data-currency="GBP"] .table-primary,
 [data-currency="GBP"] th.bg-primary {
-    background-color: #B8860B !important;
+    background-color: #AD965F !important;
     background-image: none !important;
     border: 2px solid #000000 !important;
     color: white !important;
@@ -199,8 +199,8 @@ html[data-currency="GBP"] .table thead th,
 [data-currency="GBP"] button[type="submit"],
 [data-currency="GBP"] .btn.btn-success,
 [data-currency="GBP"] .btn.btn-primary {
-    background-color: #B8860B !important;
-    border-color: #B8860B !important;
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
     color: white !important;
 }
 
@@ -208,8 +208,8 @@ html[data-currency="GBP"] .table thead th,
 [data-currency="GBP"] .btn-success:hover,
 [data-currency="GBP"] .calculate-button:hover,
 [data-currency="GBP"] #saveLoanBtn:hover {
-    background-color: #8B6914 !important;
-    border-color: #8B6914 !important;
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
 }
 
 [data-currency="EUR"] .btn-primary,
@@ -237,8 +237,8 @@ body[data-currency="GBP"] .btn-primary,
 body[data-currency="GBP"] .btn-success,
 body[data-currency="GBP"] .calculate-button,
 body[data-currency="GBP"] #saveLoanBtn {
-    background-color: #B8860B !important;
-    border-color: #B8860B !important;
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
     color: white !important;
 }
 
@@ -267,10 +267,10 @@ body[data-currency="GBP"] button#saveLoanBtn.btn.btn-success,
 html[data-currency="GBP"] .btn-primary,
 html[data-currency="GBP"] .btn-success,
 html[data-currency="GBP"] .calculate-button {
-    background: #B8860B !important;
-    background-color: #B8860B !important;
+    background: #AD965F !important;
+    background-color: #AD965F !important;
     background-image: none !important;
-    border-color: #B8860B !important;
+    border-color: #AD965F !important;
     color: white !important;
 }
 
@@ -298,15 +298,15 @@ body[data-currency="EUR"] .btn-success {
 /* Override gradient styles from style.css */
 [data-currency="GBP"] .btn-primary,
 [data-currency="GBP"] .calculate-button {
-    background: #B8860B !important;
-    background-color: #B8860B !important;
+    background: #AD965F !important;
+    background-color: #AD965F !important;
     background-image: none !important;
 }
 
 [data-currency="GBP"] .btn-primary:hover,
 [data-currency="GBP"] .calculate-button:hover {
-    background: #8B6914 !important;
-    background-color: #8B6914 !important;
+    background: #AD965F !important;
+    background-color: #AD965F !important;
     background-image: none !important;
 }
 
@@ -333,8 +333,8 @@ body[data-currency="EUR"] .btn-success {
 
 [data-currency="GBP"] .btn-success,
 [data-currency="GBP"] #saveLoanBtn {
-    background: #8B6914 !important;
-    background-color: #8B6914 !important;
+    background: #AD965F !important;
+    background-color: #AD965F !important;
     background-image: none !important;
 }
 
@@ -364,8 +364,8 @@ body[data-currency="EUR"] .btn-success {
 /* Currency-specific toggle button overrides */
 [data-currency="GBP"] .btn-group .btn-outline-secondary,
 [data-currency="GBP"] .btn-group .btn-outline-primary {
-    border-color: #B8860B !important;
-    color: #B8860B !important;
+    border-color: #AD965F !important;
+    color: #AD965F !important;
 }
 
 [data-currency="GBP"] .btn-group .btn-outline-secondary:hover,
@@ -374,8 +374,8 @@ body[data-currency="EUR"] .btn-success {
 [data-currency="GBP"] .btn-group .btn-outline-primary.active,
 [data-currency="GBP"] .btn-group .btn-check:checked + .btn-outline-secondary,
 [data-currency="GBP"] .btn-group .btn-check:checked + .btn-outline-primary {
-    background-color: #B8860B !important;
-    border-color: #B8860B !important;
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
     color: white !important;
 }
 
@@ -395,8 +395,7 @@ body[data-currency="EUR"] .btn-success {
     border-color: #42B89A !important;
     color: white !important;
 }
-    color: white !important;
-}
+  
 
 .btn-group .btn-warning {
     background-color: var(--primary-color) !important;
@@ -405,15 +404,15 @@ body[data-currency="EUR"] .btn-success {
 
 /* Currency-specific toggle button overrides */
 [data-currency="GBP"] .btn-outline-secondary {
-    border-color: #B8860B !important;
-    color: #B8860B !important;
+    border-color: #AD965F !important;
+    color: #AD965F !important;
 }
 
 [data-currency="GBP"] .btn-outline-secondary:hover,
 [data-currency="GBP"] .btn-outline-secondary.active,
 [data-currency="GBP"] .btn-check:checked + .btn-outline-secondary {
-    background-color: #B8860B !important;
-    border-color: #B8860B !important;
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
     color: white !important;
 }
 
@@ -432,8 +431,8 @@ body[data-currency="EUR"] .btn-success {
 
 /* Additional utility classes for JavaScript manipulation */
 .currency-gbp-btn {
-    background-color: #B8860B !important;
-    border-color: #B8860B !important;
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
     color: white !important;
 }
 
@@ -444,14 +443,14 @@ body[data-currency="EUR"] .btn-success {
 }
 
 .currency-gbp-toggle {
-    border-color: #B8860B !important;
-    color: #B8860B !important;
+    border-color: #AD965F !important;
+    color: #AD965F !important;
 }
 
 .currency-gbp-toggle.active,
 .currency-gbp-toggle:checked {
-    background-color: #B8860B !important;
-    border-color: #B8860B !important;
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
     color: white !important;
 }
 
@@ -679,9 +678,9 @@ a:hover {
 
 /* Specific Currency Classes for Direct Application */
 .currency-gbp {
-    --dynamic-primary: #B8860B;
-    --dynamic-secondary: #DAA520;
-    --dynamic-accent: #FFD700;
+    --dynamic-primary: #AD965F;
+    --dynamic-secondary: #AD965F;
+    --dynamic-accent: #AD965F;
 }
 
 .currency-eur {

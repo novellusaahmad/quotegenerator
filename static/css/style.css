@@ -19,9 +19,9 @@
 
 /* Global Styles - Novellus Theme */
 :root {
-    --primary-color: #B8860B;  /* Novellus Gold */
+    --primary-color: #AD965F;  /* Novellus Gold */
     --secondary-color: #1E2B3A;  /* Novellus Navy */
-    --success-color: #8B6914;  /* Dark Gold for success */
+    --success-color: green;  /* Dark Gold for success */
     --danger-color: #dc3545;
     --warning-color: #CDA44C;  /* Light Gold for warnings */
     --info-color: #2D3A49;  /* Light Navy for info */
@@ -73,15 +73,15 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #8B6914 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, #AD965F 100%);
     border-color: var(--primary-color);
     color: white;
     box-shadow: 0 2px 4px rgba(184, 134, 11, 0.2);
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #8B6914 0%, #5D4409 100%);
-    border-color: #8B6914;
+    background: linear-gradient(135deg, #AD965F 0%, #5D4409 100%);
+    border-color: #AD965F;
     color: white;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(184, 134, 11, 0.3);
@@ -139,7 +139,7 @@ body {
 
 /* Calculate button - ensure no blue */
 .calculate-button {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #8B6914 100%) !important;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #AD965F 100%) !important;
     border: none !important;
     color: white !important;
 }

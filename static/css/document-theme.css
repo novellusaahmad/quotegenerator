@@ -76,7 +76,7 @@
 
 /* Document Theme Navigation */
 [data-theme="document"] .navbar {
-    background: linear-gradient(135deg, #4a90a4 0%, #3a7a8a 100%) !important;
+    background: linear-gradient(135deg, #AD965F 0%, #AD965F 100%) !important;
     border-bottom: none;
     box-shadow: 0 2px 8px rgba(74, 144, 164, 0.2);
 }
