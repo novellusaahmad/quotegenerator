@@ -1425,7 +1425,8 @@ class LoanCalculator {
             // Create tranches
             for (let i = 0; i < trancheCount; i++) {
                 const releaseDate = new Date(start);
-                releaseDate.setMonth(releaseDate.getMonth() + (i * monthInterval));
+                // Start auto-generated tranches one month after loan start
+                releaseDate.setMonth(releaseDate.getMonth() + (i * monthInterval) + 1);
                 
                 console.log(`Creating tranche ${i + 1}:`, {
                     amount: trancheAmount,
