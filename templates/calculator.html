@@ -913,96 +913,23 @@
 </table>
 </div>
 </div>
-<!-- Detailed Payment Schedule Table -->
-<div class="card" id="detailedPaymentScheduleCard" style="display: none;">
-<div class="card-header" data-currency="GBP" style="background: var(--primary-color); color: white; text-align: center; font-weight: bold; border: 1px solid #000;">
-                    Detailed Payment Schedule
-                </div>
-<div class="card-body p-0">
-<div class="table-responsive">
-<table class="table table-sm" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
-<thead>
-<tr style="background: #f8f9fa; border: 1px solid #000;">
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Loan Period</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Tranche Release</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Amount</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal Payment</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
-<th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Balance Change</th>
-</tr>
-</thead>
-<tbody id="detailedPaymentScheduleBody">
-<!-- Payment schedule rows will be populated by JavaScript -->
-</tbody>
-</table>
-</div>
-</div>
-</div>
-<!-- Compact Charts - Two in a Row -->
-<div class="row" id="topChartsRow" style="display: none;">
-<div class="col-lg-6">
-<div class="card chart-container" style="height: 220px;">
-<div class="card-header" style="font-size: 0.8rem; background: #B8860B; color: white;">
-<i class="fas fa-chart-pie me-1"></i>Loan Breakdown
-                            <button class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;" type="button">
-<i class="fas fa-expand"></i>
-</button>
-</div>
-<div class="card-body p-1" style="height: calc(100% - 32px);">
-<canvas id="loanBreakdownChart" style="max-height: 180px;"></canvas>
-</div>
-</div>
-</div>
-<div class="col-lg-6">
-
-</div>
-<!-- Compact Balance Chart -->
-<div class="row" id="balanceChartRow" style="display: none;">
-<div class="col-12">
-<div class="card chart-container" style="height: 200px;">
-<div class="card-header" style="font-size: 0.8rem; background: #28a745; color: white;">
-<i class="fas fa-chart-line me-1"></i>Balance Over Time
-                            <button class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;" type="button">
-<i class="fas fa-expand"></i>
-</button>
-</div>
-<div class="card-body p-1" style="height: calc(100% - 32px);">
-<canvas id="balanceOverTimeChart" style="max-height: 160px;"></canvas>
-</div>
-</div>
-</div>
-</div>
-<!-- Compact Development Loan Charts -->
-<div class="row" id="developmentChartsRow" style="display: none;">
-<div class="col-lg-6">
-<div class="card chart-container" style="height: 200px;">
-<div class="card-header" style="font-size: 0.8rem; background: #6c757d; color: white;">
-<i class="fas fa-building me-1"></i>Compound Interest
-                            <button class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;" type="button">
-<i class="fas fa-expand"></i>
-</button>
-</div>
-<div class="card-body p-1" style="height: calc(100% - 32px);">
-<canvas id="compoundInterestChart" style="max-height: 160px;"></canvas>
-</div>
-</div>
-</div>
-<div class="col-lg-6">
-<div class="card chart-container" style="height: 200px;">
-<div class="card-header" style="font-size: 0.8rem; background: #fd7e14; color: white;">
-<i class="fas fa-layer-group me-1"></i>Tranche Release
-                            <button class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;" type="button">
-<i class="fas fa-expand"></i>
-</button>
-</div>
-<div class="card-body p-1" style="height: calc(100% - 32px);">
-<canvas id="trancheReleaseChart" style="max-height: 160px;"></canvas>
-</div>
-</div>
-</div>
+<!-- Visualization Buttons -->
+<div class="mt-4 d-flex flex-wrap gap-2" id="visualizationButtons">
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#paymentScheduleModal">
+        <i class="fas fa-calendar-alt me-1"></i>Detailed Payment Schedule
+    </button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loanBreakdownModal">
+        <i class="fas fa-chart-pie me-1"></i>Loan Breakdown
+    </button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#balanceModal">
+        <i class="fas fa-chart-line me-1"></i>Balance Over Time
+    </button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#compoundInterestModal">
+        <i class="fas fa-building me-1"></i>Compound Interest
+    </button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#trancheModal">
+        <i class="fas fa-layer-group me-1"></i>Tranche Release
+    </button>
 </div>
 </div>
 <!-- End Calculation Results Section -->
@@ -1012,6 +939,98 @@
 <i class="fas fa-calculator fa-3x text-muted"></i>
 <h5 class="text-muted">Enter loan details to see calculations</h5>
 <p class="text-muted">Fill out the form on the left to generate detailed loan calculations and payment schedules.</p>
+</div>
+
+<!-- Visualization Modals -->
+<div class="modal fade" id="paymentScheduleModal" tabindex="-1" aria-labelledby="paymentScheduleLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="paymentScheduleLabel">Detailed Payment Schedule</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="detailedPaymentScheduleCard">
+          <div class="table-responsive">
+            <table class="table table-sm" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+              <thead>
+                <tr style="background: #f8f9fa; border: 1px solid #000;">
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Loan Period</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Tranche Release</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Amount</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal Payment</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
+                  <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Balance Change</th>
+                </tr>
+              </thead>
+              <tbody id="detailedPaymentScheduleBody">
+                <!-- Payment schedule rows will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="loanBreakdownModal" tabindex="-1" aria-labelledby="loanBreakdownLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="loanBreakdownLabel">Loan Breakdown</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <canvas id="loanBreakdownChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="balanceModal" tabindex="-1" aria-labelledby="balanceLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="balanceLabel">Balance Over Time</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <canvas id="balanceOverTimeChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="compoundInterestModal" tabindex="-1" aria-labelledby="compoundInterestLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="compoundInterestLabel">Compound Interest</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <canvas id="compoundInterestChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="trancheModal" tabindex="-1" aria-labelledby="trancheLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="trancheLabel">Tranche Release</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <canvas id="trancheReleaseChart"></canvas>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Calculation Breakdown Modal -->
