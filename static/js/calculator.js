@@ -308,6 +308,14 @@ class LoanCalculator {
             });
         }
 
+        // View calculation breakdown
+        const breakdownBtn = document.getElementById('viewBreakdownBtn');
+        if (breakdownBtn) {
+            breakdownBtn.addEventListener('click', () => {
+                this.populateBreakdownModal();
+            });
+        }
+
         // Initialize toggles on page load - ensure DOM is fully loaded
         setTimeout(() => {
             try {
@@ -1730,6 +1738,94 @@ class LoanCalculator {
         
         trancheContainer.innerHTML = tableHtml;
         trancheContainer.style.display = 'block';
+    }
+
+    populateBreakdownModal() {
+        const modalBody = document.getElementById('calculationBreakdownContent');
+        if (!modalBody) return;
+
+        if (!this.currentResults) {
+            modalBody.innerHTML = '<p>No calculation results available. Please run a calculation first.</p>';
+            return;
+        }
+
+        const r = this.currentResults;
+        const currency = this.getCurrencySymbol(r.currency);
+        const formatMoney = (val) => {
+            const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[,£€]/g, '')) || 0;
+            return currency + num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        const gross = formatMoney(r.grossAmount || r.gross_amount || 0);
+        const arrangement = formatMoney(r.arrangementFee || 0);
+        const legal = formatMoney(r.legalCosts || r.legalFees || 0);
+        const site = formatMoney(r.siteVisitFee || 0);
+        const title = formatMoney(r.titleInsurance || 0);
+        const interest = formatMoney(r.totalInterest || 0);
+        const day1 = formatMoney(r.day1NetAdvance || r.day1Advance || r.netDay1Advance || 0);
+        const totalNet = formatMoney(r.totalNetAdvance || 0);
+        const propertyValue = parseFloat(r.propertyValue || 0);
+        const grossNum = parseFloat(r.grossAmount || r.gross_amount || 0);
+        const startLTV = propertyValue > 0 ? ((grossNum / propertyValue) * 100).toFixed(2) : '0.00';
+        let endLTV = startLTV;
+        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0 && propertyValue > 0) {
+            const last = r.detailed_payment_schedule[r.detailed_payment_schedule.length - 1];
+            const closing = parseFloat(String(last.closing_balance || '').replace(/[,£€]/g, '')) || 0;
+            endLTV = ((closing / propertyValue) * 100).toFixed(2);
+        }
+
+        const rateEl = document.getElementById('interestRatePercentageDisplay');
+        const rateText = rateEl ? rateEl.textContent.trim() : '';
+        const loanTerm = r.loanTerm || r.loan_term || 0;
+
+        let trancheHtml = '';
+        if (r.tranche_breakdown && r.tranche_breakdown.length > 0) {
+            trancheHtml = '<h6>Tranche Drawdowns</h6>' +
+                '<table class="table table-sm"><thead><tr><th>#</th><th>Date</th><th>Amount</th><th>Description</th></tr></thead><tbody>' +
+                r.tranche_breakdown.map(t => `
+                    <tr>
+                        <td>${t.tranche_number}</td>
+                        <td>${this.formatDate(t.release_date)}</td>
+                        <td>${formatMoney(t.amount)}</td>
+                        <td>${t.description || ''}</td>
+                    </tr>
+                `).join('') +
+                '</tbody></table>';
+        }
+
+        let scheduleHtml = '';
+        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
+            scheduleHtml = '<h6>Payment Schedule</h6>' +
+                '<table class="table table-sm"><thead><tr><th>Period</th><th>Interest</th><th>Principal</th><th>Balance</th></tr></thead><tbody>' +
+                r.detailed_payment_schedule.map((p, idx) => {
+                    const interestAmt = formatMoney(p.interest_amount || p.interest || 0);
+                    const principalAmt = formatMoney(p.principal_payment || p.principal || p.tranche_release || 0);
+                    const balanceAmt = formatMoney(p.closing_balance || 0);
+                    return `<tr><td>${idx + 1}</td><td>${interestAmt}</td><td>${principalAmt}</td><td>${balanceAmt}</td></tr>`;
+                }).join('') +
+                '</tbody></table>';
+        }
+
+        let interestSavingsHtml = '';
+        if (r.interestSavings && r.interestSavings > 0) {
+            interestSavingsHtml = `<p><strong>Interest Savings:</strong> ${formatMoney(r.interestSavings)} compared to an interest-only loan.</p>`;
+        }
+
+        modalBody.innerHTML = `
+            <p><strong>Calculation Engine:</strong> The calculator uses simple interest where <code>Interest = Principal × Rate × Time</code>.</p>
+            <p><strong>Interest Rate:</strong> ${rateText} for ${loanTerm} months.</p>
+            <h6>Step by Step</h6>
+            <ol>
+                <li>Starting gross loan amount: ${gross}.</li>
+                <li>Fees deducted – arrangement ${arrangement}, legal ${legal}, site visit ${site}, title insurance ${title}.</li>
+                <li>Total interest charged: ${interest}.</li>
+                <li>Net advance on day one: ${day1} with a total net advance of ${totalNet}.</li>
+                <li>Loan to value begins at ${startLTV}% and ends at ${endLTV}%.</li>
+            </ol>
+            ${interestSavingsHtml}
+            ${trancheHtml}
+            ${scheduleHtml}
+        `;
     }
 
     // Load existing results from session storage or page data
