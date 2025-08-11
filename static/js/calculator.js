@@ -143,6 +143,7 @@ class LoanCalculator {
             
             // Make calculator instance globally accessible for theme updates
             window.loanCalculator = this;
+            this.setupModalResizeHandlers();
             console.log('Loan calculator initialized successfully');
             
         } catch (error) {
@@ -2243,66 +2244,31 @@ class LoanCalculator {
 
     // Generate all charts based on loan type and results
     generateCharts(results) {
-        // Prevent concurrent chart generation
         if (this.chartGenerationInProgress) {
             console.log('Chart generation already in progress, skipping...');
             return;
         }
-        
+
         try {
             this.chartGenerationInProgress = true;
-            console.log('Starting chart generation for loan type:', results.loan_type);
-            
-            // Clear any existing charts first
             this.clearExistingCharts();
-            
-            // Add small delay to ensure canvas elements are ready
+
             setTimeout(() => {
                 try {
-                    console.log('Setting up chart containers...');
-                    
-                    // Hide all chart rows initially
-                    const chartRows = ['topChartsRow', 'balanceChartRow', 'developmentChartsRow', 'trancheChartsRow'];
-                    chartRows.forEach(rowId => {
-                        const row = document.getElementById(rowId);
-                        if (row) {
-                            row.style.display = 'none';
-                            console.log(`Hidden chart row: ${rowId}`);
-                        }
-                    });
-
-                    // Check if we have the necessary chart containers
-                    const loanBreakdownCanvas = document.getElementById('loanBreakdownChart');
-                    if (!loanBreakdownCanvas) {
+                    if (!document.getElementById('loanBreakdownChart')) {
                         console.error('Loan breakdown chart canvas not found');
-                        this.chartGenerationInProgress = false;
                         return;
                     }
 
-                    // Generate basic loan breakdown chart for all loan types
-                    console.log('Creating loan breakdown chart...');
                     this.createLoanBreakdownChart(results);
 
-                    // Show top charts row (always visible for all loan types)
-                    const topChartsRow = document.getElementById('topChartsRow');
-                    if (topChartsRow) {
-                        topChartsRow.style.display = 'flex';
-                        console.log('Showing top charts row');
+                    if (results.detailed_payment_schedule && results.detailed_payment_schedule.length > 0) {
+                        this.createBalanceOverTimeChart(results);
                     }
 
-                    // Always show balance chart if we have payment schedule data
-                    console.log('Checking for payment schedule data...');
-                    const balanceChartRow = document.getElementById('balanceChartRow');
-                    if (balanceChartRow && results.detailed_payment_schedule && results.detailed_payment_schedule.length > 0) {
-                        balanceChartRow.style.display = 'block';
-                        console.log('Balance chart row forced to display - schedule has', results.detailed_payment_schedule.length, 'entries');
-                    }
-
-                    // Generate loan-type specific charts
                     if (results.loan_type === 'development' || results.loan_type === 'development2') {
-                        this.createDevelopmentLoanCharts(results);
-                    } else {
-                        this.createBridgeTermLoanCharts(results);
+                        this.createCompoundInterestChart(results);
+                        this.createTrancheReleaseChart(results);
                     }
 
                     console.log('All charts generated successfully');
@@ -2311,11 +2277,31 @@ class LoanCalculator {
                 } finally {
                     this.chartGenerationInProgress = false;
                 }
-            }, 50); // Small delay to ensure canvas cleanup
+            }, 50);
         } catch (error) {
             console.error('Error generating charts:', error);
             this.chartGenerationInProgress = false;
         }
+    }
+
+    setupModalResizeHandlers() {
+        const mappings = [
+            {modal: 'loanBreakdownModal', key: 'loanBreakdown'},
+            {modal: 'balanceModal', key: 'balanceOverTime'},
+            {modal: 'compoundInterestModal', key: 'compoundInterest'},
+            {modal: 'trancheModal', key: 'trancheRelease'}
+        ];
+        mappings.forEach(({modal, key}) => {
+            const modalEl = document.getElementById(modal);
+            if (modalEl) {
+                modalEl.addEventListener('shown.bs.modal', () => {
+                    const chart = this.charts[key];
+                    if (chart) {
+                        chart.resize();
+                    }
+                });
+            }
+        });
     }
 
     // Create loan breakdown pie chart showing gross amount, fees, and net advance
