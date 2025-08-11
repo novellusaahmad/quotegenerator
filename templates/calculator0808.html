@@ -124,7 +124,7 @@
     
     .result-card:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 25px #AD965F;
+        box-shadow: 0 8px 25px rgba(184, 134, 11, 0.3);
         border-color: rgba(255, 255, 255, 0.2);
     }
     
@@ -411,28 +411,6 @@
             padding: 10px 12px;
         }
     }
-
-    /* Add more vertical spacing between calculator input fields */
-    .calculator-section .input-group {
-        margin-bottom: 1rem !important; /* space between input and next field */
-    }
-
-    /* Also give extra space to sections that have button groups + inputs stacked */
-    .calculator-section .btn-group + .input-group {
-        margin-top: 0.5rem !important;
-        margin-bottom: 1rem !important;
-    }
-
-    /* More space between each field block */
-    .calculator-section > div {
-        margin-bottom: 1.25rem !important;
-    }
-
-    /* Slightly more space after labels */
-    .calculator-section .form-label {
-        margin-bottom: 0.6rem !important;
-    }
-
 </style>
 {% endblock %}
 
@@ -449,7 +427,7 @@
 <!-- Loan Name -->
 <div class="">
 <label class="form-label" for="loanName">
-<i class="fas me-1"></i>Loan Name <span class="text-danger">*</span>
+<i class="fas fa-tag me-1"></i>Loan Name <span class="text-danger">*</span>
 </label>
 <input class="form-control" id="loanName" maxlength="200" name="loanName" placeholder="Enter loan name (e.g., Client Name - Property Address)" required="" style="min-height: 38px; font-size: 1rem;" type="text"/>
 <small class="form-text text-muted">
@@ -463,8 +441,8 @@
 <select class="form-select" id="loanType" name="loan_type" required="">
 <option value="bridge">Bridge Loan</option>
 <option value="term">Term Loan</option>
-<!-- <option value="development">Development Loan</option>-->
-<option value="development2">Development Loan</option>
+<option value="development">Development Loan</option>
+<option value="development2">Development 2 (Excel Goal Seek)</option>
 </select>
 </div>
 <!-- Repayment Option -->
@@ -478,7 +456,18 @@
 <option value="flexible_payment">Flexible Payment Schedule</option>
 </select>
 </div>
-
+<!-- Daily Rate Calculation Method -->
+<div class="">
+<div class="form-check">
+<input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
+<label class="form-check-label" for="use360Days">
+                            Use 360-day calculation for daily rate
+                        </label>
+</div>
+<small class="form-text text-muted">
+                        Checked: Daily rate = Annual rate ÷ 360 | Unchecked: Daily rate = Annual rate ÷ 365 (standard)
+                    </small>
+</div>
 <!-- Currency -->
 <div class="">
 <label class="form-label" for="currency">Currency</label>
@@ -558,19 +547,6 @@
 <input class="form-control" id="annualRateValue" max="50" min="0" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="12"/>
 <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
 </div>
-<small id="rateEquivalenceNote" class="form-text text-muted"></small>
-</div>
-<!-- Daily Rate Calculation Method -->
-<div class="">
-<div class="form-check">
-<input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
-<label class="form-check-label" for="use360Days">
-                            Use 360-day calculation for daily rate
-                        </label>
-</div>
-<small class="form-text text-muted">
-                        Checked: Daily rate = Annual rate ÷ 360 | Unchecked: Daily rate = Annual rate ÷ 365 (standard)
-                    </small>
 </div>
 <!-- Interest Type -->
 <div class="">
@@ -702,7 +678,7 @@
 <label class="form-label">Total Development Tranche</label>
 <div class="input-group">
 <span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="autoTotalAmount" inputmode="decimal" min="0" step="0.0001" type="number" value="1000000"/>
+<input class="form-control" id="autoTotalAmount" inputmode="decimal" min="0" oninput="this.value = this.value.replace(/[^0-9.,]/g, '').replace(/(,)+/g, ',');" pattern="[0-9,]*" step="0.0001" type="text" value="1000000"/>
 </div>
 </div>
 <div class="col-md-6" style="display: none;">
@@ -958,7 +934,18 @@
 </div>
 </div>
 <div class="col-lg-6">
-
+<div class="card chart-container" style="height: 220px;">
+<div class="card-header" style="font-size: 0.8rem; background: #1E2B3A; color: white;">
+<i class="fas fa-chart-column me-1"></i>Payment Breakdown
+                            <button class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;" type="button">
+<i class="fas fa-expand"></i>
+</button>
+</div>
+<div class="card-body p-1" style="height: calc(100% - 32px);">
+<canvas id="monthlyBreakdownChart" style="max-height: 180px;"></canvas>
+</div>
+</div>
+</div>
 </div>
 <!-- Compact Balance Chart -->
 <div class="row" id="balanceChartRow" style="display: none;">
@@ -1975,7 +1962,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Direct aggressive button styling as backup
                 const colors = e.target.value === 'EUR' ? 
                     { primary: '#509664', secondary: '#3d7450' } : 
-                    { primary: '#AD965F', secondary: '#DAA520' };
+                    { primary: '#B8860B', secondary: '#DAA520' };
                 
                 // Direct style updates with class-based approach
                 const calculateBtn = document.querySelector('.calculate-button');

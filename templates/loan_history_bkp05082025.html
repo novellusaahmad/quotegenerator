@@ -21,11 +21,8 @@
                     <button class="btn btn-outline-primary me-2" onclick="loanHistory.loadLoans(true)" title="Refresh loan list">
                         <i class="fas fa-sync-alt me-2"></i>Refresh
                     </button>
-                    <a href="{{ url_for('calculator_page') }}" class="btn btn-novellus-gold me-2">
+                    <a href="{{ url_for('calculator_page') }}" class="btn btn-novellus-gold">
                         <i class="fas fa-calculator me-2"></i>New Calculation
-                    </a>
-                    <a href="{{ url_for('landing_page') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-home me-2"></i>Home
                     </a>
                 </div>
             </div>
@@ -576,7 +573,7 @@ class LoanHistoryManager {
                             ${loan.paymentTiming ? `
                             <tr style="border: 1px solid #000;">
                                 <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Payment Timing</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${loan.paymentTiming === 'advance' ? 'In Advance' : 'In Arrears'}</td>
+                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${loan.paymentTiming === 'in_advance' ? 'In Advance' : 'In Arrears'}</td>
                             </tr>
                             ` : ''}
                             ${loan.paymentFrequency ? `

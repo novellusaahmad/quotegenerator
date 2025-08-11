@@ -3,8 +3,8 @@
 {% block title %}Loan Calculator - Novellus{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
-<link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/novellus-theme.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/currency-themes.css') }}">
 <style>
     /* Calculator and results section styling moved to novellus-theme.css */
     
@@ -124,7 +124,7 @@
     
     .result-card:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 25px #AD965F;
+        box-shadow: 0 8px 25px rgba(184, 134, 11, 0.3);
         border-color: rgba(255, 255, 255, 0.2);
     }
     
@@ -411,610 +411,671 @@
             padding: 10px 12px;
         }
     }
-
-    /* Add more vertical spacing between calculator input fields */
-    .calculator-section .input-group {
-        margin-bottom: 1rem !important; /* space between input and next field */
-    }
-
-    /* Also give extra space to sections that have button groups + inputs stacked */
-    .calculator-section .btn-group + .input-group {
-        margin-top: 0.5rem !important;
-        margin-bottom: 1rem !important;
-    }
-
-    /* More space between each field block */
-    .calculator-section > div {
-        margin-bottom: 1.25rem !important;
-    }
-
-    /* Slightly more space after labels */
-    .calculator-section .form-label {
-        margin-bottom: 0.6rem !important;
-    }
-
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="">
-<h2><i class="fas fa-calculator me-2"></i>Loan Calculator</h2>
-<p class="text-muted">Calculate loan payments, interest, and generate detailed schedules</p>
+<div class="mb-3">
+    <h2><i class="fas fa-calculator me-2"></i>Loan Calculator</h2>
+    <p class="text-muted mb-2">Calculate loan payments, interest, and generate detailed schedules</p>
 </div>
+
 <div class="row">
-<!-- Calculator Form -->
-<div class="col-lg-4">
-<div class="calculator-section">
-<form id="calculatorForm">
-<!-- Loan Name -->
-<div class="">
-<label class="form-label" for="loanName">
-<i class="fas me-1"></i>Loan Name <span class="text-danger">*</span>
-</label>
-<input class="form-control" id="loanName" maxlength="200" name="loanName" placeholder="Enter loan name (e.g., Client Name - Property Address)" required="" style="min-height: 38px; font-size: 1rem;" type="text"/>
-<small class="form-text text-muted">
-<i class="fas fa-info-circle me-1"></i>
+    <!-- Calculator Form -->
+    <div class="col-lg-4">
+        <div class="calculator-section">
+            <form id="calculatorForm">
+                <!-- Loan Name -->
+                <div class="mb-3">
+                    <label for="loanName" class="form-label">
+                        <i class="fas fa-tag me-1"></i>Loan Name <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control" id="loanName" name="loanName" 
+                           placeholder="Enter loan name (e.g., Client Name - Property Address)" 
+                           maxlength="200" style="min-height: 38px; font-size: 1rem;" required>
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
                         Required field - System will automatically add version number and date when saving
                     </small>
-</div>
-<!-- Loan Type Selection -->
-<div class="">
-<label class="form-label" for="loanType">Loan Type</label>
-<select class="form-select" id="loanType" name="loan_type" required="">
-<option value="bridge">Bridge Loan</option>
-<option value="term">Term Loan</option>
-<!-- <option value="development">Development Loan</option>-->
-<option value="development2">Development Loan</option>
-</select>
-</div>
-<!-- Repayment Option -->
-<div class="">
-<label class="form-label" for="repaymentOption">Interest Calculation Type</label>
-<select class="form-select" id="repaymentOption" name="repayment_option" required="">
-<option value="none">Retained Interest (Interest Only)</option>
-<option value="service_only">Service Only (Interest Payments)</option>
-<option value="service_and_capital">Service + Capital (Principal &amp; Interest)</option>
-<option value="capital_payment_only">Capital Payment Only (Interest Retained)</option>
-<option value="flexible_payment">Flexible Payment Schedule</option>
-</select>
-</div>
+                </div>
 
-<!-- Currency -->
-<div class="">
-<label class="form-label" for="currency">Currency</label>
-<select class="form-select" id="currency" name="currency">
-<option value="GBP">GBP (£)</option>
-<option value="EUR">EUR (€)</option>
-</select>
-</div>
-<!-- Property Value -->
-<div class="">
-<label class="form-label" for="propertyValue">Property Value</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="propertyValue" inputmode="decimal" min="0" name="property_value" pattern="[0-9,]*" required="" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-</div>
-</div>
-<!-- Amount Input Type -->
-<div class="">
-<label class="form-label">Amount Input</label>
-<div class="btn-group w-100" role="group">
-<input checked="" class="btn-check" id="grossAmount" name="amount_input_type" type="radio" value="gross"/>
-<label class="btn btn-outline-primary" for="grossAmount">Gross Amount</label>
-<input class="btn-check" id="netAmount" name="amount_input_type" type="radio" value="net"/>
-<label class="btn btn-outline-primary" for="netAmount">Net Amount</label>
-</div>
-</div>
-<!-- Gross Amount Input -->
-<div class="" id="grossAmountSection">
-<label class="form-label">Gross Amount</label>
-<div class="btn-group w-100" role="group">
-<input checked="" class="btn-check" id="grossFixed" name="gross_amount_type" type="radio" value="fixed"/>
-<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossFixed">Fixed Amount</label>
-<input class="btn-check" id="grossPercentage" name="gross_amount_type" type="radio" value="percentage"/>
-<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossPercentage">% of Property Value</label>
-</div>
-<div class="input-group" id="grossFixedInput">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0" name="gross_amount" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-</div>
-<div class="input-group" id="grossPercentageInput" style="display: none;">
-<input class="form-control" id="grossAmountPercentage" max="100" min="0" name="gross_amount_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
-<span class="input-group-text">%</span>
-</div>
-</div>
-<!-- Net Amount Input -->
-<div class="" id="netAmountSection" style="display: none;">
-<label class="form-label" for="netAmountInput">Net Amount</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="netAmountInput" inputmode="decimal" min="0" name="net_amount" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-</div>
-<small class="form-text text-muted">Total net amount required for the loan</small>
-</div>
-<!-- Day 1 Advance (Development Loans) -->
-<div class="" id="day1AdvanceSection" style="display: none;">
-<label class="form-label" for="day1Advance">Day 1 Advance (Optional)</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="day1Advance" inputmode="decimal" min="0" name="day1_advance" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="0"/>
-</div>
-<small class="form-text text-muted">Initial advance on first day (will be included in first tranche)</small>
-</div>
-<!-- Interest Rate -->
-<div class="">
-<label class="form-label">Interest Rate</label>
-<div class="btn-group w-100" role="group">
-<input class="btn-check" id="monthlyRate" name="rate_input_type" type="radio" value="monthly"/>
-<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="monthlyRate">Monthly Rate</label>
-<input checked="" class="btn-check" id="annualRate" name="rate_input_type" type="radio" value="annual"/>
-<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="annualRate">Annual Rate</label>
-</div>
-<div class="input-group" id="monthlyRateInput" style="display: none;">
-<input class="form-control" id="monthlyRateValue" max="10" min="0" name="monthly_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="1"/>
-<span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
-</div>
-<div class="input-group" id="annualRateInput">
-<input class="form-control" id="annualRateValue" max="50" min="0" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="12"/>
-<span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
-</div>
-<small id="rateEquivalenceNote" class="form-text text-muted"></small>
-</div>
-<!-- Daily Rate Calculation Method -->
-<div class="">
-<div class="form-check">
-<input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
-<label class="form-check-label" for="use360Days">
+                <!-- Loan Type Selection -->
+                <div class="mb-3">
+                    <label for="loanType" class="form-label">Loan Type</label>
+                    <select class="form-select" id="loanType" name="loan_type" required>
+                        <option value="bridge">Bridge Loan</option>
+                        <option value="term">Term Loan</option>
+                        <option value="development">Development Loan</option>
+                        <option value="development2">Development 2 (Excel Goal Seek)</option>
+                    </select>
+                </div>
+
+                <!-- Repayment Option -->
+                <div class="mb-3">
+                    <label for="repaymentOption" class="form-label">Interest Calculation Type</label>
+                    <select class="form-select" id="repaymentOption" name="repayment_option" required>
+                        <option value="none">Retained Interest (Interest Only)</option>
+                        <option value="service_only">Service Only (Interest Payments)</option>
+                        <option value="service_and_capital">Service + Capital (Principal & Interest)</option>
+                        <option value="capital_payment_only">Capital Payment Only (Interest Retained)</option>
+                        <option value="flexible_payment">Flexible Payment Schedule</option>
+                    </select>
+                </div>
+                <!-- Daily Rate Calculation Method -->
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="use360Days" name="use_360_days" value="true">
+                        <label class="form-check-label" for="use360Days">
                             Use 360-day calculation for daily rate
                         </label>
-</div>
-<small class="form-text text-muted">
+                    </div>
+                    <small class="form-text text-muted">
                         Checked: Daily rate = Annual rate ÷ 360 | Unchecked: Daily rate = Annual rate ÷ 365 (standard)
                     </small>
-</div>
-<!-- Interest Type -->
-<div class="">
-<label class="form-label">Interest Calculation</label>
-<select class="form-select" id="interestType" name="interest_type" required="">
-<option selected="" value="simple">Simple Interest</option>
-<option value="compound_daily">Compound Daily</option>
-<option value="compound_monthly">Compound Monthly</option>
-<option value="compound_quarterly">Compound Quarterly</option>
-</select>
-</div>
-<!-- Loan Term -->
-<div class="">
-<label class="form-label" for="loanTerm">Loan Term</label>
-<div class="input-group">
-<input class="form-control" id="loanTerm" max="600" min="3" name="loan_term" required="" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
-<span class="input-group-text">months</span>
-</div>
-</div>
-<!-- Start Date -->
-<div class="">
-<label class="form-label" for="startDate">Start Date</label>
-<input class="form-control" id="startDate" name="start_date" required="" style="min-height: 38px; font-size: 1rem;" type="date"/>
-</div>
-<!-- End Date -->
-<div class="">
-<label class="form-label" for="endDate">End Date</label>
-<input class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;" type="date"/>
-<small class="form-text text-muted">Automatically calculated based on start date and loan term. You can edit manually to override.</small>
-</div>
-<!-- Fees Section -->
-<div class="">
-<h6 class="">Fees &amp; Charges</h6>
-<div class="">
-<label class="form-label" for="arrangementFeeRate">Arrangement Fee</label>
-<div class="input-group">
-<input class="form-control" id="arrangementFeeRate" max="10" min="0" name="arrangement_fee_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="2"/>
-<span class="input-group-text">%</span>
-</div>
-</div>
-<div class="">
-<label class="form-label" for="legalFees">Legal Fees</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="legalFees" inputmode="decimal" min="0" name="legal_fees" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-</div>
-</div>
-<div class="">
-<label class="form-label" for="siteVisitFee">Site Visit Fee</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="siteVisitFee" inputmode="decimal" min="0" name="site_visit_fee" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-</div>
-</div>
-<div class="">
-<label class="form-label" for="titleInsuranceRate">Title Insurance</label>
-<div class="input-group">
-<input class="form-control" id="titleInsuranceRate" max="1" min="0" name="title_insurance_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
-<span class="input-group-text">%</span>
-</div>
-</div>
-</div>
-<!-- Additional Parameters -->
-<div class="" id="additionalParams" style="display: none;">
-<h6 class="">Additional Parameters</h6>
-<!-- Payment Timing Options -->
-<div class="" id="paymentTimingSection" style="display: none;">
-<div class="row">
-<div class="col-md-6">
-<label class="form-label">Payment Timing</label>
-<div class="btn-group w-100" role="group">
-<input checked="" class="btn-check" id="paymentInAdvance" name="payment_timing" type="radio" value="advance"/>
-<label class="btn btn-outline-primary" for="paymentInAdvance">Advance</label>
-<input class="btn-check" id="paymentInArrears" name="payment_timing" type="radio" value="arrears"/>
-<label class="btn btn-outline-primary" for="paymentInArrears">Arrears</label>
-</div>
-</div>
-<div class="col-md-6">
-<label class="form-label">Payment Frequency</label>
-<div class="btn-group w-100" role="group">
-<input checked="" class="btn-check" id="paymentMonthly" name="payment_frequency" type="radio" value="monthly"/>
-<label class="btn btn-outline-primary" for="paymentMonthly">Monthly</label>
-<input class="btn-check" id="paymentQuarterly" name="payment_frequency" type="radio" value="quarterly"/>
-<label class="btn btn-outline-primary" for="paymentQuarterly">Quarterly</label>
-</div>
-</div>
-</div>
-</div>
-<div class="" id="capitalRepaymentSection" style="display: none;">
-<label class="form-label" for="capitalRepayment">Capital Repayment Amount</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="capitalRepayment" inputmode="decimal" min="0" name="capital_repayment" pattern="[0-9,]*" placeholder="e.g. 10000" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="10000"/>
-</div>
-<small class="form-text text-muted">Principal amount to repay each payment period (monthly/quarterly)</small>
-<small class="form-text text-muted">Amount will adjust based on payment frequency</small>
-</div>
-<div class="" id="flexiblePaymentSection" style="display: none;">
-<label class="form-label" for="flexiblePayment">Flexible Payment per Payment</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="flexiblePayment" inputmode="decimal" min="0" name="flexible_payment" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="20000"/>
-</div>
-<small class="form-text text-muted">Amount will adjust based on payment frequency</small>
-</div>
-</div>
-<!-- Development Loan Tranches -->
-<div class="" id="developmentTrancheSection" style="display: none;">
-<h6 class="">Development Loan Tranches</h6>
-<!-- Tranche Mode Selection -->
-<div class="">
-<label class="form-label">Tranche Setup</label>
-<div class="btn-group w-100" role="group">
-<input checked="" class="btn-check" id="manual_tranches" name="tranche_mode" type="radio" value="manual"/>
-<label class="btn btn-outline-primary" for="manual_tranches">Manual Entry</label>
-<input class="btn-check" id="auto_tranches" name="tranche_mode" type="radio" value="auto"/>
-<label class="btn btn-outline-primary" for="auto_tranches">Auto Generate</label>
-</div>
-</div>
-<!-- Auto Generation Settings -->
-<div class="" id="autoTrancheSettings" style="display: none;">
-<div class="card">
-<div class="card-header">
-<h6 class="">Auto Generation Settings</h6>
-</div>
-<div class="card-body">
-<div class="row">
-<div class="col-md-6">
-<label class="form-label">Total Development Tranche</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="autoTotalAmount" inputmode="decimal" min="0" step="0.0001" type="number" value="1000000"/>
-</div>
-</div>
-<div class="col-md-6" style="display: none;">
-<label class="form-label">Start Date</label>
-<input class="form-control" id="autoStartDate" type="date"/>
-</div>
-</div>
-<div class="row" style="display: none;">
-<div class="col-md-6">
-<label class="form-label">Loan Period (Months)</label>
-<input class="form-control" id="autoLoanPeriod" max="60" min="1" type="number" value="12"/>
-</div>
-<div class="col-md-6" style="display: none;">
-<label class="form-label">Interest Rate (%)</label>
-<input class="form-control" id="autoInterestRate" max="50" min="0" step="0.0001" type="number" value="12"/>
-</div>
-</div>
-<div class="row">
-<div class="col-md-6">
-<label class="form-label">Number of Tranches</label>
-<input class="form-control" id="autoTrancheCount" max="20" min="1" type="number" value="6"/>
-</div>
-<div class="col-md-6 d-flex align-items-end">
-<button class="btn btn-success w-100" id="generateTranches" type="button">
-<i class="fas fa-magic me-2"></i>Generate Tranches
-                                        </button>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Manual Tranche Controls -->
-<div class="d-flex justify-content-between align-items-center" id="manualTrancheControls">
-<span>Number of Tranches</span>
-<div class="btn-group" role="group">
-<button class="btn btn-outline-secondary btn-sm" id="decreaseTranches" type="button">-</button>
-<span class="btn btn-outline-secondary btn-sm" id="trancheCount">1</span>
-<button class="btn btn-outline-secondary btn-sm" id="increaseTranches" type="button">+</button>
-</div>
-</div>
-<div id="tranchesContainer">
-<div class="tranche-item" data-tranche="1">
-<div class="card">
-<div class="card-header">
-<h6 class="">Tranche 1</h6>
-</div>
-<div class="card-body">
-<div class="row">
-<div class="col-md-6">
-<label class="form-label">Tranche Amount</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control tranche-amount" min="0" name="tranche_amounts[]" placeholder="0" step="0.0001" type="number"/>
-</div>
-</div>
-<div class="col-md-6">
-<label class="form-label">Release Date</label>
-<input class="form-control tranche-date" name="tranche_dates[]" type="date"/>
-</div>
-</div>
-<div class="row">
-<div class="col-md-6">
-<label class="form-label">Interest Rate (%)</label>
-<input class="form-control tranche-rate" max="50" min="0" name="tranche_rates[]" placeholder="Annual rate" step="0.0001" type="number"/>
-</div>
-<div class="col-md-6">
-<label class="form-label">Description</label>
-<input class="form-control tranche-description" name="tranche_descriptions[]" placeholder="e.g., Land Purchase" type="text"/>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- Calculate Button -->
-<div class="d-grid gap-2">
-<button class="btn btn-primary btn-lg calculate-button" data-currency="GBP" type="submit">
-<i class="fas fa-calculator me-2"></i>Calculate
-                    </button>
-<button class="btn btn-success" data-currency="GBP" disabled="" id="saveLoanBtn" type="button">
-<i class="fas fa-save me-2"></i><span id="saveLoanText">Save Loan</span>
-</button>
-<button class="btn btn-outline-secondary" id="cancelEditBtn" style="display: none;" type="button">
-<i class="fas fa-times me-2"></i>Cancel Edit
-                    </button>
-</div>
-</form>
-</div>
-</div>
-<!-- Results Section -->
-<div class="col-lg-8">
-<div class="results-section" id="resultsSection" style="display: none;">
-<!-- Edit Mode Notice -->
-<div class="row" id="editModeNotice" style="display: none;">
-<div class="col-12">
-<div class="alert alert-info">
-<i class="fas fa-edit me-2"></i>
-<strong>Edit Mode:</strong> You are editing "<span id="editingLoanName"></span>". Make changes and save to update the loan.
+                </div>
+                <!-- Currency -->
+                <div class="mb-3">
+                    <label for="currency" class="form-label">Currency</label>
+                    <select class="form-select" id="currency" name="currency">
+                        <option value="GBP">GBP (£)</option>
+                        <option value="EUR">EUR (€)</option>
+                    </select>
+                </div>
+
+                <!-- Property Value -->
+                <div class="mb-3">
+                    <label for="propertyValue" class="form-label">Property Value</label>
+                    <div class="input-group">
+                        <span class="input-group-text currency-symbol">£</span>
+                        <input type="text" inputmode="decimal" pattern="[0-9,]*" class="form-control" id="propertyValue" name="property_value" 
+                               min="0" step="0.0001" value="" required style="min-height: 38px; font-size: 1rem;">
                     </div>
-</div>
-</div>
-<!-- Calculation Results Section -->
-<div id="calculationResultsSection">
-<div class="">
-<h4>Calculation Results</h4>
-</div>
-<!-- Summary Table (Loan Summary Format) -->
-<div class="card">
-<div class="card-header" data-currency="GBP" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white; text-align: center; font-weight: bold; border: 1px solid #000;">
+                </div>
+
+                <!-- Amount Input Type -->
+                <div class="mb-3">
+                    <label class="form-label">Amount Input</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="amount_input_type" id="grossAmount" value="gross" checked>
+                        <label class="btn btn-outline-primary" for="grossAmount">Gross Amount</label>
+                        
+                        <input type="radio" class="btn-check" name="amount_input_type" id="netAmount" value="net">
+                        <label class="btn btn-outline-primary" for="netAmount">Net Amount</label>
+                    </div>
+                </div>
+
+                <!-- Gross Amount Input -->
+                <div id="grossAmountSection" class="mb-3">
+                    <label class="form-label">Gross Amount</label>
+                    <div class="btn-group w-100 mb-2" role="group">
+                        <input type="radio" class="btn-check" name="gross_amount_type" id="grossFixed" value="fixed" checked>
+                        <label class="btn btn-outline-secondary btn-sm" for="grossFixed" data-currency="GBP">Fixed Amount</label>
+                        
+                        <input type="radio" class="btn-check" name="gross_amount_type" id="grossPercentage" value="percentage">
+                        <label class="btn btn-outline-secondary btn-sm" for="grossPercentage" data-currency="GBP">% of Property Value</label>
+                    </div>
+                    
+                    <div id="grossFixedInput" class="input-group">
+                        <span class="input-group-text currency-symbol">£</span>
+                        <input type="text" inputmode="decimal" pattern="[0-9,]*" class="form-control" id="grossAmountFixed" name="gross_amount" 
+                               min="0" step="0.0001" value="" style="min-height: 38px; font-size: 1rem;">
+                    </div>
+                    
+                    <div id="grossPercentageInput" class="input-group" style="display: none;">
+                        <input type="number" class="form-control" id="grossAmountPercentage" name="gross_amount_percentage" 
+                               min="0" max="100" step="0.0001" style="min-height: 38px; font-size: 1rem;">
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+
+                <!-- Net Amount Input -->
+                <div id="netAmountSection" class="mb-3" style="display: none;">
+                    <label for="netAmountInput" class="form-label">Net Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text currency-symbol">£</span>
+                        <input type="text" inputmode="decimal" pattern="[0-9,]*" class="form-control" id="netAmountInput" name="net_amount" 
+                               min="0" step="0.0001" value="" style="min-height: 38px; font-size: 1rem;">
+                    </div>
+                    <small class="form-text text-muted">Total net amount required for the loan</small>
+                </div>
+
+                <!-- Day 1 Advance (Development Loans) -->
+                <div id="day1AdvanceSection" class="mb-3" style="display: none;">
+                    <label for="day1Advance" class="form-label">Day 1 Advance (Optional)</label>
+                    <div class="input-group">
+                        <span class="input-group-text currency-symbol">£</span>
+                        <input type="text" inputmode="decimal" pattern="[0-9,]*" class="form-control" id="day1Advance" name="day1_advance" 
+                               min="0" step="0.0001" value="0" style="min-height: 38px; font-size: 1rem;">
+                    </div>
+                    <small class="form-text text-muted">Initial advance on first day (will be included in first tranche)</small>
+                </div>
+
+                <!-- Interest Rate -->
+                <div class="mb-3">
+                    <label class="form-label">Interest Rate</label>
+                    <div class="btn-group w-100 mb-2" role="group">
+                        <input type="radio" class="btn-check" name="rate_input_type" id="monthlyRate" value="monthly">
+                        <label class="btn btn-outline-secondary btn-sm" for="monthlyRate" data-currency="GBP">Monthly Rate</label>
+                        
+                        <input type="radio" class="btn-check" name="rate_input_type" id="annualRate" value="annual" checked>
+                        <label class="btn btn-outline-secondary btn-sm" for="annualRate" data-currency="GBP">Annual Rate</label>
+                    </div>
+                    
+                    <div id="monthlyRateInput" class="input-group" style="display: none;">
+                        <input type="number" class="form-control" id="monthlyRateValue" name="monthly_rate" 
+                               min="0" max="10" step="0.0001" value="1" style="min-height: 38px; font-size: 1rem;">
+                        <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
+                    </div>
+                    
+                    <div id="annualRateInput" class="input-group">
+                        <input type="number" class="form-control" id="annualRateValue" name="annual_rate" 
+                               min="0" max="50" step="0.0001" value="12" style="min-height: 38px; font-size: 1rem;">
+                        <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
+                    </div>
+                </div>
+
+                <!-- Interest Type -->
+                <div class="mb-3">
+                    <label class="form-label">Interest Calculation</label>
+                    <select class="form-select" id="interestType" name="interest_type" required>
+                        <option value="simple" selected>Simple Interest</option>
+                        <option value="compound_daily">Compound Daily</option>
+                        <option value="compound_monthly">Compound Monthly</option>
+                        <option value="compound_quarterly">Compound Quarterly</option>
+                    </select>
+                </div>
+
+
+
+                <!-- Loan Term -->
+                <div class="mb-3">
+                    <label for="loanTerm" class="form-label">Loan Term</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="loanTerm" name="loan_term" 
+                               min="3" max="600" value="" required style="min-height: 38px; font-size: 1rem;">
+                        <span class="input-group-text">months</span>
+                    </div>
+                </div>
+
+                <!-- Start Date -->
+                <div class="mb-3">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="startDate" name="start_date" required style="min-height: 38px; font-size: 1rem;">
+                </div>
+
+                <!-- End Date -->
+                <div class="mb-3">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;">
+                    <small class="form-text text-muted">Automatically calculated based on start date and loan term. You can edit manually to override.</small>
+                </div>
+
+                <!-- Fees Section -->
+                <div class="mb-3">
+                    <h6 class="mb-3">Fees & Charges</h6>
+                    
+                    <div class="mb-3">
+                        <label for="arrangementFeeRate" class="form-label">Arrangement Fee</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="arrangementFeeRate" name="arrangement_fee_percentage" 
+                                   min="0" max="10" step="0.0001" value="2" style="min-height: 38px; font-size: 1rem;">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="legalFees" class="form-label">Legal Fees</label>
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">£</span>
+                            <input type="text" inputmode="decimal" pattern="[0-9,]*" class="form-control" id="legalFees" name="legal_fees" 
+                                   min="0" step="0.0001" value="" style="min-height: 38px; font-size: 1rem;">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="siteVisitFee" class="form-label">Site Visit Fee</label>
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">£</span>
+                            <input type="text" inputmode="decimal" pattern="[0-9,]*" class="form-control" id="siteVisitFee" name="site_visit_fee" 
+                                   min="0" step="0.0001" value="" style="min-height: 38px; font-size: 1rem;">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="titleInsuranceRate" class="form-label">Title Insurance</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="titleInsuranceRate" name="title_insurance_rate" 
+                                   min="0" max="1" step="0.0001" value="" style="min-height: 38px; font-size: 1rem;">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Parameters -->
+                <div id="additionalParams" class="mb-3" style="display: none;">
+                    <h6 class="mb-3">Additional Parameters</h6>
+                    
+                    <!-- Payment Timing Options -->
+                    <div id="paymentTimingSection" class="mb-3" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Payment Timing</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="payment_timing" id="paymentInAdvance" value="advance" checked>
+                                    <label class="btn btn-outline-primary" for="paymentInAdvance">Advance</label>
+                                    <input type="radio" class="btn-check" name="payment_timing" id="paymentInArrears" value="arrears">
+                                    <label class="btn btn-outline-primary" for="paymentInArrears">Arrears</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Payment Frequency</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="payment_frequency" id="paymentMonthly" value="monthly" checked>
+                                    <label class="btn btn-outline-primary" for="paymentMonthly">Monthly</label>
+                                    <input type="radio" class="btn-check" name="payment_frequency" id="paymentQuarterly" value="quarterly">
+                                    <label class="btn btn-outline-primary" for="paymentQuarterly">Quarterly</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="capitalRepaymentSection" class="mb-3" style="display: none;">
+                        <label for="capitalRepayment" class="form-label">Capital Repayment Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">£</span>
+                            <input type="text" inputmode="decimal" pattern="[0-9,]*" class="form-control" id="capitalRepayment" name="capital_repayment" 
+                                   min="0" step="0.0001" value="10000" placeholder="e.g. 10000" style="min-height: 38px; font-size: 1rem;">
+                        </div>
+                        <small class="form-text text-muted">Principal amount to repay each payment period (monthly/quarterly)</small>
+                        <small class="form-text text-muted">Amount will adjust based on payment frequency</small>
+                    </div>
+                    
+                    <div id="flexiblePaymentSection" class="mb-3" style="display: none;">
+                        <label for="flexiblePayment" class="form-label">Flexible Payment per Payment</label>
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">£</span>
+                            <input type="text" inputmode="decimal" pattern="[0-9,]*" class="form-control" id="flexiblePayment" name="flexible_payment" 
+                                   min="0" step="0.0001" value="20000" style="min-height: 38px; font-size: 1rem;">
+                        </div>
+                        <small class="form-text text-muted">Amount will adjust based on payment frequency</small>
+                    </div>
+                </div>
+
+                <!-- Development Loan Tranches -->
+                <div id="developmentTrancheSection" class="mb-3" style="display: none;">
+                    <h6 class="mb-3">Development Loan Tranches</h6>
+                    
+                    <!-- Tranche Mode Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Tranche Setup</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="tranche_mode" id="manual_tranches" value="manual" checked>
+                            <label class="btn btn-outline-primary" for="manual_tranches">Manual Entry</label>
+                            
+                            <input type="radio" class="btn-check" name="tranche_mode" id="auto_tranches" value="auto">
+                            <label class="btn btn-outline-primary" for="auto_tranches">Auto Generate</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Auto Generation Settings -->
+                    <div id="autoTrancheSettings" class="mb-3" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Auto Generation Settings</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Total Development Tranche</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text currency-symbol">£</span>
+                                            <input type="number" class="form-control" id="autoTotalAmount" min="0" step="0.0001" value="1000000">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6" style="display: none;">
+                                        <label class="form-label">Start Date</label>
+                                        <input type="date" class="form-control" id="autoStartDate">
+                                    </div>
+                                </div>
+                                <div class="row mt-2" style="display: none;">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Loan Period (Months)</label>
+                                        <input type="number" class="form-control" id="autoLoanPeriod" min="1" max="60" value="12">
+                                    </div>
+                                    <div class="col-md-6" style="display: none;">
+                                        <label class="form-label">Interest Rate (%)</label>
+                                        <input type="number" class="form-control" id="autoInterestRate" min="0" max="50" step="0.0001" value="12">
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Number of Tranches</label>
+                                        <input type="number" class="form-control" id="autoTrancheCount" min="1" max="20" value="6">
+                                    </div>
+                                    <div class="col-md-6 d-flex align-items-end">
+                                        <button type="button" class="btn btn-success w-100" id="generateTranches">
+                                            <i class="fas fa-magic me-2"></i>Generate Tranches
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Manual Tranche Controls -->
+                    <div id="manualTrancheControls" class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Number of Tranches</span>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="decreaseTranches">-</button>
+                            <span class="btn btn-outline-secondary btn-sm" id="trancheCount">1</span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="increaseTranches">+</button>
+                        </div>
+                    </div>
+                    
+                    <div id="tranchesContainer">
+                        <div class="tranche-item mb-3" data-tranche="1">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Tranche 1</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Tranche Amount</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input type="number" class="form-control tranche-amount" 
+                                                       name="tranche_amounts[]" min="0" step="0.0001" placeholder="0">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Release Date</label>
+                                            <input type="date" class="form-control tranche-date" 
+                                                   name="tranche_dates[]">
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Interest Rate (%)</label>
+                                            <input type="number" class="form-control tranche-rate" 
+                                                   name="tranche_rates[]" min="0" max="50" step="0.0001" 
+                                                   placeholder="Annual rate">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Description</label>
+                                            <input type="text" class="form-control tranche-description" 
+                                                   name="tranche_descriptions[]" placeholder="e.g., Land Purchase">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculate Button -->
+                <div class="d-grid gap-2 mt-4 mb-3">
+                    <button type="submit" class="btn btn-primary btn-lg calculate-button" data-currency="GBP">
+                        <i class="fas fa-calculator me-2"></i>Calculate
+                    </button>
+                    <button type="button" class="btn btn-success" id="saveLoanBtn" disabled data-currency="GBP">
+                        <i class="fas fa-save me-2"></i><span id="saveLoanText">Save Loan</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="cancelEditBtn" style="display: none;">
+                        <i class="fas fa-times me-2"></i>Cancel Edit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="col-lg-8">
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <!-- Edit Mode Notice -->
+            <div class="row mb-3" id="editModeNotice" style="display: none;">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-edit me-2"></i>
+                        <strong>Edit Mode:</strong> You are editing "<span id="editingLoanName"></span>". Make changes and save to update the loan.
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Calculation Results Section -->
+            <div id="calculationResultsSection">
+                <div class="mb-4">
+                    <h4>Calculation Results</h4>
+                </div>
+
+            <!-- Summary Table (Loan Summary Format) -->
+            <div class="card mb-4">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white; text-align: center; font-weight: bold; border: 1px solid #000;" data-currency="GBP">
                     Loan Summary
                 </div>
-<div class="card-body p-0">
-<table class="table" style="border: 1px solid #000; border-collapse: collapse;">
-<tbody>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Valuation</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
-<td class="fw-bold px-3 text-end" id="propertyValueResult" style="color: #000 !important; background: #f8f9fa;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Gross Amount</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
-<td class="fw-bold px-3 text-end" id="grossAmountResult" style="color: #000 !important; background: white;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Date of First Drawdown</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
-<td class="fw-bold px-3 text-end" id="startDateResult" style="color: #000 !important; background: #f8f9fa;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">End Date</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
-<td class="fw-bold px-3 text-end" id="endDateResult" style="color: #000 !important; background: white;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Months)</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
-<td class="fw-bold px-3 text-end" id="loanTermResult" style="color: #000 !important; background: #f8f9fa;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Days)</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
-<td class="fw-bold px-3 text-end" id="loanTermDaysResult" style="color: #000 !important; background: #f8f9fa;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Arrangement Fee</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="arrangementFeePercentageDisplay">2.00%</span> <span class="currency-symbol">£</span></td>
-<td class="fw-bold px-3 text-end" id="arrangementFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Legal Costs</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
-<td class="fw-bold px-3 text-end" id="legalCostsResult" style="color: #000 !important; background: white;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Site Visit Fee</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
-<td class="fw-bold px-3 text-end" id="siteVisitFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Title Insurance</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"><span id="titleInsurancePercentageDisplay">0.01%</span> <span class="currency-symbol">£</span></td>
-<td class="fw-bold px-3 text-end" id="titleInsuranceResult" style="color: #000 !important; background: white;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="interestRatePercentageDisplay">12.00%</span> <span class="currency-symbol">£</span></td>
-<td class="fw-bold px-3 text-end" id="totalInterestResult" style="color: #000 !important; background: #f8f9fa;">-</td>
-</tr>
-<tr id="interestOnlyTotalRow" style="border: 1px solid #000; display: none;">
-<td class="px-3" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">Interest-Only Total</td>
-<td class="text-end px-3 currency-symbol" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">£</td>
-<td class="fw-bold px-3 text-end" id="interestOnlyTotalResult" style="color: #6c757d !important; background: white;">-</td>
-</tr>
-<tr id="interestSavingsRow" style="border: 1px solid #000; display: none;">
-<td class="px-3" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest Savings vs Interest-Only</td>
-<td class="text-end px-3" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="savingsPercentageResult">-</span></td>
-<td class="fw-bold px-3 text-end" id="interestSavingsResult" style="color: #28a745 !important; background: #f8f9fa;">-</td>
-</tr>
-<tr id="periodicInterestRow" style="border: 1px solid #000; display: none;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">
-<span id="periodicInterestLabel">Monthly Interest Payment</span>
-</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
-<td class="fw-bold px-3 text-end" id="periodicInterestResult" style="color: #000 !important; background: white;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Net Day 1 Advance</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
-<td class="fw-bold px-3 text-end" id="netDay1AdvanceResult" style="color: #000 !important; background: #f8f9fa;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">LTV Ratio</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
-<td class="fw-bold px-3 text-end" id="ltvRatioResult" style="color: #000 !important; background: #f8f9fa;">-</td>
-</tr>
-<tr style="border: 1px solid #000;">
-<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">End LTV</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
-<td class="fw-bold px-3 text-end" id="endLTVResult" style="color: #000 !important; background: white;">-</td>
-</tr>
-<tr style="border: 2px solid #000; background: #f0f0f0;">
-<td class="fw-bold px-3" style="color: #000 !important; border-right: 1px solid #000;">Total Net Advance</td>
-<td class="fw-bold text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000;">£</td>
-<td class="fw-bold px-3 text-end" id="totalNetAdvanceResult" style="color: #000 !important; font-size: 1.1rem;">-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<!-- Detailed Payment Schedule Table -->
-<div class="card" id="detailedPaymentScheduleCard" style="display: none;">
-<div class="card-header" data-currency="GBP" style="background: var(--primary-color); color: white; text-align: center; font-weight: bold; border: 1px solid #000;">
+                <div class="card-body p-0">
+                    <table class="table mb-0" style="border: 1px solid #000; border-collapse: collapse;">
+                        <tbody>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Valuation</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="propertyValueResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Gross Amount</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="grossAmountResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Date of First Drawdown</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="startDateResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">End Date</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="endDateResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Months)</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="loanTermResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Days)</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="loanTermDaysResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Arrangement Fee</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="arrangementFeePercentageDisplay">2.00%</span> <span class="currency-symbol">£</span></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="arrangementFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Legal Costs</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="legalCostsResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Site Visit Fee</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="siteVisitFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Title Insurance</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"><span id="titleInsurancePercentageDisplay">0.01%</span> <span class="currency-symbol">£</span></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="titleInsuranceResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="interestRatePercentageDisplay">12.00%</span> <span class="currency-symbol">£</span></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="totalInterestResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr id="interestOnlyTotalRow" style="border: 1px solid #000; display: none;">
+                                <td class="py-2 px-3" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">Interest-Only Total</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="interestOnlyTotalResult" style="color: #6c757d !important; background: white;">-</td>
+                            </tr>
+                            <tr id="interestSavingsRow" style="border: 1px solid #000; display: none;">
+                                <td class="py-2 px-3" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest Savings vs Interest-Only</td>
+                                <td class="text-end py-2 px-3" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="savingsPercentageResult">-</span></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="interestSavingsResult" style="color: #28a745 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr id="periodicInterestRow" style="border: 1px solid #000; display: none;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">
+                                    <span id="periodicInterestLabel">Monthly Interest Payment</span>
+                                </td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="periodicInterestResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Net Day 1 Advance</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="netDay1AdvanceResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">LTV Ratio</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="ltvRatioResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">End LTV</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="endLTVResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 2px solid #000; background: #f0f0f0;">
+                                <td class="fw-bold py-2 px-3" style="color: #000 !important; border-right: 1px solid #000;">Total Net Advance</td>
+                                <td class="fw-bold text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="totalNetAdvanceResult" style="color: #000 !important; font-size: 1.1rem;">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Detailed Payment Schedule Table -->
+            <div class="card mb-4" id="detailedPaymentScheduleCard" style="display: none;">
+                <div class="card-header" style="background: var(--primary-color); color: white; text-align: center; font-weight: bold; border: 1px solid #000;" data-currency="GBP">
                     Detailed Payment Schedule
                 </div>
-<div class="card-body p-0">
-<div class="table-responsive">
-<table class="table table-sm" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
-<thead>
-<tr style="background: #f8f9fa; border: 1px solid #000;">
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Loan Period</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Tranche Release</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Amount</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal Payment</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
-<th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
-<th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Balance Change</th>
-</tr>
-</thead>
-<tbody id="detailedPaymentScheduleBody">
-<!-- Payment schedule rows will be populated by JavaScript -->
-</tbody>
-</table>
-</div>
-</div>
-</div>
-<!-- Compact Charts - Two in a Row -->
-<div class="row" id="topChartsRow" style="display: none;">
-<div class="col-lg-6">
-<div class="card chart-container" style="height: 220px;">
-<div class="card-header" style="font-size: 0.8rem; background: #B8860B; color: white;">
-<i class="fas fa-chart-pie me-1"></i>Loan Breakdown
-                            <button class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;" type="button">
-<i class="fas fa-expand"></i>
-</button>
-</div>
-<div class="card-body p-1" style="height: calc(100% - 32px);">
-<canvas id="loanBreakdownChart" style="max-height: 180px;"></canvas>
-</div>
-</div>
-</div>
-<div class="col-lg-6">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+                            <thead>
+                                <tr style="background: #f8f9fa; border: 1px solid #000;">
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Loan Period</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Tranche Release</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Amount</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal Payment</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
+                                    <th class="py-2 px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Balance Change</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailedPaymentScheduleBody">
+                                <!-- Payment schedule rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compact Charts - Two in a Row -->
+            <div class="row mb-2" id="topChartsRow" style="display: none;">
+                <div class="col-lg-6 mb-2">
+                    <div class="card chart-container" style="height: 220px;">
+                        <div class="card-header py-1" style="font-size: 0.8rem; background: #B8860B; color: white;">
+                            <i class="fas fa-chart-pie me-1"></i>Loan Breakdown
+                            <button type="button" class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-1" style="height: calc(100% - 32px);">
+                            <canvas id="loanBreakdownChart" style="max-height: 180px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-2">
+                    <div class="card chart-container" style="height: 220px;">
+                        <div class="card-header py-1" style="font-size: 0.8rem; background: #1E2B3A; color: white;">
+                            <i class="fas fa-chart-column me-1"></i>Payment Breakdown
+                            <button type="button" class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-1" style="height: calc(100% - 32px);">
+                            <canvas id="monthlyBreakdownChart" style="max-height: 180px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compact Balance Chart -->
+            <div class="row mb-2" id="balanceChartRow" style="display: none;">
+                <div class="col-12">
+                    <div class="card chart-container" style="height: 200px;">
+                        <div class="card-header py-1" style="font-size: 0.8rem; background: #28a745; color: white;">
+                            <i class="fas fa-chart-line me-1"></i>Balance Over Time
+                            <button type="button" class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-1" style="height: calc(100% - 32px);">
+                            <canvas id="balanceOverTimeChart" style="max-height: 160px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compact Development Loan Charts -->
+            <div class="row mb-2" id="developmentChartsRow" style="display: none;">
+                <div class="col-lg-6 mb-2">
+                    <div class="card chart-container" style="height: 200px;">
+                        <div class="card-header py-1" style="font-size: 0.8rem; background: #6c757d; color: white;">
+                            <i class="fas fa-building me-1"></i>Compound Interest
+                            <button type="button" class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-1" style="height: calc(100% - 32px);">
+                            <canvas id="compoundInterestChart" style="max-height: 160px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-2">
+                    <div class="card chart-container" style="height: 200px;">
+                        <div class="card-header py-1" style="font-size: 0.8rem; background: #fd7e14; color: white;">
+                            <i class="fas fa-layer-group me-1"></i>Tranche Release
+                            <button type="button" class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-1" style="height: calc(100% - 32px);">
+                            <canvas id="trancheReleaseChart" style="max-height: 160px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            </div>
+            <!-- End Calculation Results Section -->
 
-</div>
-<!-- Compact Balance Chart -->
-<div class="row" id="balanceChartRow" style="display: none;">
-<div class="col-12">
-<div class="card chart-container" style="height: 200px;">
-<div class="card-header" style="font-size: 0.8rem; background: #28a745; color: white;">
-<i class="fas fa-chart-line me-1"></i>Balance Over Time
-                            <button class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;" type="button">
-<i class="fas fa-expand"></i>
-</button>
-</div>
-<div class="card-body p-1" style="height: calc(100% - 32px);">
-<canvas id="balanceOverTimeChart" style="max-height: 160px;"></canvas>
-</div>
-</div>
-</div>
-</div>
-<!-- Compact Development Loan Charts -->
-<div class="row" id="developmentChartsRow" style="display: none;">
-<div class="col-lg-6">
-<div class="card chart-container" style="height: 200px;">
-<div class="card-header" style="font-size: 0.8rem; background: #6c757d; color: white;">
-<i class="fas fa-building me-1"></i>Compound Interest
-                            <button class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;" type="button">
-<i class="fas fa-expand"></i>
-</button>
-</div>
-<div class="card-body p-1" style="height: calc(100% - 32px);">
-<canvas id="compoundInterestChart" style="max-height: 160px;"></canvas>
-</div>
-</div>
-</div>
-<div class="col-lg-6">
-<div class="card chart-container" style="height: 200px;">
-<div class="card-header" style="font-size: 0.8rem; background: #fd7e14; color: white;">
-<i class="fas fa-layer-group me-1"></i>Tranche Release
-                            <button class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;" type="button">
-<i class="fas fa-expand"></i>
-</button>
-</div>
-<div class="card-body p-1" style="height: calc(100% - 32px);">
-<canvas id="trancheReleaseChart" style="max-height: 160px;"></canvas>
-</div>
-</div>
-</div>
-</div>
-</div>
-<!-- End Calculation Results Section -->
-</div>
-<!-- No Results Message -->
-<div class="results-section text-center" id="noResults">
-<i class="fas fa-calculator fa-3x text-muted"></i>
-<h5 class="text-muted">Enter loan details to see calculations</h5>
-<p class="text-muted">Fill out the form on the left to generate detailed loan calculations and payment schedules.</p>
-</div>
-</div>
+
+
+
+        </div>
+
+        <!-- No Results Message -->
+        <div id="noResults" class="results-section text-center">
+            <i class="fas fa-calculator fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Enter loan details to see calculations</h5>
+            <p class="text-muted">Fill out the form on the left to generate detailed loan calculations and payment schedules.</p>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -1022,6 +1083,7 @@
 <!-- Modern Notification System -->
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
+
 <script>
 // End date calculation functionality with automatic recalculation
 function calculateEndDate() {
@@ -1670,6 +1732,7 @@ function retryLoanSave() {
 
 
 </script>
+
 <style>
 /* Enhanced fullscreen styles for compact charts */
 .fullscreen {
@@ -1743,35 +1806,37 @@ function retryLoanSave() {
     color: white !important;
 }
 </style>
+
 <!-- Database Info Modal -->
-<div aria-hidden="true" aria-labelledby="databaseInfoModalLabel" class="modal fade" id="databaseInfoModal" tabindex="-1">
-<div class="modal-dialog modal-lg">
-<div class="modal-content">
-<div class="modal-header" data-currency="GBP" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white;">
-<h5 class="modal-title" id="databaseInfoModalLabel">
-<i class="fas fa-database me-2"></i>Database Connection Information
+<div class="modal fade" id="databaseInfoModal" tabindex="-1" aria-labelledby="databaseInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white;" data-currency="GBP">
+                <h5 class="modal-title" id="databaseInfoModalLabel">
+                    <i class="fas fa-database me-2"></i>Database Connection Information
                 </h5>
-<button aria-label="Close" class="btn-close btn-close-white" data-bs-dismiss="modal" type="button"></button>
-</div>
-<div class="modal-body">
-<div id="databaseInfoContent">
-<div class="text-center">
-<div class="spinner-border text-primary" role="status">
-<span class="visually-hidden">Loading...</span>
-</div>
-<p class="">Loading database information...</p>
-</div>
-</div>
-</div>
-<div class="modal-footer">
-<button class="btn btn-outline-secondary" onclick="refreshDatabaseInfo()" type="button">
-<i class="fas fa-sync-alt me-1"></i>Refresh
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="databaseInfoContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading database information...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" onclick="refreshDatabaseInfo()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
                 </button>
-<button class="btn btn-primary" data-bs-dismiss="modal" type="button">Close</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
 </div>
-</div>
-</div>
-</div>
+
 <script>
 // Database Info Functions
 function showDatabaseInfo() {
@@ -1944,8 +2009,10 @@ function refreshDatabaseInfo() {
     loadDatabaseInfo();
 }
 </script>
+
 <!-- Currency Theme Manager -->
 <script src="{{ url_for('static', filename='js/currency-theme-simple.js') }}"></script>
+
 <script>
 // Initialize currency theme manager on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -1975,7 +2042,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Direct aggressive button styling as backup
                 const colors = e.target.value === 'EUR' ? 
                     { primary: '#509664', secondary: '#3d7450' } : 
-                    { primary: '#AD965F', secondary: '#DAA520' };
+                    { primary: '#B8860B', secondary: '#DAA520' };
                 
                 // Direct style updates with class-based approach
                 const calculateBtn = document.querySelector('.calculate-button');
@@ -2029,6 +2096,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
 <!-- Calculator JavaScript already loaded above in scripts block -->
 
 {% endblock %}

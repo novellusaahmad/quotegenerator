@@ -1,0 +1,2057 @@
+{% extends "base.html" %}
+
+{% block title %}Loan Calculator - Novellus{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/novellus-theme.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/currency-themes.css') }}">
+<style>
+    /* Calculator and results section styling moved to novellus-theme.css */
+    
+    /* Result card styling moved to novellus-theme.css */
+    
+    .result-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+        color: white !important;
+    }
+    
+    .result-label {
+        font-size: 0.8rem;
+        opacity: 1;
+        color: white !important;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .schedule-table {
+        font-size: 0.9rem;
+    }
+    
+    .calculation-spinner {
+        display: none;
+    }
+    
+    /* Fix input field sizing issues */
+    #monthlyRateInput, #annualRateInput {
+        min-width: 100% !important;
+        width: 100% !important;
+    }
+    
+    #monthlyRateInput .form-control, #annualRateInput .form-control {
+        min-width: 120px !important;
+        width: auto !important;
+        flex: 1 !important;
+    }
+    
+    /* Ensure input groups maintain size */
+    .input-group {
+        width: 100% !important;
+    }
+    
+    .input-group .form-control {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+    }
+    
+    /* Full width utilization */
+    .container-fluid {
+        max-width: 98% !important;
+        padding-left: 15px !important;
+        padding-right: 15px !important;
+    }
+    
+    /* Ensure proper form field sizing */
+    .form-control {
+        min-height: 38px !important;
+        font-size: 1rem !important;
+        box-sizing: border-box !important;
+    }
+    
+    .form-select {
+        min-height: 38px !important;
+        font-size: 1rem !important;
+    }
+    
+    /* Optimize table layout for wider screens */
+    .table-container {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+    
+    .schedule-table {
+        font-size: 0.85rem;
+        width: 100% !important;
+        table-layout: fixed;
+    }
+    
+    .schedule-table th,
+    .schedule-table td {
+        padding: 0.5rem 0.3rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Responsive result cards */
+    .result-card {
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .result-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    }
+    
+    .result-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(184, 134, 11, 0.3);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .result-card .result-value,
+    .result-card .result-label {
+        color: white !important;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Better spacing for wide screens */
+    @media (min-width: 1200px) {
+        .calculator-section {
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+        
+        .results-section {
+            max-width: 100%;
+        }
+    }
+    
+    /* Fix input group proportions */
+    .input-group {
+        display: flex !important;
+        width: 100% !important;
+    }
+    
+    .input-group .input-group-text {
+        flex: 0 0 auto !important;
+        min-width: 40px !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+    }
+    
+    .input-group .input-group-text.currency-symbol {
+        max-width: 60px !important;
+    }
+    
+    .input-group .form-control {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+    }
+
+    /* Fix button group formatting for payment timing and frequency */
+    .btn-group {
+        display: flex !important;
+        width: 100% !important;
+        gap: 0 !important;
+    }
+    
+    .btn-group .btn-outline-primary {
+        border: 1px solid var(--novellus-gold) !important;
+        color: var(--novellus-gold) !important;
+        background-color: transparent !important;
+        margin: 0 !important;
+        padding: 0.25rem 0.5rem !important;
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
+        border-radius: 0 !important;
+        white-space: nowrap !important;
+        flex: 1 !important;
+        position: relative !important;
+        text-align: center !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    .btn-group .btn-outline-primary:not(:first-child) {
+        margin-left: -1px !important;
+    }
+    
+    .btn-group .btn-outline-primary:first-child {
+        border-top-left-radius: 0.375rem !important;
+        border-bottom-left-radius: 0.375rem !important;
+    }
+    
+    .btn-group .btn-outline-primary:last-child {
+        border-top-right-radius: 0.375rem !important;
+        border-bottom-right-radius: 0.375rem !important;
+    }
+    
+    .btn-group .btn-outline-primary:hover {
+        background-color: var(--novellus-gold-light) !important;
+        border-color: var(--novellus-gold) !important;
+        color: white !important;
+        z-index: 2 !important;
+    }
+    
+    .btn-check:checked + .btn-outline-primary {
+        background-color: var(--novellus-gold) !important;
+        border-color: var(--novellus-gold) !important;
+        color: white !important;
+        z-index: 1 !important;
+    }
+    
+    /* Ensure button groups take full width and proper alignment */
+    .btn-group.w-100 {
+        display: flex !important;
+        width: 100% !important;
+    }
+    
+    .btn-group.w-100 .btn {
+        flex: 1 !important;
+        max-width: none !important;
+    }
+    
+    /* Fix specific row layout issues */
+    #paymentTimingSection .row .col-md-6 {
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Consistent uniform font sizes for all input section elements */
+    .form-label,
+    .calculator-section h6,
+    .card-header h6,
+    .calculator-section .form-text,
+    .calculator-section small,
+    .input-group-text {
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+    }
+    
+    .form-label {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .calculator-section h6 {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    /* Ensure form inputs also have consistent font size */
+    .calculator-section .form-control,
+    .calculator-section .form-select {
+        font-size: 0.875rem !important;
+    }
+    
+    /* Reduce Calculate button size to match input section styling */
+    .calculator-section .btn-primary {
+        font-size: 0.875rem !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Fix outline-secondary buttons to use Novellus styling */
+    .btn-group .btn-outline-secondary {
+        border: 1px solid var(--novellus-gold) !important;
+        color: var(--novellus-gold) !important;
+        background-color: transparent !important;
+        margin: 0 !important;
+        padding: 0.25rem 0.5rem !important;
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
+        border-radius: 0 !important;
+        white-space: nowrap !important;
+        flex: 1 !important;
+        position: relative !important;
+        text-align: center !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    .btn-group .btn-outline-secondary:not(:first-child) {
+        margin-left: -1px !important;
+    }
+    
+    .btn-group .btn-outline-secondary:first-child {
+        border-top-left-radius: 0.375rem !important;
+        border-bottom-left-radius: 0.375rem !important;
+    }
+    
+    .btn-group .btn-outline-secondary:last-child {
+        border-top-right-radius: 0.375rem !important;
+        border-bottom-right-radius: 0.375rem !important;
+    }
+    
+    .btn-group .btn-outline-secondary:hover {
+        background-color: var(--novellus-gold-light) !important;
+        border-color: var(--novellus-gold) !important;
+        color: white !important;
+        z-index: 2 !important;
+    }
+    
+    .btn-check:checked + .btn-outline-secondary {
+        background-color: var(--novellus-gold) !important;
+        border-color: var(--novellus-gold) !important;
+        color: white !important;
+        z-index: 1 !important;
+    }
+
+    /* Chart container styling */
+    .chart-container {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .chart-container:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+
+    .chart-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        font-weight: bold;
+        padding: 12px 15px;
+        border-radius: 8px 8px 0 0;
+        border: none;
+        font-size: 0.95rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chart-container .card-body {
+        padding: 20px;
+        background: white;
+        border-radius: 0 0 8px 8px;
+    }
+
+    /* Fullscreen chart styling */
+    .chart-container.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1050;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: none !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .chart-container.fullscreen .card-body {
+        height: calc(100vh - 60px);
+        border-radius: 0;
+        overflow: auto;
+    }
+
+    .chart-container.fullscreen canvas {
+        max-height: calc(100vh - 100px) !important;
+    }
+
+    .no-scroll {
+        overflow: hidden;
+    }
+
+    /* Expand button styling */
+    .expand-btn {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        border: 1px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.1);
+        color: white;
+        transition: all 0.2s ease;
+    }
+
+    .expand-btn:hover {
+        background: rgba(255,255,255,0.2);
+        border-color: rgba(255,255,255,0.5);
+        color: white;
+    }
+
+    /* Chart responsiveness */
+    .chart-container canvas {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    @media (max-width: 768px) {
+        .chart-container .card-body {
+            padding: 10px;
+        }
+        
+        .chart-header {
+            font-size: 0.85rem;
+            padding: 10px 12px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <h2><i class="fas fa-calculator me-2"></i>Loan Calculator</h2>
+    <p class="text-muted mb-2">Calculate loan payments, interest, and generate detailed schedules</p>
+</div>
+
+<div class="row">
+    <!-- Calculator Form -->
+    <div class="col-lg-4">
+        <div class="calculator-section">
+            <form id="calculatorForm">
+                <!-- Loan Name -->
+                <div class="mb-3">
+                    <label for="loanName" class="form-label">
+                        <i class="fas fa-tag me-1"></i>Loan Name <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" class="form-control" id="loanName" name="loanName" 
+                           placeholder="Enter loan name (e.g., Client Name - Property Address)" 
+                           maxlength="200" style="min-height: 38px; font-size: 1rem;" required>
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Required field - System will automatically add version number and date when saving
+                    </small>
+                </div>
+
+                <!-- Loan Type Selection -->
+                <div class="mb-3">
+                    <label for="loanType" class="form-label">Loan Type</label>
+                    <select class="form-select" id="loanType" name="loan_type" required>
+                        <option value="bridge">Bridge Loan</option>
+                        <option value="term">Term Loan</option>
+                        <option value="development">Development Loan</option>
+                        <option value="development2">Development 2 (Excel Goal Seek)</option>
+                    </select>
+                </div>
+
+                <!-- Repayment Option -->
+                <div class="mb-3">
+                    <label for="repaymentOption" class="form-label">Repayment Option</label>
+                    <select class="form-select" id="repaymentOption" name="repayment_option" required>
+                        <option value="none">Retained Interest (Interest Only)</option>
+                        <option value="service_only">Service Only (Interest Payments)</option>
+                        <option value="service_and_capital">Service + Capital (Principal & Interest)</option>
+                        <option value="capital_payment_only">Capital Payment Only (Interest Retained)</option>
+                        <option value="flexible_payment">Flexible Payment Schedule</option>
+                    </select>
+                </div>
+
+                <!-- Currency -->
+                <div class="mb-3">
+                    <label for="currency" class="form-label">Currency</label>
+                    <select class="form-select" id="currency" name="currency">
+                        <option value="GBP">GBP (£)</option>
+                        <option value="EUR">EUR (€)</option>
+                    </select>
+                </div>
+
+                <!-- Property Value -->
+                <div class="mb-3">
+                    <label for="propertyValue" class="form-label">Property Value</label>
+                    <div class="input-group">
+                        <span class="input-group-text currency-symbol">£</span>
+                        <input type="number" class="form-control" id="propertyValue" name="property_value" 
+                               min="0" step="0.0001" value="10000000" required style="min-height: 38px; font-size: 1rem;">
+                    </div>
+                </div>
+
+                <!-- Amount Input Type -->
+                <div class="mb-3">
+                    <label class="form-label">Amount Input</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="amount_input_type" id="grossAmount" value="gross" checked>
+                        <label class="btn btn-outline-primary" for="grossAmount">Gross Amount</label>
+                        
+                        <input type="radio" class="btn-check" name="amount_input_type" id="netAmount" value="net">
+                        <label class="btn btn-outline-primary" for="netAmount">Net Amount</label>
+                    </div>
+                </div>
+
+                <!-- Gross Amount Input -->
+                <div id="grossAmountSection" class="mb-3">
+                    <label class="form-label">Gross Amount</label>
+                    <div class="btn-group w-100 mb-2" role="group">
+                        <input type="radio" class="btn-check" name="gross_amount_type" id="grossFixed" value="fixed" checked>
+                        <label class="btn btn-outline-secondary btn-sm" for="grossFixed" data-currency="GBP">Fixed Amount</label>
+                        
+                        <input type="radio" class="btn-check" name="gross_amount_type" id="grossPercentage" value="percentage">
+                        <label class="btn btn-outline-secondary btn-sm" for="grossPercentage" data-currency="GBP">% of Property Value</label>
+                    </div>
+                    
+                    <div id="grossFixedInput" class="input-group">
+                        <span class="input-group-text currency-symbol">£</span>
+                        <input type="number" class="form-control" id="grossAmountFixed" name="gross_amount" 
+                               min="0" step="0.0001" value="1000000" style="min-height: 38px; font-size: 1rem;">
+                    </div>
+                    
+                    <div id="grossPercentageInput" class="input-group" style="display: none;">
+                        <input type="number" class="form-control" id="grossAmountPercentage" name="gross_amount_percentage" 
+                               min="0" max="100" step="0.0001" style="min-height: 38px; font-size: 1rem;">
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+
+                <!-- Net Amount Input -->
+                <div id="netAmountSection" class="mb-3" style="display: none;">
+                    <label for="netAmountInput" class="form-label">Net Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text currency-symbol">£</span>
+                        <input type="number" class="form-control" id="netAmountInput" name="net_amount" 
+                               min="0" step="0.0001" value="1000000" style="min-height: 38px; font-size: 1rem;">
+                    </div>
+                    <small class="form-text text-muted">Total net amount required for the loan</small>
+                </div>
+
+                <!-- Day 1 Advance (Development Loans) -->
+                <div id="day1AdvanceSection" class="mb-3" style="display: none;">
+                    <label for="day1Advance" class="form-label">Day 1 Advance (Optional)</label>
+                    <div class="input-group">
+                        <span class="input-group-text currency-symbol">£</span>
+                        <input type="number" class="form-control" id="day1Advance" name="day1_advance" 
+                               min="0" step="0.0001" value="0" style="min-height: 38px; font-size: 1rem;">
+                    </div>
+                    <small class="form-text text-muted">Initial advance on first day (will be included in first tranche)</small>
+                </div>
+
+                <!-- Interest Rate -->
+                <div class="mb-3">
+                    <label class="form-label">Interest Rate</label>
+                    <div class="btn-group w-100 mb-2" role="group">
+                        <input type="radio" class="btn-check" name="rate_input_type" id="monthlyRate" value="monthly">
+                        <label class="btn btn-outline-secondary btn-sm" for="monthlyRate" data-currency="GBP">Monthly Rate</label>
+                        
+                        <input type="radio" class="btn-check" name="rate_input_type" id="annualRate" value="annual" checked>
+                        <label class="btn btn-outline-secondary btn-sm" for="annualRate" data-currency="GBP">Annual Rate</label>
+                    </div>
+                    
+                    <div id="monthlyRateInput" class="input-group" style="display: none;">
+                        <input type="number" class="form-control" id="monthlyRateValue" name="monthly_rate" 
+                               min="0" max="10" step="0.0001" value="1" style="min-height: 38px; font-size: 1rem;">
+                        <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
+                    </div>
+                    
+                    <div id="annualRateInput" class="input-group">
+                        <input type="number" class="form-control" id="annualRateValue" name="annual_rate" 
+                               min="0" max="50" step="0.0001" value="12" style="min-height: 38px; font-size: 1rem;">
+                        <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
+                    </div>
+                </div>
+
+                <!-- Interest Type -->
+                <div class="mb-3">
+                    <label class="form-label">Interest Calculation Type</label>
+                    <select class="form-select" id="interestType" name="interest_type" required>
+                        <option value="simple" selected>Simple Interest</option>
+                        <option value="compound_daily">Compound Daily</option>
+                        <option value="compound_monthly">Compound Monthly</option>
+                        <option value="compound_quarterly">Compound Quarterly</option>
+                    </select>
+                </div>
+
+                <!-- Daily Rate Calculation Method -->
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="use360Days" name="use_360_days" value="true">
+                        <label class="form-check-label" for="use360Days">
+                            Use 360-day calculation for daily rate
+                        </label>
+                    </div>
+                    <small class="form-text text-muted">
+                        Checked: Daily rate = Annual rate ÷ 360 | Unchecked: Daily rate = Annual rate ÷ 365 (standard)
+                    </small>
+                </div>
+
+                <!-- Loan Term -->
+                <div class="mb-3">
+                    <label for="loanTerm" class="form-label">Loan Term</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="loanTerm" name="loan_term" 
+                               min="3" max="600" value="12" required style="min-height: 38px; font-size: 1rem;">
+                        <span class="input-group-text">months</span>
+                    </div>
+                </div>
+
+                <!-- Start Date -->
+                <div class="mb-3">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="startDate" name="start_date" required style="min-height: 38px; font-size: 1rem;">
+                </div>
+
+                <!-- End Date -->
+                <div class="mb-3">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;">
+                    <small class="form-text text-muted">Automatically calculated based on start date and loan term. You can edit manually to override.</small>
+                </div>
+
+                <!-- Fees Section -->
+                <div class="mb-3">
+                    <h6 class="mb-3">Fees & Charges</h6>
+                    
+                    <div class="mb-3">
+                        <label for="arrangementFeeRate" class="form-label">Arrangement Fee</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="arrangementFeeRate" name="arrangement_fee_percentage" 
+                                   min="0" max="10" step="0.0001" value="2" style="min-height: 38px; font-size: 1rem;">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="legalFees" class="form-label">Legal Fees</label>
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">£</span>
+                            <input type="number" class="form-control" id="legalFees" name="legal_fees" 
+                                   min="0" step="0.0001" value="1500" style="min-height: 38px; font-size: 1rem;">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="siteVisitFee" class="form-label">Site Visit Fee</label>
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">£</span>
+                            <input type="number" class="form-control" id="siteVisitFee" name="site_visit_fee" 
+                                   min="0" step="0.0001" value="500" style="min-height: 38px; font-size: 1rem;">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="titleInsuranceRate" class="form-label">Title Insurance</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="titleInsuranceRate" name="title_insurance_rate" 
+                                   min="0" max="1" step="0.0001" value="0.01" style="min-height: 38px; font-size: 1rem;">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Parameters -->
+                <div id="additionalParams" class="mb-3" style="display: none;">
+                    <h6 class="mb-3">Additional Parameters</h6>
+                    
+                    <!-- Payment Timing Options -->
+                    <div id="paymentTimingSection" class="mb-3" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Payment Timing</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="payment_timing" id="paymentInAdvance" value="advance" checked>
+                                    <label class="btn btn-outline-primary" for="paymentInAdvance">Advance</label>
+                                    <input type="radio" class="btn-check" name="payment_timing" id="paymentInArrears" value="arrears">
+                                    <label class="btn btn-outline-primary" for="paymentInArrears">Arrears</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Payment Frequency</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="payment_frequency" id="paymentMonthly" value="monthly" checked>
+                                    <label class="btn btn-outline-primary" for="paymentMonthly">Monthly</label>
+                                    <input type="radio" class="btn-check" name="payment_frequency" id="paymentQuarterly" value="quarterly">
+                                    <label class="btn btn-outline-primary" for="paymentQuarterly">Quarterly</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="capitalRepaymentSection" class="mb-3" style="display: none;">
+                        <label for="capitalRepayment" class="form-label">Capital Repayment Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">£</span>
+                            <input type="number" class="form-control" id="capitalRepayment" name="capital_repayment" 
+                                   min="0" step="0.0001" value="10000" placeholder="e.g. 10000" style="min-height: 38px; font-size: 1rem;">
+                        </div>
+                        <small class="form-text text-muted">Principal amount to repay each payment period (monthly/quarterly)</small>
+                        <small class="form-text text-muted">Amount will adjust based on payment frequency</small>
+                    </div>
+                    
+                    <div id="flexiblePaymentSection" class="mb-3" style="display: none;">
+                        <label for="flexiblePayment" class="form-label">Flexible Payment per Payment</label>
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">£</span>
+                            <input type="number" class="form-control" id="flexiblePayment" name="flexible_payment" 
+                                   min="0" step="0.0001" value="20000" style="min-height: 38px; font-size: 1rem;">
+                        </div>
+                        <small class="form-text text-muted">Amount will adjust based on payment frequency</small>
+                    </div>
+                </div>
+
+                <!-- Development Loan Tranches -->
+                <div id="developmentTrancheSection" class="mb-3" style="display: none;">
+                    <h6 class="mb-3">Development Loan Tranches</h6>
+                    
+                    <!-- Tranche Mode Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Tranche Setup</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="tranche_mode" id="manual_tranches" value="manual" checked>
+                            <label class="btn btn-outline-primary" for="manual_tranches">Manual Entry</label>
+                            
+                            <input type="radio" class="btn-check" name="tranche_mode" id="auto_tranches" value="auto">
+                            <label class="btn btn-outline-primary" for="auto_tranches">Auto Generate</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Auto Generation Settings -->
+                    <div id="autoTrancheSettings" class="mb-3" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Auto Generation Settings</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Total Loan Amount</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text currency-symbol">£</span>
+                                            <input type="number" class="form-control" id="autoTotalAmount" min="0" step="0.0001" value="1000000">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Start Date</label>
+                                        <input type="date" class="form-control" id="autoStartDate">
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Loan Period (Months)</label>
+                                        <input type="number" class="form-control" id="autoLoanPeriod" min="1" max="60" value="12">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Interest Rate (%)</label>
+                                        <input type="number" class="form-control" id="autoInterestRate" min="0" max="50" step="0.0001" value="12">
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Number of Tranches</label>
+                                        <input type="number" class="form-control" id="autoTrancheCount" min="1" max="20" value="6">
+                                    </div>
+                                    <div class="col-md-6 d-flex align-items-end">
+                                        <button type="button" class="btn btn-success w-100" id="generateTranches">
+                                            <i class="fas fa-magic me-2"></i>Generate Tranches
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Manual Tranche Controls -->
+                    <div id="manualTrancheControls" class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Number of Tranches</span>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="decreaseTranches">-</button>
+                            <span class="btn btn-outline-secondary btn-sm" id="trancheCount">1</span>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="increaseTranches">+</button>
+                        </div>
+                    </div>
+                    
+                    <div id="tranchesContainer">
+                        <div class="tranche-item mb-3" data-tranche="1">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Tranche 1</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Tranche Amount</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input type="number" class="form-control tranche-amount" 
+                                                       name="tranche_amounts[]" min="0" step="0.0001" placeholder="0">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Release Date</label>
+                                            <input type="date" class="form-control tranche-date" 
+                                                   name="tranche_dates[]">
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Interest Rate (%)</label>
+                                            <input type="number" class="form-control tranche-rate" 
+                                                   name="tranche_rates[]" min="0" max="50" step="0.0001" 
+                                                   placeholder="Annual rate">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Description</label>
+                                            <input type="text" class="form-control tranche-description" 
+                                                   name="tranche_descriptions[]" placeholder="e.g., Land Purchase">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calculate Button -->
+                <div class="d-grid gap-2 mt-4 mb-3">
+                    <button type="submit" class="btn btn-primary btn-lg calculate-button" data-currency="GBP">
+                        <i class="fas fa-calculator me-2"></i>Calculate
+                    </button>
+                    <button type="button" class="btn btn-success" id="saveLoanBtn" disabled data-currency="GBP">
+                        <i class="fas fa-save me-2"></i><span id="saveLoanText">Save Loan</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="cancelEditBtn" style="display: none;">
+                        <i class="fas fa-times me-2"></i>Cancel Edit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="col-lg-8">
+        <div id="resultsSection" class="results-section" style="display: none;">
+            <!-- Edit Mode Notice -->
+            <div class="row mb-3" id="editModeNotice" style="display: none;">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-edit me-2"></i>
+                        <strong>Edit Mode:</strong> You are editing "<span id="editingLoanName"></span>". Make changes and save to update the loan.
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Calculation Results Section -->
+            <div id="calculationResultsSection">
+                <div class="mb-4">
+                    <h4>Calculation Results</h4>
+                </div>
+
+            <!-- Summary Table (Loan Summary Format) -->
+            <div class="card mb-4">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white; text-align: center; font-weight: bold; border: 1px solid #000;" data-currency="GBP">
+                    Loan Summary
+                </div>
+                <div class="card-body p-0">
+                    <table class="table mb-0" style="border: 1px solid #000; border-collapse: collapse;">
+                        <tbody>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Valuation</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="propertyValueResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Gross Amount</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="grossAmountResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Date of First Drawdown</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="startDateResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">End Date</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="endDateResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Months)</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="loanTermResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Days)</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="loanTermDaysResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Arrangement Fee</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="arrangementFeePercentageDisplay">2.00%</span> <span class="currency-symbol">£</span></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="arrangementFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Legal Costs</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="legalCostsResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Site Visit Fee</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="siteVisitFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Title Insurance</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"><span id="titleInsurancePercentageDisplay">0.01%</span> <span class="currency-symbol">£</span></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="titleInsuranceResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="interestRatePercentageDisplay">12.00%</span> <span class="currency-symbol">£</span></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="totalInterestResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr id="interestOnlyTotalRow" style="border: 1px solid #000; display: none;">
+                                <td class="py-2 px-3" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">Interest-Only Total</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="interestOnlyTotalResult" style="color: #6c757d !important; background: white;">-</td>
+                            </tr>
+                            <tr id="interestSavingsRow" style="border: 1px solid #000; display: none;">
+                                <td class="py-2 px-3" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest Savings vs Interest-Only</td>
+                                <td class="text-end py-2 px-3" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="savingsPercentageResult">-</span></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="interestSavingsResult" style="color: #28a745 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr id="periodicInterestRow" style="border: 1px solid #000; display: none;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">
+                                    <span id="periodicInterestLabel">Monthly Interest Payment</span>
+                                </td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="periodicInterestResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Net Day 1 Advance</td>
+                                <td class="text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="netDay1AdvanceResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">LTV Ratio</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="ltvRatioResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+                            </tr>
+                            <tr style="border: 1px solid #000;">
+                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">End LTV</td>
+                                <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
+                                <td class="fw-bold py-2 px-3 text-end" id="endLTVResult" style="color: #000 !important; background: white;">-</td>
+                            </tr>
+                            <tr style="border: 2px solid #000; background: #f0f0f0;">
+                                <td class="fw-bold py-2 px-3" style="color: #000 !important; border-right: 1px solid #000;">Total Net Advance</td>
+                                <td class="fw-bold text-end py-2 px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000;">£</td>
+                                <td class="fw-bold py-2 px-3 text-end" id="totalNetAdvanceResult" style="color: #000 !important; font-size: 1.1rem;">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Detailed Payment Schedule Table -->
+            <div class="card mb-4" id="detailedPaymentScheduleCard" style="display: none;">
+                <div class="card-header" style="background: var(--primary-color); color: white; text-align: center; font-weight: bold; border: 1px solid #000;" data-currency="GBP">
+                    Detailed Payment Schedule
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+                            <thead>
+                                <tr style="background: #f8f9fa; border: 1px solid #000;">
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Loan Period</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Tranche Release</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Amount</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal Payment</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
+                                    <th class="py-2 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
+                                    <th class="py-2 px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Balance Change</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailedPaymentScheduleBody">
+                                <!-- Payment schedule rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compact Charts - Two in a Row -->
+            <div class="row mb-2" id="topChartsRow" style="display: none;">
+                <div class="col-lg-6 mb-2">
+                    <div class="card chart-container" style="height: 220px;">
+                        <div class="card-header py-1" style="font-size: 0.8rem; background: #B8860B; color: white;">
+                            <i class="fas fa-chart-pie me-1"></i>Loan Breakdown
+                            <button type="button" class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-1" style="height: calc(100% - 32px);">
+                            <canvas id="loanBreakdownChart" style="max-height: 180px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-2">
+                    <div class="card chart-container" style="height: 220px;">
+                        <div class="card-header py-1" style="font-size: 0.8rem; background: #1E2B3A; color: white;">
+                            <i class="fas fa-chart-column me-1"></i>Payment Breakdown
+                            <button type="button" class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-1" style="height: calc(100% - 32px);">
+                            <canvas id="monthlyBreakdownChart" style="max-height: 180px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compact Balance Chart -->
+            <div class="row mb-2" id="balanceChartRow" style="display: none;">
+                <div class="col-12">
+                    <div class="card chart-container" style="height: 200px;">
+                        <div class="card-header py-1" style="font-size: 0.8rem; background: #28a745; color: white;">
+                            <i class="fas fa-chart-line me-1"></i>Balance Over Time
+                            <button type="button" class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-1" style="height: calc(100% - 32px);">
+                            <canvas id="balanceOverTimeChart" style="max-height: 160px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compact Development Loan Charts -->
+            <div class="row mb-2" id="developmentChartsRow" style="display: none;">
+                <div class="col-lg-6 mb-2">
+                    <div class="card chart-container" style="height: 200px;">
+                        <div class="card-header py-1" style="font-size: 0.8rem; background: #6c757d; color: white;">
+                            <i class="fas fa-building me-1"></i>Compound Interest
+                            <button type="button" class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-1" style="height: calc(100% - 32px);">
+                            <canvas id="compoundInterestChart" style="max-height: 160px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 mb-2">
+                    <div class="card chart-container" style="height: 200px;">
+                        <div class="card-header py-1" style="font-size: 0.8rem; background: #fd7e14; color: white;">
+                            <i class="fas fa-layer-group me-1"></i>Tranche Release
+                            <button type="button" class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="card-body p-1" style="height: calc(100% - 32px);">
+                            <canvas id="trancheReleaseChart" style="max-height: 160px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            </div>
+            <!-- End Calculation Results Section -->
+
+
+
+
+        </div>
+
+        <!-- No Results Message -->
+        <div id="noResults" class="results-section text-center">
+            <i class="fas fa-calculator fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Enter loan details to see calculations</h5>
+            <p class="text-muted">Fill out the form on the left to generate detailed loan calculations and payment schedules.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Modern Notification System -->
+<script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+<script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
+
+<script>
+// End date calculation functionality with automatic recalculation
+function calculateEndDate() {
+    const startDate = document.getElementById('startDate').value;
+    const loanTerm = parseInt(document.getElementById('loanTerm').value);
+    
+    if (startDate && loanTerm && loanTerm > 0) {
+        const start = new Date(startDate);
+        
+        // Calculate exact days for consistent loan terms
+        let daysToAdd;
+        switch (loanTerm) {
+            case 6:
+                daysToAdd = 181; // 6 months = 181 days (approximately)
+                break;
+            case 12:
+                daysToAdd = 365; // 12 months = exactly 365 days
+                break;
+            case 18:
+                daysToAdd = 548; // 18 months = 548 days (365 + 183)
+                break;
+            case 24:
+                daysToAdd = 730; // 24 months = exactly 730 days (2 years)
+                break;
+            default:
+                // For other terms, use month-based calculation
+                const end = new Date(start);
+                end.setMonth(end.getMonth() + loanTerm);
+                end.setDate(end.getDate());
+                const endDateInput = document.getElementById('endDate');
+                endDateInput.value = end.toISOString().split('T')[0];
+                triggerCalculationUpdate();
+                return;
+        }
+        
+        // Add the exact number of days
+        const end = new Date(start);
+        end.setDate(end.getDate() + daysToAdd);
+        
+        const endDateInput = document.getElementById('endDate');
+        endDateInput.value = end.toISOString().split('T')[0];
+        
+        console.log(`Calculated end date for ${loanTerm}-month loan: ${daysToAdd} days from ${startDate} = ${end.toISOString().split('T')[0]}`);
+        
+        // Trigger calculation update if calculator instance exists and form has data
+        triggerCalculationUpdate();
+    }
+}
+
+// Make end date editable on click
+function makeEndDateEditable() {
+    const endDateInput = document.getElementById('endDate');
+    endDateInput.removeAttribute('readonly');
+    endDateInput.focus();
+}
+
+// Recalculate loan term when end date is manually changed
+function recalculateLoanTerm() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        // Calculate actual days difference
+        const timeDiff = end.getTime() - start.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        
+        console.log(`Manual date change: ${daysDiff} days between ${startDate} and ${endDate}`);
+        
+        // Determine loan term based on actual days
+        let loanTerm;
+        if (daysDiff >= 350 && daysDiff <= 380) {
+            loanTerm = 12; // 12-month loan (around 365 days)
+        } else if (daysDiff >= 170 && daysDiff <= 190) {
+            loanTerm = 6; // 6-month loan (around 181 days)
+        } else if (daysDiff >= 530 && daysDiff <= 560) {
+            loanTerm = 18; // 18-month loan (around 548 days)
+        } else if (daysDiff >= 720 && daysDiff <= 740) {
+            loanTerm = 24; // 24-month loan (around 730 days)
+        } else {
+            // For other day ranges, approximate to months
+            loanTerm = Math.round(daysDiff / 30.44); // Average days per month
+        }
+        
+        if (loanTerm > 0) {
+            document.getElementById('loanTerm').value = loanTerm;
+            console.log(`Set loan term to ${loanTerm} months based on ${daysDiff} days`);
+            
+            // Trigger calculation update if calculator instance exists and form has data
+            triggerCalculationUpdate();
+        }
+    }
+}
+
+// Helper function to trigger calculation update when dates change
+function triggerCalculationUpdate() {
+    try {
+        // Check if we have existing loan results to update
+        const loanSummaryTable = document.querySelector('#loanSummaryTable tbody');
+        const hasExistingResults = loanSummaryTable && loanSummaryTable.children.length > 0;
+        
+        // Check if we have a calculator instance and the form has sufficient data
+        const calculator = window.loanCalculator;
+        if (calculator && (hasExistingResults || hasMinimumFormData())) {
+            console.log('Date changed - triggering automatic calculation update');
+            calculator.calculateLoan(true); // Skip validation for auto-calculation
+        }
+    } catch (error) {
+        console.log('Auto-calculation on date change not available:', error.message);
+    }
+}
+
+// Check if form has minimum data required for calculation
+function hasMinimumFormData() {
+    const grossAmount = document.getElementById('grossAmountFixed').value;
+    const netAmount = document.getElementById('netAmountInput').value;
+    const propertyValue = document.getElementById('propertyValue').value;
+    const annualRate = document.getElementById('annualRate').value;
+    const loanName = document.getElementById('loanName').value.trim();
+    
+    // Only return true if we have meaningful data AND a loan name
+    const hasAmountData = (grossAmount && parseFloat(grossAmount) > 0) || 
+                         (netAmount && parseFloat(netAmount) > 0) || 
+                         (propertyValue && parseFloat(propertyValue) > 0 && annualRate && parseFloat(annualRate) > 0);
+    
+    return hasAmountData && loanName;
+}
+
+// Initialize end date calculation and loan calculator
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default start date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('startDate').value = today;
+    
+    // Calculate initial end date
+    calculateEndDate();
+    
+    // Add event listeners
+    document.getElementById('startDate').addEventListener('change', calculateEndDate);
+    document.getElementById('loanTerm').addEventListener('input', calculateEndDate);
+    document.getElementById('endDate').addEventListener('click', makeEndDateEditable);
+    document.getElementById('endDate').addEventListener('change', recalculateLoanTerm);
+    
+    // Initialize the main loan calculator and store global reference
+    window.loanCalculator = new LoanCalculator();
+});
+
+// Simplified fullscreen toggle for compact charts
+function toggleChartFullscreen(button) {
+    const card = button.closest('.chart-container');
+    if (!card) {
+        console.error('Chart container not found for button:', button);
+        return;
+    }
+    
+    const icon = button.querySelector('i');
+    
+    if (card.classList.contains('fullscreen')) {
+        // Exit fullscreen
+        card.classList.remove('fullscreen');
+        if (icon) {
+            icon.className = 'fas fa-expand';
+        }
+        document.body.classList.remove('no-scroll');
+        
+        // Resize charts after transition
+        setTimeout(() => resizeChartsInCard(card), 300);
+    } else {
+        // Enter fullscreen
+        card.classList.add('fullscreen');
+        if (icon) {
+            icon.className = 'fas fa-compress';
+        }
+        document.body.classList.add('no-scroll');
+        
+        // Resize charts after transition
+        setTimeout(() => resizeChartsInCard(card), 300);
+    }
+}
+
+// Legacy fullscreen toggle functionality for backward compatibility
+function toggleFullscreen(cardId) {
+    // Find the chart container - it might be the card itself or a parent
+    let card = document.getElementById(cardId);
+    if (!card) {
+        // Try to find the card by looking for the chart canvas
+        const canvas = document.getElementById(cardId.replace('Card', 'Chart'));
+        if (canvas) {
+            card = canvas.closest('.chart-container');
+        }
+    }
+    
+    if (!card) {
+        console.error('Chart container not found for:', cardId);
+        return;
+    }
+    
+    const button = card.querySelector('.expand-btn');
+    const icon = button ? button.querySelector('i') : null;
+    
+    if (card.classList.contains('fullscreen')) {
+        // Exit fullscreen
+        card.classList.remove('fullscreen');
+        if (icon) {
+            icon.className = 'fas fa-expand';
+        }
+        if (button) {
+            button.innerHTML = '<i class="fas fa-expand"></i>';
+        }
+        document.body.classList.remove('no-scroll');
+        
+        // Resize charts if they exist
+        setTimeout(() => resizeChartsInCard(card), 100);
+    } else {
+        // Enter fullscreen
+        card.classList.add('fullscreen');
+        if (icon) {
+            icon.className = 'fas fa-compress';
+        }
+        if (button) {
+            button.innerHTML = '<i class="fas fa-compress"></i>';
+        }
+        document.body.classList.add('no-scroll');
+        
+        // Resize charts if they exist
+        setTimeout(() => resizeChartsInCard(card), 200);
+    }
+}
+
+// Enhanced resize charts when entering/exiting fullscreen
+function resizeChartsInCard(cardElement) {
+    // Handle both element and ID
+    const card = typeof cardElement === 'string' ? document.getElementById(cardElement) : cardElement;
+    if (!card) return;
+    
+    const canvases = card.querySelectorAll('canvas');
+    
+    canvases.forEach(canvas => {
+        const chartInstance = Chart.getChart(canvas);
+        if (chartInstance) {
+            console.log('Resizing chart:', canvas.id);
+            chartInstance.resize();
+            chartInstance.update('none'); // Update without animation for better performance
+        }
+    });
+}
+
+// Close fullscreen on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const fullscreenCard = document.querySelector('.fullscreen');
+        if (fullscreenCard) {
+            const expandBtn = fullscreenCard.querySelector('.expand-btn');
+            if (expandBtn) {
+                toggleChartFullscreen(expandBtn);
+            }
+        }
+    }
+});
+
+// Edit functionality - handles URL parameters for loan editing
+function handleEditMode() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('edit') === 'true') {
+        const loanId = urlParams.get('loanId');
+        const loanName = urlParams.get('loanName');
+        
+        if (loanId && loanName) {
+            // Show edit mode notice
+            document.getElementById('editModeNotice').style.display = 'block';
+            document.getElementById('editingLoanName').textContent = decodeURIComponent(loanName);
+            document.getElementById('saveLoanText').textContent = 'Update Loan';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+            
+            // Store edit mode data
+            window.editMode = {
+                loanId: loanId,
+                loanName: decodeURIComponent(loanName)
+            };
+            
+            // Populate loan name field
+            const loanNameField = document.getElementById('loanName');
+            if (loanNameField) {
+                loanNameField.value = decodeURIComponent(loanName);
+                console.log('Set loan name field to:', decodeURIComponent(loanName));
+            }
+            
+            // Populate form with URL parameters
+            populateFormFromParams(urlParams);
+        }
+    }
+}
+
+function populateFormFromParams(params) {
+    // Populate all form fields from URL parameters
+    const paramMap = {
+        'loan_type': 'loanType',
+        'amount_input_type': 'amountInputType',
+        'gross_amount': 'grossAmount',
+        'net_amount': 'netAmount',
+        'property_value': 'propertyValue',
+        'annual_rate': 'annualRate',
+        'loan_term': 'loanTerm',
+        'start_date': 'startDate',
+        'end_date': 'endDate',
+        'repayment_option': 'repaymentOption',
+        'arrangement_fee_percentage': 'arrangementFeePercentage',
+        'legal_fees': 'legalFees',
+        'site_visit_fee': 'siteVisitFee',
+        'title_insurance_rate': 'titleInsuranceRate',
+        'payment_timing': 'paymentTiming',
+        'payment_frequency': 'paymentFrequency',
+        'capital_repayment': 'capitalRepayment',
+        'flexible_payment': 'flexiblePayment',
+        'currency': 'currency',
+        'day1_advance': 'day1Advance',
+        'tranche_mode': 'trancheMode'
+    };
+    
+    for (const [paramName, fieldId] of Object.entries(paramMap)) {
+        const value = params.get(paramName);
+        if (value) {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.value = value;
+                // Trigger change event for dependent fields
+                field.dispatchEvent(new Event('change'));
+            }
+        }
+    }
+    
+    // Handle tranche data population for development loans
+    populateTrancheData(params);
+}
+
+
+
+
+
+// Populate tranche data for development loans
+function populateTrancheData(params) {
+    // Check if this is a development loan
+    const loanType = params.get('loan_type');
+    if (loanType !== 'development') {
+        return;
+    }
+    
+    // Extract tranche parameters
+    const trancheContainer = document.getElementById('trancheContainer');
+    if (!trancheContainer) {
+        console.warn('Tranche container not found');
+        return;
+    }
+    
+    let trancheIndex = 0;
+    let foundTranches = false;
+    
+    // Look for tranche parameters in URL
+    while (params.get(`tranche_amounts[${trancheIndex}]`)) {
+        const amount = params.get(`tranche_amounts[${trancheIndex}]`);
+        const date = params.get(`tranche_dates[${trancheIndex}]`);
+        const rate = params.get(`tranche_rates[${trancheIndex}]`);
+        const description = params.get(`tranche_descriptions[${trancheIndex}]`);
+        
+        if (amount) {
+            // Add tranche if not first one (first one should exist)
+            if (trancheIndex > 0) {
+                addTranche();
+            }
+            
+            // Populate tranche fields
+            const amountField = document.querySelector(`#trancheContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheAmount"]`);
+            const dateField = document.querySelector(`#trancheContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheDate"]`);
+            const rateField = document.querySelector(`#trancheContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheRate"]`);
+            const descField = document.querySelector(`#trancheContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheDescription"]`);
+            
+            if (amountField) amountField.value = amount;
+            if (dateField) dateField.value = date;
+            if (rateField) rateField.value = rate;
+            if (descField) descField.value = description;
+            
+            foundTranches = true;
+        }
+        
+        trancheIndex++;
+    }
+    
+    if (foundTranches) {
+        console.log(`Populated ${trancheIndex} tranches for development loan`);
+    }
+}
+
+// Cancel edit functionality
+function cancelEdit() {
+    window.location.href = '/calculator';
+}
+
+// Initialize edit mode when page loads
+function initializeEditMode() {
+    handleEditMode();
+    
+    // Add cancel edit button handler
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', cancelEdit);
+    }
+}
+
+// Initialize everything when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize edit mode
+    initializeEditMode();
+    
+    // Initialize save loan functionality
+    const saveLoanBtn = document.getElementById('saveLoanBtn');
+    
+    // Save loan button click handler
+    saveLoanBtn.addEventListener('click', async function() {
+        try {
+            // Check if loan name is provided
+            const loanName = document.getElementById('loanName').value.trim();
+            if (!loanName) {
+                alert('Please enter a loan name before saving.');
+                document.getElementById('loanName').focus();
+                return;
+            }
+            
+            // Check if results section is visible (calculation completed)
+            const resultsSection = document.getElementById('resultsSection');
+            if (!resultsSection || resultsSection.style.display === 'none') {
+                alert('Please calculate the loan first before saving.');
+                return;
+            }
+            
+            // Disable button during save
+            saveLoanBtn.disabled = true;
+            saveLoanBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            
+            // Collect form data
+            const formData = window.loanCalculator.collectFormData();
+            formData.loanName = loanName;
+            
+            // Perform fresh calculation to get current results
+            const calcResponse = await fetch('/api/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            if (!calcResponse.ok) {
+                throw new Error('Failed to get calculation results');
+            }
+            
+            const calculationResults = await calcResponse.json();
+            
+            // Merge form data with calculation results
+            const saveData = { ...formData, ...calculationResults };
+            
+            console.log('Saving loan with data:', saveData);
+            
+            // Send to save endpoint
+            const response = await fetch('/save-loan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(saveData)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                
+                // Handle duplicate name error specifically
+                if (response.status === 409 && errorData.duplicate) {
+                    // Show notification with input field for new name
+                    const notificationMessage = `
+                        <div>
+                            <p style="margin-bottom: 12px;">A loan with this name already exists. Please enter a different name:</p>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text" id="duplicateNameInput" 
+                                       value="${loanName}_copy" 
+                                       style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
+                                <button onclick="retryLoanSave()" 
+                                        style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                    Save
+                                </button>
+                                <button onclick="this.closest('.notification').remove()" 
+                                        style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    if (window.notifications) {
+                        window.notifications.show(notificationMessage, 'warning', 30000);
+                    } else {
+                        // Fallback to prompt if notifications not available
+                        const newName = prompt('A loan with this name already exists.\n\nPlease enter a different name:', loanName + '_copy');
+                        if (newName && newName.trim() !== loanName) {
+                            document.getElementById('loanName').value = newName.trim();
+                            saveLoanBtn.click();
+                        }
+                    }
+                    return;
+                } else {
+                    throw new Error(errorData.error || 'Save failed');
+                }
+            }
+            
+            const result = await response.json();
+            
+            // Show success notification
+            if (window.notifications) {
+                window.notifications.show(result.message, 'success');
+            } else {
+                alert(`Success! ${result.message}`);
+            }
+            
+        } catch (error) {
+            console.error('Save loan error:', error);
+            
+            // Show error notification
+            if (window.notifications) {
+                window.notifications.show('Failed to save loan: ' + error.message, 'error');
+            } else {
+                alert('Failed to save loan: ' + error.message);
+            }
+        } finally {
+            // Re-enable button
+            saveLoanBtn.disabled = false;
+            saveLoanBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Loan';
+        }
+    });
+});
+
+// Function to open scenario comparison with current form data
+function openScenarioComparison() {
+    try {
+        // Collect all form data using the global collectFormData function
+        const formData = window.loanCalculator ? window.loanCalculator.collectFormData() : collectFormData();
+        
+        // Build URL with parameters - using safe access to avoid undefined errors
+        const params = new URLSearchParams({
+            loan_type: formData.loan_type || 'bridge',
+            gross_amount: formData.gross_amount || formData.net_amount || 1000000,
+            annual_rate: formData.annual_rate || (formData.monthly_rate ? formData.monthly_rate * 12 : 12),
+            loan_term: formData.loan_term || 12,
+            property_value: formData.property_value || 2000000,
+            currency: formData.currency || 'GBP',
+            amount_input_type: formData.amount_input_type || 'gross',
+            arrangement_fee_rate: formData.arrangement_fee_rate || 2.0,
+            legal_fees: formData.legal_fees || 1500,
+            site_visit_fee: formData.site_visit_fee || 500,
+            title_insurance_rate: formData.title_insurance_rate || 0.01,
+            repayment_option: formData.repayment_option || 'none',
+            interest_type: formData.interest_type || 'simple',
+            payment_timing: formData.payment_timing || 'in_arrears',
+            payment_frequency: formData.payment_frequency || 'monthly'
+        });
+        
+        // Open scenario comparison in new tab with current parameters
+        const url = `/scenario-comparison?${params.toString()}`;
+        window.open(url, '_blank');
+        
+    } catch (error) {
+        console.error('Error opening scenario comparison:', error);
+        // Fallback: open scenario comparison with default parameters
+        window.open('/scenario-comparison', '_blank');
+    }
+}
+
+// Helper function for retrying loan save with new name
+function retryLoanSave() {
+    const newNameInput = document.getElementById('duplicateNameInput');
+    if (newNameInput) {
+        const newName = newNameInput.value.trim();
+        if (newName) {
+            // Update the loan name field
+            document.getElementById('loanName').value = newName;
+            
+            // Close the notification
+            const notification = newNameInput.closest('.notification');
+            if (notification) {
+                notification.remove();
+            }
+            
+            // Trigger save again
+            document.getElementById('saveLoanBtn').click();
+        } else {
+            if (window.notifications) {
+                window.notifications.show('Please enter a valid loan name', 'warning');
+            }
+        }
+    }
+}
+
+// Save button is enabled automatically by calculator.js after successful calculation
+
+
+</script>
+
+<style>
+/* Enhanced fullscreen styles for compact charts */
+.fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    background: white !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    overflow: auto !important;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3) !important;
+}
+
+.fullscreen .card-header {
+    padding: 1rem !important;
+    font-size: 1.25rem !important;
+    border-bottom: 2px solid #dee2e6 !important;
+}
+
+.fullscreen .card-body {
+    height: calc(100vh - 80px) !important;
+    overflow: auto !important;
+    padding: 2rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.fullscreen canvas {
+    max-height: calc(100vh - 160px) !important;
+    max-width: calc(100vw - 80px) !important;
+    height: auto !important;
+    width: auto !important;
+}
+
+.fullscreen .table-responsive {
+    height: calc(100vh - 120px) !important;
+    overflow: auto !important;
+}
+
+/* Fullscreen expand button styling */
+.fullscreen .expand-btn {
+    position: absolute !important;
+    top: 15px !important;
+    right: 15px !important;
+    z-index: 10000 !important;
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: white !important;
+    padding: 8px 12px !important;
+    font-size: 1rem !important;
+}
+
+.no-scroll {
+    overflow: hidden !important;
+}
+
+.expand-btn {
+    background-color: #B8860B !important;
+    border-color: #B8860B !important;
+    color: white !important;
+    font-size: 0.875rem !important;
+}
+
+.expand-btn:hover {
+    background-color: #9A7209 !important;
+    border-color: #9A7209 !important;
+    color: white !important;
+}
+</style>
+
+<!-- Database Info Modal -->
+<div class="modal fade" id="databaseInfoModal" tabindex="-1" aria-labelledby="databaseInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white;" data-currency="GBP">
+                <h5 class="modal-title" id="databaseInfoModalLabel">
+                    <i class="fas fa-database me-2"></i>Database Connection Information
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="databaseInfoContent">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading database information...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" onclick="refreshDatabaseInfo()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Database Info Functions
+function showDatabaseInfo() {
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('databaseInfoModal'));
+    modal.show();
+    
+    // Load database info
+    loadDatabaseInfo();
+}
+
+function loadDatabaseInfo() {
+    fetch('/api/database-info')
+        .then(response => response.json())
+        .then(data => {
+            displayDatabaseInfo(data);
+        })
+        .catch(error => {
+            console.error('Error loading database info:', error);
+            document.getElementById('databaseInfoContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error loading database information: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function displayDatabaseInfo(data) {
+    let html = '';
+    
+    // Connection Status
+    html += `
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-plug me-2"></i>Connection Status</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Database Type:</strong> 
+                                <span class="badge ${data.type === 'PostgreSQL' ? 'bg-success' : 'bg-secondary'}">${data.type}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Status:</strong> 
+                                <span class="badge ${data.status === 'Connected' ? 'bg-success' : 'bg-danger'}">${data.status}</span>
+                            </div>
+                        </div>
+                        ${data.last_tested ? `<small class="text-muted">Last tested: ${data.last_tested}</small>` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Connection Details
+    if (data.type === 'PostgreSQL') {
+        html += `
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-server me-2"></i>PostgreSQL Connection Details</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Host:</strong> ${data.host || 'N/A'}<br>
+                                    <strong>Port:</strong> ${data.port || 'N/A'}<br>
+                                    <strong>Database:</strong> ${data.database || 'N/A'}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Username:</strong> ${data.username || 'N/A'}<br>
+                                    <strong>Password:</strong> ${data.password || 'N/A'}
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong>Connection String:</strong><br>
+                                    <code style="font-size: 0.8rem; word-break: break-all;">${data.connection_string || 'N/A'}</code>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>External Access:</strong> Use VM IP address instead of localhost for remote connections
+                                        <br><small>Format: postgresql://novellus_user:***@[VM_IP]:5432/novellus_loans</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Table Information
+    if (data.tables) {
+        html += `
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-table me-2"></i>Database Tables (${data.table_count})</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        ${data.tables.slice(0, Math.ceil(data.tables.length/2)).map(table => `<li><i class="fas fa-table me-1"></i>${table}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        ${data.tables.slice(Math.ceil(data.tables.length/2)).map(table => `<li><i class="fas fa-table me-1"></i>${table}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Record Counts
+    if (data.record_counts) {
+        html += `
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Record Counts</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                ${Object.entries(data.record_counts).map(([table, count]) => `
+                                    <div class="col-md-3 mb-2">
+                                        <div class="text-center p-2 border rounded">
+                                            <strong>${table}</strong><br>
+                                            <span class="badge bg-primary">${count}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    document.getElementById('databaseInfoContent').innerHTML = html;
+}
+
+function refreshDatabaseInfo() {
+    document.getElementById('databaseInfoContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Refreshing...</span>
+            </div>
+            <p class="mt-2">Refreshing database information...</p>
+        </div>
+    `;
+    loadDatabaseInfo();
+}
+</script>
+
+<!-- Currency Theme Manager -->
+<script src="{{ url_for('static', filename='js/currency-theme-simple.js') }}"></script>
+
+<script>
+// Initialize currency theme manager on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Currency theme is auto-initialized in currency-theme-simple.js
+    // Access via window.currencyTheme if needed
+    
+    // Manual test function for debugging
+    window.testCurrencyTheme = function(currency) {
+        console.log(`Manual theme test: ${currency}`);
+        if (window.currencyTheme) {
+            window.currencyTheme.switchCurrency(currency);
+        }
+    };
+    
+    // Add immediate trigger for currency dropdown changes with multiple approaches
+    const currencyDropdown = document.getElementById('currency');
+    if (currencyDropdown) {
+        currencyDropdown.addEventListener('change', function(e) {
+            console.log(`Currency dropdown changed to: ${e.target.value}`);
+            
+            // Multiple approach to ensure theme updates
+            setTimeout(() => {
+                if (window.currencyTheme) {
+                    window.currencyTheme.switchCurrency(e.target.value);
+                }
+                
+                // Direct aggressive button styling as backup
+                const colors = e.target.value === 'EUR' ? 
+                    { primary: '#509664', secondary: '#3d7450' } : 
+                    { primary: '#B8860B', secondary: '#DAA520' };
+                
+                // Direct style updates with class-based approach
+                const calculateBtn = document.querySelector('.calculate-button');
+                const saveBtn = document.getElementById('saveLoanBtn');
+                
+                if (calculateBtn) {
+                    calculateBtn.classList.remove('currency-gbp-btn', 'currency-eur-btn');
+                    calculateBtn.classList.add(`currency-${e.target.value.toLowerCase()}-btn`);
+                    calculateBtn.setAttribute('style', `background-color: ${colors.primary} !important; border-color: ${colors.primary} !important; color: white !important;`);
+                }
+                
+                if (saveBtn) {
+                    saveBtn.classList.remove('currency-gbp-btn', 'currency-eur-btn');
+                    saveBtn.classList.add(`currency-${e.target.value.toLowerCase()}-btn`);
+                    saveBtn.setAttribute('style', `background-color: ${colors.primary} !important; border-color: ${colors.primary} !important; color: white !important;`);
+                }
+                
+                // Update table headers immediately
+                const tableHeaders = document.querySelectorAll('.table thead th, .card-header, .bg-primary');
+                tableHeaders.forEach(header => {
+                    header.style.setProperty('background-color', colors.primary, 'important');
+                    header.style.setProperty('border', '2px solid #000000', 'important');
+                    header.style.setProperty('color', 'white', 'important');
+                    header.style.setProperty('background-image', 'none', 'important');
+                });
+                
+                // Update toggle buttons
+                const toggleButtons = document.querySelectorAll('.btn-outline-secondary');
+                toggleButtons.forEach(toggle => {
+                    toggle.classList.remove('currency-gbp-toggle', 'currency-eur-toggle');
+                    toggle.classList.add(`currency-${e.target.value.toLowerCase()}-toggle`);
+                    toggle.style.borderColor = colors.primary;
+                    toggle.style.color = colors.primary;
+                    
+                    // Check if this toggle is active
+                    const associatedRadio = document.getElementById(toggle.getAttribute('for'));
+                    if (associatedRadio && associatedRadio.checked) {
+                        toggle.style.backgroundColor = colors.primary;
+                        toggle.style.color = 'white';
+                    }
+                });
+                
+                console.log(`Direct button styling applied for ${e.target.value}`);
+            }, 10);
+        });
+        
+        // Also trigger on page load with current selection
+        setTimeout(() => {
+            currencyDropdown.dispatchEvent(new Event('change'));
+        }, 100);
+    }
+});
+</script>
+
+{% endblock %}

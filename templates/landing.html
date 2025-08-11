@@ -18,8 +18,7 @@
     <style>
         /* Landing page specific styles */
         .landing-hero {
-            background: linear-gradient(135deg, rgba(30, 43, 58, 0.9), rgba(245, 237, 216, 0.8)), 
-                        url('{{ url_for("static", filename="novellus-bg.jpg") }}');
+            background: url('{{ url_for("static", filename="Novellus-BG.jpg") }}');
             background-size: cover;
             background-position: center;
             min-height: 100vh;
@@ -27,7 +26,6 @@
             align-items: center;
             position: relative;
         }
-        
         .landing-hero::before {
             content: '';
             position: absolute;
@@ -35,7 +33,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, rgba(30, 43, 58, 0.85), rgba(231, 217, 182, 0.75));
+
             z-index: 1;
         }
         
@@ -60,21 +58,21 @@
             font-size: 3.5rem;
             font-weight: 700;
             margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(51, 51, 51, 0.5);
+            color: rgb(51, 51, 51);;
         }
         
         .hero-subtitle {
             font-size: 1.5rem;
             margin-bottom: 3rem;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            color: #f8f9fa;
+            text-shadow: 1px 1px 2px rgba(51, 51, 51, 0.5);
+            color: rgb(51, 51, 51);;
             font-weight: 300;
         }
         
         .navigation-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             gap: 2rem;
             max-width: 1200px;
             margin: 0 auto;
@@ -142,12 +140,12 @@
         .features-section {
             padding: 4rem 0;
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(1px);
         }
         
         .feature-list {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
             gap: 1.5rem;
             max-width: 800px;
             margin: 0 auto;
@@ -157,7 +155,7 @@
         .feature-item {
             display: flex;
             align-items: center;
-            color: white;
+            color: black;
             font-size: 1.1rem;
         }
         
@@ -178,11 +176,11 @@
             
             .navigation-cards {
                 grid-template-columns: 1fr;
-                gap: 1.5rem;
+                gap: 1rem;
             }
             
             .nav-card {
-                padding: 1.5rem;
+                padding: 1rem;
             }
         }
     </style>
@@ -195,8 +193,8 @@
                     <img src="{{ url_for('static', filename='novellus_logo.png') }}" alt="Novellus Logo" class="logo">
                 </div>
                 
-                <h1 class="hero-title">Novellus Loan Management</h1>
-                <p class="hero-subtitle">Professional lending solutions with advanced financial modeling</p>
+                <h1 class="hero-title">PROPERTY & BRIDGING FINANCE LENDER</h1>
+                <p class="hero-subtitle">We provide fast unregulated bridging finance solutions for your short-term lending requirements.</p>
                 
                 <div class="navigation-cards">
                     <div class="nav-card">
@@ -205,7 +203,7 @@
                         </div>
                         <h3 class="nav-card-title">Loan Calculator</h3>
                         <p class="nav-card-description">
-                            Advanced loan calculations for bridge, term, and development loans with real-time modeling and export capabilities.
+                            Loan calculations for bridge, term, and development.
                         </p>
                         <a href="/calculator" class="nav-card-button">
                             Start Calculating
@@ -216,12 +214,11 @@
                         <div class="nav-card-icon">
                             <i class="fas fa-chart-line"></i>
                         </div>
-                        <h3 class="nav-card-title">Loan History</h3>
+                        <h3 class="nav-card-title">Cashbook</h3>
                         <p class="nav-card-description">
-                            View and manage your loan calculations, export reports, and track lending performance over time.
-                        </p>
-                        <a href="/loan-history" class="nav-card-button">
-                            View History
+                            View and manage your loan cashflow.                        </p>
+                        <a href="https://novelluscapital.sharepoint.com/:x:/s/NovellusLending/EcBD97NZVm9InN-BueGjXLoBOPwoKFv0DEGpMhUZu5Olzw?e=ZutCig" class="nav-card-button" target="_blank">
+                            Cashbook Excel
                         </a>
                     </div>
                     
@@ -229,12 +226,13 @@
                         <div class="nav-card-icon">
                             <i class="fas fa-chart-bar"></i>
                         </div>
-                        <h3 class="nav-card-title">Power BI Configuration</h3>
+                        <h3 class="nav-card-title">Xero</h3>
                         <p class="nav-card-description">
-                            Configure Power BI integration for advanced reporting and data visualization with automated refresh capabilities.
+                            View and manage Novellus Accounts.
+
                         </p>
-                        <a href="/powerbi-config" class="nav-card-button">
-                            Configure Power BI
+                        <a href="https://login.xero.com/identity/user/login?ReturnUrl=%2Fidentity%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3Dxero_mx_hybrid-web%26redirect_uri%3Dhttps%253A%252F%252Fmy.xero.com%252Fsignin-oidc%26response_mode%3Dform_post%26response_type%3Dcode%2520id_token%26scope%3Dxero_all-apis%2520openid%2520email%2520profile%26state%3DOpenIdConnect.AuthenticationProperties%253DY-gOrxPXDynk0BeIk6zWph3RQA8aa4TMpONPqwahcU-jldogR5Dvs_nflQwV_MFtEoALb-zLknrirq4TBKNnHR1XtOTdmrj2ufMFgbARYoyWKDvg8WYvarIrbPwuDzQQURFujpB5jTpCgd9XOrdkYAsh6MftvpLYszTndFpossYS7qH-em01Rx3lBT5laI11vgEJJVWYW-8LCSGmjENXAPdNW9U%26nonce%3D638895519124272470.NmQwM2UzMWUtMTU5Yi00Y2U2LTgzMTEtZTliMzhhYzNkZmQ4NTY5YjUzYjktMmM5ZC00ODM4LTg5NjktNzU1YzY2ODVhM2Vh%26x-client-SKU%3DID_NET451%26x-client-ver%3D1.3.13.0" class="nav-card-button" target="_blank">
+                            Xero Application
                         </a>
                     </div>
 
@@ -245,7 +243,7 @@
                         </div>
                         <h3 class="nav-card-title">User Manual</h3>
                         <p class="nav-card-description">
-                            Complete system documentation with step-by-step guides, troubleshooting, and feature explanations.
+                            System documentation &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
                         </p>
                         <a href="/user-manual" class="nav-card-button">
                             View Manual
@@ -257,27 +255,7 @@
                     <div class="feature-list">
                         <div class="feature-item">
                             <i class="fas fa-check-circle"></i>
-                            <span>Multi-currency support (GBP/EUR)</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Real-time loan calculations</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Professional PDF & Excel exports</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Advanced payment scheduling</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Comprehensive fee calculations</span>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Interactive chart visualizations</span>
+                            <span>Bridging loan financing in the UK from 500000 to 50m .</span>
                         </div>
                     </div>
                 </div>

@@ -558,7 +558,6 @@
 <input class="form-control" id="annualRateValue" max="50" min="0" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="12"/>
 <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
 </div>
-<small id="rateEquivalenceNote" class="form-text text-muted"></small>
 </div>
 <!-- Daily Rate Calculation Method -->
 <div class="">
@@ -958,7 +957,18 @@
 </div>
 </div>
 <div class="col-lg-6">
-
+<div class="card chart-container" style="height: 220px;">
+<div class="card-header" style="font-size: 0.8rem; background: #1E2B3A; color: white;">
+<i class="fas fa-chart-column me-1"></i>Payment Breakdown
+                            <button class="btn btn-sm btn-outline-light float-end expand-btn" onclick="toggleChartFullscreen(this)" style="font-size: 0.7rem; padding: 2px 6px;" type="button">
+<i class="fas fa-expand"></i>
+</button>
+</div>
+<div class="card-body p-1" style="height: calc(100% - 32px);">
+<canvas id="monthlyBreakdownChart" style="max-height: 180px;"></canvas>
+</div>
+</div>
+</div>
 </div>
 <!-- Compact Balance Chart -->
 <div class="row" id="balanceChartRow" style="display: none;">
