@@ -78,6 +78,8 @@ class LoanCalculator {
             this.currentResults = null;
             this.charts = {}; // Store chart instances for proper cleanup
             this.chartGenerationInProgress = false; // Prevent concurrent chart generation
+            this.currentTrancheIndex = null;
+            this.nextTrancheIndex = 1;
             
             // Check if required elements exist
             if (!this.form) {
@@ -298,18 +300,17 @@ class LoanCalculator {
                 this.generateTranches();
             });
         }
-
         // Manual tranche controls
-        const increaseButton = document.getElementById('increaseTranches');
-        const decreaseButton = document.getElementById('decreaseTranches');
-        if (increaseButton) {
-            increaseButton.addEventListener('click', () => {
-                this.increaseTranches();
+        const addTrancheBtn = document.getElementById('addTrancheBtn');
+        if (addTrancheBtn) {
+            addTrancheBtn.addEventListener('click', () => {
+                this.openTrancheModal();
             });
         }
-        if (decreaseButton) {
-            decreaseButton.addEventListener('click', () => {
-                this.decreaseTranches();
+        const saveTrancheBtn = document.getElementById('saveTrancheBtn');
+        if (saveTrancheBtn) {
+            saveTrancheBtn.addEventListener('click', () => {
+                this.saveTranche();
             });
         }
 
@@ -1286,25 +1287,6 @@ class LoanCalculator {
         }
     }
 
-    toggleTrancheMode() {
-        const manualMode = document.getElementById('manual_tranches');
-        const autoSettings = document.getElementById('autoTrancheSettings');
-        const manualControls = document.getElementById('manualTrancheControls');
-        const tranchesContainer = document.getElementById('tranchesContainer');
-
-        if (manualMode && manualMode.checked) {
-            // Show manual controls
-            if (autoSettings) autoSettings.style.display = 'none';
-            if (manualControls) manualControls.style.display = 'flex';
-            if (tranchesContainer) tranchesContainer.style.display = 'block';
-        } else {
-            // Show auto generation settings
-            if (autoSettings) autoSettings.style.display = 'block';
-            if (manualControls) manualControls.style.display = 'none';
-            if (tranchesContainer) tranchesContainer.style.display = 'none';
-        }
-    }
-
     generateTranches() {
         try {
             console.log('Generate tranches button clicked');
@@ -1366,12 +1348,6 @@ class LoanCalculator {
             // Clear existing tranches
             this.clearTranches();
 
-            // Set tranche count
-            const trancheCountElement = document.getElementById('trancheCount');
-            if (trancheCountElement) {
-                trancheCountElement.textContent = trancheCount;
-            }
-
             // Generate tranche dates (monthly intervals)
             const start = new Date(startDate);
             const monthInterval = Math.max(1, Math.floor(loanPeriod / trancheCount));
@@ -1409,98 +1385,113 @@ class LoanCalculator {
             alert('Error generating tranches: ' + error.message);
         }
     }
-
-    increaseTranches() {
-        const countElement = document.getElementById('trancheCount');
-        const currentCount = parseInt(countElement.textContent);
-        const newCount = currentCount + 1;
-        
-        if (newCount <= 20) {
-            countElement.textContent = newCount;
-            this.createTrancheItem(newCount, 0, '', 12, `Tranche ${newCount}`);
-        }
-    }
-
-    decreaseTranches() {
-        const countElement = document.getElementById('trancheCount');
-        const currentCount = parseInt(countElement.textContent);
-        
-        if (currentCount > 1) {
-            const newCount = currentCount - 1;
-            countElement.textContent = newCount;
-            
-            // Remove the last tranche
-            const container = document.getElementById('tranchesContainer');
-            const lastTranche = container.querySelector(`[data-tranche="${currentCount}"]`);
-            if (lastTranche) {
-                lastTranche.remove();
-            }
-        }
-    }
-
     clearTranches() {
         const container = document.getElementById('tranchesContainer');
         if (container) {
             container.innerHTML = '';
         }
+        const table = document.getElementById('tranchesTable');
+        if (table) {
+            table.style.display = 'none';
+        }
+        this.nextTrancheIndex = 1;
     }
 
     createTrancheItem(number, amount = 0, date = '', rate = 12, description = '') {
         const container = document.getElementById('tranchesContainer');
-        if (!container) {
-            console.error('Could not find tranchesContainer element');
+        const table = document.getElementById('tranchesTable');
+        if (!container || !table) {
+            console.error('Could not find tranche elements');
             return;
         }
 
-        console.log(`Creating tranche item ${number} in container`, container);
+        const symbol = this.getCurrencySymbol(document.getElementById('currency').value);
+        const amountFormatted = parseFloat(amount || 0).toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
 
-        const trancheHtml = `
-            <div class="tranche-item mb-3" data-tranche="${number}">
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0">Tranche ${number}</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="form-label">Tranche Amount</label>
-                                <div class="input-group">
-                                    <span class="input-group-text currency-symbol">£</span>
-                                    <input type="number" class="form-control tranche-amount" 
-                                           name="tranche_amounts[]" min="0" step="0.0001" 
-                                           value="${amount}" placeholder="0">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Release Date</label>
-                                <input type="date" class="form-control tranche-date" 
-                                       name="tranche_dates[]" value="${date}">
-                            </div>
-                        </div>
-                        <div class="row mt-2">
-                            <div class="col-md-6">
-                                <label class="form-label">Interest Rate (%)</label>
-                                <input type="number" class="form-control tranche-rate" 
-                                       name="tranche_rates[]" min="0" max="50" step="0.0001" 
-                                       value="${rate}" placeholder="Annual rate">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Description</label>
-                                <input type="text" class="form-control tranche-description" 
-                                       name="tranche_descriptions[]" value="${description}" 
-                                       placeholder="e.g., Land Purchase">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        const rowHtml = `
+            <tr data-index="${number}">
+                <td>${symbol}${amountFormatted}<input type="hidden" name="tranche_amounts[]" value="${amount}"></td>
+                <td>${date}<input type="hidden" name="tranche_dates[]" value="${date}"></td>
+                <td>${rate}<input type="hidden" name="tranche_rates[]" value="${rate}"></td>
+                <td>${description}<input type="hidden" name="tranche_descriptions[]" value="${description}"></td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-link edit-tranche">Edit</button>
+                    <button type="button" class="btn btn-sm btn-link text-danger delete-tranche">Delete</button>
+                </td>
+            </tr>
         `;
 
-        container.insertAdjacentHTML('beforeend', trancheHtml);
-        console.log(`Tranche item ${number} created successfully`);
-        
-        // Make sure the container is visible after adding content
-        container.style.display = 'block';
+        container.insertAdjacentHTML('beforeend', rowHtml);
+        table.style.display = '';
+
+        const row = container.lastElementChild;
+        row.querySelector('.edit-tranche').addEventListener('click', () => this.openTrancheModal(number));
+        row.querySelector('.delete-tranche').addEventListener('click', () => this.deleteTranche(number));
+
+        this.nextTrancheIndex = Math.max(this.nextTrancheIndex, number + 1);
+    }
+
+    openTrancheModal(index = null) {
+        const modalEl = document.getElementById('trancheModal');
+        if (!modalEl) return;
+        this.currentTrancheIndex = index;
+
+        const amountInput = document.getElementById('modalTrancheAmount');
+        const dateInput = document.getElementById('modalTrancheDate');
+        const rateInput = document.getElementById('modalTrancheRate');
+        const descInput = document.getElementById('modalTrancheDescription');
+
+        if (index !== null) {
+            const row = document.querySelector(`#tranchesContainer tr[data-index='${index}']`);
+            amountInput.value = row.querySelector("input[name='tranche_amounts[]']").value;
+            dateInput.value = row.querySelector("input[name='tranche_dates[]']").value;
+            rateInput.value = row.querySelector("input[name='tranche_rates[]']").value;
+            descInput.value = row.querySelector("input[name='tranche_descriptions[]']").value;
+        } else {
+            amountInput.value = '';
+            dateInput.value = '';
+            rateInput.value = '';
+            descInput.value = '';
+        }
+
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+
+    saveTranche() {
+        const amount = document.getElementById('modalTrancheAmount').value || 0;
+        const date = document.getElementById('modalTrancheDate').value || '';
+        const rate = document.getElementById('modalTrancheRate').value || 0;
+        const description = document.getElementById('modalTrancheDescription').value || '';
+
+        if (this.currentTrancheIndex !== null) {
+            const row = document.querySelector(`#tranchesContainer tr[data-index='${this.currentTrancheIndex}']`);
+            if (row) {
+                const symbol = this.getCurrencySymbol(document.getElementById('currency').value);
+                const amountFormatted = parseFloat(amount || 0).toLocaleString('en-GB', {minimumFractionDigits:2, maximumFractionDigits:2});
+                row.children[0].innerHTML = `${symbol}${amountFormatted}<input type="hidden" name="tranche_amounts[]" value="${amount}">`;
+                row.children[1].innerHTML = `${date}<input type="hidden" name="tranche_dates[]" value="${date}">`;
+                row.children[2].innerHTML = `${rate}<input type="hidden" name="tranche_rates[]" value="${rate}">`;
+                row.children[3].innerHTML = `${description}<input type="hidden" name="tranche_descriptions[]" value="${description}">`;
+            }
+        } else {
+            const index = this.nextTrancheIndex;
+            this.createTrancheItem(index, amount, date, rate, description);
+        }
+
+        const modalEl = document.getElementById('trancheModal');
+        bootstrap.Modal.getInstance(modalEl).hide();
+    }
+
+    deleteTranche(index) {
+        const row = document.querySelector(`#tranchesContainer tr[data-index='${index}']`);
+        if (row) {
+            row.remove();
+        }
+        if (document.querySelectorAll('#tranchesContainer tr').length === 0) {
+            const table = document.getElementById('tranchesTable');
+            if (table) table.style.display = 'none';
+        }
     }
 
     // Additional helper methods for form handling
@@ -1611,6 +1602,7 @@ class LoanCalculator {
             
             // Get correct element IDs from HTML
             const manualTrancheControls = document.getElementById('manualTrancheControls');
+            const tranchesTable = document.getElementById('tranchesTable');
             const tranchesContainer = document.getElementById('tranchesContainer');
             const autoTrancheSettings = document.getElementById('autoTrancheSettings');
             const manualRadio = document.getElementById('manual_tranches'); // Note: underscore, not camelCase
@@ -1627,8 +1619,8 @@ class LoanCalculator {
                 if (manualTrancheControls) {
                     manualTrancheControls.style.display = 'flex';
                 }
-                if (tranchesContainer) {
-                    tranchesContainer.style.display = 'block';
+                if (tranchesTable) {
+                    tranchesTable.style.display = (tranchesContainer && tranchesContainer.children.length) ? '' : 'none';
                 }
                 if (autoTrancheSettings) {
                     autoTrancheSettings.style.display = 'none';
@@ -1639,8 +1631,8 @@ class LoanCalculator {
                 if (manualTrancheControls) {
                     manualTrancheControls.style.display = 'none';
                 }
-                if (tranchesContainer) {
-                    tranchesContainer.style.display = 'none';
+                if (tranchesTable) {
+                    tranchesTable.style.display = 'none';
                 }
                 if (autoTrancheSettings) {
                     autoTrancheSettings.style.display = 'block';
