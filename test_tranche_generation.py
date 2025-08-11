@@ -49,3 +49,22 @@ def test_tranche_breakdown_matches_input_count():
     assert len(additional) == 10
     assert additional[0]['release_date'] == '2025-02-01'
     assert additional[-1]['release_date'] == '2025-11-01'
+
+
+def test_auto_tranches_start_from_second_month():
+    calculator = LoanCalculator()
+    params = {
+        'day1_advance': 100000,
+        'legal_fees': 0,
+        'annual_rate': 12.0,
+        'arrangement_fee_rate': 2.0,
+        'title_insurance_rate': 0.01,
+        'site_visit_fee': 0,
+        'net_amount': 200000,
+        'loan_term': 12,
+        'start_date': '2025-01-01'
+    }
+    result = calculator.calculate_development2_loan(params)
+    auto_tranches = [t for t in result['tranche_breakdown'] if t['tranche_number'] > 1]
+    assert auto_tranches[0]['release_date'] == '2025-02-01'
+    assert auto_tranches[-1]['release_date'] == '2025-12-01'
