@@ -98,6 +98,7 @@ class LoanCalculator {
             // Initialize dynamic dropdowns and sections on page load
             this.updateRepaymentOptions();
             this.updateAdditionalParams();
+            this.updateAutoTotalAmount();
             // Calculate initial end date based on default values
             setTimeout(() => {
                 try {
@@ -235,6 +236,16 @@ class LoanCalculator {
         document.getElementById('grossAmountPercentage').addEventListener('input', () => {
             this.updateGrossAmountFromPercentage();
         });
+
+        // Update Total Development Tranche when net amount or Day 1 advance changes
+        const netAmountField = document.getElementById('netAmountInput');
+        const day1AdvanceField = document.getElementById('day1Advance');
+        if (netAmountField) {
+            netAmountField.addEventListener('input', () => this.updateAutoTotalAmount());
+        }
+        if (day1AdvanceField) {
+            day1AdvanceField.addEventListener('input', () => this.updateAutoTotalAmount());
+        }
 
         // Start date changes - trigger automatic end date calculation
         document.getElementById('startDate').addEventListener('change', () => {
@@ -1084,6 +1095,21 @@ class LoanCalculator {
         // For zero, negative, or invalid numbers, leave as typed
     }
 
+    updateAutoTotalAmount() {
+        try {
+            const netInput = document.getElementById('netAmountInput');
+            const day1Input = document.getElementById('day1Advance');
+            const autoInput = document.getElementById('autoTotalAmount');
+            if (!autoInput || !netInput) return;
+            const net = parseFloat((netInput.value || '').replace(/,/g, '')) || 0;
+            const day1 = parseFloat((day1Input?.value || '').replace(/,/g, '')) || 0;
+            const remaining = Math.max(net - day1, 0);
+            autoInput.value = remaining.toString();
+        } catch (error) {
+            console.error('Error updating Total Development Tranche:', error);
+        }
+    }
+
     updateAdditionalParams() {
         try {
             const loanTypeElement = document.getElementById('loanType');
@@ -1198,6 +1224,7 @@ class LoanCalculator {
             }
             
             console.log('Additional params updated successfully');
+            this.updateAutoTotalAmount();
         } catch (error) {
             console.error('Error in updateAdditionalParams:', error);
         }
