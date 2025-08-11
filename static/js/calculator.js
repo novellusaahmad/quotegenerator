@@ -1432,10 +1432,8 @@ class LoanCalculator {
         const currentCount = parseInt(countElement.textContent);
         const newCount = currentCount + 1;
         
-        if (newCount <= 20) {
-            countElement.textContent = newCount;
-            this.createTrancheItem(newCount, 0, '', 12, `Tranche ${newCount}`);
-        }
+        countElement.textContent = newCount;
+        this.createTrancheItem(newCount, 0, '', 12, `Tranche ${newCount}`);
     }
 
     decreaseTranches() {

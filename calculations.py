@@ -1026,8 +1026,8 @@ class LoanCalculator:
             # Default: Calculate tranche amount dynamically based on total net advance
             total_net_advance = float(params.get('net_amount', 800000))
             remaining_advance = total_net_advance - net_advance_day1
-            tranche_end_month = min(10, total_term_months - 1)
-            tranche_count = tranche_end_month  # Number of tranches from month 2 to 11
+            tranche_end_month = total_term_months - 1  # Allow tranches for each remaining month
+            tranche_count = tranche_end_month  # Number of tranches from month 2 to loan end
             
             if tranche_count > 0:
                 tranche_amount = remaining_advance / tranche_count  # Dynamic amount
@@ -3236,38 +3236,28 @@ class LoanCalculator:
         
         logging.info(f"Month 1: Day 1 advance £{day1_advance}, Interest £{month_interest:.6f}, Balance £{balance:.2f}")
         
-        # Months 2-11: Add tranches + compound interest (10 tranches)
+        # Months 2+: Add tranches + compound interest
         # Calculate dynamic default tranche amount
-        total_net_advance = day1_advance * Decimal('8')  # Assume Day 1 is 1/8 of total
+        total_net_advance = day1_advance * Decimal(str(loan_term))  # Assume equal monthly advances
         remaining_advance = total_net_advance - day1_advance
-        default_tranche_amount = remaining_advance / Decimal('10')  # 10 tranches
-        
-        for month in range(2, 12):
-            # Add tranche
+        default_tranche_amount = remaining_advance / Decimal(str(max(loan_term - 1, 1)))
+
+        for month in range(2, loan_term + 1):
             if tranches and len(tranches) >= (month - 1):
                 tranche_amount = Decimal(str(tranches[month - 2].get('amount', default_tranche_amount)))
             else:
                 tranche_amount = default_tranche_amount
-                
+
             balance += tranche_amount
-            
+
             # Calculate compound interest
             compound_factor = (Decimal('1') + daily_rate) ** days_per_month
             month_interest = balance * (compound_factor - Decimal('1'))
             total_interest += month_interest
             balance += month_interest
-            
+
             logging.info(f"Month {month}: Tranche £{tranche_amount}, Interest £{month_interest:.6f}, Balance £{balance:.2f}")
-        
-        # Months 12-18: Just compound interest
-        for month in range(12, loan_term + 1):
-            compound_factor = (Decimal('1') + daily_rate) ** days_per_month
-            month_interest = balance * (compound_factor - Decimal('1'))
-            total_interest += month_interest
-            balance += month_interest
-            
-            logging.info(f"Month {month}: Interest only £{month_interest:.6f}, Balance £{balance:.2f}")
-        
+
         logging.info(f"Final total interest: £{total_interest:.6f}")
         return total_interest
     
@@ -4573,7 +4563,7 @@ class LoanCalculator:
         # Calculate default dynamic tranche amount
         total_net_advance = net_amount  # Ensure variable is defined
         remaining_net = total_net_advance - day1_advance
-        default_tranche_count = min(10, loan_term - 1)  # Maximum 10 tranches for typical 18-month loan
+        default_tranche_count = max(loan_term - 1, 1)  # Allow tranches for each remaining month
         dynamic_tranche_amount = remaining_net / Decimal(str(default_tranche_count)) if default_tranche_count > 0 else Decimal('0')
         
         if user_tranches and len(user_tranches) > 0:
@@ -5462,9 +5452,9 @@ class LoanCalculator:
         
         outstanding_balance = month1_future_value
         
-        # Months 2-11: Add USER'S actual tranches with compound interest
-        for period in range(2, 12):  # Months 2-11 get user tranches
-            # Since all tranches are marked as month 1, distribute them across months 2-11
+        # Months 2+ : Add user's actual tranches with compound interest
+        for period in range(2, loan_term + 1):
+            # Since all tranches are marked as month 1, distribute them sequentially
             tranche_index = period - 2  # Period 2 = index 0, Period 3 = index 1, etc.
             tranche_amount = Decimal('0')
             if 0 <= tranche_index < len(tranches):
@@ -5494,26 +5484,7 @@ class LoanCalculator:
             
             outstanding_balance = period_future_value
         
-        # Months 12-18: No tranches, just compound interest
-        for period in range(12, loan_term + 1):
-            period_future_value = outstanding_balance * compound_factor
-            period_interest = period_future_value - outstanding_balance
-            
-            period_date = start_date + timedelta(days=int((period-1) * average_days_per_month))
-            
-            schedule.append({
-                'payment_date': period_date.strftime('%d/%m/%Y'),
-                'opening_balance': f"{currency_symbol}{outstanding_balance:,.2f}",
-                'tranche_release': "—",
-                'interest_calculation': f'£{outstanding_balance:,.2f} × (1 + {daily_rate:.6f})^30.4375',
-                'interest_amount': f"{currency_symbol}{period_interest:,.2f}",
-                'principal_payment': f"{currency_symbol}0.00",
-                'total_payment': f"{currency_symbol}0.00",  # No payment with retained interest
-                'closing_balance': f"{currency_symbol}{period_future_value:,.2f}",
-                'balance_change': f"↑ +£{period_interest:,.2f}"
-            })
-            
-            outstanding_balance = period_future_value
+        # No separate loop needed for remaining periods; continue compound interest
         
         # NATURAL CALCULATION: Use the naturally calculated final balance (no forcing)
         if schedule:
