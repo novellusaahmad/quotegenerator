@@ -31,6 +31,8 @@
     <link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet">
     <!-- Enhanced Chart Styles for better visibility -->
     <link href="{{ url_for('static', filename='css/chart-styles.css') }}" rel="stylesheet">
+    <!-- Layout hotfix -->
+    <link href="{{ url_for('static', filename='css/layout-hotfix.css') }}" rel="stylesheet">
     
     {% block head %}{% endblock %}
 </head>
@@ -268,7 +270,9 @@
     
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
+    <!-- Layout hotfix -->
+    <script src="{{ url_for('static', filename='js/layout-hotfix.js') }}"></script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>
