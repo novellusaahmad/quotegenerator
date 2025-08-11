@@ -1757,11 +1757,16 @@ class LoanCalculator {
         };
 
         const gross = formatMoney(r.grossAmount || r.gross_amount || 0);
-        const arrangement = formatMoney(r.arrangementFee || 0);
-        const legal = formatMoney(r.legalCosts || r.legalFees || 0);
-        const site = formatMoney(r.siteVisitFee || 0);
-        const title = formatMoney(r.titleInsurance || 0);
-        const interest = formatMoney(r.totalInterest || 0);
+        const arrangementNum = parseFloat(r.arrangementFee || 0);
+        const legalNum = parseFloat(r.legalCosts || r.legalFees || 0);
+        const siteNum = parseFloat(r.siteVisitFee || 0);
+        const titleNum = parseFloat(r.titleInsurance || 0);
+        const interestNum = parseFloat(r.totalInterest || 0);
+        const arrangement = formatMoney(arrangementNum);
+        const legal = formatMoney(legalNum);
+        const site = formatMoney(siteNum);
+        const title = formatMoney(titleNum);
+        const interest = formatMoney(interestNum);
         const day1 = formatMoney(r.day1NetAdvance || r.day1Advance || r.netDay1Advance || 0);
         const totalNet = formatMoney(r.totalNetAdvance || 0);
         const propertyValue = parseFloat(r.propertyValue || 0);
@@ -1777,6 +1782,8 @@ class LoanCalculator {
         const rateEl = document.getElementById('interestRatePercentageDisplay');
         const rateText = rateEl ? rateEl.textContent.trim() : '';
         const loanTerm = r.loanTerm || r.loan_term || 0;
+        const totalFeesNum = arrangementNum + legalNum + siteNum + titleNum;
+        const totalFees = formatMoney(totalFeesNum);
 
         let trancheHtml = '';
         if (r.tranche_breakdown && r.tranche_breakdown.length > 0) {
@@ -1811,9 +1818,101 @@ class LoanCalculator {
             interestSavingsHtml = `<p><strong>Interest Savings:</strong> ${formatMoney(r.interestSavings)} compared to an interest-only loan.</p>`;
         }
 
+        // Determine interest calculation description
+        const interestType = r.interest_type || 'simple';
+        const use360 = r.use_360_days || (document.getElementById('use360Days') ? document.getElementById('use360Days').checked : false);
+        const daysPerYear = use360 ? 360 : 365;
+        let calcDescription = '';
+        switch (interestType) {
+            case 'compound_daily':
+                calcDescription = `Compound daily interest where <code>Interest = Principal × (1 + Rate / ${daysPerYear})<sup>${daysPerYear} × Time</sup> − Principal</code>`;
+                break;
+            case 'compound_monthly':
+                calcDescription = 'Compound monthly interest where <code>Interest = Principal × (1 + Rate / 12)<sup>12 × Time</sup> − Principal</code>';
+                break;
+            case 'compound_quarterly':
+                calcDescription = 'Compound quarterly interest where <code>Interest = Principal × (1 + Rate / 4)<sup>4 × Time</sup> − Principal</code>';
+                break;
+            default:
+                calcDescription = 'Simple interest where <code>Interest = Principal × Rate × Time</code>';
+        }
+
+        // Determine repayment method description
+        const loanType = r.loan_type || document.getElementById('loanType')?.value || '';
+        const repaymentOption = r.repaymentOption || r.repayment_option || document.getElementById('repaymentOption')?.value || 'none';
+        let repaymentDescription = '';
+        switch (repaymentOption) {
+            case 'none':
+            case 'retained':
+                repaymentDescription = 'Interest retained — total interest is deducted at the start and repaid with the principal at the end.';
+                break;
+            case 'service_only':
+                repaymentDescription = 'Serviced interest — interest is paid periodically while principal is repaid at maturity.';
+                break;
+            case 'service_and_capital':
+                repaymentDescription = 'Capital & interest — regular payments amortise the loan using <code>Payment = P × r / (1 − (1 + r)<sup>−n</sup>)</code>.';
+                break;
+            case 'capital_payment_only':
+                repaymentDescription = 'Capital payments only — interest is retained upfront and scheduled capital payments reduce the balance.';
+                break;
+            case 'flexible_payment':
+                repaymentDescription = 'Flexible payment — custom payments reduce the balance while any shortfall accrues interest.';
+                break;
+            default:
+                repaymentDescription = 'Standard repayment schedule.';
+        }
+
+        // Net-to-gross formula description when user inputs net amount
+        const amountInputType = r.amount_input_type || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross';
+        let netToGrossDescription = '';
+        if (amountInputType === 'net') {
+            switch (repaymentOption) {
+                case 'service_only':
+                    netToGrossDescription = 'Gross = (Net + Legal + Site) / (1 − Arrangement − (Rate / 12) − Title)';
+                    break;
+                case 'service_and_capital':
+                case 'flexible_payment':
+                    netToGrossDescription = 'Gross = (Net + Legal + Site) / (1 − Arrangement − Title)';
+                    break;
+                default:
+                    // none and capital_payment_only
+                    netToGrossDescription = 'Gross = (Net + Legal + Site) / (1 − Arrangement − Rate × Time − Title)';
+            }
+        }
+
+        // Fee impact on net and gross amounts
+        let feeImpactDescription = `Fees total ${totalFees} (arrangement ${arrangement}, legal ${legal}, site visit ${site}, title insurance ${title}).`;
+        if (['service_only', 'service_and_capital', 'flexible_payment'].includes(repaymentOption)) {
+            feeImpactDescription += ' Net = Gross − Fees. Interest is calculated on the gross amount.';
+        } else {
+            feeImpactDescription += ' Net = Gross − Fees − Interest. Interest is calculated on the gross amount.';
+        }
+
+        // Development loan goal seek description
+        let goalSeekDescription = '';
+        if (loanType === 'development') {
+            goalSeekDescription = 'Uses Excel-style Goal Seek to find the gross amount where Net = Gross − Fees − Interest.';
+        }
+
+        // Calculate daily, monthly and yearly interest
+        const totalInterestNum = parseFloat(r.totalInterest || 0);
+        const loanTermDays = r.loanTermDays || r.loan_term_days || 0;
+        const dailyInterestNum = loanTermDays > 0 ? totalInterestNum / loanTermDays : 0;
+        const loanTermMonths = loanTerm || 0;
+        const monthlyInterestNum = loanTermMonths > 0 ? totalInterestNum / loanTermMonths : dailyInterestNum * (daysPerYear / 12);
+        const yearlyInterestNum = dailyInterestNum * daysPerYear;
+        const dailyInterest = formatMoney(dailyInterestNum);
+        const monthlyInterest = formatMoney(monthlyInterestNum);
+        const yearlyInterest = formatMoney(yearlyInterestNum);
+
         modalBody.innerHTML = `
-            <p><strong>Calculation Engine:</strong> The calculator uses simple interest where <code>Interest = Principal × Rate × Time</code>.</p>
+            <p><strong>Calculation Engine:</strong> The calculator uses ${calcDescription}.</p>
+            <p><strong>Repayment Method:</strong> ${repaymentDescription}</p>
+            ${amountInputType === 'net' ? `<p><strong>Net to Gross:</strong> ${netToGrossDescription}</p>` : ''}
+            <p><strong>Fee Impact:</strong> ${feeImpactDescription}</p>
+            ${loanType === 'development' ? `<p><strong>Goal Seek Logic:</strong> ${goalSeekDescription}</p>` : ''}
             <p><strong>Interest Rate:</strong> ${rateText} for ${loanTerm} months.</p>
+            <p><strong>Interest Breakdown:</strong> Daily ${dailyInterest}, Monthly ${monthlyInterest}, Yearly ${yearlyInterest}.</p>
             <h6>Step by Step</h6>
             <ol>
                 <li>Starting gross loan amount: ${gross}.</li>
