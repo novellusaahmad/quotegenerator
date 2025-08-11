@@ -735,21 +735,49 @@
 </div>
 </div>
 <!-- Manual Tranche Controls -->
-<div class="d-flex justify-content-end mb-2" id="manualTrancheControls">
-    <button class="btn btn-outline-secondary btn-sm" id="addTrancheBtn" type="button">Add Tranche</button>
+<div class="d-flex justify-content-between align-items-center" id="manualTrancheControls">
+<span>Number of Tranches</span>
+<div class="btn-group" role="group">
+<button class="btn btn-outline-secondary btn-sm" id="decreaseTranches" type="button">-</button>
+<span class="btn btn-outline-secondary btn-sm" id="trancheCount">1</span>
+<button class="btn btn-outline-secondary btn-sm" id="increaseTranches" type="button">+</button>
 </div>
-<table class="table table-sm" id="tranchesTable" style="display:none;">
-    <thead>
-        <tr>
-            <th>Amount</th>
-            <th>Release Date</th>
-            <th>Rate (%)</th>
-            <th>Description</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody id="tranchesContainer"></tbody>
-</table>
+</div>
+<div id="tranchesContainer">
+<div class="tranche-item" data-tranche="1">
+<div class="card">
+<div class="card-header">
+<h6 class="">Tranche 1</h6>
+</div>
+<div class="card-body">
+<div class="row">
+<div class="col-md-6">
+<label class="form-label">Tranche Amount</label>
+<div class="input-group">
+<span class="input-group-text currency-symbol">£</span>
+<input class="form-control tranche-amount" min="0" name="tranche_amounts[]" placeholder="0" step="0.0001" type="number"/>
+</div>
+</div>
+<div class="col-md-6">
+<label class="form-label">Release Date</label>
+<input class="form-control tranche-date" name="tranche_dates[]" type="date"/>
+</div>
+</div>
+<div class="row">
+<div class="col-md-6">
+<label class="form-label">Interest Rate (%)</label>
+<input class="form-control tranche-rate" max="50" min="0" name="tranche_rates[]" placeholder="Annual rate" step="0.0001" type="number"/>
+</div>
+<div class="col-md-6">
+<label class="form-label">Description</label>
+<input class="form-control tranche-description" name="tranche_descriptions[]" placeholder="e.g., Land Purchase" type="text"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 <!-- Calculate Button -->
 <div class="d-grid gap-2">
 <button class="btn btn-primary btn-lg calculate-button" data-currency="GBP" type="submit">
@@ -764,42 +792,6 @@
 </div>
 </form>
 </div>
-</div>
-<!-- Tranche Modal -->
-<div class="modal fade" id="trancheModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Tranche</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Tranche Amount</label>
-                    <div class="input-group">
-                        <span class="input-group-text currency-symbol">£</span>
-                        <input type="number" class="form-control" id="modalTrancheAmount" min="0" step="0.0001">
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Release Date</label>
-                    <input type="date" class="form-control" id="modalTrancheDate">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Interest Rate (%)</label>
-                    <input type="number" class="form-control" id="modalTrancheRate" min="0" max="50" step="0.0001">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Description</label>
-                    <input type="text" class="form-control" id="modalTrancheDescription">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveTrancheBtn">Save</button>
-            </div>
-        </div>
-    </div>
 </div>
 <!-- Results Section -->
 <div class="col-lg-8">
