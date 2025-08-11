@@ -743,40 +743,43 @@
 <button class="btn btn-outline-secondary btn-sm" id="increaseTranches" type="button">+</button>
 </div>
 </div>
-<div id="tranchesContainer">
-<div class="tranche-item" data-tranche="1">
-<div class="card">
-<div class="card-header">
-<h6 class="">Tranche 1</h6>
-</div>
-<div class="card-body">
-<div class="row">
-<div class="col-md-6">
-<label class="form-label">Tranche Amount</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
-<input class="form-control tranche-amount" min="0" name="tranche_amounts[]" placeholder="0" step="0.0001" type="number"/>
-</div>
-</div>
-<div class="col-md-6">
-<label class="form-label">Release Date</label>
-<input class="form-control tranche-date" name="tranche_dates[]" type="date"/>
-</div>
-</div>
-<div class="row">
-<div class="col-md-6">
-<label class="form-label">Interest Rate (%)</label>
-<input class="form-control tranche-rate" max="50" min="0" name="tranche_rates[]" placeholder="Annual rate" step="0.0001" type="number"/>
-</div>
-<div class="col-md-6">
-<label class="form-label">Description</label>
-<input class="form-control tranche-description" name="tranche_descriptions[]" placeholder="e.g., Land Purchase" type="text"/>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
+<table class="table table-sm" id="tranchesTable">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Amount</th>
+      <th>Release Date</th>
+      <th>Rate (%)</th>
+      <th>Description</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="tranchesContainer">
+    <tr class="tranche-item" data-tranche="1">
+      <td class="tranche-number">1</td>
+      <td class="text-end">
+        <span class="currency-symbol">£</span><span class="tranche-amount-display">0.00</span>
+        <input type="hidden" name="tranche_amounts[]" class="tranche-amount" value="0">
+      </td>
+      <td>
+        <span class="tranche-date-display"></span>
+        <input type="hidden" name="tranche_dates[]" class="tranche-date" value="">
+      </td>
+      <td class="text-end">
+        <span class="tranche-rate-display">0.00</span>
+        <input type="hidden" name="tranche_rates[]" class="tranche-rate" value="0">
+      </td>
+      <td>
+        <span class="tranche-description-display"></span>
+        <input type="hidden" name="tranche_descriptions[]" class="tranche-description" value="">
+      </td>
+      <td>
+        <button type="button" class="btn btn-sm btn-outline-primary me-1 edit-tranche-btn" onclick="window.loanCalculator.openEditTrancheModal(0, 'manual')"><i class="fas fa-edit"></i></button>
+        <button type="button" class="btn btn-sm btn-outline-danger delete-tranche-btn" onclick="window.loanCalculator.openDeleteTrancheModal(0, 'manual')"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>
+  </tbody>
+</table>
 </div>
 <!-- Calculate Button -->
 <div class="d-grid gap-2">
