@@ -764,43 +764,6 @@
 </div>
 </form>
 </div>
-</div>
-<!-- Tranche Modal -->
-<div class="modal fade" id="trancheModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Tranche</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Tranche Amount</label>
-                    <div class="input-group">
-                        <span class="input-group-text currency-symbol">£</span>
-                        <input type="number" class="form-control" id="modalTrancheAmount" min="0" step="0.0001">
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Release Date</label>
-                    <input type="date" class="form-control" id="modalTrancheDate">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Interest Rate (%)</label>
-                    <input type="number" class="form-control" id="modalTrancheRate" min="0" max="50" step="0.0001">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Description</label>
-                    <input type="text" class="form-control" id="modalTrancheDescription">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveTrancheBtn">Save</button>
-            </div>
-        </div>
-    </div>
-</div>
 <!-- Results Section -->
 <div class="col-lg-8">
 <div class="results-section" id="resultsSection" style="display: none;">
@@ -1024,6 +987,46 @@
 <p class="text-muted">Fill out the form on the left to generate detailed loan calculations and payment schedules.</p>
 </div>
 
+</div>
+</div>
+
+<!-- Tranche Modal -->
+<div class="modal fade" id="trancheModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tranche</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Tranche Amount</label>
+                    <div class="input-group">
+                        <span class="input-group-text currency-symbol">£</span>
+                        <input type="number" class="form-control" id="modalTrancheAmount" min="0" step="0.0001">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Release Date</label>
+                    <input type="date" class="form-control" id="modalTrancheDate">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Interest Rate (%)</label>
+                    <input type="number" class="form-control" id="modalTrancheRate" min="0" max="50" step="0.0001">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <input type="text" class="form-control" id="modalTrancheDescription">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveTrancheBtn">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Calculation Breakdown Modal -->
 <div class="modal fade" id="calculationBreakdownModal" tabindex="-1" aria-labelledby="calculationBreakdownLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -1042,8 +1045,6 @@
     </div>
 </div>
 
-</div>
-</div>
 {% endblock %}
 
 {% block scripts %}
