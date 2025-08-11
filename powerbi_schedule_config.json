@@ -1,8 +1,9 @@
 {
-  "enabled": true,
+  "enabled": false,
   "username": "aahmad@novelluscapital.co.uk",
   "password": "BlueWatch805!",
   "dataset_url": "https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/datasets/32568911-802a-4ed0-8862-4852eb88cb14/details?experience=power-bi",
   "interval": 2,
-  "created_at": "2025-07-30T21:22:44.398551"
+  "created_at": "2025-07-30T21:22:44.398551",
+  "stopped_at": "2025-08-05T11:25:40.458734"
 }

@@ -223,20 +223,12 @@ class LoanCalculator:
             )
             
             # CRITICAL FIX: For net-to-gross retained interest, use Excel formula for consistent interest calculation
-            # But apply 360-day adjustment if needed
             if amount_input_type == 'net' and net_amount is not None:
-                if use_360_days:
-                    # Apply 365/360 adjustment to the annual rate for Excel formula consistency
-                    adjusted_rate = annual_rate * Decimal('365') / Decimal('360')
-                    excel_interest = float((gross_amount * adjusted_rate * loan_term) / (12 * 100))
-                    logging.info(f"CALCULATION ENGINE NET-TO-GROSS (bridge, 360-day): Updated totalInterest to Excel formula £{excel_interest:.2f} = (£{gross_amount:.2f} × {adjusted_rate:.6f}% × {loan_term}/12)/100")
-                else:
-                    # Standard Excel formula
-                    excel_interest = float((gross_amount * annual_rate * loan_term) / (12 * 100))
-                    logging.info(f"CALCULATION ENGINE NET-TO-GROSS (bridge, 365-day): Updated totalInterest to Excel formula £{excel_interest:.2f} = (£{gross_amount:.2f} × {annual_rate}% × {loan_term}/12)/100")
-                
+                # Calculate Excel interest: (Gross × Rate × Months/12) / 100
+                excel_interest = float((gross_amount * annual_rate * loan_term) / (12 * 100))
                 calculation['totalInterest'] = excel_interest
                 calculation['total_interest'] = excel_interest
+                logging.info(f"CALCULATION ENGINE NET-TO-GROSS (bridge): Updated totalInterest to Excel formula £{excel_interest:.2f} = (£{gross_amount:.2f} × {annual_rate}% × {loan_term}/12)/100")
             
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
@@ -1574,13 +1566,11 @@ class LoanCalculator:
                                  net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False) -> Dict:
         """Calculate bridge loan with retained interest"""
         
-        # Calculate term in years using actual loan term days if available with 360-day support
+        # Calculate term in years using actual loan term days if available
         import logging
         if loan_term_days is not None:
-            # Use configurable day count basis for term calculation
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(str(loan_term_days)) / days_per_year
-            logging.info(f"Bridge retained calculation using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}")
+            term_years = Decimal(str(loan_term_days)) / Decimal('365')
+            logging.info(f"Bridge retained calculation using loan_term_days={loan_term_days}, term_years={term_years:.4f}")
         else:
             term_years = Decimal(loan_term) / 12
             logging.info(f"Bridge retained calculation using loan_term={loan_term} months, term_years={term_years:.4f}")
@@ -1588,15 +1578,7 @@ class LoanCalculator:
         # If this is a net-to-gross calculation, use the retained interest formula
         if net_amount is not None:
             # For retained interest: Interest = Net × Rate ÷ (1 - Rate)
-            # Apply 360-day adjustment to the annual rate if needed
-            if use_360_days:
-                adjusted_annual_rate = annual_rate * Decimal('365') / Decimal('360')
-                interest_rate = (adjusted_annual_rate / Decimal('100')) * term_years
-                logging.info(f"Bridge retained net-to-gross (360-day): Using adjusted rate {adjusted_annual_rate:.6f}%")
-            else:
-                interest_rate = (annual_rate / Decimal('100')) * term_years
-                logging.info(f"Bridge retained net-to-gross (365-day): Using standard rate {annual_rate:.6f}%")
-            
+            interest_rate = (annual_rate / Decimal('100')) * term_years
             total_interest = net_amount * interest_rate / (Decimal('1') - interest_rate)
         else:
             # Calculate interest based on interest type for gross amount input
@@ -2443,14 +2425,7 @@ class LoanCalculator:
             import logging
             
             logging.info(f"Excel Interest Retained Net-to-Gross (BRIDGE): target_net={net_amount}")
-            
-            # Apply 360-day adjustment to annual rate if needed
-            if use_360_days:
-                adjusted_annual_rate = annual_rate * Decimal('365') / Decimal('360')
-                logging.info(f"Rate: {adjusted_annual_rate:.6f}% (360-day adjusted from {annual_rate}%), Term: {loan_term} months")
-            else:
-                adjusted_annual_rate = annual_rate
-                logging.info(f"Rate: {annual_rate}%, Term: {loan_term} months")
+            logging.info(f"Rate: {annual_rate}%, Term: {loan_term} months")
             
             # Excel Formula: Net = Gross - Interest - Arrangement - Legal - Site - Title
             # Where:
@@ -2492,8 +2467,8 @@ class LoanCalculator:
             logging.info(f"Interest factor: {interest_factor:.6f}, Percentage factor: {percentage_factor:.6f}")
             
             for iteration in range(max_iterations):
-                # Excel Interest Formula: (Gross × Adjusted_Rate × Months/12) / 100
-                excel_interest = (gross_estimate * adjusted_annual_rate * months_decimal) / (Decimal('12') * Decimal('100'))
+                # Excel Interest Formula: (Gross × Rate × Months/12) / 100
+                excel_interest = (gross_estimate * annual_rate * months_decimal) / (Decimal('12') * Decimal('100'))
                 
                 # Excel Arrangement Fee: Arrangement% × Gross / 100
                 excel_arrangement = arrangement_fee_rate * gross_estimate / Decimal('100')
@@ -2520,8 +2495,8 @@ class LoanCalculator:
                     adjustment = net_difference / (Decimal('1') - percentage_factor)
                     gross_estimate -= adjustment * Decimal('0.95')  # Damped convergence
             
-            # Final Excel verification (use adjusted rate for 360-day calculations)
-            final_interest = (gross_estimate * adjusted_annual_rate * months_decimal) / (Decimal('12') * Decimal('100'))
+            # Final Excel verification
+            final_interest = (gross_estimate * annual_rate * months_decimal) / (Decimal('12') * Decimal('100'))
             final_arrangement = arrangement_fee_rate * gross_estimate / Decimal('100')
             final_title = title_insurance_rate * gross_estimate / Decimal('100')
             final_net = gross_estimate - final_interest - final_arrangement - legal_fees - site_visit_fee - final_title
@@ -2529,7 +2504,7 @@ class LoanCalculator:
             logging.info(f"EXCEL FINAL RESULT (BRIDGE):")
             logging.info(f"  Target Net: £{net_amount:.2f}")
             logging.info(f"  Calculated Gross: £{gross_estimate:.2f}")
-            logging.info(f"  Interest: £{final_interest:.2f} = (£{gross_estimate:.2f} × {adjusted_annual_rate:.6f}% × {loan_term}/12)/100")
+            logging.info(f"  Interest: £{final_interest:.2f} = (£{gross_estimate:.2f} × {annual_rate}% × {loan_term}/12)/100")
             logging.info(f"  Arrangement: £{final_arrangement:.2f} = {arrangement_fee_rate}% × £{gross_estimate:.2f}/100")
             logging.info(f"  Legal: £{legal_fees:.2f}")
             logging.info(f"  Site Visit: £{site_visit_fee:.2f}")

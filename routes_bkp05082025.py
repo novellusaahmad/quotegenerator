@@ -159,11 +159,6 @@ except ImportError as e:
     app.logger.warning(f"Working Report Generator not available: {e}")
 
 @app.route('/')
-def landing_page():
-    """Landing page with professional navigation cards"""
-    return render_template('landing.html')
-
-@app.route('/home')  
 def index():
     """Main landing page - redirect to calculator"""
     return render_template('landing.html')
@@ -367,15 +362,9 @@ def api_calculate():
         # Day 1 advance for development loans - using safe conversion
         day1_advance = safe_float(data.get('day1_advance'), 0)
         
-        # Daily rate calculation method - handle both JSON boolean and string values
-        use_360_days_value = data.get('use_360_days')
-        if isinstance(use_360_days_value, bool):
-            use_360_days = use_360_days_value
-        elif isinstance(use_360_days_value, str):
-            use_360_days = use_360_days_value.lower() == 'true'
-        else:
-            use_360_days = False
-        app.logger.info(f"ROUTES.PY DEBUG: use_360_days parameter = {use_360_days} (from {data.get('use_360_days')}, type: {type(use_360_days_value)})")
+        # Daily rate calculation method
+        use_360_days = data.get('use_360_days') == 'true'  # Convert string to boolean
+        app.logger.info(f"ROUTES.PY DEBUG: use_360_days parameter = {use_360_days} (from {data.get('use_360_days')})")
         
         # Build parameters dictionary
         calc_params = {
@@ -476,34 +465,18 @@ def api_calculate():
                     # CRITICAL FIX: For bridge/term loans with Net-to-Gross Excel formula, use Excel-calculated interest
                     amount_input_type = calc_params.get('amount_input_type', 'gross')
                     if amount_input_type == 'net' and loan_type in ['bridge', 'term']:
-                        # Apply 360-day adjustment to annual rate if needed
+                        # Calculate Excel interest: (Gross × Rate × Months/12) / 100
                         annual_rate = calc_params.get('annual_rate', 0)
                         loan_term = calc_params.get('loan_term', 12)
-                        use_360_days = calc_params.get('use_360_days', False)
-                        
-                        if use_360_days:
-                            # Apply 365/360 adjustment to the annual rate for Excel formula consistency
-                            adjusted_rate = annual_rate * 365 / 360
-                            excel_interest = (gross_amount_value * adjusted_rate * loan_term) / (12 * 100)
-                            app.logger.info(f'ROUTES.PY EXCEL NET-TO-GROSS ({loan_type}, 360-day): Using Excel interest £{excel_interest:.2f} = (£{gross_amount_value:.2f} × {adjusted_rate:.6f}% × {loan_term}/12)/100 instead of calculation engine £{total_interest_value:.2f}')
-                        else:
-                            # Standard Excel formula
-                            excel_interest = (gross_amount_value * annual_rate * loan_term) / (12 * 100)
-                            app.logger.info(f'ROUTES.PY EXCEL NET-TO-GROSS ({loan_type}, 365-day): Using Excel interest £{excel_interest:.2f} = (£{gross_amount_value:.2f} × {annual_rate}% × {loan_term}/12)/100 instead of calculation engine £{total_interest_value:.2f}')
-                        
+                        excel_interest = (gross_amount_value * annual_rate * loan_term) / (12 * 100)
                         interest_for_net_advance = excel_interest
                         
                         # CRITICAL FIX: Update the totalInterest field in result to use Excel interest
                         result['totalInterest'] = excel_interest
                         result['total_interest'] = excel_interest  # Also update snake_case version for consistency
                         
-                        # CRITICAL FIX: Also recalculate and update netAdvance to match Excel formula
-                        corrected_net_advance = gross_amount_value - arrangement_fee_value - legal_fees - site_visit_fee - title_insurance_value - excel_interest
-                        result['netAdvance'] = corrected_net_advance
-                        result['net_advance'] = corrected_net_advance  # Also update snake_case version for consistency
-                        
+                        app.logger.info(f'ROUTES.PY EXCEL NET-TO-GROSS ({loan_type}): Using Excel interest £{excel_interest:.2f} = (£{gross_amount_value:.2f} × {annual_rate}% × {loan_term}/12)/100 instead of calculation engine £{total_interest_value:.2f}')
                         app.logger.info(f'ROUTES.PY EXCEL NET-TO-GROSS ({loan_type}): Updated result totalInterest field to £{excel_interest:.2f}')
-                        app.logger.info(f'ROUTES.PY EXCEL NET-TO-GROSS ({loan_type}): Updated result netAdvance field to £{corrected_net_advance:.2f}')
                     else:
                         interest_for_net_advance = total_interest_value
                 
@@ -1652,8 +1625,8 @@ def save_loan():
             start_date=datetime.strptime(data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('startDate') else datetime.now().date(),
             end_date=datetime.strptime(data.get('endDate', (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('endDate') else (datetime.now() + timedelta(days=365)).date(),
             repayment_option=data.get('repaymentOption', 'none'),
-            payment_timing=data.get('paymentTiming') or data.get('payment_timing', 'advance'),  # Check both camelCase and snake_case
-            payment_frequency=data.get('paymentFrequency') or data.get('payment_frequency', 'monthly'),  # Check both camelCase and snake_case
+            payment_timing=data.get('paymentTiming', 'in_arrears'),
+            payment_frequency=data.get('paymentFrequency', 'monthly'),
             capital_repayment=data.get('capitalRepayment', 0),
             flexible_payment=data.get('flexiblePayment', 0),
             arrangement_fee=fresh_calculation.get('arrangementFee', 0),
@@ -1706,7 +1679,7 @@ def save_loan():
         app.logger.info(f"Loan saved successfully: {loan_name}")
         
         # Trigger Power BI refresh after successful save
-        #trigger_powerbi_on_save()
+        trigger_powerbi_on_save()
         
         return jsonify({
             'success': True,

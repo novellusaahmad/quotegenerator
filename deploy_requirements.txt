@@ -39,3 +39,8 @@ matplotlib>=3.10.3
 # Utilities
 python-dateutil>=2.9.0.post0
 python-dotenv>=1.0.0
+
+selenium
+schedule
+apscheduler
+chromedriver-autoinstaller

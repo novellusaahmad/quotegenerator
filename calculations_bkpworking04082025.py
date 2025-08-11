@@ -1,5 +1,4 @@
 import math
-import re
 from datetime import datetime, timedelta
 from decimal import Decimal, getcontext
 from typing import Dict, List, Optional, Tuple
@@ -199,15 +198,8 @@ class LoanCalculator:
             end_date_str = end_date.strftime('%Y-%m-%d')
             logging.info(f"Bridge loan: Calculated end_date {end_date_str}, loan_term_days={loan_term_days} (standard), loan_term={loan_term} months")
             
-        # Apply 360-day adjustment to rates if requested
-        if use_360_days:
-            # Use 360-day basis for interest calculations
-            daily_rate = annual_rate / Decimal('360')
-            monthly_rate = annual_rate / Decimal('12') * Decimal('365') / Decimal('360')
-        else:
-            # Use standard 365-day basis
-            daily_rate = annual_rate / Decimal(str(self.days_in_year))
-            monthly_rate = annual_rate / Decimal('12')
+        # Update monthly_rate since loan_term may have changed
+        monthly_rate = annual_rate / 12
         
         # Calculate based on repayment option (NOW using updated loan_term)
         import logging
@@ -223,20 +215,12 @@ class LoanCalculator:
             )
             
             # CRITICAL FIX: For net-to-gross retained interest, use Excel formula for consistent interest calculation
-            # But apply 360-day adjustment if needed
             if amount_input_type == 'net' and net_amount is not None:
-                if use_360_days:
-                    # Apply 365/360 adjustment to the annual rate for Excel formula consistency
-                    adjusted_rate = annual_rate * Decimal('365') / Decimal('360')
-                    excel_interest = float((gross_amount * adjusted_rate * loan_term) / (12 * 100))
-                    logging.info(f"CALCULATION ENGINE NET-TO-GROSS (bridge, 360-day): Updated totalInterest to Excel formula £{excel_interest:.2f} = (£{gross_amount:.2f} × {adjusted_rate:.6f}% × {loan_term}/12)/100")
-                else:
-                    # Standard Excel formula
-                    excel_interest = float((gross_amount * annual_rate * loan_term) / (12 * 100))
-                    logging.info(f"CALCULATION ENGINE NET-TO-GROSS (bridge, 365-day): Updated totalInterest to Excel formula £{excel_interest:.2f} = (£{gross_amount:.2f} × {annual_rate}% × {loan_term}/12)/100")
-                
+                # Calculate Excel interest: (Gross × Rate × Months/12) / 100
+                excel_interest = float((gross_amount * annual_rate * loan_term) / (12 * 100))
                 calculation['totalInterest'] = excel_interest
                 calculation['total_interest'] = excel_interest
+                logging.info(f"CALCULATION ENGINE NET-TO-GROSS (bridge): Updated totalInterest to Excel formula £{excel_interest:.2f} = (£{gross_amount:.2f} × {annual_rate}% × {loan_term}/12)/100")
             
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
@@ -263,7 +247,7 @@ class LoanCalculator:
                 # Extract numeric value from formatted string like "£1,010.10"
                 total_payment_str = first_payment.get('total_payment', '£0.00')
                 import re
-                numeric_value = total_payment_str.replace("£", "").replace("€", "").replace(",", "")
+                numeric_value = re.sub(r'[£€,]', '', total_payment_str)
                 monthly_payment = float(numeric_value) if numeric_value else 0
                 
                 if payment_frequency == 'quarterly':
@@ -277,7 +261,7 @@ class LoanCalculator:
                 total_interest_from_schedule = 0
                 for payment in detailed_schedule:
                     interest_str = payment.get('interest_amount', '£0.00')
-                    interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
+                    interest_numeric = re.sub(r'[£€,]', '', interest_str)
                     total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
                 
                 calculation['totalInterest'] = total_interest_from_schedule
@@ -402,7 +386,6 @@ class LoanCalculator:
         amount_input_type = params.get('amount_input_type', 'gross')
         rate_input_type = params.get('rate_input_type', 'annual')
         loan_start_date = params.get('start_date', params.get('loan_start_date', datetime.now().strftime('%Y-%m-%d')))
-        use_360_days = params.get('use_360_days', False)  # Add 360-day calculation parameter
         
         # Fee parameters
         arrangement_fee_rate = Decimal(str(params.get('arrangement_fee_rate', 0)))
@@ -415,23 +398,16 @@ class LoanCalculator:
             annual_rate = interest_rate * Decimal('12')
         else:
             annual_rate = interest_rate
-        
-        # Apply 360-day adjustment to rates if requested
-        if use_360_days:
-            # Use 360-day basis for interest calculations
-            daily_rate = annual_rate / Decimal('360')
-            monthly_rate = annual_rate / Decimal('12') * Decimal('365') / Decimal('360')
-        else:
-            # Use standard 365-day basis
-            daily_rate = annual_rate / Decimal(str(self.days_in_year))
-            monthly_rate = annual_rate / Decimal('12')
+            
+        daily_rate = annual_rate / Decimal(str(self.days_in_year))
+        monthly_rate = annual_rate / Decimal('12')
         
         # Determine gross amount based on input type
         if amount_input_type == 'net' and net_amount > 0:
             gross_amount = self._calculate_gross_from_net_term(
                 net_amount, annual_rate, loan_term, repayment_option,
                 arrangement_fee_rate, legal_fees, site_visit_fee, title_insurance_rate,
-                loan_start_date, use_360_days
+                loan_start_date
             )
         elif amount_input_type == 'percentage' and property_value > 0:
             percentage = params.get('loan_percentage', 0)
@@ -471,7 +447,7 @@ class LoanCalculator:
         if repayment_option == 'none':
             # Retained interest calculation - same as bridge loans
             calculation = self._calculate_term_retained_interest(
-                gross_amount, annual_rate, loan_term, fees, loan_start_date, params.get('interest_type', 'simple'), loan_term_days, use_360_days
+                gross_amount, annual_rate, loan_term, fees, loan_start_date, params.get('interest_type', 'simple'), loan_term_days
             )
             
             # CRITICAL FIX: For net-to-gross retained interest, use Excel formula for consistent interest calculation
@@ -490,7 +466,7 @@ class LoanCalculator:
             # Pass net_amount if this is a net-to-gross conversion to use retained interest formula
             net_for_calculation = net_amount if amount_input_type == 'net' else None
             calculation = self._calculate_term_interest_only(
-                gross_amount, annual_rate, loan_term, fees, loan_start_date, params.get('interest_type', 'simple'), net_for_calculation, loan_term_days, use_360_days
+                gross_amount, annual_rate, loan_term, fees, loan_start_date, params.get('interest_type', 'simple'), net_for_calculation, loan_term_days
             )
             
             # Generate detailed payment schedule FIRST
@@ -507,7 +483,7 @@ class LoanCalculator:
                 # Extract numeric value from formatted string like "£1,010.10"
                 total_payment_str = first_payment.get('total_payment', '£0.00')
                 import re
-                numeric_value = total_payment_str.replace("£", "").replace("€", "").replace(",", "")
+                numeric_value = re.sub(r'[£€,]', '', total_payment_str)
                 monthly_payment = float(numeric_value) if numeric_value else 0
                 
                 if payment_frequency == 'quarterly':
@@ -521,7 +497,7 @@ class LoanCalculator:
                 total_interest_from_schedule = 0
                 for payment in detailed_schedule:
                     interest_str = payment.get('interest_amount', '£0.00')
-                    interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
+                    interest_numeric = re.sub(r'[£€,]', '', interest_str)
                     total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
                 
                 calculation['totalInterest'] = total_interest_from_schedule
@@ -541,84 +517,33 @@ class LoanCalculator:
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
             net_for_calculation = net_amount if amount_input_type == 'net' else None
             calculation = self._calculate_term_service_capital(
-                gross_amount, annual_rate, loan_term, capital_repayment, fees, net_for_calculation, loan_term_days, use_360_days
+                gross_amount, annual_rate, loan_term, capital_repayment, fees, net_for_calculation, loan_term_days
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
             calculation['detailed_payment_schedule'] = self._generate_detailed_term_schedule(calculation, params, currency_symbol)
-            
-            # Apply consistency fix to align with detailed payment schedule totals  
-            detailed_schedule = calculation.get('detailed_payment_schedule', [])
-            if detailed_schedule:
-                # Extract total interest from detailed schedule to match 360-day calculations
-                total_interest_from_schedule = 0
-                for payment in detailed_schedule:
-                    interest_str = payment.get('interest_amount', '£0.00')
-                    interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
-                    total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
-                
-                calculation['totalInterest'] = total_interest_from_schedule
-                calculation['total_interest'] = total_interest_from_schedule
-                
-                logging.info(f"Term loan service_and_capital CONSISTENCY FIX: totalInterest={total_interest_from_schedule:.2f} (extracted from detailed schedule)")
-            else:
-                logging.info(f"Term loan service_and_capital: No detailed schedule available for consistency fix")
         elif repayment_option == 'capital_payment_only':
             # Capital Payment Only - interest retained at start, payments reduce balance directly
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
             net_for_calculation = net_amount if amount_input_type == 'net' else None
             logging.info(f"Term capital_payment_only calculation: gross={gross_amount}, capital_repayment={capital_repayment}")
             calculation = self._calculate_term_capital_payment_only(
-                gross_amount, annual_rate, loan_term, capital_repayment, fees, net_for_calculation, loan_term_days, use_360_days
+                gross_amount, annual_rate, loan_term, capital_repayment, fees, net_for_calculation, loan_term_days
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
             calculation['detailed_payment_schedule'] = self._generate_detailed_term_schedule(calculation, params, currency_symbol)
-            
-            # Apply consistency fix to align with detailed payment schedule totals  
-            detailed_schedule = calculation.get('detailed_payment_schedule', [])
-            if detailed_schedule:
-                # Extract total interest from detailed schedule to match 360-day calculations
-                total_interest_from_schedule = 0
-                for payment in detailed_schedule:
-                    interest_str = payment.get('interest_amount', '£0.00')
-                    interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
-                    total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
-                
-                calculation['totalInterest'] = total_interest_from_schedule
-                calculation['total_interest'] = total_interest_from_schedule
-                
-                logging.info(f"Term loan capital_payment_only CONSISTENCY FIX: totalInterest={total_interest_from_schedule:.2f} (extracted from detailed schedule)")
-            else:
-                logging.info(f"Term loan capital_payment_only: No detailed schedule available for consistency fix")
         elif repayment_option == 'flexible_payment':
             # Flexible payment schedule - payments knock off interest first, remaining reduces balance
             flexible_payment = Decimal(str(params.get('flexible_payment', 0)))
             payment_frequency = params.get('payment_frequency', 'monthly')
             net_for_calculation = net_amount if amount_input_type == 'net' else None
             calculation = self._calculate_term_flexible_payment(
-                gross_amount, annual_rate, loan_term, flexible_payment, payment_frequency, fees, loan_start_date, params.get('interest_type', 'simple'), net_for_calculation, loan_term_days, use_360_days
+                gross_amount, annual_rate, loan_term, flexible_payment, payment_frequency, fees, loan_start_date, params.get('interest_type', 'simple'), net_for_calculation, loan_term_days
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
             calculation['detailed_payment_schedule'] = self._generate_detailed_term_schedule(calculation, params, currency_symbol)
-            
-            # Apply consistency fix to align with detailed payment schedule totals  
-            detailed_schedule = calculation.get('detailed_payment_schedule', [])
-            if detailed_schedule:
-                # Extract total interest from detailed schedule to match 360-day calculations
-                total_interest_from_schedule = 0
-                for payment in detailed_schedule:
-                    interest_str = payment.get('interest_amount', '£0.00')
-                    interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
-                    total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
-                
-                calculation['totalInterest'] = total_interest_from_schedule
-                calculation['total_interest'] = total_interest_from_schedule
-                
-                logging.info(f"Term loan flexible_payment CONSISTENCY FIX: totalInterest={total_interest_from_schedule:.2f} (extracted from detailed schedule)")
-            else:
-                logging.info(f"Term loan flexible_payment: No detailed schedule available for consistency fix")
         else:
             calculation = self._get_empty_calculation(params)
         
@@ -1199,7 +1124,7 @@ class LoanCalculator:
             gross_amount = self._calculate_development_excel_methodology(
                 net_amount, annual_rate, loan_term, arrangement_fee_rate, 
                 legal_fees, site_visit_fee, title_insurance_rate, day1_advance, 
-                params.get('tranches', []), loan_term_days, use_360_days
+                params.get('tranches', []), loan_term_days
             )
             
             logging.info(f"NET-TO-GROSS RESULT: net={net_amount}, gross={gross_amount}")
@@ -1574,13 +1499,11 @@ class LoanCalculator:
                                  net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False) -> Dict:
         """Calculate bridge loan with retained interest"""
         
-        # Calculate term in years using actual loan term days if available with 360-day support
+        # Calculate term in years using actual loan term days if available
         import logging
         if loan_term_days is not None:
-            # Use configurable day count basis for term calculation
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(str(loan_term_days)) / days_per_year
-            logging.info(f"Bridge retained calculation using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}")
+            term_years = Decimal(str(loan_term_days)) / Decimal('365')
+            logging.info(f"Bridge retained calculation using loan_term_days={loan_term_days}, term_years={term_years:.4f}")
         else:
             term_years = Decimal(loan_term) / 12
             logging.info(f"Bridge retained calculation using loan_term={loan_term} months, term_years={term_years:.4f}")
@@ -1588,15 +1511,7 @@ class LoanCalculator:
         # If this is a net-to-gross calculation, use the retained interest formula
         if net_amount is not None:
             # For retained interest: Interest = Net × Rate ÷ (1 - Rate)
-            # Apply 360-day adjustment to the annual rate if needed
-            if use_360_days:
-                adjusted_annual_rate = annual_rate * Decimal('365') / Decimal('360')
-                interest_rate = (adjusted_annual_rate / Decimal('100')) * term_years
-                logging.info(f"Bridge retained net-to-gross (360-day): Using adjusted rate {adjusted_annual_rate:.6f}%")
-            else:
-                interest_rate = (annual_rate / Decimal('100')) * term_years
-                logging.info(f"Bridge retained net-to-gross (365-day): Using standard rate {annual_rate:.6f}%")
-            
+            interest_rate = (annual_rate / Decimal('100')) * term_years
             total_interest = net_amount * interest_rate / (Decimal('1') - interest_rate)
         else:
             # Calculate interest based on interest type for gross amount input
@@ -1661,8 +1576,6 @@ class LoanCalculator:
                 # Use configurable day count for net-to-gross conversion
                 days_per_year = Decimal('360') if use_360_days else Decimal('365')
                 term_years = Decimal(loan_term_days) / days_per_year
-                import logging
-                logging.info(f"BRIDGE NET-TO-GROSS: use_360_days={use_360_days} -> days_per_year={days_per_year}, loan_term_days={loan_term_days}, term_years={term_years:.4f}")
             else:
                 term_years = Decimal(loan_term) / Decimal('12')
             annual_rate = monthly_rate * Decimal('12')  # Convert monthly rate back to annual
@@ -1670,6 +1583,7 @@ class LoanCalculator:
             total_interest = net_amount * interest_rate / (Decimal('1') - interest_rate)
             monthly_interest = total_interest / Decimal(loan_term)
             
+            import logging
             logging.info(f"Bridge loan (net-to-gross) using retained interest formula: net={net_amount:.2f}, days_per_year={'360' if use_360_days else '365'}, term_years={term_years:.4f}, total_interest={total_interest:.2f}")
         else:
             # Standard gross-to-net calculation
@@ -1872,13 +1786,8 @@ class LoanCalculator:
         if net_amount is not None:
             # For net-to-gross conversions with flexible payment, the gross amount has already been calculated
             # using the Excel formula for flexible payment (interest in advance), so just calculate interest based on that gross
-            if use_360_days:
-                # Apply 360-day rate adjustment (365/360 factor)
-                term_years = Decimal(loan_term) / Decimal('12') * Decimal('365') / Decimal('360')
-                total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
-            else:
-                term_years = Decimal(loan_term) / Decimal('12')
-                total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+            term_years = Decimal(loan_term) / Decimal('12')
+            total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
             
             import logging
             logging.info(f"Bridge loan flexible (net-to-gross) using Excel formula gross amount: gross={gross_amount:.2f}, total_interest={total_interest:.2f}")
@@ -2003,7 +1912,7 @@ class LoanCalculator:
         }
     
     def _calculate_term_interest_only(self, gross_amount: Decimal, annual_rate: Decimal,
-                                    loan_term: int, fees: Dict, loan_start_date: str, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False) -> Dict:
+                                    loan_term: int, fees: Dict, loan_start_date: str, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None) -> Dict:
         """Calculate term loan with interest only payments using specified interest type"""
         
         if isinstance(loan_start_date, datetime):
@@ -2014,10 +1923,8 @@ class LoanCalculator:
         # Use actual loan term days if provided, otherwise fall back to months
         import logging
         if loan_term_days is not None:
-            # Support 360-day calculation for net-to-gross conversions
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(str(loan_term_days)) / days_per_year
-            logging.info(f"Term loan interest calculation using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}")
+            term_years = Decimal(str(loan_term_days)) / Decimal('365')
+            logging.info(f"Term loan interest calculation using loan_term_days={loan_term_days}, term_years={term_years:.4f}")
         else:
             term_years = Decimal(str(loan_term)) / Decimal('12')
             logging.info(f"Term loan interest calculation using loan_term={loan_term} months, term_years={term_years:.4f}")
@@ -2042,14 +1949,9 @@ class LoanCalculator:
             else:
                 # Standard gross-to-net calculation
                 # Use term_years which now includes loan_term_days calculation
-                if use_360_days:
-                    # Apply 360-day rate adjustment (365/360 factor)
-                    adjusted_term_years = term_years * Decimal('365') / Decimal('360')
-                    total_interest = gross_amount * (annual_rate / Decimal('100')) * adjusted_term_years
-                else:
-                    total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+                total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
                 monthly_payment = total_interest / Decimal(str(loan_term))
-                logging.info(f"Term loan (gross-to-net) simple interest: gross={gross_amount:.2f}, term_years={term_years:.4f}, use_360_days={use_360_days}, total_interest={total_interest:.2f}")
+                logging.info(f"Term loan (gross-to-net) simple interest: gross={gross_amount:.2f}, term_years={term_years:.4f}, total_interest={total_interest:.2f}")
         elif interest_type == 'compound_daily':
             # Compound daily: A = P(1 + r/365)^(365*t) - P
             daily_rate = annual_rate / Decimal('100') / Decimal('365')
@@ -2108,16 +2010,14 @@ class LoanCalculator:
         }
     
     def _calculate_term_retained_interest(self, gross_amount: Decimal, annual_rate: Decimal,
-                                        loan_term: int, fees: Dict, loan_start_date: str, interest_type: str = 'simple', loan_term_days: int = None, use_360_days: bool = False) -> Dict:
+                                        loan_term: int, fees: Dict, loan_start_date: str, interest_type: str = 'simple', loan_term_days: int = None) -> Dict:
         """Calculate term loan with retained interest - identical to bridge loan retained interest"""
         
         # Use actual loan term days if provided, otherwise fall back to months
         import logging
         if loan_term_days is not None:
-            # Support 360-day calculation for net-to-gross conversions
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(str(loan_term_days)) / days_per_year
-            logging.info(f"Term retained calculation using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}")
+            term_years = Decimal(str(loan_term_days)) / Decimal('365')
+            logging.info(f"Term retained calculation using loan_term_days={loan_term_days}, term_years={term_years:.4f}")
         else:
             term_years = Decimal(loan_term) / 12
             logging.info(f"Term retained calculation using loan_term={loan_term} months, term_years={term_years:.4f}")
@@ -2232,7 +2132,7 @@ class LoanCalculator:
     
     def _calculate_term_service_capital(self, gross_amount: Decimal, annual_rate: Decimal,
                                       loan_term: int, capital_repayment: Decimal, fees: Dict, 
-                                      net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False) -> Dict:
+                                      net_amount: Decimal = None, loan_term_days: int = None) -> Dict:
         """Calculate term loan with service + capital payments using user-specified capital amount"""
         
         # Calculate monthly interest + capital repayment with declining balance
@@ -2241,19 +2141,14 @@ class LoanCalculator:
         
         # Use date-sensitive calculation if loan_term_days provided
         if loan_term_days is not None:
-            # Calculate effective monthly rate based on actual days with 360-day support
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(loan_term_days) / days_per_year
+            # Calculate effective monthly rate based on actual days
+            term_years = Decimal(loan_term_days) / Decimal('365')
             effective_annual_rate = annual_rate
             effective_monthly_rate = effective_annual_rate / Decimal('12')
             import logging
-            logging.info(f"Term service+capital using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}, effective_monthly_rate={effective_monthly_rate:.4f}%")
+            logging.info(f"Term service+capital using loan_term_days={loan_term_days}, term_years={term_years:.4f}, effective_monthly_rate={effective_monthly_rate:.4f}%")
         else:
-            # Apply 360-day rate adjustment if requested
-            if use_360_days:
-                effective_monthly_rate = annual_rate / Decimal('12') * Decimal('365') / Decimal('360')
-            else:
-                effective_monthly_rate = annual_rate / Decimal('12')
+            effective_monthly_rate = annual_rate / Decimal('12')
             
         for month in range(loan_term):
             interest_payment = remaining_balance * (effective_monthly_rate / Decimal('100'))
@@ -2266,13 +2161,9 @@ class LoanCalculator:
         
         # Calculate interest savings compared to interest-only payments
         if loan_term_days is not None:
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(loan_term_days) / days_per_year
+            term_years = Decimal(loan_term_days) / Decimal('365')
         else:
             term_years = Decimal(loan_term) / Decimal('12')
-            if use_360_days:
-                # Apply 360-day rate adjustment (365/360 factor)
-                term_years = term_years * Decimal('365') / Decimal('360')
         interest_only_total = gross_amount * (annual_rate / Decimal('100')) * term_years
         interest_savings = interest_only_total - total_interest
         savings_percentage = (interest_savings / interest_only_total) * Decimal('100') if interest_only_total > 0 else Decimal('0')
@@ -2306,30 +2197,16 @@ class LoanCalculator:
     def _calculate_term_flexible_payment(self, gross_amount: Decimal, annual_rate: Decimal,
                                         loan_term: int, flexible_payment: Decimal, payment_frequency: str,
                                         fees: Dict, loan_start_date: str, interest_type: str = 'simple',
-                                        net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False) -> Dict:
+                                        net_amount: Decimal = None, loan_term_days: int = None) -> Dict:
         """Calculate term loan with flexible payments - payments knock off interest first, remaining reduces balance"""
         
         import logging
         
         # If net_amount is provided, this is a net-to-gross conversion
         if net_amount is not None:
-            # For net-to-gross conversions, calculate total interest using retained formula with 360-day adjustment
-            if loan_term_days is not None:
-                # Support 360-day calculation for net-to-gross conversions
-                days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                term_years = Decimal(loan_term_days) / days_per_year
-            else:
-                term_years = Decimal(loan_term) / Decimal('12')
-            
-            # Apply 360-day adjustment to the annual rate if needed
-            if use_360_days:
-                adjusted_annual_rate = annual_rate * Decimal('365') / Decimal('360')
-                interest_rate = (adjusted_annual_rate / Decimal('100')) * term_years
-                logging.info(f"Term flexible (net-to-gross, 360-day): Using adjusted rate {adjusted_annual_rate:.6f}%")
-            else:
-                interest_rate = (annual_rate / Decimal('100')) * term_years
-                logging.info(f"Term flexible (net-to-gross, 365-day): Using standard rate {annual_rate:.6f}%")
-            
+            # For net-to-gross conversions, calculate total interest using retained formula
+            term_years = Decimal(loan_term) / Decimal('12')
+            interest_rate = (annual_rate / Decimal('100')) * term_years
             total_interest = net_amount * interest_rate / (Decimal('1') - interest_rate)
             logging.info(f"Term flexible (net-to-gross): net={net_amount:.2f}, total_interest={total_interest:.2f}")
         else:
@@ -2345,13 +2222,8 @@ class LoanCalculator:
                 periods_per_year = 12
                 payment_multiplier = 1  # 1 month per period
             
-            # Calculate effective rate per payment period with 360-day adjustment if needed
-            if use_360_days:
-                rate_per_payment = annual_rate / Decimal(str(periods_per_year)) / Decimal('100') * Decimal('365') / Decimal('360')
-                logging.info(f"Term flexible payment: Using 360-day adjusted rate per payment: {rate_per_payment:.6f}")
-            else:
-                rate_per_payment = annual_rate / Decimal(str(periods_per_year)) / Decimal('100')
-                logging.info(f"Term flexible payment: Using standard rate per payment: {rate_per_payment:.6f}")
+            # Calculate effective rate per payment period
+            rate_per_payment = annual_rate / Decimal(str(periods_per_year)) / Decimal('100')
             
             # Calculate number of payment periods
             total_periods = loan_term // payment_multiplier
@@ -2443,14 +2315,7 @@ class LoanCalculator:
             import logging
             
             logging.info(f"Excel Interest Retained Net-to-Gross (BRIDGE): target_net={net_amount}")
-            
-            # Apply 360-day adjustment to annual rate if needed
-            if use_360_days:
-                adjusted_annual_rate = annual_rate * Decimal('365') / Decimal('360')
-                logging.info(f"Rate: {adjusted_annual_rate:.6f}% (360-day adjusted from {annual_rate}%), Term: {loan_term} months")
-            else:
-                adjusted_annual_rate = annual_rate
-                logging.info(f"Rate: {annual_rate}%, Term: {loan_term} months")
+            logging.info(f"Rate: {annual_rate}%, Term: {loan_term} months")
             
             # Excel Formula: Net = Gross - Interest - Arrangement - Legal - Site - Title
             # Where:
@@ -2470,20 +2335,12 @@ class LoanCalculator:
             # Fixed fees
             fixed_fees = legal_fees + site_visit_fee
             
-            # Initial estimate using Excel methodology with 360-day support
+            # Initial estimate using Excel methodology
             # Net = Gross - (Gross × Rate × Months/12)/100 - (Arrangement% × Gross) - (Title% × Gross) - Fixed_Fees
             # Net = Gross × (1 - Rate×Months/12/100 - Arrangement% - Title%) - Fixed_Fees
             # Gross = (Net + Fixed_Fees) / (1 - Rate×Months/12/100 - Arrangement% - Title%)
             
-            # Apply 360-day conversion if requested
-            if use_360_days:
-                # Convert annual rate from 365-day to 360-day basis
-                adjusted_rate_decimal = rate_decimal * (Decimal('365') / Decimal('360'))
-                interest_factor = adjusted_rate_decimal * months_decimal / Decimal('12')
-                logging.info(f"360-day conversion: Original rate {rate_decimal:.6f}, Adjusted rate {adjusted_rate_decimal:.6f}")
-            else:
-                interest_factor = rate_decimal * months_decimal / Decimal('12')
-                
+            interest_factor = rate_decimal * months_decimal / Decimal('12')
             percentage_factor = interest_factor + arrangement_decimal + title_decimal
             
             gross_estimate = (net_amount + fixed_fees) / (Decimal('1') - percentage_factor)
@@ -2492,8 +2349,8 @@ class LoanCalculator:
             logging.info(f"Interest factor: {interest_factor:.6f}, Percentage factor: {percentage_factor:.6f}")
             
             for iteration in range(max_iterations):
-                # Excel Interest Formula: (Gross × Adjusted_Rate × Months/12) / 100
-                excel_interest = (gross_estimate * adjusted_annual_rate * months_decimal) / (Decimal('12') * Decimal('100'))
+                # Excel Interest Formula: (Gross × Rate × Months/12) / 100
+                excel_interest = (gross_estimate * annual_rate * months_decimal) / (Decimal('12') * Decimal('100'))
                 
                 # Excel Arrangement Fee: Arrangement% × Gross / 100
                 excel_arrangement = arrangement_fee_rate * gross_estimate / Decimal('100')
@@ -2520,8 +2377,8 @@ class LoanCalculator:
                     adjustment = net_difference / (Decimal('1') - percentage_factor)
                     gross_estimate -= adjustment * Decimal('0.95')  # Damped convergence
             
-            # Final Excel verification (use adjusted rate for 360-day calculations)
-            final_interest = (gross_estimate * adjusted_annual_rate * months_decimal) / (Decimal('12') * Decimal('100'))
+            # Final Excel verification
+            final_interest = (gross_estimate * annual_rate * months_decimal) / (Decimal('12') * Decimal('100'))
             final_arrangement = arrangement_fee_rate * gross_estimate / Decimal('100')
             final_title = title_insurance_rate * gross_estimate / Decimal('100')
             final_net = gross_estimate - final_interest - final_arrangement - legal_fees - site_visit_fee - final_title
@@ -2529,7 +2386,7 @@ class LoanCalculator:
             logging.info(f"EXCEL FINAL RESULT (BRIDGE):")
             logging.info(f"  Target Net: £{net_amount:.2f}")
             logging.info(f"  Calculated Gross: £{gross_estimate:.2f}")
-            logging.info(f"  Interest: £{final_interest:.2f} = (£{gross_estimate:.2f} × {adjusted_annual_rate:.6f}% × {loan_term}/12)/100")
+            logging.info(f"  Interest: £{final_interest:.2f} = (£{gross_estimate:.2f} × {annual_rate}% × {loan_term}/12)/100")
             logging.info(f"  Arrangement: £{final_arrangement:.2f} = {arrangement_fee_rate}% × £{gross_estimate:.2f}/100")
             logging.info(f"  Legal: £{legal_fees:.2f}")
             logging.info(f"  Site Visit: £{site_visit_fee:.2f}")
@@ -2550,13 +2407,7 @@ class LoanCalculator:
             arrangement_fee_decimal = arrangement_fee_rate / Decimal('100')
             title_insurance_decimal = title_insurance_rate / Decimal('100')
             annual_rate_decimal = annual_rate / Decimal('100')
-            
-            # Apply 360-day adjustment to term calculation if requested
-            if use_360_days:
-                # Use 360-day year for term calculation
-                term_years = Decimal(loan_term) / Decimal('12') * Decimal('365') / Decimal('360')
-            else:
-                term_years = Decimal(loan_term) / Decimal('12')
+            term_years = Decimal(loan_term) / Decimal('12')
             
             # Calculate legal fees (including site visit fee)
             total_legal_fees = legal_fees + site_visit_fee
@@ -2579,11 +2430,7 @@ class LoanCalculator:
                 
             elif repayment_option == 'service_only':
                 # Bridge Serviced: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)
-                if use_360_days:
-                    # Apply 360-day rate adjustment (365/360 factor)
-                    monthly_interest_factor = annual_rate_decimal / Decimal('12') * Decimal('365') / Decimal('360')
-                else:
-                    monthly_interest_factor = annual_rate_decimal / Decimal('12')
+                monthly_interest_factor = annual_rate_decimal / Decimal('12')
                 denominator = Decimal('1') - arrangement_fee_decimal - monthly_interest_factor - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
                 
@@ -2594,8 +2441,7 @@ class LoanCalculator:
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'service_and_capital':
-                # Bridge Service + Capital: No interest factor but 360-day affects other calculations
-                # This formula itself doesn't use interest rate but we keep it for consistency
+                # Bridge Service + Capital: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)
                 denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
                 
@@ -2605,8 +2451,7 @@ class LoanCalculator:
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'flexible_payment':
-                # Flexible Payment: Same as Service + Capital - No interest factor but 360-day affects other calculations
-                # This formula itself doesn't use interest rate but we keep it for consistency
+                # Flexible Payment: Same as Service + Capital - Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)
                 denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
                 
@@ -2656,7 +2501,7 @@ class LoanCalculator:
                                      loan_term: int, repayment_option: str,
                                      arrangement_fee_rate: Decimal, legal_fees: Decimal,
                                      site_visit_fee: Decimal, title_insurance_rate: Decimal,
-                                     loan_start_date: str, use_360_days: bool = False) -> Decimal:
+                                     loan_start_date: str) -> Decimal:
         """Calculate gross amount from net amount for term loans - EXCEL COMPATIBLE"""
         
         import logging
@@ -2684,12 +2529,8 @@ class LoanCalculator:
             # Fixed fees
             fixed_fees = legal_fees + site_visit_fee
             
-            # Initial estimate using Excel methodology with 360-day support
-            if use_360_days:
-                # Apply 360-day rate adjustment (365/360 factor)
-                interest_factor = rate_decimal * months_decimal / Decimal('12') * Decimal('365') / Decimal('360')
-            else:
-                interest_factor = rate_decimal * months_decimal / Decimal('12')
+            # Initial estimate using Excel methodology
+            interest_factor = rate_decimal * months_decimal / Decimal('12')
             percentage_factor = interest_factor + arrangement_decimal + title_decimal
             
             gross_estimate = (net_amount + fixed_fees) / (Decimal('1') - percentage_factor)
@@ -2698,12 +2539,8 @@ class LoanCalculator:
             logging.info(f"Interest factor: {interest_factor:.6f}, Percentage factor: {percentage_factor:.6f}")
             
             for iteration in range(max_iterations):
-                # Excel Interest Formula with 360-day support: (Gross × Rate × Months/12) / 100
-                if use_360_days:
-                    # Apply 360-day rate adjustment (365/360 factor)
-                    excel_interest = (gross_estimate * annual_rate * months_decimal * Decimal('365') / Decimal('360')) / (Decimal('12') * Decimal('100'))
-                else:
-                    excel_interest = (gross_estimate * annual_rate * months_decimal) / (Decimal('12') * Decimal('100'))
+                # Excel Interest Formula: (Gross × Rate × Months/12) / 100
+                excel_interest = (gross_estimate * annual_rate * months_decimal) / (Decimal('12') * Decimal('100'))
                 
                 # Excel Arrangement Fee: Arrangement% × Gross / 100
                 excel_arrangement = arrangement_fee_rate * gross_estimate / Decimal('100')
@@ -2716,8 +2553,7 @@ class LoanCalculator:
                 
                 net_difference = calculated_net - net_amount
                 
-                rate_info = f" (360-day adjusted)" if use_360_days else ""
-                logging.info(f"TERM Iteration {iteration + 1}: gross={gross_estimate:.2f}, interest={excel_interest:.2f}{rate_info}, arrangement={excel_arrangement:.2f}, title={excel_title:.2f}, calculated_net={calculated_net:.2f}, target_net={net_amount:.2f}, diff={net_difference:.2f}")
+                logging.info(f"TERM Iteration {iteration + 1}: gross={gross_estimate:.2f}, interest={excel_interest:.2f}, arrangement={excel_arrangement:.2f}, title={excel_title:.2f}, calculated_net={calculated_net:.2f}, target_net={net_amount:.2f}, diff={net_difference:.2f}")
                 
                 if abs(net_difference) <= tolerance:
                     logging.info(f"Excel formula converged (TERM) in {iteration + 1} iterations")
@@ -2761,13 +2597,7 @@ class LoanCalculator:
             arrangement_fee_decimal = arrangement_fee_rate / Decimal('100')
             title_insurance_decimal = title_insurance_rate / Decimal('100')
             annual_rate_decimal = annual_rate / Decimal('100')
-            
-            # Apply 360-day adjustment to term calculation if requested
-            if use_360_days:
-                # Use 360-day year for term calculation
-                term_years = Decimal(loan_term) / Decimal('12') * Decimal('365') / Decimal('360')
-            else:
-                term_years = Decimal(loan_term) / Decimal('12')
+            term_years = Decimal(loan_term) / Decimal('12')
             
             # Calculate legal fees (including site visit fee)
             total_legal_fees = legal_fees + site_visit_fee
@@ -2790,11 +2620,7 @@ class LoanCalculator:
                 
             elif repayment_option == 'service_only':
                 # Term Serviced: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)
-                if use_360_days:
-                    # Apply 360-day rate adjustment (365/360 factor)
-                    monthly_interest_factor = annual_rate_decimal / Decimal('12') * Decimal('365') / Decimal('360')
-                else:
-                    monthly_interest_factor = annual_rate_decimal / Decimal('12')
+                monthly_interest_factor = annual_rate_decimal / Decimal('12')
                 denominator = Decimal('1') - arrangement_fee_decimal - monthly_interest_factor - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
                 
@@ -2805,8 +2631,7 @@ class LoanCalculator:
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'service_and_capital':
-                # Term Service + Capital: No interest factor but 360-day affects other calculations
-                # This formula itself doesn't use interest rate but we keep it for consistency
+                # Term Service + Capital: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)
                 denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
                 
@@ -2816,8 +2641,7 @@ class LoanCalculator:
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'flexible_payment':
-                # Term Flexible Payment: Same as Service + Capital - No interest factor but 360-day affects other calculations
-                # This formula itself doesn't use interest rate but we keep it for consistency
+                # Term Flexible Payment: Same as Service + Capital - Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)
                 denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
                 
@@ -2867,7 +2691,7 @@ class LoanCalculator:
                                                 loan_term: int, arrangement_fee_rate: Decimal,
                                                 legal_fees: Decimal, site_visit_fee: Decimal,
                                                 title_insurance_rate: Decimal, day1_advance: Decimal,
-                                                tranches: list, loan_term_days: int, use_360_days: bool = False) -> Decimal:
+                                                tranches: list, loan_term_days: int) -> Decimal:
         """Calculate gross amount using Excel Goal Seek methodology - iteratively find gross that produces target net"""
         
         import logging
@@ -2886,14 +2710,14 @@ class LoanCalculator:
         # Use Excel Goal Seek methodology for exact Excel matching
         return self._calculate_development_excel_goal_seek(
             target_net, annual_rate, loan_term, arrangement_fee_rate,
-            legal_fees, site_visit_fee, title_insurance_rate, day1_advance, tranches, loan_term_days, use_360_days
+            legal_fees, site_visit_fee, title_insurance_rate, day1_advance, tranches, loan_term_days
         )
     
     def _calculate_development_excel_goal_seek(self, net_amount: Decimal, annual_rate: Decimal,
                                             loan_term: int, arrangement_fee_rate: Decimal,
                                             legal_fees: Decimal, site_visit_fee: Decimal,
                                             title_insurance_rate: Decimal, day1_advance: Decimal,
-                                            tranches: list, loan_term_days: int, use_360_days: bool = False) -> Decimal:
+                                            tranches: list, loan_term_days: int) -> Decimal:
         """
         Implement Excel Goal Seek methodology exactly as Excel does it.
         Goal: Find gross amount where Total Net Advance equals target
@@ -2936,7 +2760,7 @@ class LoanCalculator:
             total_interest = Decimal(str(self._calculate_development_interest_excel_exact(
                 float(gross_amount), float(annual_rate), loan_term_days, float(day1_advance), tranches,
                 float(legal_fees), float(site_visit_fee), float(title_insurance_rate), 
-                float(target_net), total_term_months, use_360_days
+                float(target_net), total_term_months
             )))
             
             # Step 3: Calculate resulting net amount
@@ -3003,17 +2827,16 @@ class LoanCalculator:
                                                    loan_term_days: int, day1_advance: float, user_tranches: list,
                                                    legal_fees: float = 7587.94, site_visit_fee: float = 0.0, 
                                                    title_insurance_rate: float = 0.0, total_net_advance: float = 800000.0,
-                                                   total_term_months: int = 18, use_360_days: bool = False) -> Decimal:
+                                                   total_term_months: int = 18) -> Decimal:
         """
         Calculate development loan interest using Excel's exact compound daily methodology.
         This matches the Excel payment schedule exactly from the attached data.
         """
         import logging
         
-        # DYNAMIC DAILY RATE: Calculate from actual annual rate input with 360-day support
+        # DYNAMIC DAILY RATE: Calculate from actual annual rate input - COMPLETELY DYNAMIC
         # This ensures all calculations are fully dynamic based on user input
-        days_per_year = 360 if use_360_days else 365
-        dynamic_daily_rate = annual_rate / 100 / days_per_year  # Calculate from actual user rate
+        dynamic_daily_rate = annual_rate / 100 / 365  # Calculate from actual user rate
         
         logging.info(f"COMPLETELY DYNAMIC INTEREST: Rate {dynamic_daily_rate:.10f} (from {annual_rate:.1f}% annual), Days {loan_term_days}")
         
@@ -3208,14 +3031,13 @@ class LoanCalculator:
     
     def _calculate_development_interest(self, gross_amount: Decimal, annual_rate: Decimal,
                                       loan_term: int, day1_advance: Decimal, 
-                                      tranches: list, loan_term_days: int, use_360_days: bool = False) -> Decimal:
+                                      tranches: list, loan_term_days: int) -> Decimal:
         """Calculate total compound daily interest matching Excel exactly"""
         
         import logging
         
-        # Use Excel's EXACT daily rate with 360-day support: annual_rate / days_per_year with proper precision
-        days_per_year = Decimal('360') if use_360_days else Decimal('365')
-        daily_rate = annual_rate / Decimal('100') / days_per_year
+        # Use Excel's EXACT daily rate: annual_rate / 365 with proper precision
+        daily_rate = annual_rate / Decimal('100') / Decimal('365')
         
         logging.info(f"Using Excel's EXACT daily rate: {daily_rate}")
         
@@ -3223,9 +3045,9 @@ class LoanCalculator:
         balance = Decimal('0')
         total_interest = Decimal('0')
         
-        # Excel uses days per month consistently with 360-day support
+        # Excel uses 30.4375 days per month consistently (365/12)
         # This matches the exact Excel calculation methodology
-        days_per_month = days_per_year / Decimal('12')  # 30.4375 for 365-day, 30.0 for 360-day
+        days_per_month = Decimal('365') / Decimal('12')  # 30.4375
         
         # Month 1: Day 1 advance with compound interest
         balance += day1_advance
@@ -3616,10 +3438,6 @@ class LoanCalculator:
         loan_term = int(params.get('loan_term', 12))
         annual_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
         
-        # Get 360-day calculation parameter for net-to-gross calculations
-        use_360_days = params.get('use_360_days', False)
-        amount_input_type = params.get('amount_input_type', 'gross')
-        
         # Get fees
         arrangement_fee = Decimal(str(calculation.get('arrangementFee', 0)))
         legal_fees = Decimal(str(calculation.get('totalLegalFees', calculation.get('legalFees', 0))))
@@ -3694,28 +3512,12 @@ class LoanCalculator:
         
         elif repayment_option == 'service_only':
             # Interest-only payments
-            # For net-to-gross calculations with 360-day checkbox, adjust the interest calculation
-            if amount_input_type == 'net' and use_360_days:
-                # Use 360-day calculation for net-to-gross (like backend calculation)
-                # Calculate term_years using actual loan days and 360-day year
-                loan_term_days = params.get('loan_term_days', loan_term * 30.44)  # Approximate days if not provided
-                term_years = Decimal(str(loan_term_days)) / Decimal('360')
-                monthly_rate_360 = annual_rate * term_years / Decimal(str(loan_term))
-                
-                if payment_frequency == 'quarterly':
-                    interest_per_payment = gross_amount * (monthly_rate_360 * 3 / 100)
-                    interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {monthly_rate_360*3:.4f}% (360-day quarterly)"
-                else:
-                    interest_per_payment = gross_amount * (monthly_rate_360 / 100)
-                    interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {monthly_rate_360:.4f}% (360-day monthly)"
+            if payment_frequency == 'quarterly':
+                interest_per_payment = gross_amount * (annual_rate / 4 / 100)
+                interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {annual_rate/4:.3f}% (quarterly)"
             else:
-                # Standard 365-day calculation
-                if payment_frequency == 'quarterly':
-                    interest_per_payment = gross_amount * (annual_rate / 4 / 100)
-                    interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {annual_rate/4:.3f}% (quarterly)"
-                else:
-                    interest_per_payment = gross_amount * (annual_rate / 12 / 100)
-                    interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {annual_rate/12:.3f}% (monthly)"
+                interest_per_payment = gross_amount * (annual_rate / 12 / 100)
+                interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {annual_rate/12:.3f}% (monthly)"
                 
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
@@ -4039,8 +3841,6 @@ class LoanCalculator:
         repayment_option = params.get('repayment_option', 'service_only')
         # Try multiple field names for gross_amount
         gross_amount = Decimal(str(calculation.get('grossAmount', calculation.get('gross_amount', params.get('gross_amount', 0)))))
-        # Get 360-day parameter
-        use_360_days = params.get('use_360_days', False)
         loan_term = int(params.get('loan_term', 18))
         annual_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
         
@@ -4121,27 +3921,11 @@ class LoanCalculator:
         elif repayment_option == 'service_only':
             # Interest-only payments
             if payment_frequency == 'quarterly':
-                if use_360_days:
-                    quarterly_rate_decimal = annual_rate / 4 / 100 * Decimal('365') / Decimal('360')
-                    quarterly_rate_display = annual_rate / 4 * 365 / 360
-                    days_label = " (360-day quarterly)"
-                else:
-                    quarterly_rate_decimal = annual_rate / 4 / 100
-                    quarterly_rate_display = annual_rate / 4
-                    days_label = " (quarterly)"
-                interest_per_payment = gross_amount * quarterly_rate_decimal
-                interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {quarterly_rate_display:.3f}%{days_label}"
+                interest_per_payment = gross_amount * (annual_rate / 4 / 100)
+                interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {annual_rate/4:.3f}% (quarterly)"
             else:
-                if use_360_days:
-                    monthly_rate_decimal = annual_rate / 12 / 100 * Decimal('365') / Decimal('360')
-                    monthly_rate_display = annual_rate / 12 * 365 / 360
-                    days_label = " (360-day monthly)"
-                else:
-                    monthly_rate_decimal = annual_rate / 12 / 100
-                    monthly_rate_display = annual_rate / 12
-                    days_label = " (monthly)"
-                interest_per_payment = gross_amount * monthly_rate_decimal
-                interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {monthly_rate_display:.3f}%{days_label}"
+                interest_per_payment = gross_amount * (annual_rate / 12 / 100)
+                interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {annual_rate/12:.3f}% (monthly)"
                 
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
@@ -4184,30 +3968,13 @@ class LoanCalculator:
                 
                 # Calculate interest on remaining balance
                 if payment_frequency == 'quarterly':
-                    if use_360_days:
-                        quarterly_rate_decimal = annual_rate / 4 / 100 * Decimal('365') / Decimal('360')
-                        quarterly_rate_display = annual_rate / 4 * 365 / 360
-                        days_label = " (360-day quarterly)"
-                    else:
-                        quarterly_rate_decimal = annual_rate / 4 / 100
-                        quarterly_rate_display = annual_rate / 4
-                        days_label = " (quarterly)"
-                    interest_amount = remaining_balance * quarterly_rate_decimal
+                    interest_amount = remaining_balance * (annual_rate / 4 / 100)
                     capital_per_payment = capital_repayment * 3  # 3 months worth
-                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {quarterly_rate_display:.3f}%{days_label}"
+                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate/4:.3f}% (quarterly)"
                 else:
-                    # Apply 360-day rate adjustment if requested
-                    if use_360_days:
-                        monthly_rate_decimal = annual_rate / 12 / 100 * Decimal('365') / Decimal('360')
-                        monthly_rate_display = annual_rate / 12 * 365 / 360
-                        days_label = " (360-day monthly)"
-                    else:
-                        monthly_rate_decimal = annual_rate / 12 / 100
-                        monthly_rate_display = annual_rate / 12
-                        days_label = " (monthly)"
-                    interest_amount = remaining_balance * monthly_rate_decimal
+                    interest_amount = remaining_balance * (annual_rate / 12 / 100)
                     capital_per_payment = capital_repayment
-                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {monthly_rate_display:.3f}%{days_label}"
+                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate/12:.3f}% (monthly)"
                 
                 # Ensure we don't pay more capital than remaining
                 if capital_per_payment > remaining_balance:
@@ -4351,32 +4118,15 @@ class LoanCalculator:
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
                 
-                # Calculate interest on remaining balance with 360-day adjustment if needed
-                use_360_days = params.get('use_360_days', False)
+                # Calculate interest on remaining balance
                 if payment_frequency == 'quarterly':
-                    if use_360_days:
-                        quarterly_rate = annual_rate / 4 / 100 * Decimal('365') / Decimal('360')
-                        quarterly_rate_display = annual_rate / 4 * 365 / 360
-                        days_label = " (360-day quarterly)"
-                    else:
-                        quarterly_rate = annual_rate / 4 / 100
-                        quarterly_rate_display = annual_rate / 4
-                        days_label = " (quarterly)"
-                    interest_amount = remaining_balance * quarterly_rate
+                    interest_amount = remaining_balance * (annual_rate / 4 / 100)
                     flexible_per_payment = flexible_payment_amount * 3  # 3 months worth
-                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {quarterly_rate_display:.3f}%{days_label}"
+                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate/4:.3f}% (quarterly)"
                 else:
-                    if use_360_days:
-                        monthly_rate = annual_rate / 12 / 100 * Decimal('365') / Decimal('360')
-                        monthly_rate_display = annual_rate / 12 * 365 / 360
-                        days_label = " (360-day monthly)"
-                    else:
-                        monthly_rate = annual_rate / 12 / 100
-                        monthly_rate_display = annual_rate / 12
-                        days_label = " (monthly)"
-                    interest_amount = remaining_balance * monthly_rate
+                    interest_amount = remaining_balance * (annual_rate / 12 / 100)
                     flexible_per_payment = flexible_payment_amount
-                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {monthly_rate_display:.3f}%{days_label}"
+                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate/12:.3f}% (monthly)"
                 
                 # Calculate how much of flexible payment goes to interest vs principal
                 actual_interest_paid = min(flexible_per_payment, interest_amount)
@@ -6198,25 +5948,16 @@ class LoanCalculator:
 
     def _calculate_term_capital_payment_only(self, gross_amount: Decimal, annual_rate: Decimal,
                                            loan_term: int, capital_repayment: Decimal, fees: Dict,
-                                           net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False) -> Dict:
+                                           net_amount: Decimal = None, loan_term_days: int = None) -> Dict:
         """Calculate term loan with capital payment only - interest retained at day 1 with potential refund"""
         
         if loan_term_days is not None:
-            # Support 360-day calculation for net-to-gross conversions
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(loan_term_days) / days_per_year
+            term_years = Decimal(loan_term_days) / Decimal('365')
         else:
             term_years = Decimal(loan_term) / Decimal('12')
         
-        # Calculate full interest for the entire loan term (retained at day 1) with 360-day adjustment if needed
-        if use_360_days:
-            # Apply 365/360 adjustment to the annual rate
-            adjusted_annual_rate = annual_rate * Decimal('365') / Decimal('360')
-            total_retained_interest = gross_amount * (adjusted_annual_rate / Decimal('100')) * term_years
-            import logging
-            logging.info(f"Term capital_payment_only: Using 360-day adjusted rate: {adjusted_annual_rate:.6f}%")
-        else:
-            total_retained_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+        # Calculate full interest for the entire loan term (retained at day 1) - same as bridge
+        total_retained_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
         
         # Calculate how much capital will be repaid over the loan term
         total_capital_payments = capital_repayment * loan_term

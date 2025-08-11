@@ -22,3 +22,4 @@ weasyprint>=65.1
 matplotlib>=3.10.3
 xlsxwriter>=3.2.5
 numpy>=2.3.1
+selenium

@@ -1,13 +1,13 @@
 {
-  "Quote": {
-    "name": "Quotes",
-    "baseUrl": "https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/aa28d336-4841-43f1-b7aa-06612fead1f8?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21&rp:Template=Novellus%20Limited&rp:loansummaryloanname=Calculator",
+  "main": {
+    "name": "Quote Generator",
+    "baseUrl": "https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/aa28d336-4841-43f1-b7aa-06612fead1f8?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21&rp:Template=Novellus%20Limited&rp:loansummaryloanname=Bridge%20Retained%20360%20Days%20N-G",
     "icon": "fas fa-chart-bar",
     "parameters": [
       {
         "name": "Template",
-        "source": "custom",
-        "defaultValue": "Novellus Limited"
+        "source": "currency",
+        "defaultValue": ""
       },
       {
         "name": "loansummaryloanname",
@@ -15,11 +15,5 @@
         "defaultValue": ""
       }
     ]
-  },
-  "main": {
-    "name": "Test Report",
-    "baseUrl": "https://test.com",
-    "icon": "fas fa-chart-bar",
-    "parameters": []
   }
 }
