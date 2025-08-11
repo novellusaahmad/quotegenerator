@@ -335,6 +335,11 @@ function viewQuote(id) {
     fetch(`/api/quotes/${id}`)
         .then(response => response.json())
         .then(data => {
+            // Calculate daily and monthly interest rates from annual rate
+            const annualRate = parseFloat(data.interest_rate) || 0;
+            const monthlyRate = annualRate / 12;
+            const dailyRate = annualRate / 365;
+
             // Populate modal with quote details
             document.getElementById('quoteModalBody').innerHTML = `
                 <div class="row">
@@ -343,11 +348,11 @@ function viewQuote(id) {
                         <table class="table table-bordered">
                             <tr><td><strong>Gross Amount:</strong></td><td>£${data.gross_amount.toLocaleString()}</td></tr>
                             <tr><td><strong>Net Advance:</strong></td><td>£${data.net_amount.toLocaleString()}</td></tr>
-                            <tr><td><strong>Interest Rate:</strong></td><td>${data.interest_rate}% per annum</td></tr>
+                            <tr><td><strong>Interest Rate:</strong></td><td>${dailyRate.toFixed(5)}% per day<br>${monthlyRate.toFixed(3)}% per month<br>${annualRate.toFixed(3)}% per annum</td></tr>
                             <tr><td><strong>Loan Term:</strong></td><td>${data.loan_term} months</td></tr>
                             <tr><td><strong>LTV Ratio:</strong></td><td>${data.ltv_ratio}%</td></tr>
                         </table>
-                        
+
                         <h6>Fees Breakdown</h6>
                         <table class="table table-sm">
                             <tr><td>Arrangement Fee:</td><td>£${data.arrangement_fee.toLocaleString()}</td></tr>
