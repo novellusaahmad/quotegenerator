@@ -1017,15 +1017,14 @@ class LoanCalculator {
         // List of monetary input field IDs that need comma formatting
         const monetaryFields = [
             'propertyValue',
-            'grossAmountFixed', 
+            'grossAmountFixed',
             'grossAmountPercentage',
             'netAmountInput',
             'day1Advance',
             'legalFees',
             'siteVisitFee',
             'capitalRepayment',
-            'flexiblePayment',
-            'autoTotalAmount'
+            'flexiblePayment'
         ];
 
         monetaryFields.forEach(fieldId => {
@@ -1066,6 +1065,15 @@ class LoanCalculator {
             }
         }
         // For zero, negative, or invalid numbers, leave as typed
+    }
+
+    parseNumericInput(value) {
+        if (!value) {
+            return 0;
+        }
+        const cleaned = value.toString().replace(/,/g, '');
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? 0 : num;
     }
 
     updateAdditionalParams() {
@@ -1292,16 +1300,16 @@ class LoanCalculator {
             console.log('Generate tranches button clicked');
             
             // Get form values - with fallback to form elements
-            let totalAmount = parseFloat(document.getElementById('autoTotalAmount')?.value) || 0;
+            let totalAmount = this.parseNumericInput(document.getElementById('autoTotalAmount')?.value);
             let startDate = document.getElementById('autoStartDate')?.value;
             let loanPeriod = parseInt(document.getElementById('autoLoanPeriod')?.value) || 12;
             let interestRate = parseFloat(document.getElementById('autoInterestRate')?.value) || 12;
             let trancheCount = parseInt(document.getElementById('autoTrancheCount')?.value) || 6;
-            
+
             // Fallback to main form values if auto fields don't exist
             if (totalAmount === 0) {
                 const netAmountInput = document.getElementById('netAmountInput');
-                totalAmount = parseFloat(netAmountInput?.value) || 0;
+                totalAmount = this.parseNumericInput(netAmountInput?.value);
                 console.log('Using net amount from main form:', totalAmount);
             }
             
