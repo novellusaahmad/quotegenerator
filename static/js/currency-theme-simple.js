@@ -46,8 +46,8 @@ class SimpleCurrencyTheme {
 
     updateButtons(currency) {
         const colors = {
-            'GBP': { primary: '#B8860B', dark: '#8B6914' },
-            'EUR': { primary: '#509664', dark: '#3d7450' }
+            'GBP': { primary: '#AD965F', dark: '#AD965F' },
+            'EUR': { primary: '#509195', dark: '#509195' }
         };
         
         const color = colors[currency];
@@ -97,8 +97,8 @@ class SimpleCurrencyTheme {
 
     updateThemeElements(currency) {
         const colors = {
-            'GBP': { primary: '#B8860B', dark: '#8B6914' },
-            'EUR': { primary: '#509664', dark: '#3d7450' }
+            'GBP': { primary: '#AD965F', dark: '#AD965F' },
+            'EUR': { primary: '#509664', dark: '#509195' }
         };
         
         const color = colors[currency];

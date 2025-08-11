@@ -3,72 +3,6 @@
  * Handles loan summary display with comprehensive visualizations
  */
 
-
-// --- Custom plugin to draw value (currency) and % on donut slices ---
-const loanDonutLabels = {
-    id: 'loanDonutLabels',
-    afterDatasetsDraw(chart, args, pluginOptions) {
-        const {ctx, chartArea, data} = chart;
-        const ds = chart.data.datasets[0];
-        if (!ds || !ds.data || !ds.data.length) return;
-        const meta = chart.getDatasetMeta(0);
-        const total = ds.data.reduce((a, b) => a + (parseFloat(b) || 0), 0);
-        if (!total) return;
-
-        // Determine currency symbol from UI
-        let symbol = '£';
-        try {
-            const cur = document.getElementById('currency')?.value || 'GBP';
-            symbol = (cur === 'EUR') ? '€' : '£';
-        } catch(e) {}
-
-        ctx.save();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = '12px sans-serif';
-
-        meta.data.forEach((arc, i) => {
-            const val = parseFloat(ds.data[i]) || 0;
-            if (val <= 0) return;
-
-            const p = arc.getProps(['x', 'y', 'startAngle', 'endAngle', 'outerRadius', 'innerRadius'], true);
-            // angle at the middle of the arc
-            const angle = (p.startAngle + p.endAngle) / 2;
-            // position slightly inside the outer edge
-            const r = (p.innerRadius + p.outerRadius) / 2;
-            const x = p.x + Math.cos(angle) * r;
-            const y = p.y + Math.sin(angle) * r;
-
-            const pct = total ? (val / total * 100) : 0;
-            const valueStr = symbol + val.toLocaleString('en-GB', {minimumFractionDigits: 0, maximumFractionDigits: 0});
-            const label = `${valueStr} (${pct.toFixed(1)}%)`;
-
-            // Only draw if there is enough arc span
-            const span = p.endAngle - p.startAngle;
-            if (span < 0.15) return; // skip very tiny slices to avoid clutter
-
-            // White rounded background for readability
-            const padding = 4;
-            const textWidth = ctx.measureText(label).width;
-            const boxW = textWidth + padding * 2;
-            const boxH = 18;
-
-            ctx.fillStyle = 'rgba(255,255,255,0.85)';
-            ctx.beginPath();
-            ctx.roundRect(x - boxW/2, y - boxH/2, boxW, boxH, 6);
-            ctx.fill();
-
-            ctx.fillStyle = '#333';
-            ctx.fillText(label, x, y);
-        });
-
-        ctx.restore();
-    }
-};
-if (typeof Chart !== 'undefined') {
-    Chart.register(loanDonutLabels);
-}
-
 class LoanCalculator {
     constructor() {
         try {
@@ -87,8 +21,6 @@ class LoanCalculator {
             
             // Only initialize if required elements exist
             this.initializeEventListeners();
-            // Enable blur-based comma formatting on monetary fields
-            this.setupImprovedInputFormatting();
             this.setDefaultDate();
             this.updateCurrencySymbols();
             this.updateGBPQuoteButtonVisibility();
@@ -259,7 +191,8 @@ class LoanCalculator {
             });
         }
 
-        // Input formatting disabled to prevent field clearing issues
+        // Add input formatting for monetary fields
+        this.setupInputFormatting();
 
         // Tranche mode toggles
         document.querySelectorAll('input[name="tranche_mode"]').forEach(radio => {
@@ -421,12 +354,6 @@ class LoanCalculator {
             data[key] = value;
         }
         
-        // General sanitization: strip commas from any numeric-looking string
-        Object.keys(data).forEach((k) => {
-            if (typeof data[k] === 'string' && /[0-9],[0-9]/.test(data[k])) {
-                data[k] = data[k].replace(/,/g, '');
-            }
-        });
         // Remove commas from monetary fields for calculation
         const monetaryFieldNames = [
             'property_value', 'gross_amount', 'net_amount', 
@@ -555,7 +482,8 @@ class LoanCalculator {
             
             // Scroll to results
             if (this.resultsSection) {
-}
+                this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }
             
             console.log('displayResults completed successfully');
         } catch (error) {
@@ -782,19 +710,6 @@ class LoanCalculator {
     }
 
     displayDetailedPaymentSchedule(results) {
-        // Hide payment schedule when Interest Retained is selected for Term or Bridge loans
-        try {
-            const loanTypeEl = document.getElementById('loanType');
-            const repaymentEl = document.getElementById('repaymentOption');
-            const loanType = loanTypeEl ? loanTypeEl.value : (results.loan_type || '');
-            const repayment = repaymentEl ? repaymentEl.value : (results.repayment_option || '');
-            const scheduleContainerEl = document.getElementById('detailedPaymentScheduleCard');
-            if ((loanType === 'term' || loanType === 'bridge') && repayment === 'none') {
-                if (scheduleContainerEl) scheduleContainerEl.style.display = 'none';
-                return; // don't render
-            }
-        } catch (e) { console.warn('Schedule visibility check failed:', e); }
-
         const scheduleContainer = document.getElementById('detailedPaymentScheduleCard');
         const scheduleBody = document.getElementById('detailedPaymentScheduleBody');
         
@@ -999,12 +914,11 @@ class LoanCalculator {
         }
     }
 
-    setupImprovedInputFormatting() {
+    setupInputFormatting() {
         // List of monetary input field IDs that need comma formatting
         const monetaryFields = [
             'propertyValue',
             'grossAmountFixed', 
-            'grossAmountPercentage',
             'netAmountInput',
             'day1Advance',
             'legalFees',
@@ -1017,41 +931,32 @@ class LoanCalculator {
         monetaryFields.forEach(fieldId => {
             const field = document.getElementById(fieldId);
             if (field) {
-                // Format on blur only - never on focus to avoid clearing
+                // Format on blur (when user finishes typing)
                 field.addEventListener('blur', (e) => {
-                    this.safeFormatInputValue(e.target);
+                    this.formatInputValue(e.target);
+                });
+                
+                // Remove formatting on focus (when user starts typing)
+                field.addEventListener('focus', (e) => {
+                    this.unformatInputValue(e.target);
                 });
             }
         });
     }
 
-    safeFormatInputValue(input) {
-        const originalValue = input.value;
-        
-        // Only proceed if there's actually a value
-        if (!originalValue || originalValue.trim() === '') {
-            return;
+    formatInputValue(input) {
+        const value = parseFloat(input.value.replace(/,/g, ''));
+        if (!isNaN(value) && value > 0) {
+            input.value = value.toLocaleString('en-GB', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
         }
-        
-        // Remove existing commas and parse
-        const cleanValue = originalValue.replace(/,/g, '');
-        const numericValue = parseFloat(cleanValue);
-        
-        // Only format if it's a valid positive number
-        if (!isNaN(numericValue) && numericValue > 0) {
-            try {
-                const formattedValue = numericValue.toLocaleString('en-GB', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 2
-                });
-                input.value = formattedValue;
-            } catch (error) {
-                // If formatting fails, keep original value
-                console.warn('Number formatting failed:', error);
-                input.value = originalValue;
-            }
-        }
-        // For zero, negative, or invalid numbers, leave as typed
+    }
+
+    unformatInputValue(input) {
+        // Remove commas when user starts editing
+        input.value = input.value.replace(/,/g, '');
     }
 
     updateAdditionalParams() {
@@ -1996,12 +1901,14 @@ class LoanCalculator {
         };
 
         let chartConfig = {
-            type: 'doughnut', data: data, options: { maintainAspectRatio: false, layout: { padding: { right: 20, bottom: 20 } },   cutout: '60%', maintainAspectRatio: false, layout: { padding: { bottom: 36 } }, 
+            type: 'pie',
+            data: data,
+            options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'right', labels: { boxWidth: 10, padding: 8 },
+                        position: 'right',
                         labels: {
                             usePointStyle: true,
                             padding: 15,
@@ -2042,8 +1949,6 @@ class LoanCalculator {
             });
         }
 
-        if (ctx && ctx.parentNode) { ctx.parentNode.style.height = '460px'; }
-        if (ctx && ctx.canvas) { ctx.canvas.style.height = '420px'; ctx.canvas.style.display = 'block'; }
         this.charts.loanBreakdown = new Chart(ctx, chartConfig);
     }
 
@@ -2963,8 +2868,3 @@ function autoUpdateCharts() {
 
 // Calculator initialization is handled by the calculator.html template
 // Auto-update listeners are added after calculator initialization
-
-// === Prevent blur formatting for autoTotalAmount ===
-document.getElementById('autoTotalAmount')?.addEventListener('blur', function(e) {
-    e.stopImmediatePropagation(); // Block other blur handlers
-}, true); // capture phase to intercept early

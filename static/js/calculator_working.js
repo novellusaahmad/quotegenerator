@@ -3,72 +3,6 @@
  * Handles loan summary display with comprehensive visualizations
  */
 
-
-// --- Custom plugin to draw value (currency) and % on donut slices ---
-const loanDonutLabels = {
-    id: 'loanDonutLabels',
-    afterDatasetsDraw(chart, args, pluginOptions) {
-        const {ctx, chartArea, data} = chart;
-        const ds = chart.data.datasets[0];
-        if (!ds || !ds.data || !ds.data.length) return;
-        const meta = chart.getDatasetMeta(0);
-        const total = ds.data.reduce((a, b) => a + (parseFloat(b) || 0), 0);
-        if (!total) return;
-
-        // Determine currency symbol from UI
-        let symbol = '£';
-        try {
-            const cur = document.getElementById('currency')?.value || 'GBP';
-            symbol = (cur === 'EUR') ? '€' : '£';
-        } catch(e) {}
-
-        ctx.save();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = '12px sans-serif';
-
-        meta.data.forEach((arc, i) => {
-            const val = parseFloat(ds.data[i]) || 0;
-            if (val <= 0) return;
-
-            const p = arc.getProps(['x', 'y', 'startAngle', 'endAngle', 'outerRadius', 'innerRadius'], true);
-            // angle at the middle of the arc
-            const angle = (p.startAngle + p.endAngle) / 2;
-            // position slightly inside the outer edge
-            const r = (p.innerRadius + p.outerRadius) / 2;
-            const x = p.x + Math.cos(angle) * r;
-            const y = p.y + Math.sin(angle) * r;
-
-            const pct = total ? (val / total * 100) : 0;
-            const valueStr = symbol + val.toLocaleString('en-GB', {minimumFractionDigits: 0, maximumFractionDigits: 0});
-            const label = `${valueStr} (${pct.toFixed(1)}%)`;
-
-            // Only draw if there is enough arc span
-            const span = p.endAngle - p.startAngle;
-            if (span < 0.15) return; // skip very tiny slices to avoid clutter
-
-            // White rounded background for readability
-            const padding = 4;
-            const textWidth = ctx.measureText(label).width;
-            const boxW = textWidth + padding * 2;
-            const boxH = 18;
-
-            ctx.fillStyle = 'rgba(255,255,255,0.85)';
-            ctx.beginPath();
-            ctx.roundRect(x - boxW/2, y - boxH/2, boxW, boxH, 6);
-            ctx.fill();
-
-            ctx.fillStyle = '#333';
-            ctx.fillText(label, x, y);
-        });
-
-        ctx.restore();
-    }
-};
-if (typeof Chart !== 'undefined') {
-    Chart.register(loanDonutLabels);
-}
-
 class LoanCalculator {
     constructor() {
         try {
@@ -276,7 +210,36 @@ class LoanCalculator {
                 field.addEventListener('input', () => {
                     this.updatePercentageDisplays();
                 });
+            
+        // === Dynamic Monthly/Annual Rate Equivalence ===
+        const monthlyRateInput = document.getElementById('monthlyRateValue');
+        const annualRateInput = document.getElementById('annualRateValue');
+        const rateNote = document.getElementById('rateEquivalenceNote');
+
+        function updateRateEquivalence() {
+            const monthlyVal = parseFloat(monthlyRateInput.value) || 0;
+            const annualVal = parseFloat(annualRateInput.value) || 0;
+
+            if (document.getElementById('monthlyRate').checked) {
+                const equivalentAnnual = monthlyVal * 12;
+                rateNote.textContent = `${monthlyVal}% per month is equivalent to ${equivalentAnnual.toFixed(2)}% per annum`;
+            } 
+            else if (document.getElementById('annualRate').checked) {
+                const equivalentMonthly = annualVal / 12;
+                rateNote.textContent = `${annualVal}% per annum is equivalent to ${equivalentMonthly.toFixed(4)}% per month`;
+            } 
+            else {
+                rateNote.textContent = '';
             }
+        }
+
+        monthlyRateInput.addEventListener('input', updateRateEquivalence);
+        annualRateInput.addEventListener('input', updateRateEquivalence);
+        document.querySelectorAll('input[name="rate_input_type"]').forEach(r => {
+            r.addEventListener('change', updateRateEquivalence);
+        });
+        updateRateEquivalence();
+}
         });
 
         // Update percentage displays when rate input type changes
@@ -782,19 +745,6 @@ class LoanCalculator {
     }
 
     displayDetailedPaymentSchedule(results) {
-        // Hide payment schedule when Interest Retained is selected for Term or Bridge loans
-        try {
-            const loanTypeEl = document.getElementById('loanType');
-            const repaymentEl = document.getElementById('repaymentOption');
-            const loanType = loanTypeEl ? loanTypeEl.value : (results.loan_type || '');
-            const repayment = repaymentEl ? repaymentEl.value : (results.repayment_option || '');
-            const scheduleContainerEl = document.getElementById('detailedPaymentScheduleCard');
-            if ((loanType === 'term' || loanType === 'bridge') && repayment === 'none') {
-                if (scheduleContainerEl) scheduleContainerEl.style.display = 'none';
-                return; // don't render
-            }
-        } catch (e) { console.warn('Schedule visibility check failed:', e); }
-
         const scheduleContainer = document.getElementById('detailedPaymentScheduleCard');
         const scheduleBody = document.getElementById('detailedPaymentScheduleBody');
         
@@ -936,7 +886,7 @@ class LoanCalculator {
                 ];
             } else if (loanType === 'development2') {
                 options = [
-                    { value: 'none', text: 'Retained Interest (Excel Goal Seek)' }
+                    { value: 'none', text: 'Retained Interest' }
                 ];
             }
             
@@ -1294,106 +1244,56 @@ class LoanCalculator {
 
     generateTranches() {
         try {
-            console.log('Generate tranches button clicked');
-            
-            // Get form values - with fallback to form elements
-            let totalAmount = parseFloat(document.getElementById('autoTotalAmount')?.value) || 0;
-            let startDate = document.getElementById('autoStartDate')?.value;
-            let loanPeriod = parseInt(document.getElementById('autoLoanPeriod')?.value) || 12;
-            let interestRate = parseFloat(document.getElementById('autoInterestRate')?.value) || 12;
-            let trancheCount = parseInt(document.getElementById('autoTrancheCount')?.value) || 6;
-            
-            // Fallback to main form values if auto fields don't exist
-            if (totalAmount === 0) {
-                const netAmountInput = document.getElementById('netAmountInput');
-                totalAmount = parseFloat(netAmountInput?.value) || 0;
-                console.log('Using net amount from main form:', totalAmount);
-            }
-            
-            if (!startDate) {
-                const startDateInput = document.getElementById('startDate');
-                startDate = startDateInput?.value;
-                console.log('Using start date from main form:', startDate);
-            }
-            
-            if (loanPeriod === 12) {
-                const loanTermInput = document.getElementById('loanTerm');
-                loanPeriod = parseInt(loanTermInput?.value) || 12;
-                console.log('Using loan term from main form:', loanPeriod);
-            }
-            
-            if (interestRate === 12) {
-                const annualRateInput = document.getElementById('annualRateValue');
-                interestRate = parseFloat(annualRateInput?.value) || 12;
-                console.log('Using interest rate from main form:', interestRate);
-            }
-
-            console.log('Tranche generation parameters:', {
-                totalAmount,
-                startDate,
-                loanPeriod,
-                interestRate,
-                trancheCount
-            });
-
-            if (totalAmount <= 0) {
-                alert('Please enter a valid total loan amount');
-                return;
-            }
+            console.log('Generate tranches (equal-only, starting month 2)');
+            const totalDev = parseFloat((document.getElementById('autoTotalAmount')?.value || '0').replace(/,/g, '')) || 0;
+            let trancheCount = parseInt(document.getElementById('autoTrancheCount')?.value) || 1;
+            const startDate = (document.getElementById('autoStartDate')?.value) || (document.getElementById('startDate')?.value) || '';
+            const rate = parseFloat(document.getElementById('annualRateValue')?.value) || 12;
 
             if (!startDate) {
                 alert('Please select a start date');
                 return;
             }
-
-            // Calculate equal tranche amounts
-            const trancheAmount = totalAmount / trancheCount;
-            console.log('Calculated tranche amount:', trancheAmount);
+            if (trancheCount < 1) trancheCount = 1;
 
             // Clear existing tranches
             this.clearTranches();
 
-            // Set tranche count
-            const trancheCountElement = document.getElementById('trancheCount');
-            if (trancheCountElement) {
-                trancheCountElement.textContent = trancheCount;
-            }
+            // Equal split of Total Development Tranche ONLY
+            const penniesTotal = Math.round(totalDev * 100);
+            const basePennies = Math.floor(penniesTotal / trancheCount);
+            const remainder = penniesTotal - basePennies * trancheCount;
 
-            // Generate tranche dates (monthly intervals)
             const start = new Date(startDate);
-            const monthInterval = Math.max(1, Math.floor(loanPeriod / trancheCount));
-
-            console.log('Generating', trancheCount, 'tranches with', monthInterval, 'month intervals');
-
-            // Create tranches
+            let trancheNo = 1;
             for (let i = 0; i < trancheCount; i++) {
+                const pennies = basePennies + (i < remainder ? 1 : 0);
+                const amount = pennies / 100;
                 const releaseDate = new Date(start);
-                releaseDate.setMonth(releaseDate.getMonth() + (i * monthInterval));
-                
-                console.log(`Creating tranche ${i + 1}:`, {
-                    amount: trancheAmount,
-                    date: releaseDate.toISOString().split('T')[0],
-                    rate: interestRate
-                });
-                
-                this.createTrancheItem(i + 1, trancheAmount, releaseDate.toISOString().split('T')[0], interestRate, `Tranche ${i + 1}`);
+                releaseDate.setMonth(releaseDate.getMonth() + (i + 1)); // month 2 onward
+                this.createTrancheItem(
+                    trancheNo++,
+                    amount,
+                    releaseDate.toISOString().split('T')[0],
+                    rate,
+                    `Tranche ${i + 1}`
+                );
             }
 
-            // Switch to manual mode to show generated tranches
+            // Switch to manual mode for review
             const manualRadio = document.getElementById('manual_tranches');
             if (manualRadio) {
                 manualRadio.checked = true;
                 this.toggleTrancheMode();
-                console.log('Switched to manual tranche mode');
-            } else {
-                console.error('Could not find manual_tranches radio button');
             }
-            
-            console.log('Tranche generation completed successfully');
-            
-        } catch (error) {
-            console.error('Error in generateTranches:', error);
-            alert('Error generating tranches: ' + error.message);
+            // Update visible count
+            const trancheCountEl = document.getElementById('trancheCount');
+            if (trancheCountEl) trancheCountEl.textContent = trancheCount;
+
+            console.log('Equal-only tranche generation complete:', { totalDev, trancheCount });
+        } catch (err) {
+            console.error('Error in generateTranches (equal-only):', err);
+            alert('Error generating tranches: ' + err.message);
         }
     }
 
@@ -1996,12 +1896,14 @@ class LoanCalculator {
         };
 
         let chartConfig = {
-            type: 'doughnut', data: data, options: { maintainAspectRatio: false, layout: { padding: { right: 20, bottom: 20 } },   cutout: '60%', maintainAspectRatio: false, layout: { padding: { bottom: 36 } }, 
+            type: 'pie',
+            data: data,
+            options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'right', labels: { boxWidth: 10, padding: 8 },
+                        position: 'right',
                         labels: {
                             usePointStyle: true,
                             padding: 15,
@@ -2042,8 +1944,6 @@ class LoanCalculator {
             });
         }
 
-        if (ctx && ctx.parentNode) { ctx.parentNode.style.height = '460px'; }
-        if (ctx && ctx.canvas) { ctx.canvas.style.height = '420px'; ctx.canvas.style.display = 'block'; }
         this.charts.loanBreakdown = new Chart(ctx, chartConfig);
     }
 

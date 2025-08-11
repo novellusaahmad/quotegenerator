@@ -3,92 +3,18 @@
  * Handles loan summary display with comprehensive visualizations
  */
 
-
-// --- Custom plugin to draw value (currency) and % on donut slices ---
-const loanDonutLabels = {
-    id: 'loanDonutLabels',
-    afterDatasetsDraw(chart, args, pluginOptions) {
-        const {ctx, chartArea, data} = chart;
-        const ds = chart.data.datasets[0];
-        if (!ds || !ds.data || !ds.data.length) return;
-        const meta = chart.getDatasetMeta(0);
-        const total = ds.data.reduce((a, b) => a + (parseFloat(b) || 0), 0);
-        if (!total) return;
-
-        // Determine currency symbol from UI
-        let symbol = '£';
-        try {
-            const cur = document.getElementById('currency')?.value || 'GBP';
-            symbol = (cur === 'EUR') ? '€' : '£';
-        } catch(e) {}
-
-        ctx.save();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = '12px sans-serif';
-
-        meta.data.forEach((arc, i) => {
-            const val = parseFloat(ds.data[i]) || 0;
-            if (val <= 0) return;
-
-            const p = arc.getProps(['x', 'y', 'startAngle', 'endAngle', 'outerRadius', 'innerRadius'], true);
-            // angle at the middle of the arc
-            const angle = (p.startAngle + p.endAngle) / 2;
-            // position slightly inside the outer edge
-            const r = (p.innerRadius + p.outerRadius) / 2;
-            const x = p.x + Math.cos(angle) * r;
-            const y = p.y + Math.sin(angle) * r;
-
-            const pct = total ? (val / total * 100) : 0;
-            const valueStr = symbol + val.toLocaleString('en-GB', {minimumFractionDigits: 0, maximumFractionDigits: 0});
-            const label = `${valueStr} (${pct.toFixed(1)}%)`;
-
-            // Only draw if there is enough arc span
-            const span = p.endAngle - p.startAngle;
-            if (span < 0.15) return; // skip very tiny slices to avoid clutter
-
-            // White rounded background for readability
-            const padding = 4;
-            const textWidth = ctx.measureText(label).width;
-            const boxW = textWidth + padding * 2;
-            const boxH = 18;
-
-            ctx.fillStyle = 'rgba(255,255,255,0.85)';
-            ctx.beginPath();
-            ctx.roundRect(x - boxW/2, y - boxH/2, boxW, boxH, 6);
-            ctx.fill();
-
-            ctx.fillStyle = '#333';
-            ctx.fillText(label, x, y);
-        });
-
-        ctx.restore();
-    }
-};
-if (typeof Chart !== 'undefined') {
-    Chart.register(loanDonutLabels);
-}
-
 class LoanCalculator {
     constructor() {
-        try {
-            this.form = document.getElementById('calculatorForm');
-            this.resultsSection = document.getElementById('resultsSection');
-            this.noResults = document.getElementById('noResults');
-            this.currentResults = null;
-            this.charts = {}; // Store chart instances for proper cleanup
-            this.chartGenerationInProgress = false; // Prevent concurrent chart generation
-            
-            // Check if required elements exist
-            if (!this.form) {
-                console.error('Calculator form not found - calculator functionality will be limited');
-                return;
-            }
-            
-            // Only initialize if required elements exist
+        this.form = document.getElementById('calculatorForm');
+        this.resultsSection = document.getElementById('resultsSection');
+        this.noResults = document.getElementById('noResults');
+        this.currentResults = null;
+        this.charts = {}; // Store chart instances for proper cleanup
+        this.chartGenerationInProgress = false; // Prevent concurrent chart generation
+        
+        // Only initialize if required elements exist
+        if (this.form) {
             this.initializeEventListeners();
-            // Enable blur-based comma formatting on monetary fields
-            this.setupImprovedInputFormatting();
             this.setDefaultDate();
             this.updateCurrencySymbols();
             this.updateGBPQuoteButtonVisibility();
@@ -96,54 +22,24 @@ class LoanCalculator {
             this.updateRepaymentOptions();
             this.updateAdditionalParams();
             // Calculate initial end date based on default values
-            setTimeout(() => {
-                try {
-                    if (typeof calculateEndDate === 'function') {
-                        calculateEndDate();
-                    }
-                } catch (error) {
-                    console.error('Error calculating end date:', error);
-                }
-            }, 100);
+            setTimeout(() => calculateEndDate(), 100);
             // Check for existing calculation data and display charts on page load
-            setTimeout(() => {
-                try {
-                    this.loadExistingResults();
-                } catch (error) {
-                    console.error('Error loading existing results:', error);
-                }
-            }, 500);
+            setTimeout(() => this.loadExistingResults(), 500);
             // Update percentage displays on page load
-            setTimeout(() => {
-                try {
-                    this.updatePercentageDisplays();
-                } catch (error) {
-                    console.error('Error updating percentage displays:', error);
-                }
-            }, 100);
+            setTimeout(() => this.updatePercentageDisplays(), 100);
             // Initialize currency theme based on default currency
             setTimeout(() => {
-                try {
-                    const currencySelect = document.getElementById('currency');
-                    if (currencySelect && window.currencyThemeManager) {
-                        const currentCurrency = currencySelect.value || 'GBP';
-                        window.currencyThemeManager.updateTheme(currentCurrency);
-                        console.log(`Initialized currency theme: ${currentCurrency}`);
-                    }
-                } catch (error) {
-                    console.error('Error initializing currency theme:', error);
+                const currencySelect = document.getElementById('currency');
+                if (currencySelect && window.currencyThemeManager) {
+                    const currentCurrency = currencySelect.value || 'GBP';
+                    window.currencyThemeManager.updateTheme(currentCurrency);
+                    console.log(`Initialized currency theme: ${currentCurrency}`);
                 }
             }, 200);
-            
-            // Make calculator instance globally accessible for theme updates
-            window.loanCalculator = this;
-            console.log('Loan calculator initialized successfully');
-            
-        } catch (error) {
-            console.error('Error initializing LoanCalculator:', error);
-            // Still make a basic calculator instance available
-            window.loanCalculator = this;
         }
+        
+        // Make calculator instance globally accessible for theme updates
+        window.loanCalculator = this;
     }
 
     initializeEventListeners() {
@@ -258,8 +154,6 @@ class LoanCalculator {
                 }
             });
         }
-
-        // Input formatting disabled to prevent field clearing issues
 
         // Tranche mode toggles
         document.querySelectorAll('input[name="tranche_mode"]').forEach(radio => {
@@ -421,25 +315,6 @@ class LoanCalculator {
             data[key] = value;
         }
         
-        // General sanitization: strip commas from any numeric-looking string
-        Object.keys(data).forEach((k) => {
-            if (typeof data[k] === 'string' && /[0-9],[0-9]/.test(data[k])) {
-                data[k] = data[k].replace(/,/g, '');
-            }
-        });
-        // Remove commas from monetary fields for calculation
-        const monetaryFieldNames = [
-            'property_value', 'gross_amount', 'net_amount', 
-            'day1_advance', 'legal_fees', 'site_visit_fee', 
-            'capital_repayment', 'flexible_payment'
-        ];
-        
-        monetaryFieldNames.forEach(fieldName => {
-            if (data[fieldName] && typeof data[fieldName] === 'string') {
-                data[fieldName] = data[fieldName].replace(/,/g, '');
-            }
-        });
-        
         // Handle special cases for amount input
         const amountInputType = document.querySelector('input[name="amount_input_type"]:checked').value;
         data.amount_input_type = amountInputType;
@@ -555,7 +430,8 @@ class LoanCalculator {
             
             // Scroll to results
             if (this.resultsSection) {
-}
+                this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }
             
             console.log('displayResults completed successfully');
         } catch (error) {
@@ -782,19 +658,6 @@ class LoanCalculator {
     }
 
     displayDetailedPaymentSchedule(results) {
-        // Hide payment schedule when Interest Retained is selected for Term or Bridge loans
-        try {
-            const loanTypeEl = document.getElementById('loanType');
-            const repaymentEl = document.getElementById('repaymentOption');
-            const loanType = loanTypeEl ? loanTypeEl.value : (results.loan_type || '');
-            const repayment = repaymentEl ? repaymentEl.value : (results.repayment_option || '');
-            const scheduleContainerEl = document.getElementById('detailedPaymentScheduleCard');
-            if ((loanType === 'term' || loanType === 'bridge') && repayment === 'none') {
-                if (scheduleContainerEl) scheduleContainerEl.style.display = 'none';
-                return; // don't render
-            }
-        } catch (e) { console.warn('Schedule visibility check failed:', e); }
-
         const scheduleContainer = document.getElementById('detailedPaymentScheduleCard');
         const scheduleBody = document.getElementById('detailedPaymentScheduleBody');
         
@@ -927,8 +790,11 @@ class LoanCalculator {
                 ];
             } else if (loanType === 'term') {
                 options = [
-                    { value: 'service_only', text: 'Serviced Interest (Interest Payments)' },
-                    { value: 'service_and_capital', text: 'Serviced + Capital Repayment (Principal & Interest)' }
+                    { value: 'none', text: 'Retained Interest (Interest Only)' },
+                    { value: 'service_only', text: 'Service Only (Interest Payments)' },
+                    { value: 'service_and_capital', text: 'Service + Capital (Principal & Interest)' },
+                    { value: 'capital_payment_only', text: 'Capital Payment Only (Interest Retained)' },
+                    { value: 'flexible_payment', text: 'Flexible Payment Schedule' }
                 ];
             } else if (loanType === 'development') {
                 options = [
@@ -953,105 +819,13 @@ class LoanCalculator {
             if (validOption) {
                 repaymentSelect.value = currentValue;
             } else {
-                // For term loans, default to 'service_only', otherwise default to first option
-                if (loanType === 'term') {
-                    repaymentSelect.value = 'service_only';
-                } else {
-                    repaymentSelect.value = options[0].value;
-                }
+                repaymentSelect.value = options[0].value; // Default to first option
             }
             
             console.log('Repayment options updated successfully');
-            
-            // Update 360-day option visibility
-            this.update360DayVisibility();
         } catch (error) {
             console.error('Error in updateRepaymentOptions:', error);
         }
-    }
-    
-    update360DayVisibility() {
-        try {
-            const loanTypeElement = document.getElementById('loanType');
-            const loanTermElement = document.getElementById('loanTerm');
-            const use360DaysSection = document.getElementById('use360DaysSection');
-            
-            if (!loanTypeElement || !loanTermElement || !use360DaysSection) {
-                return;
-            }
-            
-            const loanType = loanTypeElement.value;
-            const loanTerm = parseInt(loanTermElement.value) || 0;
-            
-            // Show 360-day option only for Bridge loans with 12 months or less
-            if (loanType === 'bridge' && loanTerm <= 12) {
-                use360DaysSection.style.display = 'block';
-            } else {
-                use360DaysSection.style.display = 'none';
-                // Uncheck the checkbox when hiding
-                const use360DaysCheckbox = document.getElementById('use360Days');
-                if (use360DaysCheckbox) {
-                    use360DaysCheckbox.checked = false;
-                }
-            }
-        } catch (error) {
-            console.error('Error in update360DayVisibility:', error);
-        }
-    }
-
-    setupImprovedInputFormatting() {
-        // List of monetary input field IDs that need comma formatting
-        const monetaryFields = [
-            'propertyValue',
-            'grossAmountFixed', 
-            'grossAmountPercentage',
-            'netAmountInput',
-            'day1Advance',
-            'legalFees',
-            'siteVisitFee',
-            'capitalRepayment',
-            'flexiblePayment',
-            'autoTotalAmount'
-        ];
-
-        monetaryFields.forEach(fieldId => {
-            const field = document.getElementById(fieldId);
-            if (field) {
-                // Format on blur only - never on focus to avoid clearing
-                field.addEventListener('blur', (e) => {
-                    this.safeFormatInputValue(e.target);
-                });
-            }
-        });
-    }
-
-    safeFormatInputValue(input) {
-        const originalValue = input.value;
-        
-        // Only proceed if there's actually a value
-        if (!originalValue || originalValue.trim() === '') {
-            return;
-        }
-        
-        // Remove existing commas and parse
-        const cleanValue = originalValue.replace(/,/g, '');
-        const numericValue = parseFloat(cleanValue);
-        
-        // Only format if it's a valid positive number
-        if (!isNaN(numericValue) && numericValue > 0) {
-            try {
-                const formattedValue = numericValue.toLocaleString('en-GB', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 2
-                });
-                input.value = formattedValue;
-            } catch (error) {
-                // If formatting fails, keep original value
-                console.warn('Number formatting failed:', error);
-                input.value = originalValue;
-            }
-        }
-        // For zero, negative, or invalid numbers, leave as typed
     }
 
     updateAdditionalParams() {
@@ -1996,12 +1770,14 @@ class LoanCalculator {
         };
 
         let chartConfig = {
-            type: 'doughnut', data: data, options: { maintainAspectRatio: false, layout: { padding: { right: 20, bottom: 20 } },   cutout: '60%', maintainAspectRatio: false, layout: { padding: { bottom: 36 } }, 
+            type: 'pie',
+            data: data,
+            options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: 'right', labels: { boxWidth: 10, padding: 8 },
+                        position: 'right',
                         labels: {
                             usePointStyle: true,
                             padding: 15,
@@ -2042,8 +1818,6 @@ class LoanCalculator {
             });
         }
 
-        if (ctx && ctx.parentNode) { ctx.parentNode.style.height = '460px'; }
-        if (ctx && ctx.canvas) { ctx.canvas.style.height = '420px'; ctx.canvas.style.display = 'block'; }
         this.charts.loanBreakdown = new Chart(ctx, chartConfig);
     }
 
@@ -2961,10 +2735,13 @@ function autoUpdateCharts() {
     }
 }
 
-// Calculator initialization is handled by the calculator.html template
-// Auto-update listeners are added after calculator initialization
-
-// === Prevent blur formatting for autoTotalAmount ===
-document.getElementById('autoTotalAmount')?.addEventListener('blur', function(e) {
-    e.stopImmediatePropagation(); // Block other blur handlers
-}, true); // capture phase to intercept early
+// Initialize calculator when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    window.loanCalculator = new LoanCalculator();
+    
+    // Add auto-update listeners after calculator is ready
+    setTimeout(() => {
+        addAutoUpdateListeners();
+        console.log('Auto-update listeners added for chart synchronization');
+    }, 500);
+});
