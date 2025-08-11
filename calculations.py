@@ -5205,10 +5205,25 @@ class LoanCalculator:
             daily_rate = annual_rate_decimal / Decimal('365')
             loan_term_days = loan_term * 30  # Fallback calculation
         
-        # Get user tranches - DO NOT create defaults if user hasn't specified any
-        user_tranches = tranches if tranches else []
-        logging.info(f"Using USER tranches: {len(user_tranches)} tranches provided")
-        
+        # Get user tranches - filter out any Day 1 entries (start date or month 1)
+        user_tranches = []
+        if tranches:
+            for t in tranches:
+                try:
+                    tranche_date_str = t.get('date')
+                    tranche_month = t.get('month')
+                    if tranche_date_str:
+                        tranche_date = datetime.strptime(tranche_date_str, '%Y-%m-%d')
+                        if tranche_date.date() == start_date.date():
+                            continue  # Skip Day 1 tranche; handled separately
+                    if tranche_month == 1:
+                        continue  # Also skip if explicitly marked as month 1
+                except Exception:
+                    pass
+                user_tranches.append(t)
+
+        logging.info(f"Using USER tranches: {len(user_tranches)} tranches provided after Day 1 filter")
+
         # DEBUG: Log the actual tranche data structure
         for i, tranche in enumerate(user_tranches):
             logging.info(f"DEBUG: Tranche {i+1}: {tranche}")
