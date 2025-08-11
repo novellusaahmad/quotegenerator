@@ -143,7 +143,12 @@ def generate_payment_schedule_csv(schedule: List[Dict], currency: str = 'GBP') -
     else:
         fieldnames = ["Month", "Payment", "Principal", "Interest", "Balance"]
     
-    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer = csv.DictWriter(
+        output,
+        fieldnames=fieldnames,
+        delimiter=',',
+        lineterminator='\n'
+    )
     writer.writeheader()
     
     symbol = '£' if currency == 'GBP' else '€' if currency == 'EUR' else '$'
