@@ -354,15 +354,26 @@ def api_calculate():
         capital_repayment = safe_float(data.get('capital_repayment'), 0)
         flexible_payment = safe_float(data.get('flexible_payment'), 0)
         
-        # Handle development loan tranches - CRITICAL FIX for user tranche input
-        tranches = data.get('tranches', data.get('user_tranches', []))
-        
+        # Handle development loan tranches
+        raw_tranches = data.get('tranches', [])
+        tranches = []
+        for idx, tranche in enumerate(raw_tranches, start=1):
+            tranches.append({
+                'amount': safe_float(tranche.get('amount'), 0),
+                'month': int(tranche.get('month', idx)),
+                'date': tranche.get('date'),
+                'rate': safe_float(tranche.get('rate'), 0),
+                'description': tranche.get('description', '')
+            })
+
         # Debug logging to see what tranches data we received
         import logging
         logging.info(f"ROUTES.PY TRANCHE DEBUG: Received {len(tranches)} tranches from API request")
         if tranches:
             for i, tranche in enumerate(tranches[:3]):  # Show first 3 for debugging
-                logging.info(f"  Tranche {i+1}: Amount=£{tranche.get('amount', 0):,.2f}, Date={tranche.get('date', 'N/A')}")
+                logging.info(
+                    f"  Tranche {i+1}: Amount=£{tranche.get('amount', 0):,.2f}, Date={tranche.get('date', 'N/A')}"
+                )
         
         # Day 1 advance for development loans - using safe conversion
         day1_advance = safe_float(data.get('day1_advance'), 0)

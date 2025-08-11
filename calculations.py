@@ -5967,15 +5967,17 @@ class LoanCalculator:
         for month in range(1, loan_term + 1):
             summary = monthly_summary[month]
             
-            # CRITICAL FIX: Check for user's tranche release for this month
-            user_tranche_release = 0
+            # Check for user's tranche release for this month
+            user_tranche_release = 0.0
             for tranche in user_tranches:
-                if tranche.get('month') == month:
+                if int(tranche.get('month', 0)) == month:
                     user_tranche_release = float(tranche.get('amount', 0))
                     break
-            
+
             # Use user's tranche release if available, otherwise use calculated amount
-            actual_tranche_release = user_tranche_release if user_tranche_release > 0 else summary['new_tranche_release']
+            actual_tranche_release = float(
+                user_tranche_release if user_tranche_release > 0 else summary['new_tranche_release']
+            )
             
             # Calculate total principal amounts
             total_principal_start = (day1_advance if month == 1 else float(day1_advance)) + (summary['progressive_balance'] - actual_tranche_release if month > 1 else 0)
