@@ -25,7 +25,7 @@ from snowflake_utils import (
     set_snowflake_config,
     sync_data_to_snowflake,
     test_snowflake_connection,
-
+    model_to_dict,
 )
 
 # Import Power BI and Scenario Comparison modules
