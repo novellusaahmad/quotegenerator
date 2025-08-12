@@ -437,9 +437,14 @@
 {% endblock %}
 
 {% block content %}
-<div class="">
-<h2><i class="fas fa-calculator me-2"></i>Loan Calculator</h2>
-<p class="text-muted">Calculate loan payments, interest, and generate detailed schedules</p>
+<div class="d-flex justify-content-between align-items-start">
+    <div>
+        <h2><i class="fas fa-calculator me-2"></i>Loan Calculator</h2>
+        <p class="text-muted">Calculate loan payments, interest, and generate detailed schedules</p>
+    </div>
+    <button type="button" class="btn btn-outline-secondary" id="refreshButton" onclick="window.location.reload();">
+        <i class="fas fa-sync-alt"></i> Refresh
+    </button>
 </div>
 <div class="row">
 <!-- Calculator Form -->
@@ -1003,56 +1008,68 @@
 </div>
 
 <div class="modal fade" id="loanBreakdownModal" tabindex="-1" aria-labelledby="loanBreakdownLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-fullscreen">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="loanBreakdownLabel">Loan Breakdown</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <canvas id="loanBreakdownChart"></canvas>
+        <canvas id="loanBreakdownChart" class="w-100" style="height:80vh;"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
 </div>
 
 <div class="modal fade" id="balanceModal" tabindex="-1" aria-labelledby="balanceLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-fullscreen">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="balanceLabel">Balance Over Time</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <canvas id="balanceOverTimeChart"></canvas>
+        <canvas id="balanceOverTimeChart" class="w-100" style="height:80vh;"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
 </div>
 
 <div class="modal fade" id="compoundInterestModal" tabindex="-1" aria-labelledby="compoundInterestLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-fullscreen">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="compoundInterestLabel">Compound Interest</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <canvas id="compoundInterestChart"></canvas>
+        <canvas id="compoundInterestChart" class="w-100" style="height:80vh;"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
 </div>
 
 <div class="modal fade" id="trancheModal" tabindex="-1" aria-labelledby="trancheLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-fullscreen">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="trancheLabel">Tranche Release</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <canvas id="trancheReleaseChart"></canvas>
+        <canvas id="trancheReleaseChart" class="w-100" style="height:80vh;"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
