@@ -596,6 +596,11 @@ class LoanCalculator {
             // Update percentage displays after results are shown
             console.log('Updating percentage displays...');
             this.updatePercentageDisplays();
+
+            const targetExitInput = document.getElementById('targetLTVExit');
+            if (targetExitInput && typeof results.endLTV !== 'undefined') {
+                targetExitInput.value = Number(results.endLTV).toFixed(2);
+            }
             this.calculateLTVSimulation(results);
             
             // Scroll to results
