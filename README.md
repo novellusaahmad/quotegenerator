@@ -314,7 +314,7 @@ The application stores data in PostgreSQL by default. To optionally sync data to
    ```http
    POST /api/snowflake/test
    ```
-3. Sync records in real time:
+
    ```http
    POST /api/snowflake/sync
    {

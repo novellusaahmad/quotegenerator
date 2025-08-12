@@ -1,3 +1,6 @@
+from datetime import date, datetime
+from decimal import Decimal
+
 from flask import current_app
 
 try:
@@ -80,3 +83,17 @@ def sync_data_to_snowflake(table: str, rows):
     finally:
         cs.close()
         conn.close()
+
+
+def model_to_dict(model) -> dict:
+    """Convert a SQLAlchemy model to a plain dict suitable for Snowflake."""
+    result = {}
+    for column in model.__table__.columns:  # type: ignore[attr-defined]
+        value = getattr(model, column.name)
+        if isinstance(value, Decimal):
+            value = float(value)
+        elif isinstance(value, (date, datetime)):
+            value = value.isoformat()
+        result[column.name] = value
+    return result
+
