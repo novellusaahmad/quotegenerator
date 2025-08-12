@@ -3438,9 +3438,22 @@ LoanCalculator.prototype.calculateLTVSimulation = function(results) {
     let totalCapital = 0;
     const schedule = [];
 
+    const repaymentOption = document.getElementById('repaymentOption')?.value;
+
     targets.forEach(t => {
         const targetBalance = propertyValue * (t.ltv / 100);
-        const months = t.month - prevMonth;
+        let months = t.month - prevMonth;
+
+        // Capital payment only loans retain full interest on day 1 and
+        // settle the remaining principal in the final period.  This means
+        // regular capital repayments occur in the months between those two
+        // events.  Reduce the month count accordingly so the calculated
+        // monthly capital brings the balance to the desired target.
+        if (repaymentOption === 'capital_payment_only') {
+            if (prevMonth === 0) months -= 1;       // skip day‑1 retained interest
+            if (t.month === loanTerm) months -= 1;  // exclude final balloon repayment
+        }
+
         const capitalNeeded = Math.max(0, balance - targetBalance);
         const monthlyCapital = months > 0 ? capitalNeeded / months : 0;
         schedule.push({start: prevMonth + 1, end: t.month, monthly: monthlyCapital});
@@ -3466,7 +3479,6 @@ LoanCalculator.prototype.calculateLTVSimulation = function(results) {
     }
 
     // Auto-populate repayment field when a single LTV target is provided
-    const repaymentOption = document.getElementById('repaymentOption')?.value;
     const amount = schedule[0]?.monthly || 0;
     if (schedule.length === 1) {
         if (repaymentOption === 'flexible_payment') {
