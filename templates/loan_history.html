@@ -123,13 +123,13 @@
 
 <!-- Loan Details Modal -->
 <div class="modal fade" id="loanDetailsModal" tabindex="-1" aria-labelledby="loanDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog" style="max-width: 95%; margin: 1rem auto; min-height: 80vh;">
-        <div class="modal-content" style="height: 90vh; overflow-y: auto;">
+    <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+        <div class="modal-content h-100">
             <div class="modal-header bg-novellus-navy text-white">
                 <h5 class="modal-title" id="loanDetailsModalLabel">Loan Details</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4" id="loanDetailsContent" style="max-height: 75vh; overflow-y: auto;">
+            <div class="modal-body p-0 overflow-auto" id="loanDetailsContent">
                 <div class="text-center py-4">
                     <div class="spinner-border text-novellus-gold" role="status">
                         <span class="visually-hidden">Loading...</span>

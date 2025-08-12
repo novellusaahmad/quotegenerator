@@ -303,6 +303,15 @@ body {
     font-weight: 600;
 }
 
+/* Fullscreen modal table support */
+.modal-fullscreen .modal-body {
+    padding: 0;
+}
+
+.modal-fullscreen .table {
+    width: 100%;
+}
+
 /* Footer */
 footer {
     margin-top: auto;
