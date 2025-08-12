@@ -133,11 +133,19 @@ PGDATA=$(sudo -u postgres psql -t -c "SHOW data_directory;" | tr -d ' \n')
 if [ -n "$PGDATA" ]; then
     if [ ! -f "$PGDATA/server.crt" ] || [ ! -f "$PGDATA/server.key" ]; then
         print_status "Generating self-signed certificate..."
+
+        CERT_DOMAIN="${POSTGRES_SSL_CN:-$(hostname -f 2>/dev/null || hostname)}"
+        if [ ${#CERT_DOMAIN} -gt 64 ]; then
+            print_warning "Hostname '${CERT_DOMAIN}' exceeds 64 characters; truncating for CN"
+        fi
+        CERT_CN="${CERT_DOMAIN:0:64}"
+
         sudo openssl req -x509 -nodes -days 365 \
             -newkey rsa:2048 \
             -keyout "$PGDATA/server.key" \
             -out "$PGDATA/server.crt" \
-            -subj "/CN=$(hostname -f 2>/dev/null || hostname)"
+            -subj "/CN=${CERT_CN}" \
+            -addext "subjectAltName=DNS:${CERT_DOMAIN}"
         sudo chown postgres:postgres "$PGDATA/server.key" "$PGDATA/server.crt"
         sudo chmod 600 "$PGDATA/server.key"
     else
