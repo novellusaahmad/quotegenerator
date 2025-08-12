@@ -702,14 +702,14 @@ class LoanCalculator {
             if (results.detailed_payment_schedule && results.detailed_payment_schedule.length > 0) {
                 const lastScheduleEntry = results.detailed_payment_schedule[results.detailed_payment_schedule.length - 1];
                 const closingBalanceRaw = lastScheduleEntry.closing_balance;
-                
+
                 // Handle both string and numeric closing balance values
                 let closingBalanceValue = 0;
                 console.log('End LTV closing balance debug:', {
                     type: typeof closingBalanceRaw,
                     value: closingBalanceRaw
                 });
-                
+
                 if (typeof closingBalanceRaw === 'number') {
                     closingBalanceValue = closingBalanceRaw;
                 } else if (typeof closingBalanceRaw === 'string') {
@@ -721,10 +721,27 @@ class LoanCalculator {
                 } else {
                     console.warn('End LTV: Unexpected closing balance type:', typeof closingBalanceRaw, closingBalanceRaw);
                 }
-                
+
                 if (closingBalanceValue > 0) {
                     endLTV = (closingBalanceValue / propertyValue) * 100;
                     console.log(`End LTV calculation: Final balance £${closingBalanceValue.toLocaleString()} / Property value £${propertyValue.toLocaleString()} = ${endLTV.toFixed(2)}%`);
+                } else if ((results.repayment_option === 'capital_payment_only' || results.repaymentOption === 'capital_payment_only') && lastScheduleEntry.opening_balance) {
+                    // For capital repayment only, the final schedule entry has closing balance 0.
+                    // Use the opening balance before the final payment to determine end LTV.
+                    const openingRaw = lastScheduleEntry.opening_balance;
+                    let openingValue = 0;
+                    if (typeof openingRaw === 'number') {
+                        openingValue = openingRaw;
+                    } else if (typeof openingRaw === 'string') {
+                        const openingMatch = openingRaw.match(/[\d,]+\.?\d*/);
+                        if (openingMatch) {
+                            openingValue = parseFloat(openingMatch[0].replace(/,/g, ''));
+                        }
+                    }
+                    if (openingValue > 0) {
+                        endLTV = (openingValue / propertyValue) * 100;
+                        console.log(`End LTV calculation (opening balance) £${openingValue.toLocaleString()} / Property value £${propertyValue.toLocaleString()} = ${endLTV.toFixed(2)}%`);
+                    }
                 }
             } else {
                 // Fallback to gross amount if no payment schedule available

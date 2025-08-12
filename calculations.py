@@ -395,6 +395,21 @@ class LoanCalculator:
                     closing_balance = Decimal(str(closing_balance_raw).replace('£', '').replace(',', ''))
                 except Exception:
                     closing_balance = Decimal('0')
+
+                # For capital_payment_only we want the LTV based on the
+                # outstanding balance *before* the final payment is applied.
+                # The detailed schedule sets the final closing balance to 0
+                # (after repayment plus any interest refund), which results in
+                # an end LTV of 0 even though there was an outstanding balance
+                # at the start of that period.  Use the opening balance of the
+                # final schedule entry when the closing balance is 0.
+                if repayment_option == 'capital_payment_only' and closing_balance == 0:
+                    opening_balance_raw = last_entry.get('opening_balance') or last_entry.get('openingBalance') or 0
+                    try:
+                        closing_balance = Decimal(str(opening_balance_raw).replace('£', '').replace(',', ''))
+                    except Exception:
+                        closing_balance = Decimal('0')
+
                 updated_end_ltv = float((closing_balance / property_value * 100)) if property_value > 0 else 0
                 calculation['endLTV'] = updated_end_ltv
                 calculation['endLtv'] = updated_end_ltv
@@ -690,6 +705,19 @@ class LoanCalculator:
                     closing_balance = Decimal(str(closing_balance_raw).replace('£', '').replace(',', ''))
                 except Exception:
                     closing_balance = Decimal('0')
+
+                # Mirror bridge loan logic: for capital_payment_only the final
+                # schedule entry has a closing balance of 0 after applying the
+                # last capital repayment (and any interest refund).  Use the
+                # opening balance of that entry to reflect the outstanding
+                # balance prior to repayment when calculating End LTV.
+                if repayment_option == 'capital_payment_only' and closing_balance == 0:
+                    opening_balance_raw = last_entry.get('opening_balance') or last_entry.get('openingBalance') or 0
+                    try:
+                        closing_balance = Decimal(str(opening_balance_raw).replace('£', '').replace(',', ''))
+                    except Exception:
+                        closing_balance = Decimal('0')
+
                 updated_end_ltv = float((closing_balance / property_value * 100)) if property_value > 0 else 0
                 calculation['endLTV'] = updated_end_ltv
                 calculation['endLtv'] = updated_end_ltv
