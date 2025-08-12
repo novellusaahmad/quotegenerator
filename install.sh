@@ -127,6 +127,38 @@ sudo -u postgres psql -c "CREATE USER novellus_user WITH PASSWORD 'novellus_secu
 sudo -u postgres psql -c "CREATE DATABASE novellus_loans OWNER novellus_user;"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE novellus_loans TO novellus_user;"
 
+# Configure SSL certificate for PostgreSQL
+print_status "Configuring PostgreSQL SSL certificate..."
+PGDATA=$(sudo -u postgres psql -t -c "SHOW data_directory;" | tr -d ' \n')
+if [ -n "$PGDATA" ]; then
+    if [ ! -f "$PGDATA/server.crt" ] || [ ! -f "$PGDATA/server.key" ]; then
+        print_status "Generating self-signed certificate..."
+        sudo openssl req -x509 -nodes -days 365 \
+            -newkey rsa:2048 \
+            -keyout "$PGDATA/server.key" \
+            -out "$PGDATA/server.crt" \
+            -subj "/CN=$(hostname -f 2>/dev/null || hostname)"
+        sudo chown postgres:postgres "$PGDATA/server.key" "$PGDATA/server.crt"
+        sudo chmod 600 "$PGDATA/server.key"
+    else
+        print_warning "Existing certificate found, skipping generation"
+    fi
+
+    PGCONF=$(sudo -u postgres psql -t -c "SHOW config_file;" | tr -d ' \n')
+    if [ -f "$PGCONF" ]; then
+        sudo sed -i "s/^#ssl = off/ssl = on/" "$PGCONF"
+        sudo sed -i "s/^#ssl_cert_file.*/ssl_cert_file = 'server.crt'/" "$PGCONF"
+        sudo sed -i "s/^#ssl_key_file.*/ssl_key_file = 'server.key'/" "$PGCONF"
+        print_status "SSL enabled in PostgreSQL configuration"
+    else
+        print_warning "PostgreSQL configuration file not found; SSL may not be enabled"
+    fi
+
+    sudo systemctl restart postgresql
+else
+    print_warning "Could not determine PostgreSQL data directory; skipping SSL setup"
+fi
+
 # Install Python dependencies
 print_status "Installing Python dependencies..."
 if [ -f "deploy_requirements.txt" ]; then
@@ -174,10 +206,15 @@ if python -c "import flask, psycopg2, pandas, numpy; from app import app; print(
     echo "- Database user: novellus_user"
     echo "- Virtual environment: ./venv"
     echo "- Configuration: .env file created"
+    echo "- SSL: Self-signed certificate installed for PostgreSQL"
     echo "============================================================"
     echo ""
     echo "To start the application, run:"
     echo "  ./start_clean.sh"
+    echo ""
+    echo "Power BI connection examples:"
+    echo "  SSL Enabled:  Server=[SERVER_IP];Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Require;Trust Server Certificate=true;"
+    echo "  SSL Disabled: Server=[SERVER_IP];Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Disable;"
     echo ""
 else
     print_error "Installation verification failed"
