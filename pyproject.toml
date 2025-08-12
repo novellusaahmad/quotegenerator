@@ -36,4 +36,5 @@ dependencies = [
     "chromedriver-autoinstaller>=0.6.4",
     "schedule>=1.2.2",
     "apscheduler>=3.11.0",
+    "snowflake-connector-python>=3.11.0",
 ]
