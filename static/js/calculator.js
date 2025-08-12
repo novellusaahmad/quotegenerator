@@ -1109,7 +1109,7 @@ class LoanCalculator {
             try {
                 const formattedValue = numericValue.toLocaleString('en-GB', {
                     minimumFractionDigits: 0,
-                    maximumFractionDigits: 2
+                    maximumFractionDigits: 4
                 });
                 input.value = formattedValue;
             } catch (error) {
@@ -3465,11 +3465,24 @@ LoanCalculator.prototype.calculateLTVSimulation = function(results) {
         });
     }
 
-    // Auto-populate capital repayment field when a single LTV target is provided
-    const capitalInput = document.getElementById('capitalRepayment');
-    if (capitalInput && schedule.length === 1) {
-        capitalInput.value = (schedule[0].monthly || 0).toFixed(2);
-        // Trigger input event so calculation updates immediately
-        capitalInput.dispatchEvent(new Event('input', { bubbles: true }));
+    // Auto-populate repayment field when a single LTV target is provided
+    const repaymentOption = document.getElementById('repaymentOption')?.value;
+    const amount = schedule[0]?.monthly || 0;
+    if (schedule.length === 1) {
+        if (repaymentOption === 'flexible_payment') {
+            const flexInput = document.getElementById('flexiblePayment');
+            if (flexInput) {
+                flexInput.value = amount.toFixed(4);
+                // Trigger input event so calculation updates immediately
+                flexInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        } else {
+            const capitalInput = document.getElementById('capitalRepayment');
+            if (capitalInput) {
+                capitalInput.value = amount.toFixed(4);
+                // Trigger input event so calculation updates immediately
+                capitalInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
     }
 };
