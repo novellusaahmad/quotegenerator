@@ -310,7 +310,14 @@ The application stores data in PostgreSQL by default. To optionally sync data to
      "schema": "<schema>"
    }
    ```
-2. Sync records in real time:
+2. Test the connection:
+   ```http
+   POST /api/snowflake/test
+   ```
+3. Save a loan calculation. The application will create the `loan_summary`
+   and `payment_schedule` tables if they don't exist and insert the saved
+   data automatically.
+4. (Optional) Manually sync arbitrary records:
    ```http
    POST /api/snowflake/sync
    {

@@ -169,19 +169,24 @@ fi
 
 # Install Python dependencies
 print_status "Installing Python dependencies..."
+# Install dependencies
 if [ -f "deploy_requirements.txt" ]; then
     pip install -r deploy_requirements.txt
 elif [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
 else
     # Install core dependencies with specific versions for compatibility
-    pip install "flask>=2.3.0" "flask-sqlalchemy>=3.0.0" "flask-login>=0.6.0" "flask-cors>=4.0.0" 
+    pip install "flask>=2.3.0" "flask-sqlalchemy>=3.0.0" "flask-login>=0.6.0" "flask-cors>=4.0.0"
     pip install "psycopg2-binary>=2.9.0" "python-dotenv>=1.0.0" "gunicorn>=21.0.0"
-    pip install "pandas>=2.0.0" "numpy>=1.24.0" "openpyxl>=3.1.0" "xlsxwriter>=3.1.0" 
+    pip install "pandas>=2.0.0" "numpy>=1.24.0" "openpyxl>=3.1.0" "xlsxwriter>=3.1.0"
     pip install "reportlab>=4.0.0" "python-docx>=0.8.11" "mammoth>=1.6.0"
     # WeasyPrint optional - may fail on some systems
     pip install weasyprint || print_warning "WeasyPrint installation failed, but system will work without it"
 fi
+
+# Install Snowflake connector for Snowflake testing feature
+print_status "Installing Snowflake connector..."
+pip install snowflake-connector-python
 
 # Create .env file
 print_status "Creating environment configuration..."
@@ -206,7 +211,7 @@ python database_init.py
 
 # Test installation
 print_status "Testing installation..."
-if python -c "import flask, psycopg2, pandas, numpy; from app import app; print('All dependencies imported successfully')"; then
+if python -c "import flask, psycopg2, pandas, numpy, snowflake.connector; from app import app; print('All dependencies imported successfully')"; then
     print_status "✅ Installation completed successfully!"
     echo ""
     echo "============================================================"

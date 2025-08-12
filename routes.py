@@ -21,7 +21,12 @@ from utils import (
     validate_quote_data, generate_payment_schedule_csv, format_currency,
     parse_currency_amount, generate_application_reference, validate_email
 )
-from snowflake_utils import set_snowflake_config, sync_data_to_snowflake
+from snowflake_utils import (
+    set_snowflake_config,
+    sync_data_to_snowflake,
+    test_snowflake_connection,
+    model_to_dict,
+)
 
 # Import Power BI and Scenario Comparison modules
 try:
@@ -1702,7 +1707,9 @@ def save_loan():
         
         db.session.add(loan_summary)
         db.session.flush()  # Get the ID
-        
+
+        snowflake_payments = []
+
         # Save payment schedule if available
         if 'detailed_payment_schedule' in fresh_calculation and fresh_calculation['detailed_payment_schedule']:
             for i, payment in enumerate(fresh_calculation['detailed_payment_schedule']):
@@ -1721,17 +1728,25 @@ def save_loan():
                         interest_calculation=payment.get('interest_calculation', '')
                     )
                     db.session.add(payment_record)
+                    snowflake_payments.append(model_to_dict(payment_record))
                 except Exception as pe:
                     app.logger.warning(f"Error saving payment {i+1}: {pe}")
                     continue
-        
+
         db.session.commit()
-        
+
+        try:
+            sync_data_to_snowflake('loan_summary', model_to_dict(loan_summary))
+            if snowflake_payments:
+                sync_data_to_snowflake('payment_schedule', snowflake_payments)
+        except Exception as se:
+            app.logger.warning(f"Snowflake sync failed: {se}")
+
         app.logger.info(f"Loan saved successfully: {loan_name}")
-        
+
         # Trigger Power BI refresh after successful save
         #trigger_powerbi_on_save()
-        
+
         return jsonify({
             'success': True,
             'message': f'Loan saved successfully as "{loan_name}"',
@@ -3243,6 +3258,18 @@ def configure_snowflake():
         return jsonify({'success': True})
     except Exception as e:
         app.logger.error(f"Snowflake config failed: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/snowflake/test', methods=['POST'])
+@cross_origin()
+def test_snowflake():
+    """Test the configured Snowflake connection."""
+    try:
+        test_snowflake_connection()
+        return jsonify({'success': True})
+    except Exception as e:
+        app.logger.error(f"Snowflake connection test failed: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
