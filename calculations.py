@@ -352,12 +352,13 @@ class LoanCalculator:
         
         # Date calculations already done above - use the calculated values
         
+        final_balance = Decimal(str(calculation.get('remainingBalance', gross_amount)))
         calculation.update({
             'grossAmount': float(gross_amount),
             'propertyValue': float(property_value),
             'ltv': float((gross_amount / property_value * 100)) if property_value > 0 else 0,
             'startLTV': float((gross_amount / property_value * 100)) if property_value > 0 else 0,
-            'endLTV': float((gross_amount / property_value * 100)) if property_value > 0 else 0,
+            'endLTV': float((final_balance / property_value * 100)) if property_value > 0 else 0,
             'currency': currency,
             'loanTerm': loan_term,
             'loanTermDays': loan_term_days,
@@ -1869,6 +1870,7 @@ class LoanCalculator:
         """Calculate bridge loan with flexible payments"""
         
         # If net_amount is provided, this is a net-to-gross conversion
+        remaining_balance = gross_amount
         if net_amount is not None:
             # For net-to-gross conversions with flexible payment, the gross amount has already been calculated
             # using the Excel formula for flexible payment (interest in advance), so just calculate interest based on that gross
@@ -1879,15 +1881,14 @@ class LoanCalculator:
             else:
                 term_years = Decimal(loan_term) / Decimal('12')
                 total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
-            
+
             import logging
             logging.info(f"Bridge loan flexible (net-to-gross) using Excel formula gross amount: gross={gross_amount:.2f}, total_interest={total_interest:.2f}")
         else:
             # Standard gross-to-net calculation with flexible payments
             # Use proper month-by-month calculation for declining balance
-            remaining_balance = gross_amount
             total_interest = Decimal('0')
-            
+
             # Use date-sensitive calculation if loan_term_days provided
             if loan_term_days is not None:
                 # Use configurable day count for term calculation
@@ -1898,7 +1899,7 @@ class LoanCalculator:
                 logging.info(f"Bridge flexible using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}, effective_monthly_rate={effective_monthly_rate:.4f}%")
             else:
                 effective_monthly_rate = annual_rate / Decimal('12')
-                
+
             # Apply interest calculation based on type
             for month in range(loan_term):
                 if interest_type == 'simple':
@@ -1924,12 +1925,12 @@ class LoanCalculator:
                 else:
                     # Default to simple interest
                     interest_payment = remaining_balance * (effective_monthly_rate / 100)
-                
+
                 total_interest += interest_payment
-                
+
                 principal_payment = max(Decimal('0'), flexible_payment - interest_payment)
                 remaining_balance -= principal_payment
-                
+
                 if remaining_balance <= 0:
                     break
         
@@ -1977,7 +1978,7 @@ class LoanCalculator:
         net_advance = gross_amount
         
         logging.info(f"Bridge flexible: gross={gross_amount}, net_advance={net_advance} (no fee deduction)")
-        
+
         return {
             'monthlyPayment': float(flexible_payment),
             'totalInterest': float(total_interest),
@@ -1985,7 +1986,8 @@ class LoanCalculator:
             'netAdvance': float(net_advance),
             'interestSavings': float(interest_savings),
             'savingsPercentage': float(savings_percentage),
-            'interestOnlyTotal': float(interest_only_total)
+            'interestOnlyTotal': float(interest_only_total),
+            'remainingBalance': float(remaining_balance)
         }
     
     def _calculate_bridge_capital_only(self, gross_amount: Decimal, annual_rate: Decimal,
