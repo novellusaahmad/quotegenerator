@@ -297,6 +297,7 @@ The system can be containerized using the provided Python dependencies and SQLit
 
 The application stores data in PostgreSQL by default. To optionally sync data to Snowflake:
 
+
 1. Configure the connection:
    ```http
    POST /api/snowflake/config

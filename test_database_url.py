@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""
-Simple test script to validate DATABASE_URL format
-"""
+"""Simple test script to validate ``DATABASE_URL`` format."""
+
 import os
 import sys
+
+import pytest
+
+sqlalchemy = pytest.importorskip("sqlalchemy")
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 
