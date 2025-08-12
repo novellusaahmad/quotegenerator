@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import datetime, timedelta
-from flask import render_template, request, redirect, url_for, flash, jsonify, session, send_file, make_response
+from flask import render_template, request, redirect, url_for, flash, jsonify, session, send_file, make_response, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_cors import cross_origin
 from werkzeug.utils import secure_filename
@@ -3245,15 +3245,28 @@ def export_scenario_comparison():
         }), 500
 
 
-@app.route('/api/snowflake/config', methods=['POST'])
+@app.route('/api/snowflake/config', methods=['GET', 'POST', 'DELETE'])
 @cross_origin()
 def configure_snowflake():
     """Configure Snowflake connection from frontend."""
     try:
+        if request.method == 'GET':
+            cfg = current_app.config.get('SNOWFLAKE_CONFIG', {})
+            return jsonify({'config': cfg})
+
+        if request.method == 'DELETE':
+            current_app.config.pop('SNOWFLAKE_CONFIG', None)
+            return jsonify({'success': True})
+
         config = request.json or {}
-        required = ['user', 'password', 'account']
-        if not all(k in config for k in required):
+        method = config.get('method', 'password')
+        if method == 'token':
+            required = ['token', 'account']
+        else:
+            required = ['user', 'password', 'account']
+        if not all(config.get(k) for k in required):
             return jsonify({'success': False, 'error': 'Missing required Snowflake parameters'}), 400
+        config['method'] = method
         set_snowflake_config(config)
         return jsonify({'success': True})
     except Exception as e:
