@@ -62,6 +62,16 @@
                                 <i class="fas fa-bookmark me-1"></i>Saved Settings
                             </button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="snowflake-tab" data-bs-toggle="tab" data-bs-target="#snowflake-panel" type="button" role="tab">
+                                <i class="fas fa-database me-1"></i>Snowflake Config
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="snowflake-log-tab" data-bs-toggle="tab" data-bs-target="#snowflake-log-panel" type="button" role="tab">
+                                <i class="fas fa-list me-1"></i>Snowflake Logs
+                            </button>
+                        </li>
                     </ul>
                 </div>
                 <div class="card-body p-0">
@@ -281,19 +291,77 @@
                         </div>
 
                         <!-- Saved Settings Panel -->
-                        <div class="tab-pane fade" id="settings-panel" role="tabpanel">
-                            <div class="p-3">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <span class="fw-semibold text-secondary">Saved Configurations</span>
+                          <div class="tab-pane fade" id="settings-panel" role="tabpanel">
+                              <div class="p-3">
+                                  <div class="d-flex justify-content-between align-items-center mb-3">
+                                      <span class="fw-semibold text-secondary">Saved Configurations</span>
                                     <button type="button" class="btn btn-sm btn-dark" onclick="clearSavedSettings()" id="clearSettingsBtn">
                                         <i class="fas fa-trash me-1"></i>Clear All
                                     </button>
                                 </div>
-                                <div id="savedSettingsContainer" class="border rounded p-3 bg-light">
-                                    <div class="text-center py-3 text-muted">
-                                        <i class="fas fa-bookmark fa-2x mb-2 opacity-50"></i>
-                                        <p class="mb-0 small">No saved settings</p>
+                                  <div id="savedSettingsContainer" class="border rounded p-3 bg-light">
+                                      <div class="text-center py-3 text-muted">
+                                          <i class="fas fa-bookmark fa-2x mb-2 opacity-50"></i>
+                                          <p class="mb-0 small">No saved settings</p>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                        <!-- Snowflake Config Panel -->
+                        <div class="tab-pane fade" id="snowflake-panel" role="tabpanel">
+                            <div class="p-3">
+                                <form id="snowflakeForm" autocomplete="off">
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-semibold text-secondary">User</label>
+                                            <input type="text" class="form-control form-control-sm" id="sfUser" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-semibold text-secondary">Password</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="password" class="form-control" id="sfPassword" required>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('sfPassword', this)">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-semibold text-secondary">Account</label>
+                                            <input type="text" class="form-control form-control-sm" id="sfAccount" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-semibold text-secondary">Warehouse</label>
+                                            <input type="text" class="form-control form-control-sm" id="sfWarehouse">
+                                        </div>
+                                    </div>
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-semibold text-secondary">Database</label>
+                                            <input type="text" class="form-control form-control-sm" id="sfDatabase">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-semibold text-secondary">Schema</label>
+                                            <input type="text" class="form-control form-control-sm" id="sfSchema">
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <button type="button" class="btn btn-sm btn-dark" onclick="saveSnowflakeConfig()">
+                                            <i class="fas fa-save me-1"></i>Save
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <!-- Snowflake Log Panel -->
+                        <div class="tab-pane fade" id="snowflake-log-panel" role="tabpanel">
+                            <div class="p-3">
+                                <pre id="snowflakeLogContainer" class="small bg-light p-2 rounded mb-2"></pre>
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-sm btn-dark" onclick="loadSnowflakeLogs()">
+                                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -2622,6 +2690,58 @@ function refreshAllReports() {
     // Start the refresh chain
     refreshNext();
 }
+
+function saveSnowflakeConfig() {
+    const payload = {
+        user: document.getElementById('sfUser').value.trim(),
+        password: document.getElementById('sfPassword').value.trim(),
+        account: document.getElementById('sfAccount').value.trim(),
+        warehouse: document.getElementById('sfWarehouse').value.trim(),
+        database: document.getElementById('sfDatabase').value.trim(),
+        schema: document.getElementById('sfSchema').value.trim()
+    };
+    if (!payload.user || !payload.password || !payload.account) {
+        showNotification('User, password and account are required', 'error');
+        return;
+    }
+
+    fetch('/api/snowflake/config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Snowflake configuration saved', 'success');
+        } else {
+            showNotification(`Failed to save Snowflake config: ${data.error}`, 'error');
+        }
+    })
+    .catch(err => {
+        showNotification(`Failed to save Snowflake config: ${err.message}`, 'error');
+    });
+}
+
+function loadSnowflakeLogs() {
+    fetch('/api/snowflake/logs')
+        .then(resp => resp.json())
+        .then(data => {
+            const container = document.getElementById('snowflakeLogContainer');
+            if (data.success) {
+                container.textContent = data.logs.join('\n') || 'No logs yet';
+            } else {
+                container.textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(err => {
+            document.getElementById('snowflakeLogContainer').textContent = `Error: ${err.message}`;
+        });
+}
+
+document.getElementById('snowflake-log-tab').addEventListener('shown.bs.tab', loadSnowflakeLogs);
 
 // Enhanced clear form to handle saved settings
 function clearSavedSettings() {

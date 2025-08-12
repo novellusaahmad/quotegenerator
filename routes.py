@@ -21,6 +21,12 @@ from utils import (
     validate_quote_data, generate_payment_schedule_csv, format_currency,
     parse_currency_amount, generate_application_reference, validate_email
 )
+from snowflake_utils import (
+    set_snowflake_config,
+    sync_data_to_snowflake,
+    get_snowflake_logs,
+    append_snowflake_log,
+)
 
 # Import Power BI and Scenario Comparison modules
 try:
@@ -3220,12 +3226,56 @@ def export_scenario_comparison():
             'success': True,
             'export_data': export_data
         })
-        
+
     except Exception as e:
         app.logger.error(f"Scenario comparison export failed: {str(e)}")
         return jsonify({
             'success': False,
             'error': str(e)
         }), 500
+
+
+@app.route('/api/snowflake/config', methods=['POST'])
+@cross_origin()
+def configure_snowflake():
+    """Configure Snowflake connection from frontend."""
+    try:
+        config = request.json or {}
+        required = ['user', 'password', 'account']
+        if not all(k in config for k in required):
+            append_snowflake_log('Config failed: missing required parameters')
+            return jsonify({'success': False, 'error': 'Missing required Snowflake parameters'}), 400
+        set_snowflake_config(config)
+        return jsonify({'success': True})
+    except Exception as e:
+        append_snowflake_log(f'Config failed: {str(e)}')
+        app.logger.error(f"Snowflake config failed: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/snowflake/sync', methods=['POST'])
+@cross_origin()
+def snowflake_sync():
+    """Sync provided data to Snowflake."""
+    try:
+        payload = request.json or {}
+        table = payload.get('table')
+        data = payload.get('data')
+        if not table or data is None:
+            append_snowflake_log('Sync failed: missing table or data')
+            return jsonify({'success': False, 'error': 'Missing table or data'}), 400
+        sync_data_to_snowflake(table, data)
+        return jsonify({'success': True})
+    except Exception as e:
+        append_snowflake_log(f'Sync failed: {str(e)}')
+        app.logger.error(f"Snowflake sync failed: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/snowflake/logs')
+@cross_origin()
+def snowflake_logs():
+    """Return accumulated Snowflake synchronization logs."""
+    return jsonify({'success': True, 'logs': get_snowflake_logs()})
 
 

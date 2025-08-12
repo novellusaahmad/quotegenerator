@@ -43,6 +43,11 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = False
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
 app.config["UPLOAD_FOLDER"] = "uploads"
 
+# Snowflake configuration placeholder
+app.config["SNOWFLAKE_CONFIG"] = None
+# In-memory log storage for Snowflake sync operations
+app.config["SNOWFLAKE_SYNC_LOGS"] = []
+
 # Initialize extensions
 db = SQLAlchemy(model_class=Base)
 db.init_app(app)
