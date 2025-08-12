@@ -100,6 +100,7 @@ class LoanCalculator {
             this.updateRepaymentOptions();
             this.updateAdditionalParams();
             this.updateAutoTotalAmount();
+            this.initializeLTVTargetControls();
             // Calculate initial end date based on default values
             setTimeout(() => {
                 try {
@@ -595,6 +596,7 @@ class LoanCalculator {
             // Update percentage displays after results are shown
             console.log('Updating percentage displays...');
             this.updatePercentageDisplays();
+            this.calculateLTVSimulation(results);
             
             // Scroll to results
             if (this.resultsSection) {
@@ -1164,6 +1166,18 @@ class LoanCalculator {
                     showAdditionalParams = true;
                 } else {
                     flexiblePaymentSection.style.display = 'none';
+                }
+            }
+
+            // Show LTV simulation section for bridge/term with applicable repayment options
+            const ltvSection = document.getElementById('ltvSimulationSection');
+            if (ltvSection) {
+                if ((loanType === 'bridge' || loanType === 'term') &&
+                    (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment')) {
+                    ltvSection.style.display = 'block';
+                    showAdditionalParams = true;
+                } else {
+                    ltvSection.style.display = 'none';
                 }
             }
             
@@ -3320,3 +3334,112 @@ function autoUpdateCharts() {
 document.getElementById('autoTotalAmount')?.addEventListener('blur', function(e) {
     e.stopImmediatePropagation(); // Block other blur handlers
 }, true); // capture phase to intercept early
+
+// === LTV Targeting Simulation Helpers ===
+LoanCalculator.prototype.initializeLTVTargetControls = function() {
+    const checkbox = document.getElementById('ltvTargetCheckbox');
+    const inputsSection = document.getElementById('ltvTargetInputs');
+    if (!checkbox) return;
+
+    checkbox.addEventListener('change', () => {
+        if (inputsSection) inputsSection.style.display = checkbox.checked ? 'block' : 'none';
+        if (checkbox.checked) {
+            this.calculateLTVSimulation(this.currentResults || {});
+        }
+    });
+
+    document.getElementById('targetLTVExit')?.addEventListener('input', () => {
+        this.calculateLTVSimulation(this.currentResults || {});
+    });
+
+    const list = document.getElementById('progressiveLTVList');
+    document.getElementById('addLTVTarget')?.addEventListener('click', () => {
+        if (!list) return;
+        const row = document.createElement('div');
+        row.className = 'row g-2 align-items-center ltv-progressive-row mb-2';
+        row.innerHTML = `
+            <div class="col-5"><input type="number" class="form-control ltv-month" min="1" placeholder="Month"></div>
+            <div class="col-5">
+                <div class="input-group">
+                    <input type="number" class="form-control ltv-percent" min="0" max="100" step="0.01" placeholder="LTV %">
+                    <span class="input-group-text">%</span>
+                </div>
+            </div>
+            <div class="col-2"><button type="button" class="btn btn-outline-danger btn-sm remove-ltv-target">&times;</button></div>`;
+        list.appendChild(row);
+    });
+
+    list?.addEventListener('input', () => {
+        this.calculateLTVSimulation(this.currentResults || {});
+    });
+
+    list?.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-ltv-target')) {
+            e.target.closest('.ltv-progressive-row')?.remove();
+            this.calculateLTVSimulation(this.currentResults || {});
+        }
+    });
+};
+
+LoanCalculator.prototype.calculateLTVSimulation = function(results) {
+    const checkbox = document.getElementById('ltvTargetCheckbox');
+    if (!checkbox || !checkbox.checked) return;
+
+    const propertyValue = parseFloat(results.propertyValue || document.getElementById('propertyValue')?.value || 0);
+    const grossAmount = parseFloat(results.grossAmount || document.getElementById('grossAmountFixed')?.value || 0);
+    const loanTerm = parseInt(results.loanTerm || document.getElementById('loanTerm')?.value || 0);
+    if (!propertyValue || !grossAmount || !loanTerm) return;
+
+    let targets = [];
+    const exitVal = parseFloat(document.getElementById('targetLTVExit')?.value);
+    if (!isNaN(exitVal)) {
+        targets.push({month: loanTerm, ltv: exitVal});
+    }
+
+    document.querySelectorAll('.ltv-progressive-row').forEach(row => {
+        const month = parseInt(row.querySelector('.ltv-month').value);
+        const ltv = parseFloat(row.querySelector('.ltv-percent').value);
+        if (!isNaN(month) && !isNaN(ltv) && month > 0 && month <= loanTerm) {
+            targets.push({month, ltv});
+        }
+    });
+
+    if (targets.length === 0) return;
+
+    targets.sort((a,b) => a.month - b.month);
+    if (!targets.some(t => t.month === loanTerm) && !isNaN(exitVal)) {
+        targets.push({month: loanTerm, ltv: exitVal});
+    }
+
+    let prevMonth = 0;
+    let balance = grossAmount;
+    let totalCapital = 0;
+    const schedule = [];
+
+    targets.forEach(t => {
+        const targetBalance = propertyValue * (t.ltv / 100);
+        const months = t.month - prevMonth;
+        const capitalNeeded = Math.max(0, balance - targetBalance);
+        const monthlyCapital = months > 0 ? capitalNeeded / months : 0;
+        schedule.push({start: prevMonth + 1, end: t.month, monthly: monthlyCapital});
+        totalCapital += capitalNeeded;
+        balance = targetBalance;
+        prevMonth = t.month;
+    });
+
+    const currencyCode = results.currency || document.getElementById('currency')?.value || 'GBP';
+    const totalEl = document.getElementById('ltvTotalCapital');
+    if (totalEl) {
+        totalEl.textContent = Novellus.utils.formatCurrency(totalCapital, currencyCode);
+    }
+
+    const scheduleContainer = document.getElementById('ltvCapitalSchedule');
+    if (scheduleContainer) {
+        scheduleContainer.innerHTML = '';
+        schedule.forEach(seg => {
+            const p = document.createElement('p');
+            p.textContent = `Months ${seg.start}-${seg.end}: ${Novellus.utils.formatCurrency(seg.monthly, currencyCode)} per month`;
+            scheduleContainer.appendChild(p);
+        });
+    }
+};
