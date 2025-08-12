@@ -3,10 +3,18 @@
 {% block title %}Loan Calculator – Compact Layout{% endblock %}
 
 {% block head %}
+<link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
+<link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet"/>
 <style>
     :root{
-      --bg:#f6f7f9; --card:#ffffff; --ink:#111827; --muted:#6b7280; --brand:#8b7a4c;
-      --line:#e5e7eb; --ring:#d1d5db; --ok:#16a34a; --warn:#d97706; --err:#dc2626;
+      --bg: var(--novellus-background);
+      --card: var(--novellus-card-bg);
+      --ink: var(--novellus-text);
+      --muted: var(--novellus-text-muted);
+      --brand: var(--novellus-gold);
+      --line: var(--novellus-border);
+      --ring: var(--novellus-border);
+      --ok:#16a34a; --warn:#d97706; --err:#dc2626;
       --radius:14px;
     }
     *{box-sizing:border-box}
@@ -26,13 +34,13 @@
     }
     .step{
       display:flex; align-items:center; gap:8px; padding:10px 12px;
-      border-radius:999px; background:#fff; border:1px solid var(--line);
+      border-radius:999px; background:var(--card); border:1px solid var(--line);
       color:var(--muted);
     }
     .step[data-active="true"]{border-color:var(--brand); color:var(--ink); box-shadow:0 0 0 3px rgba(139,122,76,.08)}
     .step .dot{
       width:22px;height:22px; display:grid; place-items:center; font-weight:600;
-      border-radius:50%; background:#f2f0e6; color:#5c5133;
+      border-radius:50%; background:var(--novellus-gold-lightest); color:var(--novellus-gold-darker);
     }
 
     /* Layout: form + summary */
@@ -57,23 +65,23 @@
 
     input, select, textarea{
       width:100%; padding:10px 12px; border:1px solid var(--ring); border-radius:10px;
-      background:#fff; outline:none;
+      background:var(--card); outline:none;
     }
     input:focus, select:focus, textarea:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(139,122,76,.12)}
 
     .seg{
-      display:grid; grid-template-columns:1fr 1fr; background:#f3f4f6; border-radius:9px; padding:4px;
+      display:grid; grid-template-columns:1fr 1fr; background:var(--novellus-hover); border-radius:9px; padding:4px;
     }
     .seg button{
       border:0; background:transparent; padding:8px; border-radius:7px; cursor:pointer; font-weight:600;
     }
-    .seg button[aria-pressed="true"]{background:#fff; border:1px solid var(--ring)}
+    .seg button[aria-pressed="true"]{background:var(--card); border:1px solid var(--ring)}
 
     .actions{
       display:flex; gap:8px; justify-content:flex-end; padding:14px 16px; border-top:1px solid var(--line)
     }
     .btn{
-      border:1px solid var(--line); background:#fff; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600;
+      border:1px solid var(--line); background:var(--card); padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600;
     }
     .btn.primary{background:var(--brand); color:#fff; border-color:var(--brand)}
     .btn:disabled{opacity:.55; cursor:not-allowed}
@@ -90,15 +98,15 @@
       display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px 12px;
     }
     .kpi .pill{
-      background:#f2f7f2; border:1px solid #def3df; padding:10px; border-radius:10px; text-align:center;
+      background:var(--novellus-background); border:1px solid var(--novellus-border); padding:10px; border-radius:10px; text-align:center;
     }
 
     /* Table */
     .table-wrap{max-height:260px; overflow:auto; border:1px solid var(--line); border-radius:10px}
-    table{width:100%; border-collapse:collapse; font-size:13px; background:#fff}
-    thead th{position:sticky; top:0; background:#f9fafb; border-bottom:1px solid var(--line); text-align:left; padding:10px}
+    table{width:100%; border-collapse:collapse; font-size:13px; background:var(--card)}
+    thead th{position:sticky; top:0; background:var(--novellus-hover); border-bottom:1px solid var(--line); text-align:left; padding:10px}
     tbody td{border-bottom:1px solid var(--line); padding:8px}
-    tbody tr:hover{background:#fafafa}
+    tbody tr:hover{background:var(--novellus-hover)}
 
     /* Collapsible (details) */
     details{border:1px dashed var(--line); border-radius:10px; padding:8px 10px}
