@@ -254,6 +254,14 @@ fi
 # Get server IP for Power BI connection info
 SERVER_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "localhost")
 
+# Detect PostgreSQL SSL certificate
+PGDATA=$(sudo -u postgres psql -t -c "SHOW data_directory;" 2>/dev/null | tr -d ' \n')
+if [ -f "$PGDATA/server.crt" ]; then
+    print_status "PostgreSQL SSL certificate detected"
+else
+    print_warning "No PostgreSQL SSL certificate found - Power BI may require 'SSL Mode=Disable'"
+fi
+
 # Display startup information with environment-specific Power BI details
 echo ""
 echo "============================================================"
