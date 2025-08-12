@@ -284,6 +284,12 @@ def calculator_wizard_page():
     """Wizard-based loan calculator page"""
     return render_template('calculator_wizard.html')
 
+
+@app.route('/calculator-compact')
+def calculator_compact_page():
+    """Loan calculator page with compact layout"""
+    return render_template('calculator_compact.html')
+
 @app.route('/api/calculate', methods=['POST'])
 def api_calculate():
     """API endpoint for loan calculations"""
