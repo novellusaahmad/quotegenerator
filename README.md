@@ -297,8 +297,6 @@ The system can be containerized using the provided Python dependencies and SQLit
 
 The application stores data in PostgreSQL by default. To optionally sync data to Snowflake:
 
-- Use the **Snowflake Config** tab on the Power BI Configuration page to enter connection details from the UI.
-- Or interact directly with the API:
 
 1. Configure the connection:
    ```http
