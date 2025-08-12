@@ -50,6 +50,9 @@ def test_capital_payment_only_end_ltv():
     result = calc.calculate_bridge_loan(params)
     assert result['startLTV'] == pytest.approx(50.0)
     assert result['endLTV'] == pytest.approx(0.0)
+    # Alias fields should mirror the primary LTV values
+    assert result['startLtv'] == pytest.approx(result['startLTV'])
+    assert result['endLtv'] == pytest.approx(result['endLTV'])
 
 
 def test_flexible_payment_end_ltv_matches_schedule():
@@ -73,3 +76,5 @@ def test_flexible_payment_end_ltv_matches_schedule():
     closing_balance = parse_currency(last.get('closing_balance') or last.get('closingBalance'))
     expected_end_ltv = float((closing_balance / Decimal('200000')) * 100)
     assert result['endLTV'] == pytest.approx(expected_end_ltv)
+    # Ensure camelCase alias is also updated
+    assert result['endLtv'] == pytest.approx(expected_end_ltv)
