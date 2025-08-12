@@ -2,9 +2,11 @@ import types
 import sys
 from calculations import LoanCalculator
 
-# Stub numpy.linspace to avoid external dependency
+# Stub numpy.linspace and isscalar to avoid external dependency
 sys.modules['numpy'] = types.SimpleNamespace(
-    linspace=lambda start, stop, num: [start + (stop - start) * i / (num - 1) for i in range(num)]
+    linspace=lambda start, stop, num: [start + (stop - start) * i / (num - 1) for i in range(num)],
+    isscalar=lambda obj: isinstance(obj, (int, float)),
+    bool_=bool
 )
 
 # Stub dateutil.relativedelta with minimal month addition

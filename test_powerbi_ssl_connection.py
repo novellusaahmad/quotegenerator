@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""
-Test script to diagnose Power BI SSL connection issues
-"""
+"""Test script to diagnose Power BI SSL connection issues."""
 
 import os
 import socket
-import psycopg2
+
+import pytest
+
+psycopg2 = pytest.importorskip("psycopg2")
 
 def print_header(text):
     print(f"\n{'='*60}")
