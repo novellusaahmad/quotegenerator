@@ -3459,4 +3459,12 @@ LoanCalculator.prototype.calculateLTVSimulation = function(results) {
             scheduleContainer.appendChild(p);
         });
     }
+
+    // Auto-populate capital repayment field when a single LTV target is provided
+    const capitalInput = document.getElementById('capitalRepayment');
+    if (capitalInput && schedule.length === 1) {
+        capitalInput.value = (schedule[0].monthly || 0).toFixed(2);
+        // Trigger input event so calculation updates immediately
+        capitalInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
 };
