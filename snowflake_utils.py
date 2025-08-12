@@ -20,6 +20,19 @@ def _get_snowflake_connection():
         return None
     if snowflake_connector is None:
         raise RuntimeError("snowflake-connector-python is not installed")
+    if cfg.get("method") == "token":
+        token = cfg.get("token")
+        if token and token.lower().startswith("bearer "):
+            token = token.split(None, 1)[1]
+        return snowflake_connector.connect(
+            user=cfg.get("user"),
+            account=cfg.get("account"),
+            warehouse=cfg.get("warehouse"),
+            database=cfg.get("database"),
+            schema=cfg.get("schema"),
+            token=token,
+            authenticator="oauth",
+        )
     return snowflake_connector.connect(
         user=cfg.get("user"),
         password=cfg.get("password"),
