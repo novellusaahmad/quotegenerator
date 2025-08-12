@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Loan Calculator Wizard - Novellus{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
+<style>
+  .form-step { display: none; }
+  .form-step.active { display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4">Loan Calculator Wizard</h1>
+  <form id="wizardForm">
+    <!-- Step 1: Loan Details -->
+    <div class="form-step active" data-step="1">
+      <h4 class="mb-3">Loan Details</h4>
+      <div class="mb-3">
+        <label for="loanName" class="form-label">Loan Name</label>
+        <input type="text" class="form-control" id="loanName" required>
+      </div>
+      <div class="mb-3">
+        <label for="loanType" class="form-label">Loan Type</label>
+        <select id="loanType" class="form-select" required>
+          <option value="bridge">Bridge Loan</option>
+          <option value="term">Term Loan</option>
+          <option value="development">Development Loan</option>
+        </select>
+      </div>
+      <div class="d-flex justify-content-end">
+        <button type="button" class="btn btn-primary next-step">Next</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Amounts -->
+    <div class="form-step" data-step="2">
+      <h4 class="mb-3">Amounts</h4>
+      <div class="mb-3">
+        <label for="propertyValue" class="form-label">Property Value</label>
+        <input type="number" class="form-control" id="propertyValue" required>
+      </div>
+      <div class="mb-3">
+        <label for="grossAmount" class="form-label">Gross Amount</label>
+        <input type="number" class="form-control" id="grossAmount" required>
+      </div>
+      <div class="d-flex justify-content-between">
+        <button type="button" class="btn btn-secondary prev-step">Back</button>
+        <button type="button" class="btn btn-primary next-step">Next</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Rates & Term -->
+    <div class="form-step" data-step="3">
+      <h4 class="mb-3">Rates & Term</h4>
+      <div class="mb-3">
+        <label for="interestRate" class="form-label">Annual Interest Rate (%)</label>
+        <input type="number" class="form-control" id="interestRate" required>
+      </div>
+      <div class="mb-3">
+        <label for="termMonths" class="form-label">Term (months)</label>
+        <input type="number" class="form-control" id="termMonths" required>
+      </div>
+      <div class="d-flex justify-content-between">
+        <button type="button" class="btn btn-secondary prev-step">Back</button>
+        <button type="submit" class="btn btn-success">Calculate</button>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/calculator_wizard.js') }}"></script>
+{% endblock %}
