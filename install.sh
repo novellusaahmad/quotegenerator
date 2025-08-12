@@ -133,11 +133,20 @@ PGDATA=$(sudo -u postgres psql -t -c "SHOW data_directory;" | tr -d ' \n')
 if [ -n "$PGDATA" ]; then
     if [ ! -f "$PGDATA/server.crt" ] || [ ! -f "$PGDATA/server.key" ]; then
         print_status "Generating self-signed certificate..."
+
+        DEFAULT_CERT_DOMAIN="airbyte.uksouth.cloudapp.azure.com"
+        CERT_DOMAIN="${POSTGRES_SSL_CN:-$DEFAULT_CERT_DOMAIN}"
+        if [ ${#CERT_DOMAIN} -gt 64 ]; then
+            print_warning "Provided hostname '${CERT_DOMAIN}' exceeds 64 characters; truncating for CN"
+        fi
+        CERT_CN="${CERT_DOMAIN:0:64}"
+
         sudo openssl req -x509 -nodes -days 365 \
             -newkey rsa:2048 \
             -keyout "$PGDATA/server.key" \
             -out "$PGDATA/server.crt" \
-            -subj "/CN=$(hostname -f 2>/dev/null || hostname)"
+            -subj "/CN=${CERT_CN}" \
+            -addext "subjectAltName=DNS:${CERT_DOMAIN}"
         sudo chown postgres:postgres "$PGDATA/server.key" "$PGDATA/server.crt"
         sudo chmod 600 "$PGDATA/server.key"
     else
@@ -178,7 +187,8 @@ fi
 # Create .env file
 print_status "Creating environment configuration..."
 cat > .env << EOF
-DATABASE_URL=postgresql://novellus_user:novellus_secure_2025@localhost/novellus_loans
+DATABASE_URL=postgresql://novellus_user:novellus_secure_2025@localhost/novellus_loans?sslmode=require
+PG_SSLMODE=require
 SESSION_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 FLASK_ENV=production
 FLASK_DEBUG=False
