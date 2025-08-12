@@ -27,6 +27,20 @@ def _get_snowflake_connection():
     )
 
 
+def test_snowflake_connection() -> None:
+    """Attempt to connect to Snowflake using current configuration.
+
+    Raises
+    ------
+    RuntimeError
+        If the connection configuration is missing or the connection fails.
+    """
+    conn = _get_snowflake_connection()
+    if conn is None:
+        raise RuntimeError("Snowflake connection is not configured")
+    conn.close()
+
+
 def sync_data_to_snowflake(table: str, rows):
     """Insert rows into the given Snowflake table.
 

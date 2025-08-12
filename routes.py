@@ -21,7 +21,11 @@ from utils import (
     validate_quote_data, generate_payment_schedule_csv, format_currency,
     parse_currency_amount, generate_application_reference, validate_email
 )
-from snowflake_utils import set_snowflake_config, sync_data_to_snowflake
+from snowflake_utils import (
+    set_snowflake_config,
+    sync_data_to_snowflake,
+    test_snowflake_connection,
+)
 
 # Import Power BI and Scenario Comparison modules
 try:
@@ -3243,6 +3247,18 @@ def configure_snowflake():
         return jsonify({'success': True})
     except Exception as e:
         app.logger.error(f"Snowflake config failed: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/snowflake/test', methods=['POST'])
+@cross_origin()
+def test_snowflake():
+    """Test the configured Snowflake connection."""
+    try:
+        test_snowflake_connection()
+        return jsonify({'success': True})
+    except Exception as e:
+        app.logger.error(f"Snowflake connection test failed: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

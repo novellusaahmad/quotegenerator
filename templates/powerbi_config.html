@@ -342,6 +342,9 @@
                                         </div>
                                     </div>
                                     <div class="text-end">
+                                        <button type="button" class="btn btn-sm btn-primary me-2" id="testSnowflakeBtn" onclick="testSnowflakeConnection()">
+                                            <i class="fas fa-vial me-1"></i>Test
+                                        </button>
                                         <button type="button" class="btn btn-sm btn-dark" onclick="saveSnowflakeConfig()">
                                             <i class="fas fa-save me-1"></i>Save
                                         </button>
@@ -2707,6 +2710,26 @@ function saveSnowflakeConfig() {
     .catch(err => {
         showNotification(`Failed to save Snowflake config: ${err.message}`, 'error');
     });
+}
+
+async function testSnowflakeConnection() {
+    const btn = document.getElementById('testSnowflakeBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Testing...';
+    try {
+        const resp = await fetch('/api/snowflake/test', { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            showNotification('Snowflake connection successful', 'success');
+        } else {
+            showNotification(`Connection failed: ${data.error}`, 'error');
+        }
+    } catch (err) {
+        showNotification(`Connection error: ${err.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-vial me-1"></i>Test';
+    }
 }
 
 // Enhanced clear form to handle saved settings
