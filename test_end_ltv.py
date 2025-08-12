@@ -84,3 +84,27 @@ def test_flexible_payment_end_ltv_matches_schedule():
     assert result['endLTV'] == pytest.approx(expected_end_ltv)
     # Ensure camelCase alias is also updated
     assert result['endLtv'] == pytest.approx(expected_end_ltv)
+
+
+def test_flexible_payment_zero_end_ltv_equals_start():
+    calc = LoanCalculator()
+    params = {
+        'loan_type': 'bridge',
+        'repayment_option': 'flexible_payment',
+        'gross_amount': 100000,
+        'property_value': 200000,
+        'loan_term': 12,
+        'annual_rate': 12,
+        'flexible_payment': 0,
+        'arrangement_fee_rate': 0,
+        'legal_fees': 0,
+        'site_visit_fee': 0,
+        'title_insurance_rate': 0,
+    }
+    result = calc.calculate_bridge_loan(params)
+    assert result['payment_schedule'], "schedule missing"
+    last = result['payment_schedule'][-1]
+    closing_balance = parse_currency(last.get('closing_balance') or last.get('closingBalance'))
+    expected_end_ltv = float((closing_balance / Decimal('200000')) * 100)
+    assert result['startLTV'] == pytest.approx(result['endLTV'])
+    assert result['endLTV'] == pytest.approx(expected_end_ltv)

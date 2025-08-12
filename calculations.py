@@ -3656,7 +3656,69 @@ class LoanCalculator:
                 
                 if remaining_balance <= 0:
                     break
-        
+
+        elif repayment_option == 'flexible_payment':
+            # Flexible payment schedule - payments cover interest first then reduce principal
+            from datetime import datetime
+
+            payment_timing = quote_data.get('payment_timing', 'advance')
+            payment_frequency = quote_data.get('payment_frequency', 'monthly')
+            flexible_payment = Decimal(str(quote_data.get('flexible_payment', 0)))
+
+            start_date_str = quote_data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
+            if isinstance(start_date_str, str):
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            else:
+                start_date = start_date_str
+
+            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
+
+            fees_deducted_first = arrangement_fee + legal_fees
+
+            for i, payment_date in enumerate(payment_dates):
+                period = i + 1
+
+                if payment_frequency == 'quarterly':
+                    interest_due = remaining_balance * (annual_rate / 4 / 100)
+                else:
+                    interest_due = remaining_balance * (monthly_rate / 100)
+
+                principal_payment = Decimal('0')
+                if flexible_payment > interest_due:
+                    principal_payment = flexible_payment - interest_due
+                    if principal_payment > remaining_balance:
+                        principal_payment = remaining_balance
+
+                interest_paid = min(flexible_payment, interest_due)
+                total_payment = flexible_payment
+
+                if period == 1:
+                    total_payment += fees_deducted_first
+                    note = 'Fees deducted' if fees_deducted_first > 0 else None
+                else:
+                    note = None
+
+                closing_balance = remaining_balance - principal_payment
+
+                entry = {
+                    'period': period,
+                    'payment_date': payment_date.strftime('%Y-%m-%d'),
+                    'opening_balance': float(remaining_balance),
+                    'interest': float(interest_paid),
+                    'principal': float(principal_payment),
+                    'total_payment': float(total_payment),
+                    'closing_balance': float(closing_balance)
+                }
+
+                if note:
+                    entry['note'] = note
+
+                schedule.append(entry)
+                remaining_balance = closing_balance
+
+                if remaining_balance <= 0:
+                    break
+
         return schedule
     
     def _generate_detailed_bridge_schedule(self, calculation: Dict, params: Dict, currency_symbol: str = '£') -> List[Dict]:
