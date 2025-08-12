@@ -68,6 +68,7 @@ The start script will:
 
 ### 💾 Database Management
 - **PostgreSQL Database**: Production-ready database with SSL support
+- **Optional Snowflake Sync**: Configure Snowflake and push data in real time
 - **Loan History**: Complete storage of all calculations and parameters
 - **Version Control**: Automatic versioning of loan modifications
 - **Search & Filter**: Advanced search capabilities across loan history
@@ -291,6 +292,34 @@ The system can be containerized using the provided Python dependencies and SQLit
 - **Calculation Caching**: Efficient financial computation caching
 - **File Processing**: Optimized document generation
 - **Server Options**: Production-ready server configurations
+
+## 🧊 Snowflake Integration
+
+The application stores data in PostgreSQL by default. To optionally sync data to Snowflake:
+
+- Use the **Snowflake Config** tab on the Power BI Configuration page to enter connection details from the UI.
+- Or interact directly with the API:
+
+1. Configure the connection:
+   ```http
+   POST /api/snowflake/config
+   {
+     "user": "<username>",
+     "password": "<password>",
+     "account": "<account>",
+     "warehouse": "<warehouse>",
+     "database": "<database>",
+     "schema": "<schema>"
+   }
+   ```
+2. Sync records in real time:
+   ```http
+   POST /api/snowflake/sync
+   {
+     "table": "target_table",
+     "data": {"column": "value"}
+   }
+   ```
 
 ## 🆘 Support
 
