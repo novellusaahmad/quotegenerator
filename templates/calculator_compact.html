@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+
+{% block title %}Loan Calculator – Compact Layout{% endblock %}
+
+{% block head %}
+<style>
+    :root{
+      --bg:#f6f7f9; --card:#ffffff; --ink:#111827; --muted:#6b7280; --brand:#8b7a4c;
+      --line:#e5e7eb; --ring:#d1d5db; --ok:#16a34a; --warn:#d97706; --err:#dc2626;
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font:14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+      color:var(--ink); background:var(--bg);
+    }
+    .wrap{max-width:1200px;margin:32px auto;padding:0 16px}
+    header{margin-bottom:16px}
+    h1{font-size:24px;margin:0 0 4px}
+    .sub{color:var(--muted);font-size:13px}
+
+    /* Stepper */
+    .stepper{
+      display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 12px;
+    }
+    .step{
+      display:flex; align-items:center; gap:8px; padding:10px 12px;
+      border-radius:999px; background:#fff; border:1px solid var(--line);
+      color:var(--muted);
+    }
+    .step[data-active="true"]{border-color:var(--brand); color:var(--ink); box-shadow:0 0 0 3px rgba(139,122,76,.08)}
+    .step .dot{
+      width:22px;height:22px; display:grid; place-items:center; font-weight:600;
+      border-radius:50%; background:#f2f0e6; color:#5c5133;
+    }
+
+    /* Layout: form + summary */
+    .grid{
+      display:grid; grid-template-columns: 1fr 320px; gap:16px;
+    }
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+      box-shadow:0 1px 2px rgba(0,0,0,.03);
+    }
+    .card h2{
+      font-size:16px; margin:0; padding:14px 16px; border-bottom:1px solid var(--line);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .card .body{padding:14px 16px}
+    .row{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+    @media (max-width: 720px){ .row{grid-template-columns:1fr} }
+    label{font-weight:600; font-size:13px}
+    .hint{color:var(--muted); font-size:12px; margin-top:4px}
+
+    input, select, textarea{
+      width:100%; padding:10px 12px; border:1px solid var(--ring); border-radius:10px;
+      background:#fff; outline:none;
+    }
+    input:focus, select:focus, textarea:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(139,122,76,.12)}
+
+    .seg{
+      display:grid; grid-template-columns:1fr 1fr; background:#f3f4f6; border-radius:9px; padding:4px;
+    }
+    .seg button{
+      border:0; background:transparent; padding:8px; border-radius:7px; cursor:pointer; font-weight:600;
+    }
+    .seg button[aria-pressed="true"]{background:#fff; border:1px solid var(--ring)}
+
+    .actions{
+      display:flex; gap:8px; justify-content:flex-end; padding:14px 16px; border-top:1px solid var(--line)
+    }
+    .btn{
+      border:1px solid var(--line); background:#fff; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600;
+    }
+    .btn.primary{background:var(--brand); color:#fff; border-color:var(--brand)}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+
+    /* Summary panel */
+    aside.sticky{
+      position:sticky; top:16px; height:fit-content;
+    }
+    .summary .item{
+      display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed var(--line);
+    }
+    .summary .item:last-child{border-bottom:0}
+    .kpi{
+      display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px 12px;
+    }
+    .kpi .pill{
+      background:#f2f7f2; border:1px solid #def3df; padding:10px; border-radius:10px; text-align:center;
+    }
+
+    /* Table */
+    .table-wrap{max-height:260px; overflow:auto; border:1px solid var(--line); border-radius:10px}
+    table{width:100%; border-collapse:collapse; font-size:13px; background:#fff}
+    thead th{position:sticky; top:0; background:#f9fafb; border-bottom:1px solid var(--line); text-align:left; padding:10px}
+    tbody td{border-bottom:1px solid var(--line); padding:8px}
+    tbody tr:hover{background:#fafafa}
+
+    /* Collapsible (details) */
+    details{border:1px dashed var(--line); border-radius:10px; padding:8px 10px}
+    details summary{cursor:pointer; font-weight:600}
+    details .rows{margin-top:10px}
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="wrap">
+    <header>
+      <h1>Loan Calculator</h1>
+      <div class="sub"></div>
+    </header>
+
+    <!-- Stepper -->
+    <nav class="stepper" aria-label="Steps">
+      <div class="step" data-step="1" data-active="true"><span class="dot">1</span>Loan</div>
+      <div class="step" data-step="2"><span class="dot">2</span>Amounts & Rate</div>
+      <div class="step" data-step="3"><span class="dot">3</span>Term & Dates</div>
+      <div class="step" data-step="4"><span class="dot">4</span>Fees</div>
+      <div class="step" data-step="5"><span class="dot">5</span>Tranches</div>
+      <div class="step" data-step="6"><span class="dot">6</span>Review</div>
+    </nav>
+
+    <div class="grid">
+      <!-- Left: Form -->
+      <section id="form">
+
+        <!-- STEP 1: LOAN -->
+        <div class="card step-pane" data-step="1">
+          <h2>Loan Details</h2>
+          <div class="body">
+            <div class="row">
+              <div>
+                <label for="loanName">Loan Name *</label>
+                <input id="loanName" placeholder="Client – Property Address" />
+                <div class="hint">System will append version/date on save.</div>
+              </div>
+              <div>
+                <label for="loanType">Loan Type</label>
+                <select id="loanType">
+                  <option>Development Loan</option>
+                  <option>Term Loan</option>
+                  <option>Bridge Loan</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="calcType">Interest Calculation Type</label>
+                <select id="calcType">
+                  <option>Retained Interest (Excel Goal Seek)</option>
+                  <option>Serviced Interest</option>
+                  <option>Part Retained / Part Serviced</option>
+                </select>
+              </div>
+              <div>
+                <label for="currency">Currency</label>
+                <select id="currency">
+                  <option>GBP (£)</option><option>EUR (€)</option><option>USD ($)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="propertyValue">Property Value</label>
+                <input id="propertyValue" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+              <div>
+                <label>&nbsp;</label>
+                <details>
+                  <summary>Additional Parameters</summary>
+                  <div class="rows" style="margin-top:8px; display:grid; gap:10px;">
+                    <div class="row">
+                      <div>
+                        <label for="day1">Day 1 Advance (optional)</label>
+                        <input id="day1" type="number" min="0" step="0.01" placeholder="0.00" />
+                      </div>
+                      <div>
+                        <label for="titleIns">Title Insurance (%)</label>
+                        <input id="titleIns" type="number" min="0" step="0.01" placeholder="0.00" />
+                      </div>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" data-next>Next</button>
+          </div>
+        </div>
+
+        <!-- STEP 2: AMOUNTS & RATE -->
+        <div class="card step-pane" data-step="2" hidden>
+          <h2>Amounts & Interest</h2>
+          <div class="body">
+            <div class="row">
+              <div>
+                <label>Amount Input</label>
+                <div class="seg" role="tablist" aria-label="Amount Input">
+                  <button type="button" id="tabGross" aria-pressed="true">Gross Amount</button>
+                  <button type="button" id="tabNet" aria-pressed="false">Net Amount</button>
+                </div>
+              </div>
+              <div>
+                <label for="amount">Amount</label>
+                <input id="amount" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+
+              <div>
+                <label>Interest Rate</label>
+                <div class="seg" role="tablist" aria-label="Rate Mode">
+                  <button type="button" id="tabMonthly" aria-pressed="false">Monthly Rate</button>
+                  <button type="button" id="tabAnnual" aria-pressed="true">Annual Rate</button>
+                </div>
+              </div>
+              <div>
+                <label for="rate">Rate</label>
+                <input id="rate" type="number" min="0" step="0.0001" placeholder="12" />
+                <div class="hint">If Annual, % per annum. If Monthly, % per month.</div>
+              </div>
+
+              <div>
+                <label for="interestCalc">Interest Calculation</label>
+                <select id="interestCalc">
+                  <option>Compound Daily</option>
+                  <option>Simple Interest</option>
+                  <option>Compound Monthly</option>
+                  <option>Compound Quarterly</option>
+                </select>
+                <div class="hint">Check “360-day” rule below if required.</div>
+              </div>
+              <div style="align-self:end">
+                <label>
+                  <input type="checkbox" id="use360" /> Use 360-day calculation for daily rate
+                </label>
+                <div class="hint">Unchecked = 365 (standard)</div>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn" data-prev>Back</button>
+            <button class="btn primary" data-next>Next</button>
+          </div>
+        </div>
+
+        <!-- STEP 3: TERM & DATES -->
+        <div class="card step-pane" data-step="3" hidden>
+          <h2>Loan Term & Dates</h2>
+          <div class="body">
+            <div class="row">
+              <div>
+                <label for="term">Loan Term (months)</label>
+                <input id="term" type="number" min="1" step="1" placeholder="12" />
+              </div>
+              <div>
+                <label for="startDate">Start Date</label>
+                <input id="startDate" type="date" />
+              </div>
+              <div>
+                <label for="endDate">End Date</label>
+                <input id="endDate" type="date" />
+                <div class="hint">Auto-calc from term; you can override.</div>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn" data-prev>Back</button>
+            <button class="btn primary" data-next>Next</button>
+          </div>
+        </div>
+
+        <!-- STEP 4: FEES -->
+        <div class="card step-pane" data-step="4" hidden>
+          <h2>Fees & Charges</h2>
+          <div class="body">
+            <div class="row">
+              <div>
+                <label for="arrFee">Arrangement Fee (%)</label>
+                <input id="arrFee" type="number" min="0" step="0.01" placeholder="2.00" />
+              </div>
+              <div>
+                <label for="legalFee">Legal Fees</label>
+                <input id="legalFee" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+              <div>
+                <label for="siteVisit">Site Visit Fee</label>
+                <input id="siteVisit" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+              <div>
+                <label for="titleInsFee">Title Insurance (£)</label>
+                <input id="titleInsFee" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn" data-prev>Back</button>
+            <button class="btn primary" data-next>Next</button>
+          </div>
+        </div>
+
+        <!-- STEP 5: TRANCHES -->
+        <div class="card step-pane" data-step="5" hidden>
+          <h2>Development Loan Tranches</h2>
+          <div class="body">
+            <div class="row">
+              <div>
+                <label for="numTranches">Number of Tranches</label>
+                <input id="numTranches" type="number" min="1" step="1" value="10" />
+              </div>
+              <div style="align-self:end">
+                <button class="btn" type="button" id="autoGen">Auto Generate</button>
+                <button class="btn" type="button" id="importCsv">Import CSV</button>
+                <button class="btn" type="button" id="exportCsv">Export CSV</button>
+              </div>
+            </div>
+
+            <div class="table-wrap" aria-label="Tranche table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Rate</th>
+                    <th>Label</th>
+                  </tr>
+                </thead>
+                <tbody id="trancheBody">
+                  <tr><td>1</td><td><input type="number" step="0.01" value="100000" /></td><td><input type="date" /></td><td><input type="number" step="0.01" value="12" /></td><td>Tranche 1</td></tr>
+                  <tr><td>2</td><td><input type="number" step="0.01" value="100000" /></td><td><input type="date" /></td><td><input type="number" step="0.01" value="12" /></td><td>Tranche 2</td></tr>
+                  <tr><td>3</td><td><input type="number" step="0.01" value="100000" /></td><td><input type="date" /></td><td><input type="number" step="0.01" value="12" /></td><td>Tranche 3</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn" data-prev>Back</button>
+            <button class="btn primary" data-next>Next</button>
+          </div>
+        </div>
+
+        <!-- STEP 6: REVIEW -->
+        <div class="card step-pane" data-step="6" hidden>
+          <h2>Review & Calculate</h2>
+          <div class="body">
+            <div class="kpi">
+              <div class="pill"><strong id="kGross">£0.00</strong><div class="hint">Gross</div></div>
+              <div class="pill"><strong id="kNet">£0.00</strong><div class="hint">Net</div></div>
+            </div>
+            <details open>
+              <summary>What will be saved</summary>
+              <ul>
+                <li>All loan inputs & tranche rows</li>
+                <li>Computed term dates</li>
+                <li>Fees configuration</li>
+              </ul>
+            </details>
+          </div>
+          <div class="actions">
+            <button class="btn" data-prev>Back</button>
+            <button class="btn primary" type="button" id="calculate">Calculate</button>
+            <button class="btn" type="button">Save Loan</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right: Sticky Summary -->
+      <aside class="sticky">
+        <div class="card summary">
+          <h2>Summary</h2>
+          <div class="body">
+            <div class="item"><span>Gross Amount</span><strong id="sumGross">£0.00</strong></div>
+            <div class="item"><span>Net Amount</span><strong id="sumNet">£0.00</strong></div>
+            <div class="item"><span>Rate</span><strong id="sumRate">12% p.a.</strong></div>
+            <div class="item"><span>Term</span><strong id="sumTerm">–</strong></div>
+            <div class="item"><span>Start → End</span><strong id="sumDates">–</strong></div>
+            <div class="item"><span>Fees (Est.)</span><strong id="sumFees">£0.00</strong></div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" type="button" id="quickCalc">Quick Calculate</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/currency-theme-simple.js') }}"></script>
+<script>
+    // ----- Stepper navigation -----
+    const panes = [...document.querySelectorAll('.step-pane')];
+    const steps = [...document.querySelectorAll('.stepper .step')];
+    const goTo = (n) => {
+      panes.forEach(p => p.hidden = (p.dataset.step !== String(n)));
+      steps.forEach(s => s.dataset.active = (s.dataset.step === String(n)));
+      window.scrollTo({top:0, behavior:'smooth'});
+    };
+    document.querySelectorAll('[data-next]').forEach(b => b.addEventListener('click', () => {
+      const cur = Number(document.querySelector('.stepper .step[data-active="true"]').dataset.step);
+      goTo(Math.min(cur+1, panes.length));
+    }));
+    document.querySelectorAll('[data-prev]').forEach(b => b.addEventListener('click', () => {
+      const cur = Number(document.querySelector('.stepper .step[data-active="true"]').dataset.step);
+      goTo(Math.max(cur-1, 1));
+    }));
+    steps.forEach(s => s.addEventListener('click', () => goTo(Number(s.dataset.step))));
+
+    // ----- Toggle chips (gross/net & monthly/annual) -----
+    const pressToggle = (a,b) => {
+      a.setAttribute('aria-pressed','true'); b.setAttribute('aria-pressed','false');
+    };
+    const tabGross = document.getElementById('tabGross');
+    const tabNet   = document.getElementById('tabNet');
+    tabGross.addEventListener('click',()=>pressToggle(tabGross,tabNet));
+    tabNet.addEventListener('click',()=>pressToggle(tabNet,tabGross));
+    const tabMonthly = document.getElementById('tabMonthly');
+    const tabAnnual  = document.getElementById('tabAnnual');
+    tabMonthly.addEventListener('click',()=>pressToggle(tabMonthly,tabAnnual));
+    tabAnnual.addEventListener('click',()=>pressToggle(tabAnnual,tabMonthly));
+
+    // ----- Minimal live summary wiring (placeholder math) -----
+    const fmt = v => isFinite(v) ? new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'}).format(v) : '–';
+    const amount = document.getElementById('amount');
+    const rate   = document.getElementById('rate');
+    const term   = document.getElementById('term');
+    const start  = document.getElementById('startDate');
+    const end    = document.getElementById('endDate');
+    const arrFee = document.getElementById('arrFee');
+    const legal  = document.getElementById('legalFee');
+    const site   = document.getElementById('siteVisit');
+
+    function refreshSummary(){
+      const A = Number(amount.value||0);
+      const r = Number(rate.value||0);
+      const t = Number(term.value||0);
+      const fee = (Number(arrFee.value||0)/100)*A + Number(legal.value||0) + Number(site.value||0);
+      document.getElementById('sumGross').textContent = fmt(A);
+      document.getElementById('sumNet').textContent   = fmt(Math.max(A - fee, 0));
+      document.getElementById('sumRate').textContent  = (tabAnnual.getAttribute('aria-pressed')==='true' ? r + '% p.a.' : r + '% p.m.');
+      document.getElementById('sumTerm').textContent  = t ? `${t} mo` : '–';
+      document.getElementById('sumFees').textContent  = fmt(fee);
+      document.getElementById('sumDates').textContent = (start.value||'–') + ' → ' + (end.value||'–');
+      const kG = document.getElementById('kGross'), kN = document.getElementById('kNet');
+      if(kG) kG.textContent = fmt(A);
+      if(kN) kN.textContent = fmt(Math.max(A - fee, 0));
+    }
+    ['input','change'].forEach(evt=>{
+      document.addEventListener(evt, e=>{
+        if(['amount','rate','term','startDate','endDate','arrFee','legalFee','siteVisit'].includes(e.target.id)) refreshSummary();
+      });
+    });
+    refreshSummary();
+
+    document.getElementById('quickCalc').addEventListener('click', () => alert('Run calculation here.'));
+    document.getElementById('calculate').addEventListener('click', () => alert('Run full calculation & schedule.'));
+
+    document.getElementById('autoGen').addEventListener('click', ()=>{
+      const n = Math.max(1, Number(document.getElementById('numTranches').value||1));
+      const body = document.getElementById('trancheBody'); body.innerHTML='';
+      for(let i=1;i<=n;i++){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i}</td>
+          <td><input type="number" step="0.01" value="100000" /></td>
+          <td><input type="date" /></td>
+          <td><input type="number" step="0.01" value="12" /></td>
+          <td>Tranche ${i}</td>`;
+        body.appendChild(tr);
+      }
+    });
+    document.getElementById('importCsv').addEventListener('click', ()=>alert('Attach your CSV import logic.'));
+    document.getElementById('exportCsv').addEventListener('click', ()=>alert('Attach your CSV export logic.'));
+  </script>
+{% endblock %}
