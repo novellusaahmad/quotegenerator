@@ -157,7 +157,7 @@ EOF
 
     # Override DATABASE_URL for on-premise use
     print_status "Switching to on-premise database configuration..."
-    export DATABASE_URL="postgresql://novellus_user:novellus_secure_2025@localhost:5432/novellus_loans"
+    export DATABASE_URL="postgresql://novellus_user:novellus_secure_2025@localhost:5432/novellus_loans?sslmode=require"
     export PGHOST="localhost"
     export PGPORT="5432"
     export PGDATABASE="novellus_loans"
@@ -178,7 +178,7 @@ if [ -f ".env" ]; then
 SESSION_SECRET=novellus-loan-management-secret-key-2025
 
 # On-Premise PostgreSQL Database Configuration
-DATABASE_URL=postgresql://novellus_user:novellus_secure_2025@localhost:5432/novellus_loans
+DATABASE_URL=postgresql://novellus_user:novellus_secure_2025@localhost:5432/novellus_loans?sslmode=require
 
 # PostgreSQL connection parameters for Power BI external access
 PGHOST=localhost
@@ -188,7 +188,7 @@ PGUSER=novellus_user
 PGPASSWORD=novellus_secure_2025
 
 # Power BI SSL Configuration
-PG_SSLMODE=prefer
+PG_SSLMODE=require
 ALLOW_EXTERNAL_CONNECTIONS=true
 
 FLASK_ENV=development
@@ -254,15 +254,14 @@ fi
 # Get server IP for Power BI connection info
 SERVER_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "localhost")
 
-# Detect PostgreSQL SSL certificate and configure connection mode
+# Force PostgreSQL connections to use SSL
 PGDATA=$(sudo -u postgres psql -t -c "SHOW data_directory;" 2>/dev/null | tr -d ' \n')
 if [ -f "$PGDATA/server.crt" ]; then
     print_status "PostgreSQL SSL certificate detected"
-    PG_SSLMODE_VALUE="require"
 else
-    print_warning "No PostgreSQL SSL certificate found - Power BI may require 'SSL Mode=Disable'"
-    PG_SSLMODE_VALUE="disable"
+    print_warning "PostgreSQL SSL certificate not found - SSL connections may fail"
 fi
+PG_SSLMODE_VALUE="require"
 print_status "Setting PG_SSLMODE=$PG_SSLMODE_VALUE for Power BI connections"
 
 # Persist SSL mode choice for other scripts

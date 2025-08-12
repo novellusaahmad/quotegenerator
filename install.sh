@@ -178,7 +178,8 @@ fi
 # Create .env file
 print_status "Creating environment configuration..."
 cat > .env << EOF
-DATABASE_URL=postgresql://novellus_user:novellus_secure_2025@localhost/novellus_loans
+DATABASE_URL=postgresql://novellus_user:novellus_secure_2025@localhost/novellus_loans?sslmode=require
+PG_SSLMODE=require
 SESSION_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 FLASK_ENV=production
 FLASK_DEBUG=False
