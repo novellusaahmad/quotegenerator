@@ -353,12 +353,17 @@ class LoanCalculator:
         # Date calculations already done above - use the calculated values
         
         final_balance = Decimal(str(calculation.get('remainingBalance', gross_amount)))
+        # Initial LTV calculations based on preliminary remaining balance
+        start_ltv = float((gross_amount / property_value * 100)) if property_value > 0 else 0
+        end_ltv = float((final_balance / property_value * 100)) if property_value > 0 else 0
         calculation.update({
             'grossAmount': float(gross_amount),
             'propertyValue': float(property_value),
-            'ltv': float((gross_amount / property_value * 100)) if property_value > 0 else 0,
-            'startLTV': float((gross_amount / property_value * 100)) if property_value > 0 else 0,
-            'endLTV': float((final_balance / property_value * 100)) if property_value > 0 else 0,
+            'ltv': start_ltv,
+            'startLTV': start_ltv,
+            'startLtv': start_ltv,
+            'endLTV': end_ltv,
+            'endLtv': end_ltv,
             'currency': currency,
             'loanTerm': loan_term,
             'loanTermDays': loan_term_days,
@@ -381,6 +386,18 @@ class LoanCalculator:
             currency_symbol = '€' if currency == 'EUR' else '£'
             payment_schedule = self.generate_payment_schedule(calculation, currency_symbol)
             calculation['payment_schedule'] = payment_schedule
+            # Prefer detailed schedule if already generated earlier
+            schedule_for_ltv = calculation.get('detailed_payment_schedule') or payment_schedule
+            if schedule_for_ltv:
+                last_entry = schedule_for_ltv[-1]
+                closing_balance_raw = last_entry.get('closing_balance') or last_entry.get('closingBalance') or 0
+                try:
+                    closing_balance = Decimal(str(closing_balance_raw).replace('£', '').replace(',', ''))
+                except Exception:
+                    closing_balance = Decimal('0')
+                updated_end_ltv = float((closing_balance / property_value * 100)) if property_value > 0 else 0
+                calculation['endLTV'] = updated_end_ltv
+                calculation['endLtv'] = updated_end_ltv
         except Exception as e:
             import logging
             logging.error(f"Error generating bridge loan payment schedule: {str(e)}")
@@ -634,12 +651,16 @@ class LoanCalculator:
         else:
             adjusted_payment = original_monthly_payment
         
+        start_ltv = float((gross_amount / property_value * 100)) if property_value > 0 else 0
+        end_ltv = float(((gross_amount - Decimal(str(calculation.get('remainingBalance', 0)))) / property_value * 100)) if property_value > 0 else 0
         calculation.update({
             'grossAmount': float(gross_amount),
             'propertyValue': float(property_value),
-            'ltv': float((gross_amount / property_value * 100)) if property_value > 0 else 0,
-            'startLTV': float((gross_amount / property_value * 100)) if property_value > 0 else 0,
-            'endLTV': float(((gross_amount - Decimal(str(calculation.get('remainingBalance', 0)))) / property_value * 100)) if property_value > 0 else 0,
+            'ltv': start_ltv,
+            'startLTV': start_ltv,
+            'startLtv': start_ltv,
+            'endLTV': end_ltv,
+            'endLtv': end_ltv,
             'currency': currency,
             'loanTerm': loan_term,
             'loanTermDays': loan_term_days,
@@ -661,6 +682,17 @@ class LoanCalculator:
             currency_symbol = '€' if currency == 'EUR' else '£'
             payment_schedule = self.generate_payment_schedule(calculation, currency_symbol)
             calculation['payment_schedule'] = payment_schedule
+            schedule_for_ltv = calculation.get('detailed_payment_schedule') or payment_schedule
+            if schedule_for_ltv:
+                last_entry = schedule_for_ltv[-1]
+                closing_balance_raw = last_entry.get('closing_balance') or last_entry.get('closingBalance') or 0
+                try:
+                    closing_balance = Decimal(str(closing_balance_raw).replace('£', '').replace(',', ''))
+                except Exception:
+                    closing_balance = Decimal('0')
+                updated_end_ltv = float((closing_balance / property_value * 100)) if property_value > 0 else 0
+                calculation['endLTV'] = updated_end_ltv
+                calculation['endLtv'] = updated_end_ltv
         except Exception as e:
             import logging
             logging.error(f"Error generating term loan payment schedule: {str(e)}")
