@@ -9,6 +9,8 @@
 
 This error occurs when Power BI Service cannot validate the SSL certificate from your on-premise PostgreSQL database.
 
+> **Note:** The `start.sh` script automatically detects whether a PostgreSQL SSL certificate is present. If none is found, it sets `PG_SSLMODE=disable` in your `.env` file and prints a ready-to-use Power BI connection string with `SSL Mode=Disable`.
+
 ---
 
 ## 🚀 **Quick Fixes** (Recommended Order)

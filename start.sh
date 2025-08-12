@@ -254,12 +254,35 @@ fi
 # Get server IP for Power BI connection info
 SERVER_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "localhost")
 
-# Detect PostgreSQL SSL certificate
+# Detect PostgreSQL SSL certificate and configure connection mode
 PGDATA=$(sudo -u postgres psql -t -c "SHOW data_directory;" 2>/dev/null | tr -d ' \n')
 if [ -f "$PGDATA/server.crt" ]; then
     print_status "PostgreSQL SSL certificate detected"
+    PG_SSLMODE_VALUE="require"
 else
     print_warning "No PostgreSQL SSL certificate found - Power BI may require 'SSL Mode=Disable'"
+    PG_SSLMODE_VALUE="disable"
+fi
+print_status "Setting PG_SSLMODE=$PG_SSLMODE_VALUE for Power BI connections"
+
+# Persist SSL mode choice for other scripts
+if grep -q "^PG_SSLMODE=" .env 2>/dev/null; then
+    sed -i "s/^PG_SSLMODE=.*/PG_SSLMODE=${PG_SSLMODE_VALUE}/" .env
+else
+    echo "PG_SSLMODE=${PG_SSLMODE_VALUE}" >> .env
+fi
+
+# Build recommended and alternative Power BI connection strings
+if [ "$PG_SSLMODE_VALUE" = "require" ]; then
+    RECOMMENDED_CONN="Server=$SERVER_IP;Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Require;Trust Server Certificate=true;"
+    ALTERNATE_CONN="Server=$SERVER_IP;Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Disable;"
+    RECOMMENDED_CONN_DEV="Server=[YOUR_SERVER_IP];Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Require;Trust Server Certificate=true;"
+    ALTERNATE_CONN_DEV="Server=[YOUR_SERVER_IP];Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Disable;"
+else
+    RECOMMENDED_CONN="Server=$SERVER_IP;Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Disable;"
+    ALTERNATE_CONN="Server=$SERVER_IP;Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Require;Trust Server Certificate=true;"
+    RECOMMENDED_CONN_DEV="Server=[YOUR_SERVER_IP];Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Disable;"
+    ALTERNATE_CONN_DEV="Server=[YOUR_SERVER_IP];Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Require;Trust Server Certificate=true;"
 fi
 
 # Display startup information with environment-specific Power BI details
@@ -285,11 +308,11 @@ if [ -n "$REPL_ID" ]; then
     echo "Username: novellus_user"
     echo "Password: novellus_secure_2025"
     echo ""
-    echo "Power BI Connection String (SSL Enabled):"
-    echo "Server=[YOUR_SERVER_IP];Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Require;Trust Server Certificate=true;"
+    echo "Recommended Power BI Connection String:"
+    echo "$RECOMMENDED_CONN_DEV"
     echo ""
-    echo "Power BI Connection String (SSL Disabled - if certificate issues):"
-    echo "Server=[YOUR_SERVER_IP];Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Disable;"
+    echo "Alternative Connection String:"
+    echo "$ALTERNATE_CONN_DEV"
     echo ""
     echo "📋 See ONPREMISE_POWERBI_SETUP.md for complete deployment instructions"
 else
@@ -307,11 +330,11 @@ else
     echo "Username: novellus_user"
     echo "Password: novellus_secure_2025"
     echo ""
-    echo "Power BI Connection String (SSL Enabled):"
-    echo "Server=$SERVER_IP;Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Require;Trust Server Certificate=true;"
+    echo "Recommended Power BI Connection String:"
+    echo "$RECOMMENDED_CONN"
     echo ""
-    echo "Power BI Connection String (SSL Disabled - if certificate issues):"
-    echo "Server=$SERVER_IP;Database=novellus_loans;Port=5432;User Id=novellus_user;Password=novellus_secure_2025;SSL Mode=Disable;"
+    echo "Alternative Connection String:"
+    echo "$ALTERNATE_CONN"
     echo ""
     echo "Power BI Desktop Setup:"
     echo "1. Open Power BI Desktop"
