@@ -54,7 +54,10 @@ def test_snowflake_connection() -> None:
 
 
 def sync_data_to_snowflake(table: str, rows):
-    """Insert rows into the given Snowflake table.
+    """Insert rows into an existing Snowflake table.
+
+    The destination table must already exist in Snowflake; this function does
+    not attempt to create it.
 
     Parameters
     ----------
@@ -73,10 +76,6 @@ def sync_data_to_snowflake(table: str, rows):
         return
 
     columns = list(rows[0].keys())
-    create_stmt = "create table if not exists {0} ({1})".format(
-        table,
-        ", ".join(f"{c} variant" for c in columns),
-    )
     insert_stmt = "insert into {0} ({1}) values ({2})".format(
         table,
         ", ".join(columns),
@@ -85,7 +84,6 @@ def sync_data_to_snowflake(table: str, rows):
 
     cs = conn.cursor()
     try:
-        cs.execute(create_stmt)
         for row in rows:
             cs.execute(insert_stmt, [row.get(col) for col in columns])
         conn.commit()
