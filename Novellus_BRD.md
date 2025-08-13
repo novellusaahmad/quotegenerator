@@ -2,8 +2,6 @@
 
 # Novellus Loan Management System - Business Requirements
 
-**Version:** 1.2
-**Date:** 16 August 2025
 
 ## 1. System Overview
 The Novellus Loan Management System is a Flask-based web application supporting Bridge, Term, and Development loans with precise decimal calculations, multi-currency support, and flexible payment options.
@@ -106,4 +104,3 @@ The calculator page augments numeric outputs with modals and charts that explain
 
 ---
 
-This document captures the detailed calculation pathways for all Novellus loan products, ensuring every financial result is transparent and reproducible.
