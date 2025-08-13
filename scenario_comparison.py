@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class ScenarioComparison:
     def __init__(self):
+        # Use the same loan calculation engine as the main calculator page
         self.calculation_engine = LoanCalculator()
         self.scenarios = []
         
