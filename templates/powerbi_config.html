@@ -5,6 +5,31 @@
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+<style>
+/* Novellus-themed navigation tabs */
+.powerbi-config-page .nav-tabs .nav-link {
+    color: var(--novellus-navy);
+    font-weight: 600;
+}
+
+.powerbi-config-page .nav-tabs .nav-link.active {
+    background-color: var(--novellus-gold);
+    color: #fff;
+    border-color: var(--novellus-gold) var(--novellus-gold) var(--novellus-card-bg);
+}
+
+.powerbi-config-page .nav-tabs .nav-link:hover {
+    color: var(--novellus-gold);
+}
+
+.bg-novellus-navy {
+    background-color: var(--novellus-navy) !important;
+}
+
+.bg-novellus-gold {
+    background-color: var(--novellus-gold) !important;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -18,21 +43,21 @@
                         <i class="fas fa-chart-bar text-white"></i>
                     </div>
                     <div>
-                        <h4 class="mb-0 text-dark">Power BI Configuration & Scheduler</h4>
+                        <h4 class="mb-0">Power BI Configuration & Scheduler</h4>
                         <small class="text-muted">Dataset refresh, scheduling, and report management</small>
                     </div>
                 </div>
                 
                 <!-- Scheduler Status Indicator -->
-                <div id="schedulerStatusBadge" class="badge bg-secondary">
+                <div id="schedulerStatusBadge" class="badge bg-novellus-gold text-dark">
                     <i class="fas fa-clock me-1"></i>Scheduler Inactive
                 </div>
             </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#addReportModal">
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addReportModal">
                         <i class="fas fa-plus me-1"></i>Add Report
                     </button>
-                    <button class="btn btn-sm btn-dark" onclick="refreshAllReports()" id="refreshAllBtnHeader">
+                    <button class="btn btn-sm btn-primary" onclick="refreshAllReports()" id="refreshAllBtnHeader">
                         <i class="fas fa-sync-alt me-1"></i>Refresh All
                     </button>
                 </div>
@@ -40,7 +65,7 @@
 
             <!-- Main Content Tabs -->
             <div class="card shadow-sm">
-                <div class="card-header bg-white border-bottom">
+                <div class="card-header">
                     <ul class="nav nav-tabs card-header-tabs" id="configTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="refresh-tab" data-bs-toggle="tab" data-bs-target="#refresh-panel" type="button" role="tab">
@@ -95,13 +120,13 @@
                                         <div class="col-md-4">
                                             <label class="form-label small fw-semibold text-secondary">Actions</label>
                                             <div class="d-flex gap-1">
-                                                <button type="button" class="btn btn-sm btn-dark" onclick="testConnection()" id="testBtn" title="Test Connection">
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="testConnection()" id="testBtn" title="Test Connection">
                                                     <i class="fas fa-plug"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-dark" onclick="startRefresh()" id="refreshBtn" title="Start Refresh">
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="startRefresh()" id="refreshBtn" title="Start Refresh">
                                                     <i class="fas fa-sync-alt"></i>
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-dark" onclick="saveReportSettings()" id="saveBtn" title="Save Settings">
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="saveReportSettings()" id="saveBtn" title="Save Settings">
                                                     <i class="fas fa-save"></i>
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-warning" onclick="testNotification()" id="testNotifyBtn" title="Test Notifications">
@@ -188,10 +213,10 @@
                                             </label>
                                         </div>
                                         <div class="d-flex gap-1">
-                                            <button type="button" class="btn btn-sm btn-dark" onclick="clearForm()" id="clearBtn" title="Clear All">
+                                            <button type="button" class="btn btn-sm btn-primary" onclick="clearForm()" id="clearBtn" title="Clear All">
                                                 <i class="fas fa-broom"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-dark" onclick="refreshAllReports()" id="refreshAllBtn" title="Refresh All Reports">
+                                            <button type="button" class="btn btn-sm btn-primary" onclick="refreshAllReports()" id="refreshAllBtn" title="Refresh All Reports">
                                                 <i class="fas fa-list-alt"></i>
                                             </button>
                                         </div>
@@ -235,7 +260,7 @@
                                     <h6 class="mb-0 text-secondary">
                                         <i class="fas fa-clock me-2"></i>Saved Schedules
                                     </h6>
-                                    <button class="btn btn-sm btn-dark" onclick="refreshSchedulesList()">
+                                    <button class="btn btn-sm btn-primary" onclick="refreshSchedulesList()">
                                         <i class="fas fa-sync me-1"></i>Refresh
                                     </button>
                                 </div>
@@ -257,7 +282,7 @@
                                     <div class="text-center py-4 text-muted">
                                         <i class="fas fa-chart-bar fa-2x mb-2 opacity-50"></i>
                                         <p class="mb-0 small">No configured reports found</p>
-                                        <button class="btn btn-sm btn-dark mt-2" data-bs-toggle="modal" data-bs-target="#addReportModal">
+                                        <button class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#addReportModal">
                                             <i class="fas fa-plus me-1"></i>Add Your First Report
                                         </button>
                                     </div>
@@ -270,7 +295,7 @@
                             <div class="p-3">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <span class="fw-semibold text-secondary">Scheduled Power BI Refreshes</span>
-                                    <button type="button" class="btn btn-sm btn-dark" onclick="refreshSchedulesList()" id="refreshSchedulesBtn">
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="refreshSchedulesList()" id="refreshSchedulesBtn">
                                         <i class="fas fa-sync-alt me-1"></i>Refresh List
                                     </button>
                                 </div>
@@ -290,7 +315,7 @@
                               <div class="p-3">
                                   <div class="d-flex justify-content-between align-items-center mb-3">
                                       <span class="fw-semibold text-secondary">Saved Configurations</span>
-                                    <button type="button" class="btn btn-sm btn-dark" onclick="clearSavedSettings()" id="clearSettingsBtn">
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="clearSavedSettings()" id="clearSettingsBtn">
                                         <i class="fas fa-trash me-1"></i>Clear All
                                     </button>
                                 </div>
@@ -371,7 +396,7 @@
                                         <button type="button" class="btn btn-sm btn-primary me-2" id="testSnowflakeBtn" onclick="testSnowflakeConnection()">
                                             <i class="fas fa-vial me-1"></i>Test
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-dark" onclick="saveSnowflakeConfig()">
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="saveSnowflakeConfig()">
                                             <i class="fas fa-save me-1"></i>Save
                                         </button>
                                     </div>
@@ -420,7 +445,7 @@
                             </div>
                         </div>
                         <div class="mt-3">
-                            <button type="button" class="btn btn-dark" onclick="testParameters()">
+                            <button type="button" class="btn btn-primary" onclick="testParameters()">
                                 <i class="fas fa-external-link-alt me-2"></i>Test URLs
                             </button>
                         </div>
@@ -474,7 +499,7 @@
                         <div id="parametersContainer">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <small class="text-muted">Define parameters that will be passed to the Power BI report</small>
-                                <button type="button" class="btn btn-dark btn-sm" onclick="addParameter()">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="addParameter()">
                                     <i class="fas fa-plus me-1"></i>Add Parameter
                                 </button>
                             </div>
@@ -487,7 +512,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-dark" onclick="addReport()">
+                <button type="button" class="btn btn-primary" onclick="addReport()">
                     <i class="fas fa-save me-2"></i>Add Report
                 </button>
             </div>
@@ -530,7 +555,7 @@
                         <div id="editParametersContainer">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <small class="text-muted">Define parameters that will be passed to the Power BI report</small>
-                                <button type="button" class="btn btn-dark btn-sm" onclick="addEditParameter()">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="addEditParameter()">
                                     <i class="fas fa-plus me-1"></i>Add Parameter
                                 </button>
                             </div>
@@ -543,7 +568,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-dark" onclick="updateReport()">
+                <button type="button" class="btn btn-primary" onclick="updateReport()">
                     <i class="fas fa-save me-2"></i>Update Report
                 </button>
             </div>
@@ -624,13 +649,13 @@ class PowerBIConfigManager {
                             </div>
                             <div class="col-md-4 text-end">
                                 <div class="btn-group">
-                                    <button class="btn btn-sm btn-dark" onclick="testReport('${key}')">
+                                    <button class="btn btn-sm btn-primary" onclick="testReport('${key}')">
                                         <i class="fas fa-external-link-alt me-1"></i>Test
                                     </button>
-                                    <button class="btn btn-sm btn-dark" onclick="editReport('${key}')">
+                                    <button class="btn btn-sm btn-primary" onclick="editReport('${key}')">
                                         <i class="fas fa-edit me-1"></i>Edit
                                     </button>
-                                    <button class="btn btn-sm btn-dark" onclick="deleteReport('${key}')">
+                                    <button class="btn btn-sm btn-primary" onclick="deleteReport('${key}')">
                                         <i class="fas fa-trash me-1"></i>Delete
                                     </button>
                                 </div>
@@ -1035,7 +1060,7 @@ function testParameters() {
             <div class="mb-2">
                 <strong>${report.name}:</strong><br>
                 <small class="text-muted">${testUrl}</small><br>
-                <a href="${testUrl}" target="_blank" class="btn btn-sm btn-dark mt-1">
+                <a href="${testUrl}" target="_blank" class="btn btn-sm btn-primary mt-1">
                     <i class="fas fa-external-link-alt me-1"></i>Open
                 </a>
             </div>
@@ -1818,8 +1843,6 @@ document.addEventListener('DOMContentLoaded', function() {
     font-size: 14px;
     font-weight: 500;
     border-radius: 4px;
-    transition: none !important;
-    box-shadow: none !important;
 }
 
 .powerbi-config-page .btn-sm {
@@ -1829,37 +1852,18 @@ document.addEventListener('DOMContentLoaded', function() {
     font-size: 13px;
 }
 
-.powerbi-config-page .btn-dark {
-    background-color: #212529 !important;
-    border-color: #212529 !important;
-    color: #ffffff !important;
-}
-
-.powerbi-config-page .btn-dark:hover,
-.powerbi-config-page .btn-dark:focus,
-.powerbi-config-page .btn-dark:active,
-.powerbi-config-page .btn-dark.active {
-    background-color: #212529 !important;
-    border-color: #212529 !important;
-    color: #ffffff !important;
-    transform: none !important;
-    box-shadow: none !important;
-}
-
 .powerbi-config-page .btn-secondary {
-    background-color: #6c757d !important;
-    border-color: #6c757d !important;
+    background-color: var(--novellus-navy) !important;
+    border-color: var(--novellus-navy) !important;
     color: #ffffff !important;
 }
 
 .powerbi-config-page .btn-secondary:hover,
 .powerbi-config-page .btn-secondary:focus,
 .powerbi-config-page .btn-secondary:active {
-    background-color: #6c757d !important;
-    border-color: #6c757d !important;
+    background-color: var(--novellus-navy-dark) !important;
+    border-color: var(--novellus-navy-dark) !important;
     color: #ffffff !important;
-    transform: none !important;
-    box-shadow: none !important;
 }
 
 .refresh-logs {
