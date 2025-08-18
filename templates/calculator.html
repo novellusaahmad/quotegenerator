@@ -1496,13 +1496,69 @@ function handleEditMode() {
 }
 
 function populateFormFromParams(params) {
-    // Populate all form fields from URL parameters
+    // Helper to set radio buttons
+    function setRadio(name, value) {
+        const radio = document.querySelector(`input[name="${name}"][value="${value}"]`);
+        if (radio) {
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change'));
+        }
+    }
+
+    // Set property value early so percentage-based amounts can compute correctly
+    const propertyValueParam = params.get('property_value');
+    if (propertyValueParam !== null) {
+        const pvField = document.getElementById('propertyValue');
+        if (pvField) {
+            pvField.value = propertyValueParam;
+            pvField.dispatchEvent(new Event('change'));
+        }
+    }
+
+    // Handle amount input type (gross/net)
+    const amountInputType = params.get('amount_input_type');
+    if (amountInputType) {
+        setRadio('amount_input_type', amountInputType);
+    }
+
+    // Set gross amount input type (fixed/percentage)
+    const grossAmountType = params.get('gross_amount_type');
+    if (grossAmountType) {
+        setRadio('gross_amount_type', grossAmountType);
+    }
+
+    // Populate gross amount fields
+    const grossAmount = params.get('gross_amount');
+    if (grossAmount !== null) {
+        const grossField = document.getElementById('grossAmountFixed');
+        if (grossField) {
+            grossField.value = grossAmount;
+            grossField.dispatchEvent(new Event('change'));
+        }
+    }
+
+    const grossPercentage = params.get('gross_amount_percentage');
+    if (grossPercentage !== null) {
+        const percentageField = document.getElementById('grossAmountPercentage');
+        if (percentageField) {
+            percentageField.value = grossPercentage;
+            percentageField.dispatchEvent(new Event('change'));
+        }
+    }
+
+    // Handle net amount
+    const netAmount = params.get('net_amount');
+    if (netAmount !== null) {
+        const netField = document.getElementById('netAmountInput');
+        if (netField) {
+            netField.value = netAmount;
+            netField.dispatchEvent(new Event('change'));
+        }
+    }
+
+    // Map remaining simple fields
     const paramMap = {
         'loan_type': 'loanType',
-        'amount_input_type': 'amountInputType',
-        'gross_amount': 'grossAmount',
-        'net_amount': 'netAmount',
-        'property_value': 'propertyValue',
         'annual_rate': 'annualRate',
         'loan_term': 'loanTerm',
         'start_date': 'startDate',
@@ -1520,19 +1576,18 @@ function populateFormFromParams(params) {
         'day1_advance': 'day1Advance',
         'tranche_mode': 'trancheMode'
     };
-    
+
     for (const [paramName, fieldId] of Object.entries(paramMap)) {
         const value = params.get(paramName);
-        if (value) {
+        if (value !== null) {
             const field = document.getElementById(fieldId);
             if (field) {
                 field.value = value;
-                // Trigger change event for dependent fields
                 field.dispatchEvent(new Event('change'));
             }
         }
     }
-    
+
     // Handle tranche data population for development loans
     populateTrancheData(params);
 }
