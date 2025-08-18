@@ -6,6 +6,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:14
+    platform: linux/amd64
     environment:
       POSTGRES_DB: novellus_loans
       POSTGRES_USER: novellus_admin
@@ -22,6 +23,7 @@ services:
 
   novellus-app:
     build: .
+    platform: linux/amd64
     ports:
       - "5000:5000"
     environment:
@@ -34,8 +36,8 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./uploads:/app/uploads
-      - ./reports_output:/app/reports_output
+      - uploads_data:/app/uploads
+      - reports_output_data:/app/reports_output
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/"]
       interval: 30s
@@ -44,3 +46,5 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:
+  reports_output_data:
