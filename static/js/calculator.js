@@ -55,7 +55,11 @@ const loanDonutLabels = {
 
             ctx.fillStyle = 'rgba(255,255,255,0.85)';
             ctx.beginPath();
-            ctx.roundRect(x - boxW/2, y - boxH/2, boxW, boxH, 6);
+            if (typeof ctx.roundRect === 'function') {
+                ctx.roundRect(x - boxW / 2, y - boxH / 2, boxW, boxH, 6);
+            } else {
+                ctx.rect(x - boxW / 2, y - boxH / 2, boxW, boxH);
+            }
             ctx.fill();
 
             ctx.fillStyle = '#333';
@@ -612,7 +616,8 @@ class LoanCalculator {
             
             // Scroll to results
             if (this.resultsSection) {
-}
+                this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }
             
             console.log('displayResults completed successfully');
         } catch (error) {
