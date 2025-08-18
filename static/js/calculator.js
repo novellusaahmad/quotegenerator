@@ -543,10 +543,17 @@ class LoanCalculator {
                             if (month < 2) month = 2;
                         }
 
+                        const rawRate = parseFloat(rateInput.value);
+                        let rate = rawRate;
+                        if (isNaN(rate)) {
+                            rate = parseFloat(data.annual_rate);
+                            if (isNaN(rate)) rate = 0;
+                        }
+
                         tranches.push({
                             amount: parseFloat(amountInput.value),
                             date: dateInput.value,
-                            rate: parseFloat(rateInput.value) || parseFloat(data.annual_rate) || 12,
+                            rate: rate,
                             description: descriptionInput.value || `Tranche ${index + 1}`,
                             month: month
                         });
@@ -1394,8 +1401,18 @@ class LoanCalculator {
             // Get form values - with fallback to form elements
             let totalAmount = parseFloat(document.getElementById('autoTotalAmount')?.value) || 0;
             let startDate = document.getElementById('autoStartDate')?.value;
-            let loanPeriod = parseInt(document.getElementById('autoLoanPeriod')?.value) || 12;
-            let interestRate = parseFloat(document.getElementById('autoInterestRate')?.value) || 12;
+            const loanPeriodInput = document.getElementById('autoLoanPeriod');
+            let loanPeriod = parseInt(loanPeriodInput?.value);
+            if (isNaN(loanPeriod)) {
+                loanPeriod = 0;
+                if (loanPeriodInput) loanPeriodInput.value = '0';
+            }
+            const interestRateInput = document.getElementById('autoInterestRate');
+            let interestRate = parseFloat(interestRateInput?.value);
+            if (isNaN(interestRate)) {
+                interestRate = 0;
+                if (interestRateInput) interestRateInput.value = '0';
+            }
             let trancheCount = parseInt(document.getElementById('autoTrancheCount')?.value) || 6;
             
             // Fallback to main form values if auto fields don't exist
@@ -1411,15 +1428,17 @@ class LoanCalculator {
                 console.log('Using start date from main form:', startDate);
             }
             
-            if (loanPeriod === 12) {
+            if (loanPeriod === 0) {
                 const loanTermInput = document.getElementById('loanTerm');
-                loanPeriod = parseInt(loanTermInput?.value) || 12;
+                loanPeriod = parseInt(loanTermInput?.value);
+                if (isNaN(loanPeriod)) loanPeriod = 0;
                 console.log('Using loan term from main form:', loanPeriod);
             }
-            
-            if (interestRate === 12) {
+
+            if (interestRate === 0) {
                 const annualRateInput = document.getElementById('annualRateValue');
-                interestRate = parseFloat(annualRateInput?.value) || 12;
+                interestRate = parseFloat(annualRateInput?.value);
+                if (isNaN(interestRate)) interestRate = 0;
                 console.log('Using interest rate from main form:', interestRate);
             }
 
@@ -3048,7 +3067,7 @@ class LoanCalculator {
         console.log('Arrangement fee elements found:', !!arrangementFeePercentageEl, !!arrangementFeeInput);
         if (arrangementFeePercentageEl && arrangementFeeInput) {
             const parsedRate = parseFloat(arrangementFeeInput.value);
-            const arrangementFeeRate = isNaN(parsedRate) ? 2.0 : parsedRate;
+
             const newText = arrangementFeeRate.toFixed(2) + '%';
             arrangementFeePercentageEl.textContent = newText;
             console.log('Updated arrangement fee percentage from', arrangementFeePercentageEl.textContent, 'to:', newText);
@@ -3062,7 +3081,7 @@ class LoanCalculator {
         console.log('Title insurance elements found:', !!titleInsurancePercentageEl, !!titleInsuranceInput);
         if (titleInsurancePercentageEl && titleInsuranceInput) {
             const parsedRate = parseFloat(titleInsuranceInput.value);
-            const titleInsuranceRate = isNaN(parsedRate) ? 0.01 : parsedRate;
+
             // Fix rounding issue by using proper decimal precision
             const newText = titleInsuranceRate.toFixed(3) + '%';
             titleInsurancePercentageEl.textContent = newText;
@@ -3081,12 +3100,12 @@ class LoanCalculator {
             if (rateInputType === 'annual') {
                 const annualRateInput = document.getElementById('annualRateValue');
                 const parsedAnnual = parseFloat(annualRateInput?.value);
-                interestRate = isNaN(parsedAnnual) ? 12.0 : parsedAnnual;
+
                 console.log('Reading annual rate from input:', annualRateInput?.value, 'parsed as:', interestRate);
             } else {
                 const monthlyRateInput = document.getElementById('monthlyRateValue');
                 const parsedMonthly = parseFloat(monthlyRateInput?.value);
-                const monthlyRate = isNaN(parsedMonthly) ? 1.0 : parsedMonthly;
+
                 interestRate = monthlyRate * 12; // Convert monthly to annual for display
                 console.log('Reading monthly rate from input:', monthlyRateInput?.value, 'annual equivalent:', interestRate);
             }
