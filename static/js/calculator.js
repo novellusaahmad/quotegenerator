@@ -1377,18 +1377,6 @@ class LoanCalculator {
         }
     }
 
-    updateGrossAmountFromPercentage() {
-        const grossAmountType = document.querySelector('input[name="gross_amount_type"]:checked');
-        if (grossAmountType && grossAmountType.value === 'percentage') {
-            const propertyValue = parseFloat(document.getElementById('propertyValue').value) || 0;
-            const percentage = parseFloat(document.getElementById('grossAmountPercentage').value) || 0;
-            const grossAmount = propertyValue * (percentage / 100);
-            
-            // Update a hidden field or display for reference
-            // This will be used in form submission
-        }
-    }
-
     setDefaultDate() {
         const startDateInput = document.getElementById('startDate');
         const autoStartDateInput = document.getElementById('autoStartDate');
@@ -1807,13 +1795,18 @@ class LoanCalculator {
     }
 
     updateGrossAmountFromPercentage() {
-        const propertyValue = parseFloat(document.getElementById('propertyValue').value) || 0;
-        const percentage = parseFloat(document.getElementById('grossAmountPercentage').value) || 0;
+        const propertyValueInput = document.getElementById('propertyValue');
+        const percentageInput = document.getElementById('grossAmountPercentage');
         const grossFixedInput = document.getElementById('grossAmountFixed');
-        
+
+        const propertyValue = parseFloat((propertyValueInput?.value || '').replace(/,/g, '')) || 0;
+        const percentage = parseFloat((percentageInput?.value || '').replace(/,/g, '')) || 0;
+
         if (propertyValue > 0 && percentage > 0 && grossFixedInput) {
             const grossAmount = (propertyValue * percentage / 100).toFixed(2);
             grossFixedInput.value = grossAmount;
+        } else if (grossFixedInput) {
+            grossFixedInput.value = '';
         }
     }
 
