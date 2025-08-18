@@ -603,6 +603,9 @@ class LoanCalculator {
             // Generate charts based on loan type and results
             console.log('Generating charts...');
             this.generateCharts(results);
+
+            // Update visualization button visibility based on loan type and repayment option
+            this.updateVisualizationButtonsVisibility(results);
             
             // Update percentage displays after results are shown
             console.log('Updating percentage displays...');
@@ -941,6 +944,26 @@ class LoanCalculator {
         });
         
         console.log('Detailed payment schedule displayed with', results.detailed_payment_schedule.length, 'rows');
+    }
+
+    updateVisualizationButtonsVisibility(results) {
+        const loanType = results.loan_type || document.getElementById('loanType')?.value || '';
+        const repaymentOption = results.repayment_option || results.repaymentOption || document.getElementById('repaymentOption')?.value || '';
+        const hideButtons = loanType === 'bridge' && repaymentOption === 'none';
+
+        const selectors = [
+            '[data-bs-target="#paymentScheduleModal"]',
+            '[data-bs-target="#balanceModal"]',
+            '[data-bs-target="#compoundInterestModal"]',
+            '[data-bs-target="#trancheModal"]'
+        ];
+
+        selectors.forEach(sel => {
+            const btn = document.querySelector(sel);
+            if (btn) {
+                btn.style.display = hideButtons ? 'none' : '';
+            }
+        });
     }
 
     formatDate(dateString) {
@@ -2320,9 +2343,13 @@ class LoanCalculator {
                         return;
                     }
 
+                    const loanType = results.loan_type || '';
+                    const repaymentOption = results.repayment_option || results.repaymentOption || '';
+                    const isBridgeRetained = loanType === 'bridge' && repaymentOption === 'none';
+
                     this.createLoanBreakdownChart(results);
 
-                    if (results.detailed_payment_schedule && results.detailed_payment_schedule.length > 0) {
+                    if (!isBridgeRetained && results.detailed_payment_schedule && results.detailed_payment_schedule.length > 0) {
                         this.createBalanceOverTimeChart(results);
                     }
 
