@@ -353,7 +353,7 @@ print_status "Starting loan calculator application..."
 # Try Gunicorn first (production server)
 if command -v gunicorn &> /dev/null; then
     print_status "Starting with Gunicorn production server..."
-    gunicorn --bind 0.0.0.0:8502 --workers 2 --timeout 120 --reload main:app
+    gunicorn --bind 0.0.0.0:8503 --workers 2 --timeout 120 --reload main:app
 elif command -v waitress-serve &> /dev/null; then
     print_status "Starting with Waitress server..."
     waitress-serve --host=0.0.0.0 --port=5000 main:app

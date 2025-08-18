@@ -3067,8 +3067,7 @@ class LoanCalculator {
         console.log('Arrangement fee elements found:', !!arrangementFeePercentageEl, !!arrangementFeeInput);
         if (arrangementFeePercentageEl && arrangementFeeInput) {
             const parsedRate = parseFloat(arrangementFeeInput.value);
-            const arrangementFeeRate = isNaN(parsedRate) ? 0 : parsedRate;
-            if (isNaN(parsedRate)) arrangementFeeInput.value = '0';
+
             const newText = arrangementFeeRate.toFixed(2) + '%';
             arrangementFeePercentageEl.textContent = newText;
             console.log('Updated arrangement fee percentage from', arrangementFeePercentageEl.textContent, 'to:', newText);
@@ -3082,8 +3081,7 @@ class LoanCalculator {
         console.log('Title insurance elements found:', !!titleInsurancePercentageEl, !!titleInsuranceInput);
         if (titleInsurancePercentageEl && titleInsuranceInput) {
             const parsedRate = parseFloat(titleInsuranceInput.value);
-            const titleInsuranceRate = isNaN(parsedRate) ? 0 : parsedRate;
-            if (isNaN(parsedRate)) titleInsuranceInput.value = '0';
+
             // Fix rounding issue by using proper decimal precision
             const newText = titleInsuranceRate.toFixed(3) + '%';
             titleInsurancePercentageEl.textContent = newText;
@@ -3102,14 +3100,12 @@ class LoanCalculator {
             if (rateInputType === 'annual') {
                 const annualRateInput = document.getElementById('annualRateValue');
                 const parsedAnnual = parseFloat(annualRateInput?.value);
-                interestRate = isNaN(parsedAnnual) ? 0 : parsedAnnual;
-                if (isNaN(parsedAnnual) && annualRateInput) annualRateInput.value = '0';
+
                 console.log('Reading annual rate from input:', annualRateInput?.value, 'parsed as:', interestRate);
             } else {
                 const monthlyRateInput = document.getElementById('monthlyRateValue');
                 const parsedMonthly = parseFloat(monthlyRateInput?.value);
-                const monthlyRate = isNaN(parsedMonthly) ? 0 : parsedMonthly;
-                if (isNaN(parsedMonthly) && monthlyRateInput) monthlyRateInput.value = '0';
+
                 interestRate = monthlyRate * 12; // Convert monthly to annual for display
                 console.log('Reading monthly rate from input:', monthlyRateInput?.value, 'annual equivalent:', interestRate);
             }
