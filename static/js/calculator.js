@@ -3047,7 +3047,8 @@ class LoanCalculator {
         const arrangementFeeInput = document.getElementById('arrangementFeeRate');
         console.log('Arrangement fee elements found:', !!arrangementFeePercentageEl, !!arrangementFeeInput);
         if (arrangementFeePercentageEl && arrangementFeeInput) {
-            const arrangementFeeRate = parseFloat(arrangementFeeInput.value) || 2.0;
+            const parsedRate = parseFloat(arrangementFeeInput.value);
+            const arrangementFeeRate = isNaN(parsedRate) ? 2.0 : parsedRate;
             const newText = arrangementFeeRate.toFixed(2) + '%';
             arrangementFeePercentageEl.textContent = newText;
             console.log('Updated arrangement fee percentage from', arrangementFeePercentageEl.textContent, 'to:', newText);
@@ -3060,7 +3061,8 @@ class LoanCalculator {
         const titleInsuranceInput = document.getElementById('titleInsuranceRate');
         console.log('Title insurance elements found:', !!titleInsurancePercentageEl, !!titleInsuranceInput);
         if (titleInsurancePercentageEl && titleInsuranceInput) {
-            const titleInsuranceRate = parseFloat(titleInsuranceInput.value) || 0.01;
+            const parsedRate = parseFloat(titleInsuranceInput.value);
+            const titleInsuranceRate = isNaN(parsedRate) ? 0.01 : parsedRate;
             // Fix rounding issue by using proper decimal precision
             const newText = titleInsuranceRate.toFixed(3) + '%';
             titleInsurancePercentageEl.textContent = newText;
@@ -3075,18 +3077,20 @@ class LoanCalculator {
         if (interestRatePercentageEl) {
             const rateInputType = document.querySelector('input[name="rate_input_type"]:checked')?.value || 'annual';
             let interestRate = 0;
-            
+
             if (rateInputType === 'annual') {
                 const annualRateInput = document.getElementById('annualRateValue');
-                interestRate = parseFloat(annualRateInput?.value) || 12.0;
+                const parsedAnnual = parseFloat(annualRateInput?.value);
+                interestRate = isNaN(parsedAnnual) ? 12.0 : parsedAnnual;
                 console.log('Reading annual rate from input:', annualRateInput?.value, 'parsed as:', interestRate);
             } else {
                 const monthlyRateInput = document.getElementById('monthlyRateValue');
-                interestRate = parseFloat(monthlyRateInput?.value) || 1.0;
-                interestRate = interestRate * 12; // Convert monthly to annual for display
+                const parsedMonthly = parseFloat(monthlyRateInput?.value);
+                const monthlyRate = isNaN(parsedMonthly) ? 1.0 : parsedMonthly;
+                interestRate = monthlyRate * 12; // Convert monthly to annual for display
                 console.log('Reading monthly rate from input:', monthlyRateInput?.value, 'annual equivalent:', interestRate);
             }
-            
+
             const newText = interestRate.toFixed(2) + '%';
             interestRatePercentageEl.textContent = newText;
             console.log('Updated interest rate percentage to:', newText);
