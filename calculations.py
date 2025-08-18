@@ -741,11 +741,11 @@ class LoanCalculator:
         net_advance_day1 = float(params.get('day1_advance', 100000))
         legals = float(params.get('legal_fees', 7587.94))
         annual_interest_rate = float(params.get('annual_rate', 12.0)) / 100
-        arrangement_fee_percent = float(params.get('arrangement_fee_rate', 2.0)) / 100
+        arrangement_fee_percent = float(params.get('arrangement_fee_rate') or 0) / 100
         total_net_advance = float(params.get('net_amount', 800000))
         
         # Title insurance handling - calculate iteratively like arrangement fee
-        title_insurance_rate = float(params.get('title_insurance_rate', 0.01)) / 100  # 0.01%
+        title_insurance_rate = float(params.get('title_insurance_rate') or 0) / 100
         site_visit_fee = float(params.get('site_visit_fee', 0))
         
         # Date and term parameters - CRITICAL FIX: Add date sensitivity like other loan types
@@ -6125,10 +6125,10 @@ class LoanCalculator:
         tranches = params.get('tranches', [])
         
         # Calculate arrangement fee and legal fees to get actual loan amount
-        arrangement_fee_rate = params.get('arrangement_fee_rate', 2.0)
-        legal_fees = Decimal(str(params.get('legal_fees', 2500)))
+        arrangement_fee_rate = params.get('arrangement_fee_rate', 0)
+        legal_fees = Decimal(str(params.get('legal_fees', 0)))
         site_visit_fee = Decimal(str(params.get('site_visit_fee', 0)))
-        title_insurance_rate = params.get('title_insurance_rate', 0.25)
+        title_insurance_rate = params.get('title_insurance_rate', 0)
         
         arrangement_fee = gross_amount * Decimal(str(arrangement_fee_rate)) / Decimal('100')
         title_insurance = gross_amount * Decimal(str(title_insurance_rate)) / Decimal('100') 
