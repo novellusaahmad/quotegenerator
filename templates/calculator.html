@@ -879,7 +879,7 @@
 </tr>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Arrangement Fee</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="arrangementFeePercentageDisplay">2.00%</span> <span class="currency-symbol">£</span></td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="arrangementFeePercentageDisplay">0.00%</span> <span class="currency-symbol">£</span></td>
 <td class="fw-bold px-3 text-end" id="arrangementFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
 </tr>
 <tr style="border: 1px solid #000;">
@@ -894,7 +894,7 @@
 </tr>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Title Insurance</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"><span id="titleInsurancePercentageDisplay">0.01%</span> <span class="currency-symbol">£</span></td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"><span id="titleInsurancePercentageDisplay">0.000%</span> <span class="currency-symbol">£</span></td>
 <td class="fw-bold px-3 text-end" id="titleInsuranceResult" style="color: #000 !important; background: white;">-</td>
 </tr>
 <tr style="border: 1px solid #000;">
@@ -1755,10 +1755,10 @@ function openScenarioComparison() {
             property_value: formData.property_value || 2000000,
             currency: formData.currency || 'GBP',
             amount_input_type: formData.amount_input_type || 'gross',
-            arrangement_fee_rate: formData.arrangement_fee_rate || 2.0,
-            legal_fees: formData.legal_fees || 1500,
-            site_visit_fee: formData.site_visit_fee || 500,
-            title_insurance_rate: formData.title_insurance_rate || 0.01,
+            arrangement_fee_rate: formData.arrangement_fee_rate || 0,
+            legal_fees: formData.legal_fees || 0,
+            site_visit_fee: formData.site_visit_fee || 0,
+            title_insurance_rate: formData.title_insurance_rate || 0,
             repayment_option: formData.repayment_option || 'none',
             interest_type: formData.interest_type || 'simple',
             payment_timing: formData.payment_timing || 'arrears',

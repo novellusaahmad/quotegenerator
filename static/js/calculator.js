@@ -3071,7 +3071,8 @@ class LoanCalculator {
         const arrangementFeeInput = document.getElementById('arrangementFeeRate');
         console.log('Arrangement fee elements found:', !!arrangementFeePercentageEl, !!arrangementFeeInput);
         if (arrangementFeePercentageEl && arrangementFeeInput) {
-            const arrangementFeeRate = parseFloat(arrangementFeeInput.value) || 2.0;
+            const parsedArrangement = parseFloat(arrangementFeeInput.value);
+            const arrangementFeeRate = isNaN(parsedArrangement) ? 0 : parsedArrangement;
             const newText = arrangementFeeRate.toFixed(2) + '%';
             arrangementFeePercentageEl.textContent = newText;
             console.log('Updated arrangement fee percentage from', arrangementFeePercentageEl.textContent, 'to:', newText);
@@ -3084,7 +3085,8 @@ class LoanCalculator {
         const titleInsuranceInput = document.getElementById('titleInsuranceRate');
         console.log('Title insurance elements found:', !!titleInsurancePercentageEl, !!titleInsuranceInput);
         if (titleInsurancePercentageEl && titleInsuranceInput) {
-            const titleInsuranceRate = parseFloat(titleInsuranceInput.value) || 0.01;
+            const parsedTitle = parseFloat(titleInsuranceInput.value);
+            const titleInsuranceRate = isNaN(parsedTitle) ? 0 : parsedTitle;
             // Fix rounding issue by using proper decimal precision
             const newText = titleInsuranceRate.toFixed(3) + '%';
             titleInsurancePercentageEl.textContent = newText;
