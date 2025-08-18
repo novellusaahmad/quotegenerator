@@ -16,16 +16,26 @@ class LoanCalculator:
     
     def __init__(self):
         self.days_in_year = 365  # Default to 365 days
+
+    def calculate_simple_interest_by_days(self, principal: Decimal, annual_rate: Decimal,
+                                          days: int, use_360_days: bool = False) -> Decimal:
+        """Calculate simple interest using a yearly-to-daily method"""
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
+        yearly_interest = principal * (annual_rate / Decimal('100'))
+        daily_interest = yearly_interest / days_per_year
+        return daily_interest * Decimal(str(days))
         
     def calculate_interest_amount(self, principal: Decimal, rate: Decimal, term_years: Decimal, interest_type: str = 'simple', use_360_days: bool = False) -> Decimal:
         """
         Calculate interest amount based on interest type
         """
         rate_decimal = rate / Decimal('100')  # Convert percentage to decimal
-        
+
         if interest_type == 'simple':
-            # Simple Interest: I = P * r * t
-            return principal * rate_decimal * term_years
+            # Simple Interest using yearly->daily calculation
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            total_days = term_years * days_per_year
+            return self.calculate_simple_interest_by_days(principal, rate, total_days, use_360_days)
         elif interest_type == 'compound_daily':
             # Compound Daily: A = P(1 + r/days_per_year)^(days_per_year*t) - P
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
@@ -1665,15 +1675,15 @@ class LoanCalculator:
             logging.info(f"Bridge retained calculation: gross={gross_amount}, rate={annual_rate}, term_years={term_years}, interest_type={interest_type}")
             
             if interest_type == 'simple':
-                # Simple interest with configurable day count (360 vs 365)
                 if loan_term_days is not None:
-                    # Use actual days with configurable year basis
-                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                    term_years_adjusted = Decimal(str(loan_term_days)) / days_per_year
-                    total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years_adjusted
-                    logging.info(f"Bridge retained simple interest: gross={gross_amount}, rate={annual_rate}%, days={loan_term_days}, year_basis={days_per_year}, term_years={term_years_adjusted:.4f}, interest={total_interest:.2f}")
+                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
+                                                                            loan_term_days, use_360_days)
+                    logging.info(f"Bridge retained simple interest: gross={gross_amount}, rate={annual_rate}%, days={loan_term_days}, interest={total_interest:.2f}")
                 else:
-                    total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                    total_days = term_years * days_per_year
+                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
+                                                                            int(total_days), use_360_days)
             elif interest_type == 'compound_daily':
                 # Compound daily: A = P(1 + r/days_per_year)^(days_per_year*t) - P
                 days_per_year = Decimal('360') if use_360_days else Decimal('365')
@@ -1745,15 +1755,15 @@ class LoanCalculator:
             annual_rate = monthly_rate * 12
             
             if interest_type == 'simple':
-                # Simple interest with configurable day count (360 vs 365)
                 if loan_term_days is not None:
-                    # Use actual days with configurable year basis
-                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                    term_years_adjusted = Decimal(str(loan_term_days)) / days_per_year
-                    total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years_adjusted
-                    logging.info(f"Bridge interest-only simple interest: gross={gross_amount}, rate={annual_rate}%, days={loan_term_days}, year_basis={days_per_year}, term_years={term_years_adjusted:.4f}, interest={total_interest:.2f}")
+                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
+                                                                            loan_term_days, use_360_days)
+                    logging.info(f"Bridge interest-only simple interest: gross={gross_amount}, rate={annual_rate}%, days={loan_term_days}, interest={total_interest:.2f}")
                 else:
-                    total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                    total_days = term_years * days_per_year
+                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
+                                                                            int(total_days), use_360_days)
                 monthly_interest = total_interest / loan_term
             elif interest_type == 'compound_daily':
                 # Compound daily: A = P(1 + r/days_per_year)^(days_per_year*t) - P
@@ -2090,26 +2100,20 @@ class LoanCalculator:
         
         if interest_type == 'simple':
             # For interest-only payments, use the same total interest calculation as retained interest
-            # This ensures consistency between retained and interest-only payments
             # term_years already calculated above with loan_term_days if available
             interest_rate = (annual_rate / Decimal('100')) * term_years
-            
-            # If net_amount is provided, this is a net-to-gross conversion - use retained interest calculation
+
             if net_amount is not None:
-                # For net-to-gross conversions, total interest should match retained interest calculation
                 total_interest = net_amount * interest_rate / (Decimal('1') - interest_rate)
                 monthly_payment = total_interest / Decimal(str(loan_term))
-                
                 logging.info(f"Term loan (net-to-gross) using retained interest formula: net={net_amount:.2f}, total_interest={total_interest:.2f}")
             else:
-                # Standard gross-to-net calculation
-                # Use term_years which now includes loan_term_days calculation
-                if use_360_days:
-                    # Apply 360-day rate adjustment (365/360 factor)
-                    adjusted_term_years = term_years * Decimal('365') / Decimal('360')
-                    total_interest = gross_amount * (annual_rate / Decimal('100')) * adjusted_term_years
+                if loan_term_days is not None:
+                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate, loan_term_days, use_360_days)
                 else:
-                    total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                    total_days = term_years * days_per_year
+                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate, int(total_days), use_360_days)
                 monthly_payment = total_interest / Decimal(str(loan_term))
                 logging.info(f"Term loan (gross-to-net) simple interest: gross={gross_amount:.2f}, term_years={term_years:.4f}, use_360_days={use_360_days}, total_interest={total_interest:.2f}")
         elif interest_type == 'compound_daily':
@@ -2188,7 +2192,14 @@ class LoanCalculator:
         logging.info(f"Term retained calculation: gross={gross_amount}, rate={annual_rate}, term_years={term_years}, interest_type={interest_type}")
         
         if interest_type == 'simple':
-            total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+            if loan_term_days is not None:
+                total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
+                                                                        loan_term_days, use_360_days)
+            else:
+                days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                total_days = term_years * days_per_year
+                total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
+                                                                        int(total_days), use_360_days)
         elif interest_type == 'compound_daily':
             # Compound daily: A = P(1 + r/365)^(365*t) - P
             daily_rate = annual_rate / Decimal('100') / Decimal('365')
