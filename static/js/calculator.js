@@ -2040,6 +2040,11 @@ class LoanCalculator {
         const totalFeesNum = arrangementNum + legalNum + siteNum + titleNum;
         const totalFees = formatMoney(totalFeesNum);
 
+        const arrangementPctEl = document.getElementById('arrangementFeePercentageDisplay');
+        const arrangementPctText = arrangementPctEl ? arrangementPctEl.textContent.trim() : '';
+        const titlePctEl = document.getElementById('titleInsurancePercentageDisplay');
+        const titlePctText = titlePctEl ? titlePctEl.textContent.trim() : '';
+
         let trancheHtml = '';
         if (r.tranche_breakdown && r.tranche_breakdown.length > 0) {
             trancheHtml = '<h6>Tranche Drawdowns</h6>' +
@@ -2160,6 +2165,12 @@ class LoanCalculator {
         const monthlyInterest = formatMoney(monthlyInterestNum);
         const yearlyInterest = formatMoney(yearlyInterestNum);
 
+        const interestDeducted = ['none', 'retained', 'capital_payment_only'].includes(repaymentOption);
+        const netNum = grossNum - arrangementNum - legalNum - siteNum - titleNum - (interestDeducted ? interestNum : 0);
+        const net = formatMoney(netNum);
+        const netFormula = `Net = Gross – Arrangement Fee – Legal Fees – Site Visit Fee – Title Insurance${interestDeducted ? ' – Retained Interest' : ''}`;
+        const retainedInterestFormula = interestDeducted ? `(Interest Rate × Loan Term) × Gross` : '';
+
         modalBody.innerHTML = `
             <p><strong>Calculation Engine:</strong> The calculator uses ${calcDescription}.</p>
             <p><strong>Repayment Method:</strong> ${repaymentDescription}</p>
@@ -2168,18 +2179,27 @@ class LoanCalculator {
             ${loanType === 'development' ? `<p><strong>Goal Seek Logic:</strong> ${goalSeekDescription}</p>` : ''}
             <p><strong>Interest Rate:</strong> ${rateText} for ${loanTerm} months.</p>
             <p><strong>Interest Breakdown:</strong> Daily ${dailyInterest}, Monthly ${monthlyInterest}, Yearly ${yearlyInterest}.</p>
-            <h6>Step by Step</h6>
-            <ol>
-                <li>Starting gross loan amount: ${gross}.</li>
-                <li>Fees deducted  arrangement ${arrangement}, legal ${legal}, site visit ${site}, title insurance ${title}.</li>
-                <li>Total interest charged: ${interest}.</li>
-                <li>Net advance on day one: ${day1} with a total net advance of ${totalNet}.</li>
-                <li>Loan to value begins at ${startLTV}% and ends at ${endLTV}%.</li>
-            </ol>
+            
+            <h6>Gross to Net Calculation</h6>
+            <p class="mb-2"><strong>Formula:</strong> ${netFormula}</p>
+            <table class="table table-sm table-bordered mb-3">
+                <tbody>
+                    <tr><th scope="row">Gross</th><td>${gross}</td></tr>
+                    <tr><th scope="row">Arrangement Fee (${arrangementPctText})</th><td>${arrangement}</td></tr>
+                    <tr><th scope="row">Legal Fees</th><td>${legal}</td></tr>
+                    <tr><th scope="row">Site Visit Fee</th><td>${site}</td></tr>
+                    <tr><th scope="row">Title Insurance (${titlePctText})</th><td>${title}</td></tr>
+                    ${interestDeducted ? `<tr><th scope="row">Retained Interest (${rateText} for ${loanTerm} months)</th><td>${interest}</td></tr>` : ''}
+                    <tr class="table-active fw-bold"><th scope="row">Net</th><td>${net}</td></tr>
+                </tbody>
+            </table>
+            ${interestDeducted ? `<p><strong>Retained Interest:</strong> ${retainedInterestFormula} = ${interest}</p>` : ''}
+            <p><strong>Loan to Value:</strong> start ${startLTV}% &rarr; end ${endLTV}%.</p>
             ${interestSavingsHtml}
             ${trancheHtml}
             ${scheduleHtml}
         `;
+
     }
 
     // Load existing results from session storage or page data
