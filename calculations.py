@@ -830,6 +830,8 @@ class LoanCalculator:
         """Development 2 loan using attached Python code methodology with iterative fee calculations"""
         import logging
         from datetime import datetime, timedelta
+        from dateutil.relativedelta import relativedelta
+        from dateutil.relativedelta import relativedelta
         from calendar import monthrange
         import numpy as np
         
@@ -4177,6 +4179,7 @@ class LoanCalculator:
         
         # Get start date
         from datetime import datetime, timedelta
+        from dateutil.relativedelta import relativedelta
         start_date_str = params.get('start_date', params.get('loan_start_date', datetime.now().strftime('%Y-%m-%d')))
         if isinstance(start_date_str, str):
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
@@ -4265,27 +4268,43 @@ class LoanCalculator:
                     days_label = " (monthly)"
                 interest_per_payment = gross_amount * monthly_rate_decimal
                 interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {monthly_rate_display:.3f}%{days_label}"
-                
+
+            # Calculate loan end date for period calculations
+            loan_end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
+
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
                 is_final = (period == len(payment_dates))
-                
+
+                # Determine period start and end based on payment timing
+                if payment_timing == 'advance':
+                    period_start = payment_dates[i]
+                    period_end = payment_dates[i + 1] - timedelta(days=1) if i < len(payment_dates) - 1 else loan_end_date
+                else:
+                    period_end = payment_dates[i]
+                    period_start = start_date if i == 0 else payment_dates[i - 1] + timedelta(days=1)
+
+                days_held = (period_end - period_start).days + 1
+
                 interest_amount = interest_per_payment
                 principal_payment = remaining_balance if is_final else Decimal('0')
                 total_payment = interest_amount + principal_payment
-                
-                # Add fees to first payment
+
+                # Add fees to first payment but do not show 'fees' text
                 if period == 1:
                     total_payment += arrangement_fee + legal_fees
-                    interest_calc = f"{interest_calc_text} + fees"
+                    interest_calc = interest_calc_text
                 else:
                     interest_calc = interest_calc_text
-                
+
                 balance_change = f"↓ -{currency_symbol}{principal_payment:,.2f}" if principal_payment > 0 else "↔ No Change"
                 closing_balance = remaining_balance - principal_payment
-                
+
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
+                    'start_period': period_start.strftime('%d/%m/%Y'),
+                    'end_period': period_end.strftime('%d/%m/%Y'),
+                    'days_held': int(days_held),
                     'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
@@ -4295,7 +4314,7 @@ class LoanCalculator:
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
                     'balance_change': balance_change
                 })
-                
+
                 remaining_balance = closing_balance
         
         elif repayment_option == 'service_and_capital':
