@@ -230,13 +230,18 @@ class LoanCalculator {
                 const timeDiff = endDate.getTime() - startDate.getTime();
                 const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
                 
-                // Convert days to months using average days per month (30.44)
-                const monthsFromDays = Math.max(1, Math.round(daysDiff / 30.44));
-                
+                // Calculate exact months difference
+                let monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+                                 (endDate.getMonth() - startDate.getMonth());
+                if (endDate.getDate() < startDate.getDate()) {
+                    monthsDiff -= 1;
+                }
+                monthsDiff = Math.max(1, monthsDiff);
+
                 // Update loan term based on actual days calculation
-                loanTermElement.value = monthsFromDays;
-                
-                console.log(`Date change: ${daysDiff} days = ${monthsFromDays} months`);
+                loanTermElement.value = monthsDiff;
+
+                console.log(`Date change: ${daysDiff} days = ${monthsDiff} months`);
                 
                 // Trigger a change event on the loan term field to update any dependent calculations
                 loanTermElement.dispatchEvent(new Event('input', { bubbles: true }));

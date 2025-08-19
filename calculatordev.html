@@ -1128,8 +1128,13 @@ function recalculateLoanTerm() {
         } else if (daysDiff >= 720 && daysDiff <= 740) {
             loanTerm = 24; // 24-month loan (around 730 days)
         } else {
-            // For other day ranges, approximate to months
-            loanTerm = Math.round(daysDiff / 30.44); // Average days per month
+            // For other ranges, calculate exact month difference
+            let monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+                             (endDate.getMonth() - startDate.getMonth());
+            if (endDate.getDate() < startDate.getDate()) {
+                monthsDiff -= 1;
+            }
+            loanTerm = Math.max(1, monthsDiff);
         }
         
         if (loanTerm > 0) {
