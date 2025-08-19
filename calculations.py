@@ -1,5 +1,6 @@
 import math
 import re
+import calendar
 from datetime import datetime, timedelta
 from decimal import Decimal, getcontext
 from typing import Dict, List, Optional, Tuple
@@ -17,6 +18,19 @@ class LoanCalculator:
     def __init__(self):
         self.days_in_year = 365  # Default to 365 days
 
+    def _add_months(self, start: datetime, months: int) -> datetime:
+        """Add months to a date while preserving day when possible."""
+        month = start.month - 1 + months
+        year = start.year + month // 12
+        month = month % 12 + 1
+        day = min(start.day, calendar.monthrange(year, month)[1])
+        return start.replace(year=year, month=month, day=day)
+
+    def _calculate_term_days(self, start_date: datetime, term_months: int) -> int:
+        """Calculate exact number of days for a term based on calendar months."""
+        end_date = self._add_months(start_date, term_months)
+        return (end_date - start_date).days
+
     def calculate_simple_interest_by_days(self, principal: Decimal, annual_rate: Decimal,
                                           days: int, use_360_days: bool = False) -> Decimal:
         """Calculate simple interest using a yearly-to-daily method"""
@@ -25,21 +39,53 @@ class LoanCalculator:
         daily_interest = yearly_interest / days_per_year
         return daily_interest * Decimal(str(days))
         
-    def calculate_interest_amount(self, principal: Decimal, rate: Decimal, term_years: Decimal, interest_type: str = 'simple', use_360_days: bool = False) -> Decimal:
+    def calculate_interest_amount(
+        self,
+        principal: Decimal,
+        rate: Decimal,
+        term_years: Optional[Decimal] = None,
+        interest_type: str = 'simple',
+        use_360_days: bool = False,
+        term_days: Optional[int] = None,
+        start_date: Optional[datetime] = None,
+        term_months: Optional[int] = None,
+    ) -> Decimal:
+        """Calculate interest amount based on interest type.
+
+        Args:
+            principal: Loan principal amount.
+            rate: Annual interest rate as a percentage.
+            term_years: Loan term in years. Optional if ``term_days`` provided.
+            interest_type: Interest calculation method (simple, compound_daily, etc.).
+            use_360_days: Whether to use a 360 day count basis instead of 365.
+            term_days: Exact loan term in days. Takes precedence over ``term_years`` when provided.
+            start_date: Loan start date for calendar-based term calculations.
+            term_months: Term length in months when using ``start_date`` for exact day counts.
         """
-        Calculate interest amount based on interest type
-        """
+
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
+
+        if term_days is not None:
+            term_years = Decimal(str(term_days)) / days_per_year
+            total_days = Decimal(str(term_days))
+        elif start_date is not None and term_months is not None:
+            term_days = self._calculate_term_days(start_date, term_months)
+            term_years = Decimal(str(term_days)) / days_per_year
+            total_days = Decimal(str(term_days))
+        elif term_years is not None:
+            term_years = Decimal(term_years)
+            total_days = term_years * days_per_year
+        else:
+            raise ValueError("Either term_years, term_days, or start_date with term_months must be provided")
+
         rate_decimal = rate / Decimal('100')  # Convert percentage to decimal
 
         if interest_type == 'simple':
             # Simple Interest using yearly->daily calculation
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            total_days = term_years * days_per_year
             return self.calculate_simple_interest_by_days(principal, rate, total_days, use_360_days)
         elif interest_type == 'compound_daily':
-            # Compound Daily: A = P(1 + r/days_per_year)^(days_per_year*t) - P
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            total_amount = principal * (Decimal('1') + rate_decimal / days_per_year) ** (days_per_year * term_years)
+            # Compound Daily: A = P(1 + r/days_per_year)^(total_days) - P
+            total_amount = principal * (Decimal('1') + rate_decimal / days_per_year) ** total_days
             return total_amount - principal
         elif interest_type == 'compound_monthly':
             # Compound Monthly: A = P(1 + r/12)^(12*t) - P
@@ -53,19 +99,46 @@ class LoanCalculator:
             # Default to simple interest
             return principal * rate_decimal * term_years
             
-    def calculate_total_amount_with_interest(self, principal: Decimal, rate: Decimal, term_years: Decimal, interest_type: str = 'simple', use_360_days: bool = False) -> Decimal:
+    def calculate_total_amount_with_interest(
+        self,
+        principal: Decimal,
+        rate: Decimal,
+        term_years: Optional[Decimal] = None,
+        interest_type: str = 'simple',
+        use_360_days: bool = False,
+        term_days: Optional[int] = None,
+        start_date: Optional[datetime] = None,
+        term_months: Optional[int] = None,
+    ) -> Decimal:
+        """Calculate total amount (principal + interest) based on interest type.
+
+        Accepts either ``term_years`` or an exact ``term_days`` for day-accurate
+        calculations. If ``start_date`` and ``term_months`` are provided, the
+        term length is derived using actual calendar days.
         """
-        Calculate total amount (principal + interest) based on interest type
-        """
+
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
+        if term_days is not None:
+            term_years = Decimal(str(term_days)) / days_per_year
+            total_days = Decimal(str(term_days))
+        elif start_date is not None and term_months is not None:
+            term_days = self._calculate_term_days(start_date, term_months)
+            term_years = Decimal(str(term_days)) / days_per_year
+            total_days = Decimal(str(term_days))
+        elif term_years is not None:
+            term_years = Decimal(term_years)
+            total_days = term_years * days_per_year
+        else:
+            raise ValueError("Either term_years, term_days, or start_date with term_months must be provided")
+
         rate_decimal = rate / Decimal('100')  # Convert percentage to decimal
-        
+
         if interest_type == 'simple':
             # Simple Interest: A = P(1 + r*t)
             return principal * (Decimal('1') + rate_decimal * term_years)
         elif interest_type == 'compound_daily':
-            # Compound Daily: A = P(1 + r/days_per_year)^(days_per_year*t)
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            return principal * (Decimal('1') + rate_decimal / days_per_year) ** (days_per_year * term_years)
+            # Compound Daily: A = P(1 + r/days_per_year)^(total_days)
+            return principal * (Decimal('1') + rate_decimal / days_per_year) ** total_days
         elif interest_type == 'compound_monthly':
             # Compound Monthly: A = P(1 + r/12)^(12*t)
             return principal * (Decimal('1') + rate_decimal / Decimal('12')) ** (Decimal('12') * term_years)
@@ -76,24 +149,51 @@ class LoanCalculator:
             # Default to simple interest
             return principal * (Decimal('1') + rate_decimal * term_years)
             
-    def calculate_gross_from_net_with_interest_type(self, net_amount: Decimal, rate: Decimal, term_years: Decimal, interest_type: str = 'simple', use_360_days: bool = False) -> Decimal:
+    def calculate_gross_from_net_with_interest_type(
+        self,
+        net_amount: Decimal,
+        rate: Decimal,
+        term_years: Optional[Decimal] = None,
+        interest_type: str = 'simple',
+        use_360_days: bool = False,
+        term_days: Optional[int] = None,
+        start_date: Optional[datetime] = None,
+        term_months: Optional[int] = None,
+    ) -> Decimal:
+        """Calculate gross amount from net amount based on interest type.
+
+        Either ``term_years`` or an exact ``term_days`` may be supplied. If
+        ``start_date`` and ``term_months`` are provided, the term length is
+        derived using actual calendar days.
         """
-        Calculate gross amount from net amount based on interest type (for retained interest scenarios)
-        """
+
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
+        if term_days is not None:
+            term_years = Decimal(str(term_days)) / days_per_year
+            total_days = Decimal(str(term_days))
+        elif start_date is not None and term_months is not None:
+            term_days = self._calculate_term_days(start_date, term_months)
+            term_years = Decimal(str(term_days)) / days_per_year
+            total_days = Decimal(str(term_days))
+        elif term_years is not None:
+            term_years = Decimal(term_years)
+            total_days = term_years * days_per_year
+        else:
+            raise ValueError("Either term_years, term_days, or start_date with term_months must be provided")
+
         rate_decimal = rate / Decimal('100')  # Convert percentage to decimal
-        
+
         if interest_type == 'simple':
             # Simple Interest: Net = Gross / (1 + r*t), so Gross = Net * (1 + r*t)
             return net_amount * (Decimal('1') + rate_decimal * term_years)
         elif interest_type == 'compound_daily':
-            # Compound Daily: Net = Gross / (1 + r/days_per_year)^(days_per_year*t), so Gross = Net * (1 + r/days_per_year)^(days_per_year*t)
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            return net_amount * (Decimal('1') + rate_decimal / days_per_year) ** (days_per_year * term_years)
+            # Compound Daily: Net = Gross / (1 + r/days_per_year)^(total_days)
+            return net_amount * (Decimal('1') + rate_decimal / days_per_year) ** total_days
         elif interest_type == 'compound_monthly':
-            # Compound Monthly: Net = Gross / (1 + r/12)^(12*t), so Gross = Net * (1 + r/12)^(12*t)
+            # Compound Monthly: Net = Gross / (1 + r/12)^(12*t)
             return net_amount * (Decimal('1') + rate_decimal / Decimal('12')) ** (Decimal('12') * term_years)
         elif interest_type == 'compound_quarterly':
-            # Compound Quarterly: Net = Gross / (1 + r/4)^(4*t), so Gross = Net * (1 + r/4)^(4*t)
+            # Compound Quarterly: Net = Gross / (1 + r/4)^(4*t)
             return net_amount * (Decimal('1') + rate_decimal / Decimal('4')) ** (Decimal('4') * term_years)
         else:
             # Default to simple interest
