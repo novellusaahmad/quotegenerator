@@ -850,15 +850,18 @@ class LoanCalculator {
         const periodicInterestEl = document.getElementById('periodicInterestResult');
         const periodicInterestLabel = document.getElementById('periodicInterestLabel');
         
-        console.log(`Periodic interest check: loanType=${loanType}, repaymentOption=${repaymentOption}, periodicInterest=${results.periodicInterest}`);
-        if ((loanType === 'term' || loanType === 'bridge') && repaymentOption === 'service_only' && results.periodicInterest) {
-            console.log('Showing periodic interest row');
+        console.log(`Periodic interest check: loanType=${loanType}, repaymentOption=${repaymentOption}`);
+        if ((loanType === 'term' || loanType === 'bridge') && repaymentOption === 'service_only') {
+            const annualRate = results.interestRate || results.annual_rate || 0;
+            const grossAmountForInterest = results.grossAmount || 0;
+            const divisor = paymentFrequency === 'quarterly' ? 4 : 12;
+            const periodicInterest = grossAmountForInterest * (annualRate / 100) / divisor;
+
             if (periodicInterestRow) periodicInterestRow.style.display = 'table-row';
             if (periodicInterestEl) {
-                periodicInterestEl.textContent = results.periodicInterest.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                periodicInterestEl.textContent = periodicInterest.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             }
-            
-            // Update label based on payment frequency
+
             if (periodicInterestLabel) {
                 const label = paymentFrequency === 'quarterly' ? 'Quarterly Interest Payment' : 'Monthly Interest Payment';
                 periodicInterestLabel.textContent = label;
