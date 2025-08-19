@@ -261,13 +261,39 @@ class LoanCalculator:
         import logging
         logging.info(f"Bridge loan calculation: amount_input_type={amount_input_type}, net_amount={net_amount}, gross_amount={gross_amount}")
         logging.info(f"Interest rate parameters: rate_input_type={rate_input_type}, interest_rate={interest_rate}, annual_rate={annual_rate}")
-        
+
+        # Calculate loan term in days using actual calendar logic (needed for gross/net conversions)
+        from datetime import datetime
+        from dateutil.relativedelta import relativedelta
+
+        start_date_str = params.get('start_date', datetime.now().strftime('%Y-%m-%d'))
+        end_date_str = params.get('end_date', '')
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if isinstance(start_date_str, str) else start_date_str
+
+        # Average days per month for recalculating term months when needed
+        avg_days_per_month = Decimal('365.25') / Decimal('12')
+
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
+            actual_days = (end_date - start_date).days
+            loan_term = max(1, round(actual_days / float(avg_days_per_month)))
+            loan_term_days = actual_days
+            logging.info(f"Bridge loan: Using end_date {end_date_str}, actual_days={actual_days}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months")
+        else:
+            end_date = start_date + relativedelta(months=loan_term)
+            loan_term_days = (end_date - start_date).days
+            end_date_str = end_date.strftime('%Y-%m-%d')
+            logging.info(f"Bridge loan: Calculated end_date {end_date_str}, loan_term_days={loan_term_days} (calendar), loan_term={loan_term} months")
+
+        params['loan_term_days'] = loan_term_days
+
         # Determine gross amount based on input type
         if amount_input_type == 'net' and net_amount > 0:
             logging.info(f"Converting net to gross: net={net_amount}")
             gross_amount = self._calculate_gross_from_net_bridge(
                 net_amount, annual_rate, loan_term, repayment_option,
-                arrangement_fee_rate, legal_fees, site_visit_fee, title_insurance_rate, use_360_days
+                arrangement_fee_rate, legal_fees, site_visit_fee, title_insurance_rate,
+                loan_term_days, use_360_days
             )
             logging.info(f"Calculated gross amount: {gross_amount}")
         elif amount_input_type == 'percentage' and property_value > 0:
@@ -275,40 +301,11 @@ class LoanCalculator:
             gross_amount = property_value * Decimal(str(percentage)) / 100
         else:
             logging.info(f"Using original gross amount: {gross_amount}")
-        
+
         # Calculate fees
-        fees = self._calculate_fees(gross_amount, arrangement_fee_rate, legal_fees, 
+        fees = self._calculate_fees(gross_amount, arrangement_fee_rate, legal_fees,
                                   site_visit_fee, title_insurance_rate, exit_fee_rate)
-        
-        # Calculate loan term in days using actual dates FIRST (before interest calculations)
-        import logging
-        from datetime import datetime, timedelta
-        from dateutil.relativedelta import relativedelta
-        
-        start_date_str = params.get('start_date', datetime.now().strftime('%Y-%m-%d'))
-        end_date_str = params.get('end_date', '')
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if isinstance(start_date_str, str) else start_date_str
-        
-        # Define dynamic average days per month calculation
-        avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
-        
-        # Priority 1: If both start and end dates are provided, use actual date range for loan term AND calculations
-        if end_date_str:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
-            actual_days = (end_date - start_date).days
-            # Recalculate loan term in months based on actual days
-            loan_term = max(1, round(actual_days / float(avg_days_per_month)))
-            # Use actual calendar days for date-sensitive calculations
-            loan_term_days = actual_days  # Use real calendar days for precise calculations
-            logging.info(f"Bridge loan: Using end_date {end_date_str}, actual_days={actual_days}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months")
-        else:
-            # Priority 2: Calculate end date from start date + loan term (subtract 1 day for loan term end)
-            end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
-            # Use standard loan term days calculation for consistent interest calculations
-            loan_term_days = int(loan_term * float(avg_days_per_month))  # Maintains proper days calculation
-            end_date_str = end_date.strftime('%Y-%m-%d')
-            logging.info(f"Bridge loan: Calculated end_date {end_date_str}, loan_term_days={loan_term_days} (standard), loan_term={loan_term} months")
-            
+
         # Apply 360-day adjustment to rates if requested
         if use_360_days:
             # Use 360-day basis for interest calculations
@@ -553,6 +550,42 @@ class LoanCalculator:
         else:
             annual_rate = interest_rate
         
+        # Calculate loan term in days using actual calendar logic (before gross/net conversions)
+        import logging
+        from dateutil.relativedelta import relativedelta
+        start_date = datetime.strptime(loan_start_date, '%Y-%m-%d') if isinstance(loan_start_date, str) else loan_start_date
+        end_date_str = params.get('end_date', '')
+        avg_days_per_month = Decimal('365.25') / Decimal('12')
+
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
+            actual_days = (end_date - start_date).days
+            loan_term = max(1, round(actual_days / float(avg_days_per_month)))
+            loan_term_days = actual_days
+            logging.info(f"Term loan: Using end_date {end_date_str}, actual_days={actual_days}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months")
+        else:
+            end_date = start_date + relativedelta(months=loan_term)
+            loan_term_days = (end_date - start_date).days
+            end_date_str = end_date.strftime('%Y-%m-%d')
+            logging.info(f"Term loan: Calculated end_date {end_date_str}, loan_term_days={loan_term_days} (calendar), loan_term={loan_term} months")
+
+        params['loan_term_days'] = loan_term_days
+
+        # Determine gross amount based on input type
+        if amount_input_type == 'net' and net_amount > 0:
+            gross_amount = self._calculate_gross_from_net_term(
+                net_amount, annual_rate, loan_term, repayment_option,
+                arrangement_fee_rate, legal_fees, site_visit_fee, title_insurance_rate,
+                loan_start_date, loan_term_days, use_360_days
+            )
+        elif amount_input_type == 'percentage' and property_value > 0:
+            percentage = params.get('loan_percentage', 0)
+            gross_amount = property_value * Decimal(str(percentage)) / 100
+
+        # Calculate fees
+        fees = self._calculate_fees(gross_amount, arrangement_fee_rate, legal_fees,
+                                  site_visit_fee, title_insurance_rate, 0)
+
         # Apply 360-day adjustment to rates if requested
         if use_360_days:
             # Use 360-day basis for interest calculations
@@ -562,47 +595,6 @@ class LoanCalculator:
             # Use standard 365-day basis
             daily_rate = annual_rate / Decimal(str(self.days_in_year))
             monthly_rate = annual_rate / Decimal('12')
-        
-        # Determine gross amount based on input type
-        if amount_input_type == 'net' and net_amount > 0:
-            gross_amount = self._calculate_gross_from_net_term(
-                net_amount, annual_rate, loan_term, repayment_option,
-                arrangement_fee_rate, legal_fees, site_visit_fee, title_insurance_rate,
-                loan_start_date, use_360_days
-            )
-        elif amount_input_type == 'percentage' and property_value > 0:
-            percentage = params.get('loan_percentage', 0)
-            gross_amount = property_value * Decimal(str(percentage)) / 100
-        
-        # Calculate fees
-        fees = self._calculate_fees(gross_amount, arrangement_fee_rate, legal_fees, 
-                                  site_visit_fee, title_insurance_rate, 0)
-        
-        # Calculate loan term in days using actual dates FIRST (before interest calculations)
-        import logging
-        from dateutil.relativedelta import relativedelta
-        start_date = datetime.strptime(loan_start_date, '%Y-%m-%d') if isinstance(loan_start_date, str) else loan_start_date
-        end_date_str = params.get('end_date', '')
-        
-        # Define dynamic average days per month calculation
-        avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
-        
-        # Priority 1: If both start and end dates are provided, use actual date range for loan term AND calculations
-        if end_date_str:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
-            actual_days = (end_date - start_date).days
-            # Recalculate loan term in months based on actual days
-            loan_term = max(1, round(actual_days / float(avg_days_per_month)))
-            # Use actual calendar days for date-sensitive calculations
-            loan_term_days = actual_days  # Use real calendar days for precise calculations
-            logging.info(f"Term loan: Using end_date {end_date_str}, actual_days={actual_days}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months")
-        else:
-            # Priority 2: Calculate end date from start date + loan term (subtract 1 day for loan term end)
-            end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
-            # Use standard loan term days calculation for consistent interest calculations
-            loan_term_days = int(loan_term * float(avg_days_per_month))  # Maintains proper days calculation
-            end_date_str = end_date.strftime('%Y-%m-%d')
-            logging.info(f"Term loan: Calculated end_date {end_date_str}, loan_term_days={loan_term_days} (standard), loan_term={loan_term} months")
             
         # Calculate based on repayment option (NOW using updated loan_term)
         if repayment_option == 'none':
@@ -2604,7 +2596,8 @@ class LoanCalculator:
     def _calculate_gross_from_net_bridge(self, net_amount: Decimal, annual_rate: Decimal,
                                        loan_term: int, repayment_option: str,
                                        arrangement_fee_rate: Decimal, legal_fees: Decimal,
-                                       site_visit_fee: Decimal, title_insurance_rate: Decimal, use_360_days: bool = False) -> Decimal:
+                                       site_visit_fee: Decimal, title_insurance_rate: Decimal,
+                                       loan_term_days: int, use_360_days: bool = False) -> Decimal:
         """Calculate gross amount from net amount for bridge loans - ENHANCED FORMULA"""
         
         # Daily interest formula for Interest Retained Net to Gross
@@ -2613,11 +2606,9 @@ class LoanCalculator:
 
             logging.info(f"Daily Interest Retained Net-to-Gross (BRIDGE): target_net={net_amount}")
 
-            # Determine term in days and years
-            avg_days_per_month = Decimal('365.25') / Decimal('12')
-            loan_term_days = Decimal(loan_term) * avg_days_per_month
+            # Determine term in days and years using provided loan_term_days
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = loan_term_days / days_per_year
+            term_years = Decimal(str(loan_term_days)) / days_per_year
 
             # Convert rates to decimals for calculation
             rate_decimal = annual_rate / Decimal('100')
@@ -2667,11 +2658,9 @@ class LoanCalculator:
             title_insurance_decimal = title_insurance_rate / Decimal('100')
             annual_rate_decimal = annual_rate / Decimal('100')
             
-            # Calculate term using daily basis
-            avg_days_per_month = Decimal('365.25') / Decimal('12')
-            loan_term_days = Decimal(loan_term) * avg_days_per_month
+            # Calculate term using provided loan_term_days
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = loan_term_days / days_per_year
+            term_years = Decimal(str(loan_term_days)) / days_per_year
 
             # Calculate legal fees (including site visit fee)
             total_legal_fees = legal_fees + site_visit_fee
@@ -2771,7 +2760,7 @@ class LoanCalculator:
                                      loan_term: int, repayment_option: str,
                                      arrangement_fee_rate: Decimal, legal_fees: Decimal,
                                      site_visit_fee: Decimal, title_insurance_rate: Decimal,
-                                     loan_start_date: str, use_360_days: bool = False) -> Decimal:
+                                     loan_start_date: str, loan_term_days: int, use_360_days: bool = False) -> Decimal:
         """Calculate gross amount from net amount for term loans - EXCEL COMPATIBLE"""
         
         import logging
@@ -2780,11 +2769,9 @@ class LoanCalculator:
         if repayment_option == 'none':  # Interest retained
             logging.info(f"Daily Interest Retained Net-to-Gross (TERM): target_net={net_amount}")
 
-            # Determine term in days and years
-            avg_days_per_month = Decimal('365.25') / Decimal('12')
-            loan_term_days = Decimal(loan_term) * avg_days_per_month
+            # Determine term in days and years using provided loan_term_days
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = loan_term_days / days_per_year
+            term_years = Decimal(str(loan_term_days)) / days_per_year
 
             # Convert rates to decimals for calculation
             rate_decimal = annual_rate / Decimal('100')
@@ -2834,11 +2821,9 @@ class LoanCalculator:
             title_insurance_decimal = title_insurance_rate / Decimal('100')
             annual_rate_decimal = annual_rate / Decimal('100')
             
-            # Calculate term using daily basis
-            avg_days_per_month = Decimal('365.25') / Decimal('12')
-            loan_term_days = Decimal(loan_term) * avg_days_per_month
+            # Calculate term using provided loan_term_days
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = loan_term_days / days_per_year
+            term_years = Decimal(str(loan_term_days)) / days_per_year
 
             # Calculate legal fees (including site visit fee)
             total_legal_fees = legal_fees + site_visit_fee
@@ -2861,13 +2846,14 @@ class LoanCalculator:
                 
             elif repayment_option == 'service_only':
                 # Term Serviced: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate per month) - Title insurance)
-                monthly_interest_factor = annual_rate_decimal * (avg_days_per_month / days_per_year)
+                avg_days = Decimal(str(loan_term_days)) / Decimal(str(loan_term))
+                monthly_interest_factor = annual_rate_decimal * (avg_days / days_per_year)
                 denominator = Decimal('1') - arrangement_fee_decimal - monthly_interest_factor - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
 
                 logging.info(f"TERM SERVICED NET-TO-GROSS:")
                 logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate per month) - Title insurance)")
-                logging.info(f"Monthly interest factor: {annual_rate}% × {avg_days_per_month}/{days_per_year} = {monthly_interest_factor:.6f}")
+                logging.info(f"Monthly interest factor: {annual_rate}% × {avg_days}/{days_per_year} = {monthly_interest_factor:.6f}")
                 logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {monthly_interest_factor:.6f} - {title_insurance_decimal:.6f})")
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
@@ -3817,8 +3803,8 @@ class LoanCalculator:
             if amount_input_type == 'net' and use_360_days:
                 # Use 360-day calculation for net-to-gross (like backend calculation)
                 # Calculate term_years using actual loan days and 360-day year
-                loan_term_days = params.get('loan_term_days', loan_term * 30.44)  # Approximate days if not provided
-                term_years = Decimal(str(loan_term_days)) / Decimal('360')
+                lt_days = params.get('loan_term_days', loan_term_days)
+                term_years = Decimal(str(lt_days)) / Decimal('360')
                 monthly_rate_360 = annual_rate * term_years / Decimal(str(loan_term))
                 
                 if payment_frequency == 'quarterly':
