@@ -3811,48 +3811,53 @@ class LoanCalculator:
                     })
         
         elif repayment_option == 'service_only':
-            # Interest-only payments
-            # For net-to-gross calculations with 360-day checkbox, adjust the interest calculation
-            if amount_input_type == 'net' and use_360_days:
-                # Use 360-day calculation for net-to-gross (like backend calculation)
-                # Calculate term_years using actual loan days and 360-day year
-                lt_days = params.get('loan_term_days', loan_term_days)
-                term_years = Decimal(str(lt_days)) / Decimal('360')
-                monthly_rate_360 = annual_rate * term_years / Decimal(str(loan_term))
-                
-                if payment_frequency == 'quarterly':
-                    interest_per_payment = gross_amount * (monthly_rate_360 * 3 / 100)
-                    interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {monthly_rate_360*3:.4f}% (360-day quarterly)"
-                else:
-                    interest_per_payment = gross_amount * (monthly_rate_360 / 100)
-                    interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {monthly_rate_360:.4f}% (360-day monthly)"
+            # Interest-only payments using exact day counts
+
+            # Determine loan end date for accurate day calculations
+            loan_term_days_param = params.get('loan_term_days')
+            if loan_term_days_param is not None:
+                loan_end_date = start_date + timedelta(days=int(loan_term_days_param))
             else:
-                # Standard 365-day calculation
-                if payment_frequency == 'quarterly':
-                    interest_per_payment = gross_amount * (annual_rate / 4 / 100)
-                    interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {annual_rate/4:.3f}% (quarterly)"
-                else:
-                    interest_per_payment = gross_amount * (annual_rate / 12 / 100)
-                    interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {annual_rate/12:.3f}% (monthly)"
-                
+                from dateutil.relativedelta import relativedelta
+                loan_end_date = start_date + relativedelta(months=loan_term)
+
+            # Build period boundaries based on payment timing
+            if payment_timing == 'advance':
+                period_starts = payment_dates
+                period_ends = payment_dates[1:] + [loan_end_date]
+            else:  # arrears
+                period_starts = [start_date] + payment_dates[:-1]
+                period_ends = payment_dates
+
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
                 is_final = (period == len(payment_dates))
-                
-                interest_amount = interest_per_payment
+
+                # Calculate days in this interest period
+                days_in_period = (period_ends[i] - period_starts[i]).days
+                interest_amount = self.calculate_simple_interest_by_days(
+                    gross_amount, annual_rate, days_in_period, use_360_days)
+
                 principal_payment = remaining_balance if is_final else Decimal('0')
                 total_payment = interest_amount + principal_payment
-                
+
+                # Build interest calculation text
+                interest_calc_base = f"{currency_symbol}{gross_amount:,.2f} × {annual_rate:.3f}% × {days_in_period}/{days_per_year} days"
+
                 # Add fees to first payment
                 if period == 1:
                     total_payment += arrangement_fee + legal_fees
-                    interest_calc = f"{interest_calc_text} + fees"
+                    interest_calc = interest_calc_base + " + fees"
                 else:
-                    interest_calc = interest_calc_text
-                
-                balance_change = f"↓ -{currency_symbol}{principal_payment:,.2f}" if principal_payment > 0 else "↔ No Change"
+                    interest_calc = interest_calc_base
+
+                balance_change = (
+                    f"↓ -{currency_symbol}{principal_payment:,.2f}" if principal_payment > 0 else "↔ No Change"
+                )
                 closing_balance = remaining_balance - principal_payment
-                
+
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
                     'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
@@ -3864,7 +3869,7 @@ class LoanCalculator:
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
                     'balance_change': balance_change
                 })
-                
+
                 remaining_balance = closing_balance
         
         elif repayment_option == 'service_and_capital':
