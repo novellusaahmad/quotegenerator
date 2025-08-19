@@ -281,6 +281,22 @@ class LoanCalculator {
             });
         }
 
+        // Interest calculation type changes
+        const interestTypeSelect = document.getElementById('interestType');
+        if (interestTypeSelect) {
+            interestTypeSelect.addEventListener('change', () => {
+                try {
+                    console.log('Interest calculation type changed');
+                    // Recalculate automatically if we already have results
+                    if (this.currentResults) {
+                        this.calculateLoan(true);
+                    }
+                } catch (error) {
+                    console.error('Error handling interest type change:', error);
+                }
+            });
+        }
+
         // Input formatting disabled to prevent field clearing issues
 
         // Tranche mode toggles
@@ -3302,7 +3318,7 @@ function addAutoUpdateListeners() {
     });
     
     // Watch dropdown changes immediately
-    const watchedSelects = ['loanType', 'repaymentOption', 'paymentTiming', 'paymentFrequency', 'loanTerm'];
+    const watchedSelects = ['loanType', 'repaymentOption', 'paymentTiming', 'paymentFrequency', 'loanTerm', 'interestType'];
     watchedSelects.forEach(selectId => {
         const select = document.getElementById(selectId);
         if (select) {
@@ -3352,7 +3368,7 @@ function addAutoUpdateListeners() {
     });
     
     // Watch dropdown changes immediately
-    const watchedSelects = ['loanType', 'repaymentOption', 'paymentTiming', 'paymentFrequency', 'loanTerm'];
+    const watchedSelects = ['loanType', 'repaymentOption', 'paymentTiming', 'paymentFrequency', 'loanTerm', 'interestType'];
     watchedSelects.forEach(selectId => {
         const select = document.getElementById(selectId);
         if (select) {
