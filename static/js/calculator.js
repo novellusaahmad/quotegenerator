@@ -895,6 +895,10 @@ class LoanCalculator {
 
         const scheduleContainer = document.getElementById('detailedPaymentScheduleCard');
         const scheduleBody = document.getElementById('detailedPaymentScheduleBody');
+        const headerRow = scheduleContainer?.querySelector('thead tr');
+        if (!this.defaultScheduleHeader && headerRow) {
+            this.defaultScheduleHeader = headerRow.innerHTML;
+        }
         
         if (!scheduleContainer || !scheduleBody || !results.detailed_payment_schedule) {
             // Hide the schedule table if no data available
@@ -914,12 +918,72 @@ class LoanCalculator {
         const currency = document.getElementById('currency').value;
         const currentSymbol = this.getCurrencySymbol(currency);
         
-        // Populate rows from detailed payment schedule
+        const repaymentOption = results.repayment_option || results.repaymentOption || '';
+        const isServicedOnly = repaymentOption === 'service_only';
+
+        if (isServicedOnly && headerRow) {
+            headerRow.innerHTML = `
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
+                <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Interest Serviced</th>
+            `;
+        } else if (headerRow && this.defaultScheduleHeader) {
+            headerRow.innerHTML = this.defaultScheduleHeader;
+        }
+
+        if (isServicedOnly) {
+            let totalInterest = 0;
+            results.detailed_payment_schedule.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.style.border = '1px solid #000';
+                tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
+
+                const fixedRow = {
+                    start_period: row.start_period,
+                    end_period: row.end_period,
+                    days_held: row.days_held,
+                    opening_balance: String(row.opening_balance || '').replace(/[£€]/g, currentSymbol),
+                    interest_calculation: String(row.interest_calculation || '').replace(/[£€]/g, currentSymbol).replace(/fees/gi, '').trim(),
+                    interest_amount: String(row.interest_amount || '').replace(/[£€]/g, currentSymbol)
+                };
+
+                const interestNumeric = parseFloat(fixedRow.interest_amount.replace(/[^0-9.-]/g, '')) || 0;
+                totalInterest += interestNumeric;
+
+                tr.innerHTML = `
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.start_period}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.end_period}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.days_held}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.opening_balance}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.interest_calculation}</td>
+                    <td class="py-1 px-2 text-end" style="color: #000; font-size: 0.875rem;">${fixedRow.interest_amount}</td>
+                `;
+
+                scheduleBody.appendChild(tr);
+            });
+
+            const totalRow = document.createElement('tr');
+            totalRow.style.border = '1px solid #000';
+            totalRow.style.background = '#f8f9fa';
+            totalRow.innerHTML = `
+                <td colspan="5" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">Total</td>
+                <td class="py-1 px-2 text-end fw-bold" style="color: #000; font-size: 0.875rem;">${currentSymbol}${totalInterest.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            `;
+            scheduleBody.appendChild(totalRow);
+
+            console.log('Detailed payment schedule displayed with', results.detailed_payment_schedule.length, 'rows');
+            return;
+        }
+
+        // Populate rows from detailed payment schedule (default behavior)
         results.detailed_payment_schedule.forEach((row, index) => {
             const tr = document.createElement('tr');
             tr.style.border = '1px solid #000';
             tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
-            
+
             // Replace currency symbols in the row data to match current selection
             const fixedRow = {
                 payment_date: row.payment_date,
@@ -932,7 +996,7 @@ class LoanCalculator {
                 closing_balance: String(row.closing_balance || '').replace(/[£€]/g, currentSymbol),
                 balance_change: row.balance_change
             };
-            
+
             // Debug log to check currency replacement
             if (index === 0) {
                 console.log('Currency replacement debug:', {
@@ -943,7 +1007,7 @@ class LoanCalculator {
                     fixedInterest: fixedRow.interest_calculation
                 });
             }
-            
+
             tr.innerHTML = `
                 <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.payment_date}</td>
                 <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.opening_balance}</td>
@@ -955,17 +1019,18 @@ class LoanCalculator {
                 <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.closing_balance}</td>
                 <td class="py-1 px-2 text-center" style="color: #000; font-size: 0.875rem;">${fixedRow.balance_change}</td>
             `;
-            
+
             scheduleBody.appendChild(tr);
         });
-        
+
         console.log('Detailed payment schedule displayed with', results.detailed_payment_schedule.length, 'rows');
     }
 
     updateVisualizationButtonsVisibility(results) {
         const loanType = results.loan_type || document.getElementById('loanType')?.value || '';
         const repaymentOption = results.repayment_option || results.repaymentOption || document.getElementById('repaymentOption')?.value || '';
-        const hideButtons = loanType === 'bridge' && repaymentOption === 'none';
+        const hideAll = loanType === 'bridge' && repaymentOption === 'none';
+        const isServicedOnly = repaymentOption === 'service_only';
 
         const selectors = [
             '[data-bs-target="#paymentScheduleModal"]',
@@ -977,9 +1042,31 @@ class LoanCalculator {
         selectors.forEach(sel => {
             const btn = document.querySelector(sel);
             if (btn) {
-                btn.style.display = hideButtons ? 'none' : '';
+                btn.style.display = hideAll ? 'none' : '';
             }
         });
+
+        if (isServicedOnly) {
+            const hideSelectors = [
+                '[data-bs-target="#balanceModal"]',
+                '[data-bs-target="#compoundInterestModal"]',
+                '[data-bs-target="#trancheModal"]'
+            ];
+            hideSelectors.forEach(sel => {
+                const btn = document.querySelector(sel);
+                if (btn) btn.style.display = 'none';
+            });
+
+            ['balanceModal', 'compoundInterestModal', 'trancheModal'].forEach(id => {
+                const modal = document.getElementById(id);
+                if (modal) modal.style.display = 'none';
+            });
+        } else {
+            ['balanceModal', 'compoundInterestModal', 'trancheModal'].forEach(id => {
+                const modal = document.getElementById(id);
+                if (modal) modal.style.display = '';
+            });
+        }
     }
 
     formatDate(dateString) {
@@ -2375,14 +2462,15 @@ class LoanCalculator {
                     const loanType = results.loan_type || '';
                     const repaymentOption = results.repayment_option || results.repaymentOption || '';
                     const isBridgeRetained = loanType === 'bridge' && repaymentOption === 'none';
+                    const isServicedOnly = repaymentOption === 'service_only';
 
                     this.createLoanBreakdownChart(results);
 
-                    if (!isBridgeRetained && results.detailed_payment_schedule && results.detailed_payment_schedule.length > 0) {
+                    if (!isServicedOnly && !isBridgeRetained && results.detailed_payment_schedule && results.detailed_payment_schedule.length > 0) {
                         this.createBalanceOverTimeChart(results);
                     }
 
-                    if (results.loan_type === 'development' || results.loan_type === 'development2') {
+                    if (!isServicedOnly && (results.loan_type === 'development' || results.loan_type === 'development2')) {
                         this.createCompoundInterestChart(results);
                         this.createTrancheReleaseChart(results);
                     }
