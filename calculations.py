@@ -1916,49 +1916,54 @@ class LoanCalculator:
         total_interest = Decimal('0')
         annual_rate = monthly_rate * 12
         
-        # Use date-sensitive calculation if loan_term_days provided
         if loan_term_days is not None:
-            # Calculate effective monthly rate based on actual days with configurable day count
+            # When a precise day count is supplied, compute interest using daily periods
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(loan_term_days) / days_per_year
-            effective_annual_rate = annual_rate
-            effective_monthly_rate = effective_annual_rate / Decimal('12')
+            daily_rate = annual_rate / Decimal('100') / days_per_year
+            days_in_period = Decimal(str(loan_term_days)) / Decimal(str(loan_term))
             import logging
-            logging.info(f"Bridge service+capital using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}, effective_monthly_rate={effective_monthly_rate:.4f}%")
+            logging.info(
+                f"Bridge service+capital using loan_term_days={loan_term_days}, days_per_year={days_per_year}, days_in_period={days_in_period:.2f}")
+
+            for month in range(loan_term):
+                if interest_type == 'simple':
+                    interest_payment = remaining_balance * daily_rate * days_in_period
+                else:
+                    compound_factor = (Decimal('1') + daily_rate) ** int(days_in_period)
+                    interest_payment = remaining_balance * (compound_factor - Decimal('1'))
+
+                total_interest += interest_payment
+                remaining_balance -= capital_repayment
+                if remaining_balance <= 0:
+                    break
         else:
             effective_monthly_rate = monthly_rate
-            
-        # Apply interest calculation based on type
-        for month in range(loan_term):
-            if interest_type == 'simple':
-                # Simple interest on remaining balance
-                interest_payment = remaining_balance * (effective_monthly_rate / 100)
-            elif interest_type == 'compound_daily':
-                # Compound daily interest on remaining balance
-                days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                daily_rate = (effective_monthly_rate * 12) / Decimal('100') / days_per_year
-                days_in_period = Decimal('365.25') / Decimal('12')  # Dynamic average days per month (30.4375)
-                compound_factor = (Decimal('1') + daily_rate) ** int(days_in_period)
-                interest_payment = remaining_balance * (compound_factor - Decimal('1'))
-            elif interest_type == 'compound_monthly':
-                # Compound monthly interest on remaining balance
-                monthly_rate_decimal = (effective_monthly_rate * 12) / Decimal('100') / Decimal('12')
-                compound_factor = (Decimal('1') + monthly_rate_decimal)
-                interest_payment = remaining_balance * (compound_factor - Decimal('1'))
-            elif interest_type == 'compound_quarterly':
-                # Compound quarterly interest on remaining balance (quarterly rate for 1 month)
-                quarterly_rate = (effective_monthly_rate * 12) / Decimal('100') / Decimal('4')
-                quarterly_factor = (Decimal('1') + quarterly_rate) ** (Decimal('1')/Decimal('3'))  # 1/3 of quarter
-                interest_payment = remaining_balance * (quarterly_factor - Decimal('1'))
-            else:
-                # Default to simple interest
-                interest_payment = remaining_balance * (effective_monthly_rate / 100)
-            
-            total_interest += interest_payment
-            remaining_balance -= capital_repayment
-            
-            if remaining_balance <= 0:
-                break
+
+            # Apply interest calculation based on type using average month length
+            for month in range(loan_term):
+                if interest_type == 'simple':
+                    interest_payment = remaining_balance * (effective_monthly_rate / 100)
+                elif interest_type == 'compound_daily':
+                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                    daily_rate = (effective_monthly_rate * 12) / Decimal('100') / days_per_year
+                    days_in_period = Decimal('365.25') / Decimal('12')
+                    compound_factor = (Decimal('1') + daily_rate) ** int(days_in_period)
+                    interest_payment = remaining_balance * (compound_factor - Decimal('1'))
+                elif interest_type == 'compound_monthly':
+                    monthly_rate_decimal = (effective_monthly_rate * 12) / Decimal('100') / Decimal('12')
+                    compound_factor = (Decimal('1') + monthly_rate_decimal)
+                    interest_payment = remaining_balance * (compound_factor - Decimal('1'))
+                elif interest_type == 'compound_quarterly':
+                    quarterly_rate = (effective_monthly_rate * 12) / Decimal('100') / Decimal('4')
+                    quarterly_factor = (Decimal('1') + quarterly_rate) ** (Decimal('1')/Decimal('3'))
+                    interest_payment = remaining_balance * (quarterly_factor - Decimal('1'))
+                else:
+                    interest_payment = remaining_balance * (effective_monthly_rate / 100)
+
+                total_interest += interest_payment
+                remaining_balance -= capital_repayment
+                if remaining_balance <= 0:
+                    break
         
         # Calculate interest savings compared to interest-only payments using same interest type
         if loan_term_days is not None:
@@ -2047,50 +2052,58 @@ class LoanCalculator:
             # Use proper month-by-month calculation for declining balance
             total_interest = Decimal('0')
 
-            # Use date-sensitive calculation if loan_term_days provided
             if loan_term_days is not None:
-                # Use configurable day count for term calculation
+                # Use precise day-based calculation when loan_term_days is provided
                 days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                term_years = Decimal(loan_term_days) / days_per_year
-                effective_monthly_rate = annual_rate / Decimal('12')
+                daily_rate = annual_rate / Decimal('100') / days_per_year
+                days_in_period = Decimal(str(loan_term_days)) / Decimal(str(loan_term))
                 import logging
-                logging.info(f"Bridge flexible using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}, effective_monthly_rate={effective_monthly_rate:.4f}%")
+                logging.info(
+                    f"Bridge flexible using loan_term_days={loan_term_days}, days_per_year={days_per_year}, days_in_period={days_in_period:.2f}")
+
+                for month in range(loan_term):
+                    if interest_type == 'simple':
+                        interest_payment = remaining_balance * daily_rate * days_in_period
+                    else:
+                        compound_factor = (Decimal('1') + daily_rate) ** int(days_in_period)
+                        interest_payment = remaining_balance * (compound_factor - Decimal('1'))
+
+                    total_interest += interest_payment
+                    principal_payment = max(Decimal('0'), flexible_payment - interest_payment)
+                    remaining_balance -= principal_payment
+                    if remaining_balance <= 0:
+                        break
             else:
                 effective_monthly_rate = annual_rate / Decimal('12')
 
-            # Apply interest calculation based on type
-            for month in range(loan_term):
-                if interest_type == 'simple':
-                    # Simple interest on remaining balance
-                    interest_payment = remaining_balance * (effective_monthly_rate / 100)
-                elif interest_type == 'compound_daily':
-                    # Compound daily interest on remaining balance
-                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                    daily_rate = annual_rate / Decimal('100') / days_per_year
-                    days_in_period = Decimal('365.25') / Decimal('12')  # Dynamic average days per month (30.4375)
-                    compound_factor = (Decimal('1') + daily_rate) ** int(days_in_period)
-                    interest_payment = remaining_balance * (compound_factor - Decimal('1'))
-                elif interest_type == 'compound_monthly':
-                    # Compound monthly interest on remaining balance
-                    monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
-                    compound_factor = (Decimal('1') + monthly_rate_decimal)
-                    interest_payment = remaining_balance * (compound_factor - Decimal('1'))
-                elif interest_type == 'compound_quarterly':
-                    # Compound quarterly interest on remaining balance (quarterly rate for 1 month)
-                    quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
-                    quarterly_factor = (Decimal('1') + quarterly_rate) ** (Decimal('1')/Decimal('3'))  # 1/3 of quarter
-                    interest_payment = remaining_balance * (quarterly_factor - Decimal('1'))
-                else:
-                    # Default to simple interest
-                    interest_payment = remaining_balance * (effective_monthly_rate / 100)
+                # Apply interest calculation based on type using average month length
+                for month in range(loan_term):
+                    if interest_type == 'simple':
+                        interest_payment = remaining_balance * (effective_monthly_rate / 100)
+                    elif interest_type == 'compound_daily':
+                        days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                        daily_rate = annual_rate / Decimal('100') / days_per_year
+                        days_in_period = Decimal('365.25') / Decimal('12')
+                        compound_factor = (Decimal('1') + daily_rate) ** int(days_in_period)
+                        interest_payment = remaining_balance * (compound_factor - Decimal('1'))
+                    elif interest_type == 'compound_monthly':
+                        monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
+                        compound_factor = (Decimal('1') + monthly_rate_decimal)
+                        interest_payment = remaining_balance * (compound_factor - Decimal('1'))
+                    elif interest_type == 'compound_quarterly':
+                        quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
+                        quarterly_factor = (Decimal('1') + quarterly_rate) ** (Decimal('1')/Decimal('3'))
+                        interest_payment = remaining_balance * (quarterly_factor - Decimal('1'))
+                    else:
+                        interest_payment = remaining_balance * (effective_monthly_rate / 100)
 
-                total_interest += interest_payment
+                    total_interest += interest_payment
 
-                principal_payment = max(Decimal('0'), flexible_payment - interest_payment)
-                remaining_balance -= principal_payment
+                    principal_payment = max(Decimal('0'), flexible_payment - interest_payment)
+                    remaining_balance -= principal_payment
 
-                if remaining_balance <= 0:
-                    break
+                    if remaining_balance <= 0:
+                        break
         
         # Calculate interest savings compared to interest-only payments using same interest type
         if loan_term_days is not None:
