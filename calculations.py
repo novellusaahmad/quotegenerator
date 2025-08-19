@@ -3839,6 +3839,12 @@ class LoanCalculator:
 
                 # Calculate days in this interest period
                 days_in_period = (period_ends[i] - period_starts[i]).days
+
+                # Determine period start/end for display (end is inclusive)
+                period_start = period_starts[i]
+                period_end = period_ends[i] - timedelta(days=1)
+                days_held = days_in_period
+
                 interest_amount = self.calculate_simple_interest_by_days(
                     gross_amount, annual_rate, days_in_period, use_360_days)
 
@@ -3862,6 +3868,9 @@ class LoanCalculator:
 
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
+                    'start_period': period_start.strftime('%d/%m/%Y'),
+                    'end_period': period_end.strftime('%d/%m/%Y'),
+                    'days_held': int(days_held),
                     'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
