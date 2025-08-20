@@ -850,16 +850,21 @@ class LoanCalculator {
         const periodicInterestEl = document.getElementById('periodicInterestResult');
         const periodicInterestLabel = document.getElementById('periodicInterestLabel');
         
-        console.log(`Periodic interest check: loanType=${loanType}, repaymentOption=${repaymentOption}`);
+        console.log(`Periodic interest check: loanType=${loanType}, repaymentOption=${repaymentOption}, totalInterest=${results.totalInterest}`);
         if ((loanType === 'term' || loanType === 'bridge') && repaymentOption === 'service_only') {
-            const annualRate = results.interestRate || results.annual_rate || 0;
-            const grossAmountForInterest = results.grossAmount || 0;
-            const divisor = paymentFrequency === 'quarterly' ? 4 : 12;
-            const periodicInterest = grossAmountForInterest * (annualRate / 100) / divisor;
+            const totalInterest = results.totalInterest || results.total_interest || 0;
+            const loanTermMonths = results.loanTerm || results.loan_term || 0;
+            let periodicInterest = loanTermMonths ? totalInterest / loanTermMonths : 0;
+            if (paymentFrequency === 'quarterly') {
+                periodicInterest *= 3; // Show quarterly amount when applicable
+            }
 
             if (periodicInterestRow) periodicInterestRow.style.display = 'table-row';
             if (periodicInterestEl) {
-                periodicInterestEl.textContent = periodicInterest.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                periodicInterestEl.textContent = periodicInterest.toLocaleString('en-GB', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
             }
 
             if (periodicInterestLabel) {
