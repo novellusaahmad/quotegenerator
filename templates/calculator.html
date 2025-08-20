@@ -1217,17 +1217,21 @@ function makeEndDateEditable() {
 function recalculateLoanTerm() {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    
+
     if (startDate && endDate) {
         const start = new Date(startDate);
         const end = new Date(endDate);
-        
+
         // Calculate actual days difference
         const timeDiff = end.getTime() - start.getTime();
         const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        
+
         console.log(`Manual date change: ${daysDiff} days between ${startDate} and ${endDate}`);
-        
+
+        // Immediately update displayed day count if loan summary exists
+        const loanTermDaysEl = document.getElementById('loanTermDaysResult');
+        if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
+
         // Determine loan term based on actual days
         let loanTerm;
         if (daysDiff >= 350 && daysDiff <= 380) {
@@ -1240,18 +1244,18 @@ function recalculateLoanTerm() {
             loanTerm = 24; // 24-month loan (around 730 days)
         } else {
             // For other ranges, calculate exact month difference
-            let monthsDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 +
-                             (endDate.getMonth() - startDate.getMonth());
-            if (endDate.getDate() < startDate.getDate()) {
+            let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 +
+                             (end.getMonth() - start.getMonth());
+            if (end.getDate() < start.getDate()) {
                 monthsDiff -= 1;
             }
             loanTerm = Math.max(1, monthsDiff);
         }
-        
+
         if (loanTerm > 0) {
             document.getElementById('loanTerm').value = loanTerm;
             console.log(`Set loan term to ${loanTerm} months based on ${daysDiff} days`);
-            
+
             // Trigger calculation update if calculator instance exists and form has data
             triggerCalculationUpdate();
         }
