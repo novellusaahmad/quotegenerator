@@ -781,10 +781,14 @@ class LoanHistoryManager {
             // Core loan parameters
             loan_type: loan.loan_type ?? 'bridge',
             amount_input_type: loan.amountInputType ?? loan.amount_input_type ?? 'gross',
+            gross_amount_type: loan.grossAmountType ?? loan.gross_amount_type ?? 'fixed',
+            rate_input_type: loan.rateInputType ?? loan.rate_input_type ?? 'annual',
             gross_amount: loan.grossAmount ?? loan.gross_amount ?? '',
             net_amount: loan.netAmount ?? loan.net_amount ?? '',
+            gross_amount_percentage: loan.grossAmountPercentage ?? loan.gross_amount_percentage ?? '',
             property_value: loan.propertyValue ?? loan.property_value ?? '',
             annual_rate: loan.interestRate ?? loan.interest_rate ?? '',
+            monthly_rate: loan.monthlyRate ?? loan.monthly_rate ?? '',
             loan_term: loan.loanTerm ?? loan.loan_term ?? '',
             start_date: loan.startDate ?? loan.start_date ?? '',
             end_date: loan.endDate ?? loan.end_date ?? '',
@@ -809,6 +813,22 @@ class LoanHistoryManager {
             // Currency
             currency: loan.currency ?? 'GBP'
         };
+
+        // Derive additional parameters when not explicitly stored
+        if (!params.monthly_rate && params.annual_rate) {
+            const annual = parseFloat(params.annual_rate);
+            if (!isNaN(annual)) {
+                params.monthly_rate = (annual / 12).toFixed(4);
+            }
+        }
+
+        if (!params.gross_amount_percentage && params.gross_amount && params.property_value) {
+            const gross = parseFloat(params.gross_amount);
+            const property = parseFloat(params.property_value);
+            if (!isNaN(gross) && !isNaN(property) && property !== 0) {
+                params.gross_amount_percentage = ((gross / property) * 100).toFixed(4);
+            }
+        }
         
         // Handle tranches for development loans
         if (loan.loan_type === 'development' && loan.tranches && Array.isArray(loan.tranches)) {
