@@ -48,6 +48,48 @@ def test_bridge_retained_net_matches_input(months, days):
     assert res['netAdvance'] == pytest.approx(float(net_amount))
 
 
+@pytest.mark.parametrize("months, days", [(6, 182), (18, 547)])
+def test_total_net_advance_matches_input(months, days):
+    """Ensure total net advance equals user net amount when using daily interest."""
+    calc = LoanCalculator()
+    net_amount = Decimal('100000')
+    annual_rate = Decimal('12')
+    arrangement_fee_rate = Decimal('2')
+    legal_fees = Decimal('1000')
+    site_visit_fee = Decimal('500')
+    title_insurance_rate = Decimal('1')
+
+    gross = calc._calculate_gross_from_net_bridge(
+        net_amount,
+        annual_rate,
+        months,
+        'none',
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        days,
+        use_360_days=False,
+    )
+
+    fees = calc._calculate_fees(
+        gross,
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        Decimal('0'),
+    )
+
+    interest_days = calc.calculate_simple_interest_by_days(gross, annual_rate, days, False)
+    total_net = gross - fees['arrangementFee'] - fees['totalLegalFees'] - interest_days
+    assert float(total_net) == pytest.approx(float(net_amount))
+
+    interest_months = gross * (annual_rate / Decimal('100')) * (Decimal(months) / Decimal('12'))
+    total_net_month = gross - fees['arrangementFee'] - fees['totalLegalFees'] - interest_months
+    assert float(total_net_month) != pytest.approx(float(net_amount))
+
+
 def test_bridge_interest_only_net_matches_input():
     calc = LoanCalculator()
     net_amount = Decimal('90000')
