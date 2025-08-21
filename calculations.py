@@ -2470,9 +2470,6 @@ class LoanCalculator:
             term_years = Decimal(loan_term_days) / days_per_year
         else:
             term_years = Decimal(loan_term) / Decimal('12')
-            if use_360_days:
-                # Apply 360-day rate adjustment (365/360 factor)
-                term_years = term_years * Decimal('365') / Decimal('360')
         interest_only_total = gross_amount * (annual_rate / Decimal('100')) * term_years
         interest_savings = interest_only_total - total_interest
         savings_percentage = (interest_savings / interest_only_total) * Decimal('100') if interest_only_total > 0 else Decimal('0')
