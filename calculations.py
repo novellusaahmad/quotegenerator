@@ -1766,24 +1766,22 @@ class LoanCalculator:
             term_years = Decimal(loan_term) / 12
             logging.info(f"Bridge retained calculation using loan_term={loan_term} months, term_years={term_years:.4f}")
         
-        # If this is a net-to-gross calculation, use the retained interest formula
+        # If this is a net-to-gross calculation, use the calculated gross amount to derive
+        # interest so the resulting net advance matches the user-provided net amount.
         if net_amount is not None:
-            # For retained interest: Interest = Net × Rate ÷ (1 - Rate)
-            # Apply 360-day adjustment to the annual rate if needed
-            if use_360_days:
-                adjusted_annual_rate = annual_rate * Decimal('365') / Decimal('360')
-                interest_rate = (adjusted_annual_rate / Decimal('100')) * term_years
-                logging.info(f"Bridge retained net-to-gross (360-day): Using adjusted rate {adjusted_annual_rate:.6f}%")
+            if loan_term_days is not None:
+                total_interest = self.calculate_simple_interest_by_days(
+                    gross_amount, annual_rate, loan_term_days, use_360_days
+                )
             else:
-                interest_rate = (annual_rate / Decimal('100')) * term_years
-                logging.info(f"Bridge retained net-to-gross (365-day): Using standard rate {annual_rate:.6f}%")
-            
-            total_interest = net_amount * interest_rate / (Decimal('1') - interest_rate)
+                # Fallback to year fraction based on loan term when exact days aren't supplied
+                total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+            net_advance = net_amount
         else:
             # Calculate interest based on interest type for gross amount input
             import logging
             logging.info(f"Bridge retained calculation: gross={gross_amount}, rate={annual_rate}, term_years={term_years}, interest_type={interest_type}")
-            
+
             if interest_type == 'simple':
                 if loan_term_days is not None:
                     total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
@@ -1818,8 +1816,8 @@ class LoanCalculator:
             else:
                 # Default to simple interest
                 total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
-        
-        net_advance = gross_amount - fees['arrangementFee'] - fees['totalLegalFees'] - total_interest
+
+            net_advance = gross_amount - fees['arrangementFee'] - fees['totalLegalFees'] - total_interest
         
         return {
             'gross_amount': float(gross_amount),
@@ -1905,17 +1903,19 @@ class LoanCalculator:
                 # Default to simple interest
                 total_interest = gross_amount * (monthly_rate / 100) * loan_term
 
-        # For interest-only bridge loans, Net Advance = Gross Amount (no fee deduction)
-        # BUT: If interest is paid in advance (most common scenario), deduct first period interest
-        net_advance = gross_amount
-
-        # For service interest only, deduct first period interest from net amount when paid in advance
-        # This is the most common scenario per user requirements
+        # For interest-only bridge loans the borrower receives the net amount after
+        # any initial interest deduction. Preserve the user-provided net amount when
+        # performing net-to-gross conversions.
         first_period_interest = periodic_interest
-        net_advance_after_first_interest = net_advance - first_period_interest
-        
+        if net_amount is not None:
+            net_advance_after_first_interest = net_amount
+            net_advance = net_amount + first_period_interest
+        else:
+            net_advance = gross_amount
+            net_advance_after_first_interest = net_advance - first_period_interest
+
         import logging
-        logging.info(f"Bridge interest-only: gross={gross_amount}, net_advance={net_advance} (no fee deduction)")
+        logging.info(f"Bridge interest-only: gross={gross_amount}, net_advance={net_advance} (before first interest)")
         logging.info(f"Bridge interest-only: first_period_interest={first_period_interest}, net_advance_after_advance_payment={net_advance_after_first_interest}")
         
         return {
@@ -2194,10 +2194,14 @@ class LoanCalculator:
         logging.info(f"Interest comparison: Interest-only total={interest_only_total:.2f}, Flexible payment total={total_interest:.2f}")
         logging.info(f"Interest savings: £{interest_savings:.2f} ({savings_percentage:.1f}% reduction)")
         
-        # For flexible payment bridge loans, Net Advance = Gross Amount (no fee deduction)
-        # Fees are handled separately, not deducted from net advance
-        net_advance = gross_amount
-        
+        # For flexible payment bridge loans, preserve the user-provided net amount
+        # when performing net-to-gross conversions. Otherwise, the net advance
+        # equals the gross amount since fees are handled separately.
+        if net_amount is not None:
+            net_advance = net_amount
+        else:
+            net_advance = gross_amount
+
         logging.info(f"Bridge flexible: gross={gross_amount}, net_advance={net_advance} (no fee deduction)")
 
         return {
@@ -6456,8 +6460,13 @@ class LoanCalculator:
             
             net_interest_paid = total_retained_interest - interest_refund
         
-        # Net advance calculation - deduct full retained interest and fees (like retained interest option)
-        net_advance = gross_amount - total_retained_interest - sum(Decimal(str(v)) for v in fees.values())
+        # Net advance calculation - for net-to-gross conversions, preserve the
+        # user-provided net amount. Otherwise, deduct full retained interest and
+        # all fees from the gross amount.
+        if net_amount is not None:
+            net_advance = net_amount
+        else:
+            net_advance = gross_amount - total_retained_interest - sum(Decimal(str(v)) for v in fees.values())
         
         # Interest comparison for frontend display
         interest_only_total = total_retained_interest  # Full interest if no capital payments made
