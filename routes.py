@@ -505,21 +505,26 @@ def api_calculate():
                     # CRITICAL FIX: For bridge/term loans with Net-to-Gross Excel formula, use Excel-calculated interest
                     amount_input_type = calc_params.get('amount_input_type', 'gross')
                     if amount_input_type == 'net' and loan_type in ['bridge', 'term']:
-                        # Apply 360-day adjustment to annual rate if needed
+                        # Apply day-count-aware Excel interest calculation using loan_term_days
                         annual_rate = calc_params.get('annual_rate', 0)
                         loan_term = calc_params.get('loan_term', 12)
+                        loan_term_days = result.get('loan_term_days', calc_params.get('loan_term_days', 0))
                         use_360_days = calc_params.get('use_360_days', False)
-                        
-                        if use_360_days:
-                            # Apply 365/360 adjustment to the annual rate for Excel formula consistency
-                            adjusted_rate = annual_rate * 365 / 360
-                            excel_interest = (gross_amount_value * adjusted_rate * loan_term) / (12 * 100)
-                            app.logger.info(f'ROUTES.PY EXCEL NET-TO-GROSS ({loan_type}, 360-day): Using Excel interest £{excel_interest:.2f} = (£{gross_amount_value:.2f} × {adjusted_rate:.6f}% × {loan_term}/12)/100 instead of calculation engine £{total_interest_value:.2f}')
+                        days_per_year = 360 if use_360_days else 365
+
+                        if loan_term_days:
+                            # Use actual day count for interest to match calculation engine
+                            excel_interest = (gross_amount_value * annual_rate * loan_term_days) / (days_per_year * 100)
+                            app.logger.info(
+                                f'ROUTES.PY EXCEL NET-TO-GROSS ({loan_type}, {days_per_year}-day): Using Excel interest £{excel_interest:.2f} = (£{gross_amount_value:.2f} × {annual_rate}% × {loan_term_days}/{days_per_year})/100 instead of calculation engine £{total_interest_value:.2f}'
+                            )
                         else:
-                            # Standard Excel formula
+                            # Fallback to month-based calculation if day count unavailable
                             excel_interest = (gross_amount_value * annual_rate * loan_term) / (12 * 100)
-                            app.logger.info(f'ROUTES.PY EXCEL NET-TO-GROSS ({loan_type}, 365-day): Using Excel interest £{excel_interest:.2f} = (£{gross_amount_value:.2f} × {annual_rate}% × {loan_term}/12)/100 instead of calculation engine £{total_interest_value:.2f}')
-                        
+                            app.logger.info(
+                                f'ROUTES.PY EXCEL NET-TO-GROSS ({loan_type}, fallback): Using Excel interest £{excel_interest:.2f} = (£{gross_amount_value:.2f} × {annual_rate}% × {loan_term}/12)/100 instead of calculation engine £{total_interest_value:.2f}'
+                            )
+
                         interest_for_net_advance = excel_interest
                         
                         # CRITICAL FIX: Update the totalInterest field in result to use Excel interest
