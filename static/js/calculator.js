@@ -845,19 +845,14 @@ class LoanCalculator {
             if (interestSavingsRow) interestSavingsRow.style.display = 'none';
         }
         
-        // Show/hide periodic interest payment for term loans with service only
+        // Show/hide periodic interest payment for applicable repayment types
         const periodicInterestRow = document.getElementById('periodicInterestRow');
         const periodicInterestEl = document.getElementById('periodicInterestResult');
         const periodicInterestLabel = document.getElementById('periodicInterestLabel');
-        
-        console.log(`Periodic interest check: loanType=${loanType}, repaymentOption=${repaymentOption}, totalInterest=${results.totalInterest}`);
-        if ((loanType === 'term' || loanType === 'bridge') && repaymentOption === 'service_only') {
-            const totalInterest = results.totalInterest || results.total_interest || 0;
-            const loanTermMonths = results.loanTerm || results.loan_term || 0;
-            let periodicInterest = loanTermMonths ? totalInterest / loanTermMonths : 0;
-            if (paymentFrequency === 'quarterly') {
-                periodicInterest *= 3; // Show quarterly amount when applicable
-            }
+
+        const interestRepaymentTypes = ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment'];
+        if ((loanType === 'term' || loanType === 'bridge') && interestRepaymentTypes.includes(repaymentOption)) {
+            let periodicInterest = results.periodicInterest || results.periodic_interest || 0;
 
             if (periodicInterestRow) periodicInterestRow.style.display = 'table-row';
             if (periodicInterestEl) {
