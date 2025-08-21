@@ -349,50 +349,21 @@ class LoanCalculator:
             calculation = self._calculate_bridge_interest_only(
                 gross_amount, monthly_rate, loan_term, fees, interest_type, net_for_calculation, loan_term_days, use_360_days
             )
-            
-            # Generate detailed payment schedule FIRST
+            # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
             calculation['detailed_payment_schedule'] = self._generate_detailed_bridge_schedule(calculation, params, currency_symbol)
-            
-            # CONSISTENCY FIX: Extract actual periodic interest from detailed schedule
-            payment_frequency = params.get('payment_frequency', 'monthly')
+
+            # Update total interest to match detailed schedule
             detailed_schedule = calculation.get('detailed_payment_schedule', [])
-            
             if detailed_schedule:
-                # Get the actual monthly payment from the first payment in detailed schedule
-                first_payment = detailed_schedule[0]
-                # Extract numeric value from formatted string like "£1,010.10"
-                total_payment_str = first_payment.get('total_payment', '£0.00')
-                import re
-                numeric_value = total_payment_str.replace("£", "").replace("€", "").replace(",", "")
-                monthly_payment = float(numeric_value) if numeric_value else 0
-                
-                if payment_frequency == 'quarterly':
-                    # For quarterly: multiply monthly payment by 3
-                    calculation['periodicInterest'] = monthly_payment * 3
-                else:
-                    # For monthly: use the exact monthly payment from the detailed calculation
-                    calculation['periodicInterest'] = monthly_payment
-                
-                # Also update totalInterest to match the sum of all interest payments in detailed schedule
                 total_interest_from_schedule = 0
                 for payment in detailed_schedule:
                     interest_str = payment.get('interest_amount', '£0.00')
                     interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
                     total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
-                
+
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
-                
-                logging.info(f"Bridge service_only CONSISTENCY FIX: periodicInterest={calculation['periodicInterest']:.2f}, totalInterest={total_interest_from_schedule:.2f} (extracted from detailed schedule)")
-            else:
-                # Fallback to original calculation if no detailed schedule
-                monthly_payment = calculation.get('monthlyPayment', 0)
-                if payment_frequency == 'quarterly':
-                    calculation['periodicInterest'] = float(monthly_payment) * 3
-                else:
-                    calculation['periodicInterest'] = float(monthly_payment)
-                logging.info(f"Bridge service_only FALLBACK: periodicInterest={calculation['periodicInterest']:.2f} (using monthlyPayment={monthly_payment})")
         elif repayment_option == 'service_and_capital':
             # Service + Capital - pass net_amount if this is a net-to-gross conversion
             net_for_calculation = net_amount if amount_input_type == 'net' else None
@@ -481,7 +452,13 @@ class LoanCalculator:
             'end_date': end_date_str if end_date_str else end_date.strftime('%Y-%m-%d'),
             **{k: float(v) for k, v in fees.items()}
         })
-        
+
+        # Calculate periodic interest based on payment frequency
+        if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment']:
+            divisor = Decimal('12') if payment_frequency == 'monthly' else Decimal('4')
+            periodic_interest = gross_amount * (annual_rate / Decimal('100')) / divisor
+            calculation['periodicInterest'] = float(periodic_interest)
+
         # Generate payment schedule
         try:
             currency_symbol = '€' if currency == 'EUR' else '£'
@@ -624,49 +601,21 @@ class LoanCalculator:
                 gross_amount, annual_rate, loan_term, fees, loan_start_date, params.get('interest_type', 'simple'), net_for_calculation, loan_term_days, use_360_days
             )
             
-            # Generate detailed payment schedule FIRST
+            # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
             calculation['detailed_payment_schedule'] = self._generate_detailed_term_schedule(calculation, params, currency_symbol)
-            
-            # CONSISTENCY FIX: Extract actual periodic interest from detailed schedule
-            payment_frequency = params.get('payment_frequency', 'monthly')
+
+            # Update total interest to match the detailed schedule
             detailed_schedule = calculation.get('detailed_payment_schedule', [])
-            
             if detailed_schedule:
-                # Get the actual monthly payment from the first payment in detailed schedule
-                first_payment = detailed_schedule[0]
-                # Extract numeric value from formatted string like "£1,010.10"
-                total_payment_str = first_payment.get('total_payment', '£0.00')
-                import re
-                numeric_value = total_payment_str.replace("£", "").replace("€", "").replace(",", "")
-                monthly_payment = float(numeric_value) if numeric_value else 0
-                
-                if payment_frequency == 'quarterly':
-                    # For quarterly: multiply monthly payment by 3
-                    calculation['periodicInterest'] = monthly_payment * 3
-                else:
-                    # For monthly: use the exact monthly payment from the detailed calculation
-                    calculation['periodicInterest'] = monthly_payment
-                
-                # Also update totalInterest to match the sum of all interest payments in detailed schedule
                 total_interest_from_schedule = 0
                 for payment in detailed_schedule:
                     interest_str = payment.get('interest_amount', '£0.00')
                     interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
                     total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
-                
+
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
-                
-                logging.info(f"Term loan service_only CONSISTENCY FIX: periodicInterest={calculation['periodicInterest']:.2f}, totalInterest={total_interest_from_schedule:.2f} (extracted from detailed schedule)")
-            else:
-                # Fallback to original calculation if no detailed schedule
-                monthly_payment = calculation.get('monthlyPayment', 0)
-                if payment_frequency == 'quarterly':
-                    calculation['periodicInterest'] = float(monthly_payment) * 3
-                else:
-                    calculation['periodicInterest'] = float(monthly_payment)
-                logging.info(f"Term loan service_only FALLBACK: periodicInterest={calculation['periodicInterest']:.2f} (using monthlyPayment={monthly_payment})")
         elif repayment_option == 'service_and_capital':
             # Capital + Interest using user-specified capital repayment amount
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
@@ -789,7 +738,13 @@ class LoanCalculator:
             'end_date': end_date_str if end_date_str else end_date.strftime('%Y-%m-%d'),
             **{k: float(v) for k, v in fees.items()}
         })
-        
+
+        # Calculate periodic interest based on payment frequency
+        if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment']:
+            divisor = Decimal('12') if payment_frequency == 'monthly' else Decimal('4')
+            periodic_interest = gross_amount * (annual_rate / Decimal('100')) / divisor
+            calculation['periodicInterest'] = float(periodic_interest)
+
         # Generate payment schedule
         try:
             currency_symbol = '€' if currency == 'EUR' else '£'
