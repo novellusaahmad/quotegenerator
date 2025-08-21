@@ -2214,10 +2214,14 @@ class LoanCalculator:
     def _calculate_bridge_capital_only(self, gross_amount: Decimal, annual_rate: Decimal,
                                      loan_term: int, capital_repayment: Decimal, fees: Dict, interest_type: str = 'simple') -> Dict:
         """Calculate bridge loan with capital only payments (interest refunded)"""
-        
-        # Interest is retained then refunded proportionally
-        net_advance = gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
-        
+
+        # Interest for the first month is retained upfront then refunded through
+        # the capital-only payments. Include this retained interest when
+        # calculating the initial net advance to ensure the borrower receives
+        # the correct net amount.
+        monthly_interest = gross_amount * (annual_rate / Decimal('100') / Decimal('12'))
+        net_advance = gross_amount - fees['arrangementFee'] - fees['totalLegalFees'] - monthly_interest
+
         return {
             'monthlyPayment': float(capital_repayment),
             'totalInterest': 0,  # Interest is refunded
