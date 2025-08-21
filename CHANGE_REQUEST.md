@@ -2,12 +2,6 @@
 
 This document summarizes the updates in each branch of the repository.
 
-## Branch: main
-Currently aligned with `work`; no unique changes.
-
-## Branch: work
-The following branches have been merged into `work` along with their main contributions:
-
 - **codex/add-dynamic-interest-calculation-for-loans**: Compute periodic interest by payment frequency to support varied loan schedules. [Files: calculations.py, calculatordev.js]
 - **codex/add-dynamic-interest-calculation-logic**: Add reusable logic for dynamic periodic interest, covering different term structures. [Files: calculations.py, static/js/calculator.js]
 - **codex/fix-loan-save-behavior**: Allow updating existing loans so edits persist and records remain accurate. [Files: routes.py, templates/calculator.html]
@@ -28,10 +22,6 @@ The following branches have been merged into `work` along with their main contri
 - **codex/fix-calculation-for-15-months**: Add calendar-based term day calculation covering 15-month loans. [Files: calculations.py, test_interest_day_count.py]
 - **codex/implement-interest-calculation-for-loans**: Use daily interest calculation for bridge and term loans to improve precision. [Files: calculations.py]
 - **codex/calculate-interest-for-bridge-and-term-loan**: Adopt yearly-to-daily method for interest calculations across products. [Files: calculations.py]
-
-## Branch History
-The following branches have been created since the project's inception and their primary contributions when they were merged:
-
 - **codex/add-loan-calculation-summary-modal**: Introduce a modal summarizing loan calculations, including interest, fees, and totals for transparency. [Files: static/js/calculator.js, templates/calculator.html]
 - **codex/update-calculation-display-logic**: Explain how fees impact loan amounts by updating display logic and messaging. [Files: static/js/calculator.js]
 - **codex/display-interest-rates-as-daily,-monthly,-yearly**: Show equivalent daily, monthly, and annual interest rates for user comparison. [Files: templates/quotes.html]
@@ -116,4 +106,3 @@ The following branches have been created since the project's inception and their
 - **codex/fix-loan-save-behavior**: Allow existing loans to be updated while preserving data integrity. [Files: routes.py, templates/calculator.html]
 - **codex/add-dynamic-interest-calculation-logic**: Add shared logic for dynamic periodic interest. [Files: calculations.py, static/js/calculator.js]
 - **codex/add-dynamic-interest-calculation-for-loans**: Compute periodic interest by payment frequency across loan types. [Files: calculations.py, calculatordev.js]
-

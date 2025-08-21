@@ -46,15 +46,16 @@ class LoanCalculator:
 
         Args:
             gross_amount: The loan principal on which interest is charged.
-            annual_rate: Annual interest rate as a percentage.
-            payment_frequency: 'monthly' or 'quarterly'.
+            annual_rate: Annual interest rate expressed as a decimal
+                fraction (e.g. ``0.12`` for 12%).
+            payment_frequency: Either ``'monthly'`` or ``'quarterly'``.
 
         Returns:
             Decimal: The interest amount payable each period.
         """
 
         divisor = Decimal('12') if payment_frequency == 'monthly' else Decimal('4')
-        return gross_amount * (annual_rate / Decimal('100')) / divisor
+        return gross_amount * annual_rate / divisor
         
     def calculate_interest_amount(
         self,
@@ -251,6 +252,7 @@ class LoanCalculator:
         # Get interest rate from either parameter name
         interest_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
         repayment_option = params.get('repayment_option', 'none')
+        payment_frequency = params.get('payment_frequency', 'monthly')
         currency = params.get('currency', 'GBP')
         amount_input_type = params.get('amount_input_type', 'gross')
         rate_input_type = params.get('rate_input_type', 'annual')
@@ -364,7 +366,8 @@ class LoanCalculator:
             net_for_calculation = net_amount if amount_input_type == 'net' else None
             logging.info(f"Bridge service_only calculation: gross={gross_amount}, net_for_calculation={net_for_calculation}")
             calculation = self._calculate_bridge_interest_only(
-                gross_amount, monthly_rate, loan_term, fees, interest_type, net_for_calculation, loan_term_days, use_360_days
+                gross_amount, monthly_rate, loan_term, fees, interest_type,
+                net_for_calculation, loan_term_days, use_360_days, payment_frequency
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
@@ -473,9 +476,15 @@ class LoanCalculator:
         # Calculate periodic interest based on payment frequency
         if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment']:
             periodic_interest = self._calculate_periodic_interest(
-                gross_amount, annual_rate, payment_frequency
+                gross_amount, annual_rate / Decimal('100'), payment_frequency
             )
             calculation['periodicInterest'] = float(periodic_interest)
+            if payment_frequency == 'quarterly':
+                calculation['quarterlyPayment'] = float(periodic_interest)
+                calculation['monthlyPayment'] = 0
+            else:
+                calculation['monthlyPayment'] = float(periodic_interest)
+                calculation['quarterlyPayment'] = 0
 
         # Generate payment schedule
         try:
@@ -760,9 +769,15 @@ class LoanCalculator:
         # Calculate periodic interest based on payment frequency
         if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment']:
             periodic_interest = self._calculate_periodic_interest(
-                gross_amount, annual_rate, payment_frequency
+                gross_amount, annual_rate / Decimal('100'), payment_frequency
             )
             calculation['periodicInterest'] = float(periodic_interest)
+            if payment_frequency == 'quarterly':
+                calculation['quarterlyPayment'] = float(periodic_interest)
+                calculation['monthlyPayment'] = 0
+            else:
+                calculation['monthlyPayment'] = float(periodic_interest)
+                calculation['quarterlyPayment'] = 0
 
         # Generate payment schedule
         try:
@@ -1573,6 +1588,8 @@ class LoanCalculator:
                 })
         
         # Calculate monthly payment based on repayment option
+        periodic_interest = Decimal('0')
+        quarterly_payment = Decimal('0')
         if repayment_option == 'none' or repayment_option == 'retained':
             # Retained interest - no monthly payments, interest deducted upfront in first month
             monthly_payment = Decimal('0')
@@ -1590,44 +1607,71 @@ class LoanCalculator:
             net_advance = total_gross_amount - fees['arrangementFee'] - fees['totalLegalFees'] - total_interest
         elif repayment_option == 'service_only':
             # Interest-only payments during term
-            monthly_payment = total_interest / Decimal(str(loan_term))
+            payment_frequency = params.get('payment_frequency', 'monthly')
+            periodic_interest = self._calculate_periodic_interest(
+                total_gross_amount, annual_rate / Decimal('100'), payment_frequency
+            )
+            if payment_frequency == 'quarterly':
+                monthly_payment = Decimal('0')
+                quarterly_payment = periodic_interest
+            else:
+                monthly_payment = periodic_interest
+                quarterly_payment = Decimal('0')
             net_advance = total_gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
         elif repayment_option == 'service_and_capital':
             # Capital + interest payments with reducing balance calculation
             # For development loans with capital+interest, we need to calculate based on amortization
-            
+
             # Get capital repayment amount per period
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
             payment_frequency = params.get('payment_frequency', 'monthly')
-            
+
             # Adjust capital payment based on frequency
             if payment_frequency == 'quarterly':
                 capital_per_payment = capital_repayment * 3
             else:
                 capital_per_payment = capital_repayment
-            
+
             # Calculate total interest using reducing balance
             # This is more complex for development loans due to tranches, so we'll use an approximation
             # based on average balance over the loan term
             average_balance = total_gross_amount / 2  # Approximation for reducing balance
             term_years = Decimal(loan_term) / 12
-            
+
             # Calculate interest on average balance (more accurate than full balance)
             total_interest_reduced = self.calculate_interest_amount(
                 average_balance, annual_rate, term_years, interest_type, use_360_days
             )
-            
-            # Monthly payment is capital + average monthly interest
-            monthly_interest = total_interest_reduced / Decimal(str(loan_term))
-            monthly_payment = capital_per_payment + monthly_interest
-            
+
+            # Calculate periodic interest based on payment frequency
+            periodic_interest = self._calculate_periodic_interest(
+                total_gross_amount, annual_rate / Decimal('100'), payment_frequency
+            )
+
+            # Payment per period includes capital repayment plus periodic interest
+            if payment_frequency == 'quarterly':
+                monthly_payment = Decimal('0')
+                quarterly_payment = capital_per_payment + periodic_interest
+            else:
+                monthly_payment = capital_per_payment + periodic_interest
+                quarterly_payment = Decimal('0')
+
             # Update total interest to reflect the reduced amount
             total_interest = total_interest_reduced
-            
+
             net_advance = total_gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
         else:
-            # Default to service only
-            monthly_payment = total_interest / Decimal(str(loan_term))
+            # Default to service only behaviour
+            payment_frequency = params.get('payment_frequency', 'monthly')
+            periodic_interest = self._calculate_periodic_interest(
+                total_gross_amount, annual_rate / Decimal('100'), payment_frequency
+            )
+            if payment_frequency == 'quarterly':
+                monthly_payment = Decimal('0')
+                quarterly_payment = periodic_interest
+            else:
+                monthly_payment = periodic_interest
+                quarterly_payment = Decimal('0')
             net_advance = total_gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
         
         # Net amount is always the user input - never calculated
@@ -1661,6 +1705,8 @@ class LoanCalculator:
             'grossAmount': float(total_gross_amount),
             'propertyValue': float(property_value),
             'monthlyPayment': float(monthly_payment),
+            'quarterlyPayment': float(quarterly_payment),
+            'periodicInterest': float(periodic_interest),
             'totalInterest': float(total_interest),
             'totalAmount': float(total_gross_amount + total_interest),
             'netAmount': float(net_amount),  # Always user input (£800,000)
@@ -1785,13 +1831,19 @@ class LoanCalculator:
         }
     
     def _calculate_bridge_interest_only(self, gross_amount: Decimal, monthly_rate: Decimal,
-                                      loan_term: int, fees: Dict, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False) -> Dict:
+                                      loan_term: int, fees: Dict, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False, payment_frequency: str = 'monthly') -> Dict:
         """Calculate bridge loan with interest only payments"""
-        
+
+        # Convert monthly rate to annual and derive periodic interest up front
+        annual_rate = monthly_rate * Decimal('12')  # Annual rate as percentage
+        periodic_interest = self._calculate_periodic_interest(
+            gross_amount, annual_rate / Decimal('100'), payment_frequency
+        )
+
         # If net_amount is provided, this is a net-to-gross conversion - use retained interest calculation
         if net_amount is not None:
             # For net-to-gross conversions, total interest should match retained interest calculation
-            # but paid monthly instead of deducted upfront
+            # but paid periodically instead of deducted upfront
             if loan_term_days is not None:
                 # Use configurable day count for net-to-gross conversion
                 days_per_year = Decimal('360') if use_360_days else Decimal('365')
@@ -1800,11 +1852,10 @@ class LoanCalculator:
                 logging.info(f"BRIDGE NET-TO-GROSS: use_360_days={use_360_days} -> days_per_year={days_per_year}, loan_term_days={loan_term_days}, term_years={term_years:.4f}")
             else:
                 term_years = Decimal(loan_term) / Decimal('12')
-            annual_rate = monthly_rate * Decimal('12')  # Convert monthly rate back to annual
+
             interest_rate = (annual_rate / Decimal('100')) * term_years
             total_interest = net_amount * interest_rate / (Decimal('1') - interest_rate)
-            monthly_interest = total_interest / Decimal(loan_term)
-            
+
             logging.info(f"Bridge loan (net-to-gross) using retained interest formula: net={net_amount:.2f}, days_per_year={'360' if use_360_days else '365'}, term_years={term_years:.4f}, total_interest={total_interest:.2f}")
         else:
             # Standard gross-to-net calculation
@@ -1816,19 +1867,19 @@ class LoanCalculator:
                 logging.info(f"Bridge interest-only using loan_term_days={loan_term_days}, term_years={term_years:.4f}")
             else:
                 term_years = Decimal(loan_term) / 12
-            annual_rate = monthly_rate * 12
-            
+
             if interest_type == 'simple':
                 if loan_term_days is not None:
-                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
-                                                                            loan_term_days, use_360_days)
+                    total_interest = self.calculate_simple_interest_by_days(
+                        gross_amount, annual_rate, loan_term_days, use_360_days
+                    )
                     logging.info(f"Bridge interest-only simple interest: gross={gross_amount}, rate={annual_rate}%, days={loan_term_days}, interest={total_interest:.2f}")
                 else:
                     days_per_year = Decimal('360') if use_360_days else Decimal('365')
                     total_days = term_years * days_per_year
-                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
-                                                                            int(total_days), use_360_days)
-                monthly_interest = total_interest / loan_term
+                    total_interest = self.calculate_simple_interest_by_days(
+                        gross_amount, annual_rate, int(total_days), use_360_days
+                    )
             elif interest_type == 'compound_daily':
                 # Compound daily: A = P(1 + r/days_per_year)^(days_per_year*t) - P
                 days_per_year = Decimal('360') if use_360_days else Decimal('365')
@@ -1837,14 +1888,12 @@ class LoanCalculator:
                 compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
                 total_amount = gross_amount * compound_factor
                 total_interest = total_amount - gross_amount
-                monthly_interest = total_interest / Decimal(str(loan_term))
             elif interest_type == 'compound_monthly':
                 # Compound monthly: A = P(1 + r/12)^(12*t) - P
                 monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
                 compound_factor = (Decimal('1') + monthly_rate_decimal) ** loan_term
                 total_amount = gross_amount * compound_factor
                 total_interest = total_amount - gross_amount
-                monthly_interest = total_interest / Decimal(str(loan_term))
             elif interest_type == 'compound_quarterly':
                 # Compound quarterly: A = P(1 + r/4)^(4*t) - P
                 quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
@@ -1852,19 +1901,17 @@ class LoanCalculator:
                 compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
                 total_amount = gross_amount * compound_factor
                 total_interest = total_amount - gross_amount
-                monthly_interest = total_interest / Decimal(str(loan_term))
             else:
                 # Default to simple interest
-                monthly_interest = gross_amount * (monthly_rate / 100)
-                total_interest = monthly_interest * loan_term
-            
+                total_interest = gross_amount * (monthly_rate / 100) * loan_term
+
         # For interest-only bridge loans, Net Advance = Gross Amount (no fee deduction)
         # BUT: If interest is paid in advance (most common scenario), deduct first period interest
         net_advance = gross_amount
-        
+
         # For service interest only, deduct first period interest from net amount when paid in advance
         # This is the most common scenario per user requirements
-        first_period_interest = monthly_interest
+        first_period_interest = periodic_interest
         net_advance_after_first_interest = net_advance - first_period_interest
         
         import logging
@@ -1873,7 +1920,7 @@ class LoanCalculator:
         
         return {
             'gross_amount': float(gross_amount),
-            'monthlyPayment': float(monthly_interest),
+            'monthlyPayment': float(periodic_interest),
             'totalInterest': float(total_interest),
             'total_interest': float(total_interest),
             'totalAmount': float(gross_amount + total_interest),
@@ -3522,13 +3569,10 @@ class LoanCalculator:
             # Generate payment dates based on frequency and timing
             payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
             
-            # Calculate interest per payment period
-            if payment_frequency == 'quarterly':
-                periods_per_year = 4
-                interest_per_payment = gross_amount * (annual_rate / periods_per_year / 100)
-            else:
-                periods_per_year = 12
-                interest_per_payment = gross_amount * (monthly_rate / 100)
+            # Calculate interest per payment period using simple annual rate
+            interest_per_payment = self._calculate_periodic_interest(
+                gross_amount, annual_rate / Decimal('100'), payment_frequency
+            )
             
             fees_deducted_first = arrangement_fee + legal_fees
             fees_added_to_first = False
@@ -4098,10 +4142,6 @@ class LoanCalculator:
         # Generate payment dates based on frequency and timing
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
         
-        # Calculate daily rate
-        daily_rate = annual_rate / Decimal('365')
-        monthly_rate = annual_rate / Decimal('12')
-        
         arrangement_fee = Decimal(str(quote_data.get('arrangementFee', 0)))
         legal_fees = Decimal(str(quote_data.get('totalLegalFees', 0)))
         
@@ -4115,12 +4155,9 @@ class LoanCalculator:
             is_final_payment = (period == len(payment_dates))
             
             # Calculate interest per payment period
-            if payment_frequency == 'quarterly':
-                # 3 months of interest for quarterly payments
-                interest_payment = remaining_balance * (annual_rate / 4 / 100)
-            else:
-                # Monthly interest
-                interest_payment = remaining_balance * (monthly_rate / 100)
+            interest_payment = self._calculate_periodic_interest(
+                remaining_balance, annual_rate / Decimal('100'), payment_frequency
+            )
             
             # Calculate principal payment based on repayment option
             if repayment_option == 'service_only':

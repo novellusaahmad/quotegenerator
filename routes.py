@@ -1899,6 +1899,8 @@ def get_saved_loans():
                 'loan_term': loan.loan_term,
                 'interest_rate': float(loan.interest_rate) if loan.interest_rate else 0,
                 'repayment_option': loan.repayment_option,
+                'monthlyPayment': float(loan.monthly_payment) if loan.monthly_payment else 0,
+                'quarterlyPayment': float(loan.quarterly_payment) if loan.quarterly_payment else 0,
                 
                 # Additional data needed for editing
                 'amountInputType': loan.amount_input_type if loan.amount_input_type else 'gross',
@@ -2000,6 +2002,8 @@ def get_loan_details(loan_id):
             # Payment parameters
             'payment_timing': loan.payment_timing if loan.payment_timing else 'advance',
             'payment_frequency': loan.payment_frequency if loan.payment_frequency else 'monthly',
+            'paymentTiming': loan.payment_timing if loan.payment_timing else 'advance',
+            'paymentFrequency': loan.payment_frequency if loan.payment_frequency else 'monthly',
             'capital_repayment': float(loan.capital_repayment) if loan.capital_repayment else 0,
             'flexible_payment': float(loan.flexible_payment) if loan.flexible_payment else 0,
             
@@ -2018,6 +2022,7 @@ def get_loan_details(loan_id):
             'netAdvance': float(loan.net_advance) if loan.net_advance else 0,
             'totalNetAdvance': float(loan.total_net_advance) if loan.total_net_advance else 0,
             'monthlyPayment': float(loan.monthly_payment) if loan.monthly_payment else 0,
+            'quarterlyPayment': float(loan.quarterly_payment) if loan.quarterly_payment else 0,
             'propertyValue': float(loan.property_value) if loan.property_value else 0,
             'legalFees': float(loan.legal_costs) if loan.legal_costs else 1500,
             'siteVisitFee': float(loan.site_visit_fee) if loan.site_visit_fee else 500,

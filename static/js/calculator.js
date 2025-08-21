@@ -2196,6 +2196,7 @@ class LoanCalculator {
         const siteNum = parseFloat(r.siteVisitFee || 0);
         const titleNum = parseFloat(r.titleInsurance || 0);
         const interestNum = parseFloat(r.totalInterest || 0);
+        const paymentFrequency = r.payment_frequency || document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
         const arrangement = formatMoney(arrangementNum);
         const legal = formatMoney(legalNum);
         const site = formatMoney(siteNum);
@@ -2333,16 +2334,15 @@ class LoanCalculator {
             goalSeekDescription = 'Uses Excel-style Goal Seek to find the gross amount where Net = Gross - Fees - Interest.';
         }
 
-        // Calculate daily, monthly and yearly interest
-        const totalInterestNum = parseFloat(r.totalInterest || 0);
-        const loanTermDays = r.loanTermDays || r.loan_term_days || 0;
-        const dailyInterestNum = loanTermDays > 0 ? totalInterestNum / loanTermDays : 0;
-        const loanTermMonths = loanTerm || 0;
-        const monthlyInterestNum = loanTermMonths > 0 ? totalInterestNum / loanTermMonths : dailyInterestNum * (daysPerYear / 12);
-        const yearlyInterestNum = dailyInterestNum * daysPerYear;
+        // Calculate daily, periodic and yearly interest based on gross amount and annual rate
+        const annualRateNum = parseFloat(r.interestRate || r.interest_rate || 0) / 100;
+        const dailyInterestNum = grossNum * annualRateNum / daysPerYear;
+        const periodicInterestNum = grossNum * annualRateNum / (paymentFrequency === 'quarterly' ? 4 : 12);
+        const yearlyInterestNum = grossNum * annualRateNum;
         const dailyInterest = formatMoney(dailyInterestNum);
-        const monthlyInterest = formatMoney(monthlyInterestNum);
+        const periodicInterest = formatMoney(periodicInterestNum);
         const yearlyInterest = formatMoney(yearlyInterestNum);
+        const periodicLabel = paymentFrequency === 'quarterly' ? 'Quarterly' : 'Monthly';
 
         const interestDeducted = ['none', 'retained', 'capital_payment_only'].includes(repaymentOption);
         const netNum = grossNum - arrangementNum - legalNum - siteNum - titleNum - (interestDeducted ? interestNum : 0);
@@ -2357,7 +2357,7 @@ class LoanCalculator {
             <p><strong>Fee Impact:</strong> ${feeImpactDescription}</p>
             ${loanType === 'development' ? `<p><strong>Goal Seek Logic:</strong> ${goalSeekDescription}</p>` : ''}
             <p><strong>Interest Rate:</strong> ${rateText} for ${loanTerm} months.</p>
-            <p><strong>Interest Breakdown:</strong> Daily ${dailyInterest}, Monthly ${monthlyInterest}, Yearly ${yearlyInterest}.</p>
+            <p><strong>Interest Breakdown:</strong> Daily ${dailyInterest}, ${periodicLabel} ${periodicInterest}, Yearly ${yearlyInterest}.</p>
             
             <h6>Gross to Net Calculation</h6>
             <p class="mb-2"><strong>Formula:</strong> ${netFormula}</p>
