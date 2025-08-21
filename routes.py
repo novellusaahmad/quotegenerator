@@ -1644,14 +1644,36 @@ def save_loan():
         loan_name = data.get('loanName', '').strip()
         if not loan_name:
             return jsonify({'error': 'Loan name is required'}), 400
-        
-        # Check if loan name already exists
-        existing_loan = LoanSummary.query.filter_by(loan_name=loan_name).first()
-        if existing_loan:
-            return jsonify({
-                'error': 'A loan with this name already exists. Please choose a different name.',
-                'duplicate': True
-            }), 409  # Conflict status code
+
+        loan_id = data.get('loanId') or data.get('loan_id')
+        existing_loan = None
+
+        if loan_id:
+            try:
+                loan_id = int(loan_id)
+            except (TypeError, ValueError):
+                return jsonify({'error': 'Invalid loan ID'}), 400
+
+            existing_loan = LoanSummary.query.get(loan_id)
+            if not existing_loan:
+                return jsonify({'error': 'Loan not found'}), 404
+
+            duplicate = LoanSummary.query.filter(
+                LoanSummary.loan_name == loan_name,
+                LoanSummary.id != loan_id
+            ).first()
+            if duplicate:
+                return jsonify({
+                    'error': 'A loan with this name already exists. Please choose a different name.',
+                    'duplicate': True
+                }), 409
+        else:
+            duplicate = LoanSummary.query.filter_by(loan_name=loan_name).first()
+            if duplicate:
+                return jsonify({
+                    'error': 'A loan with this name already exists. Please choose a different name.',
+                    'duplicate': True
+                }), 409  # Conflict status code
         
         # Perform fresh calculation
         fresh_calculation = perform_fresh_calculation_for_download(data)
@@ -1665,48 +1687,88 @@ def save_loan():
         # Log the loan type for debugging
         app.logger.info(f"Saving loan with type: {loan_type} (from data keys: {list(data.keys())})")
         
-        # Create loan summary record
-        loan_summary = LoanSummary(
-            loan_name=loan_name,
-            version=1,
-            loan_type=loan_type,
-            currency=data.get('currency', 'GBP'),
-            amount_input_type=data.get('amountInputType', 'gross'),
-            gross_amount=fresh_calculation.get('grossAmount', 0),
-            net_amount=fresh_calculation.get('netAmount', 0),
-            property_value=fresh_calculation.get('propertyValue', 0),
-            interest_rate=data.get('interestRate', 0),
-            loan_term=data.get('loanTerm', 12),
-            loan_term_days=fresh_calculation.get('loanTermDays', 365),
-            start_date=datetime.strptime(data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('startDate') else datetime.now().date(),
-            end_date=datetime.strptime(data.get('endDate', (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('endDate') else (datetime.now() + timedelta(days=365)).date(),
-            repayment_option=data.get('repaymentOption', 'none'),
-            payment_timing=data.get('paymentTiming') or data.get('payment_timing', 'advance'),  # Check both camelCase and snake_case
-            payment_frequency=data.get('paymentFrequency') or data.get('payment_frequency', 'monthly'),  # Check both camelCase and snake_case
-            capital_repayment=data.get('capitalRepayment', 0),
-            flexible_payment=data.get('flexiblePayment', 0),
-            arrangement_fee=fresh_calculation.get('arrangementFee', 0),
-            arrangement_fee_percentage=data.get('arrangementFeePercentage', 2.0),
-            legal_costs=data.get('legalCosts', 1500),
-            site_visit_fee=data.get('siteVisitFee', 500),
-            title_insurance=fresh_calculation.get('titleInsurance', 1000),
-            total_interest=fresh_calculation.get('totalInterest', 0),
-            net_advance=fresh_calculation.get('netAdvance', 0),
-            total_net_advance=fresh_calculation.get('totalNetAdvance', 0),
-            monthly_payment=fresh_calculation.get('monthlyPayment', 0),
-            quarterly_payment=fresh_calculation.get('quarterlyPayment', 0),
-            start_ltv=fresh_calculation.get('startLtv', 0),
-            end_ltv=fresh_calculation.get('endLtv', 0),
-            interest_only_total=fresh_calculation.get('interestOnlyTotal', 0),
-            interest_savings=fresh_calculation.get('interestSavings', 0),
-            savings_percentage=fresh_calculation.get('savingsPercentage', 0),
-            day_1_advance=fresh_calculation.get('day1Advance', 0),
-            user_input_day_1_advance=data.get('userInputDay1Advance', 0),
-            tranches_data=json.dumps(data.get('tranches', []))
-        )
-        
-        db.session.add(loan_summary)
-        db.session.flush()  # Get the ID
+        # Create or update loan summary record
+        if existing_loan:
+            loan_summary = existing_loan
+            loan_summary.loan_name = loan_name
+            loan_summary.version = (loan_summary.version or 1) + 1
+            loan_summary.loan_type = loan_type
+            loan_summary.currency = data.get('currency', 'GBP')
+            loan_summary.amount_input_type = data.get('amountInputType', 'gross')
+            loan_summary.gross_amount = fresh_calculation.get('grossAmount', 0)
+            loan_summary.net_amount = fresh_calculation.get('netAmount', 0)
+            loan_summary.property_value = fresh_calculation.get('propertyValue', 0)
+            loan_summary.interest_rate = data.get('interestRate', 0)
+            loan_summary.loan_term = data.get('loanTerm', 12)
+            loan_summary.loan_term_days = fresh_calculation.get('loanTermDays', 365)
+            loan_summary.start_date = datetime.strptime(data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('startDate') else datetime.now().date()
+            loan_summary.end_date = datetime.strptime(data.get('endDate', (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('endDate') else (datetime.now() + timedelta(days=365)).date()
+            loan_summary.repayment_option = data.get('repaymentOption', 'none')
+            loan_summary.payment_timing = data.get('paymentTiming') or data.get('payment_timing', 'advance')
+            loan_summary.payment_frequency = data.get('paymentFrequency') or data.get('payment_frequency', 'monthly')
+            loan_summary.capital_repayment = data.get('capitalRepayment', 0)
+            loan_summary.flexible_payment = data.get('flexiblePayment', 0)
+            loan_summary.arrangement_fee = fresh_calculation.get('arrangementFee', 0)
+            loan_summary.arrangement_fee_percentage = data.get('arrangementFeePercentage', 2.0)
+            loan_summary.legal_costs = data.get('legalCosts', 1500)
+            loan_summary.site_visit_fee = data.get('siteVisitFee', 500)
+            loan_summary.title_insurance = fresh_calculation.get('titleInsurance', 1000)
+            loan_summary.total_interest = fresh_calculation.get('totalInterest', 0)
+            loan_summary.net_advance = fresh_calculation.get('netAdvance', 0)
+            loan_summary.total_net_advance = fresh_calculation.get('totalNetAdvance', 0)
+            loan_summary.monthly_payment = fresh_calculation.get('monthlyPayment', 0)
+            loan_summary.quarterly_payment = fresh_calculation.get('quarterlyPayment', 0)
+            loan_summary.start_ltv = fresh_calculation.get('startLtv', 0)
+            loan_summary.end_ltv = fresh_calculation.get('endLtv', 0)
+            loan_summary.interest_only_total = fresh_calculation.get('interestOnlyTotal', 0)
+            loan_summary.interest_savings = fresh_calculation.get('interestSavings', 0)
+            loan_summary.savings_percentage = fresh_calculation.get('savingsPercentage', 0)
+            loan_summary.day_1_advance = fresh_calculation.get('day1Advance', 0)
+            loan_summary.user_input_day_1_advance = data.get('userInputDay1Advance', 0)
+            loan_summary.tranches_data = json.dumps(data.get('tranches', []))
+
+            PaymentSchedule.query.filter_by(loan_summary_id=loan_summary.id).delete()
+        else:
+            loan_summary = LoanSummary(
+                loan_name=loan_name,
+                version=1,
+                loan_type=loan_type,
+                currency=data.get('currency', 'GBP'),
+                amount_input_type=data.get('amountInputType', 'gross'),
+                gross_amount=fresh_calculation.get('grossAmount', 0),
+                net_amount=fresh_calculation.get('netAmount', 0),
+                property_value=fresh_calculation.get('propertyValue', 0),
+                interest_rate=data.get('interestRate', 0),
+                loan_term=data.get('loanTerm', 12),
+                loan_term_days=fresh_calculation.get('loanTermDays', 365),
+                start_date=datetime.strptime(data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('startDate') else datetime.now().date(),
+                end_date=datetime.strptime(data.get('endDate', (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('endDate') else (datetime.now() + timedelta(days=365)).date(),
+                repayment_option=data.get('repaymentOption', 'none'),
+                payment_timing=data.get('paymentTiming') or data.get('payment_timing', 'advance'),
+                payment_frequency=data.get('paymentFrequency') or data.get('payment_frequency', 'monthly'),
+                capital_repayment=data.get('capitalRepayment', 0),
+                flexible_payment=data.get('flexiblePayment', 0),
+                arrangement_fee=fresh_calculation.get('arrangementFee', 0),
+                arrangement_fee_percentage=data.get('arrangementFeePercentage', 2.0),
+                legal_costs=data.get('legalCosts', 1500),
+                site_visit_fee=data.get('siteVisitFee', 500),
+                title_insurance=fresh_calculation.get('titleInsurance', 1000),
+                total_interest=fresh_calculation.get('totalInterest', 0),
+                net_advance=fresh_calculation.get('netAdvance', 0),
+                total_net_advance=fresh_calculation.get('totalNetAdvance', 0),
+                monthly_payment=fresh_calculation.get('monthlyPayment', 0),
+                quarterly_payment=fresh_calculation.get('quarterlyPayment', 0),
+                start_ltv=fresh_calculation.get('startLtv', 0),
+                end_ltv=fresh_calculation.get('endLtv', 0),
+                interest_only_total=fresh_calculation.get('interestOnlyTotal', 0),
+                interest_savings=fresh_calculation.get('interestSavings', 0),
+                savings_percentage=fresh_calculation.get('savingsPercentage', 0),
+                day_1_advance=fresh_calculation.get('day1Advance', 0),
+                user_input_day_1_advance=data.get('userInputDay1Advance', 0),
+                tranches_data=json.dumps(data.get('tranches', []))
+            )
+            db.session.add(loan_summary)
+            db.session.flush()  # Get the ID
 
         snowflake_payments = []
 
@@ -1742,14 +1804,15 @@ def save_loan():
         except Exception as se:
             app.logger.warning(f"Snowflake sync failed: {se}")
 
-        app.logger.info(f"Loan saved successfully: {loan_name}")
+        action = 'updated' if existing_loan else 'saved'
+        app.logger.info(f"Loan {action} successfully: {loan_name}")
 
         # Trigger Power BI refresh after successful save
         #trigger_powerbi_on_save()
 
         return jsonify({
             'success': True,
-            'message': f'Loan saved successfully as "{loan_name}"',
+            'message': f'Loan {action} successfully as "{loan_name}"',
             'loan_id': loan_summary.id,
             'loan_name': loan_name
         })

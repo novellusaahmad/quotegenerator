@@ -1692,10 +1692,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const calculationResults = await calcResponse.json();
-            
+
             // Merge form data with calculation results
             const saveData = { ...formData, ...calculationResults };
-            
+            if (window.editMode && window.editMode.loanId) {
+                saveData.loanId = window.editMode.loanId;
+            }
+
             console.log('Saving loan with data:', saveData);
             
             // Send to save endpoint
@@ -1769,7 +1772,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } finally {
             // Re-enable button
             saveLoanBtn.disabled = false;
-            saveLoanBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Loan';
+            const btnText = window.editMode && window.editMode.loanId ? 'Update Loan' : 'Save Loan';
+            saveLoanBtn.innerHTML = `<i class="fas fa-save me-2"></i>${btnText}`;
         }
     });
 });
