@@ -1588,6 +1588,8 @@ class LoanCalculator:
                 })
         
         # Calculate monthly payment based on repayment option
+        periodic_interest = Decimal('0')
+        quarterly_payment = Decimal('0')
         if repayment_option == 'none' or repayment_option == 'retained':
             # Retained interest - no monthly payments, interest deducted upfront in first month
             monthly_payment = Decimal('0')
@@ -1605,44 +1607,71 @@ class LoanCalculator:
             net_advance = total_gross_amount - fees['arrangementFee'] - fees['totalLegalFees'] - total_interest
         elif repayment_option == 'service_only':
             # Interest-only payments during term
-            monthly_payment = total_interest / Decimal(str(loan_term))
+            payment_frequency = params.get('payment_frequency', 'monthly')
+            periodic_interest = self._calculate_periodic_interest(
+                total_gross_amount, annual_rate / Decimal('100'), payment_frequency
+            )
+            if payment_frequency == 'quarterly':
+                monthly_payment = Decimal('0')
+                quarterly_payment = periodic_interest
+            else:
+                monthly_payment = periodic_interest
+                quarterly_payment = Decimal('0')
             net_advance = total_gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
         elif repayment_option == 'service_and_capital':
             # Capital + interest payments with reducing balance calculation
             # For development loans with capital+interest, we need to calculate based on amortization
-            
+
             # Get capital repayment amount per period
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
             payment_frequency = params.get('payment_frequency', 'monthly')
-            
+
             # Adjust capital payment based on frequency
             if payment_frequency == 'quarterly':
                 capital_per_payment = capital_repayment * 3
             else:
                 capital_per_payment = capital_repayment
-            
+
             # Calculate total interest using reducing balance
             # This is more complex for development loans due to tranches, so we'll use an approximation
             # based on average balance over the loan term
             average_balance = total_gross_amount / 2  # Approximation for reducing balance
             term_years = Decimal(loan_term) / 12
-            
+
             # Calculate interest on average balance (more accurate than full balance)
             total_interest_reduced = self.calculate_interest_amount(
                 average_balance, annual_rate, term_years, interest_type, use_360_days
             )
-            
-            # Monthly payment is capital + average monthly interest
-            monthly_interest = total_interest_reduced / Decimal(str(loan_term))
-            monthly_payment = capital_per_payment + monthly_interest
-            
+
+            # Calculate periodic interest based on payment frequency
+            periodic_interest = self._calculate_periodic_interest(
+                total_gross_amount, annual_rate / Decimal('100'), payment_frequency
+            )
+
+            # Payment per period includes capital repayment plus periodic interest
+            if payment_frequency == 'quarterly':
+                monthly_payment = Decimal('0')
+                quarterly_payment = capital_per_payment + periodic_interest
+            else:
+                monthly_payment = capital_per_payment + periodic_interest
+                quarterly_payment = Decimal('0')
+
             # Update total interest to reflect the reduced amount
             total_interest = total_interest_reduced
-            
+
             net_advance = total_gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
         else:
-            # Default to service only
-            monthly_payment = total_interest / Decimal(str(loan_term))
+            # Default to service only behaviour
+            payment_frequency = params.get('payment_frequency', 'monthly')
+            periodic_interest = self._calculate_periodic_interest(
+                total_gross_amount, annual_rate / Decimal('100'), payment_frequency
+            )
+            if payment_frequency == 'quarterly':
+                monthly_payment = Decimal('0')
+                quarterly_payment = periodic_interest
+            else:
+                monthly_payment = periodic_interest
+                quarterly_payment = Decimal('0')
             net_advance = total_gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
         
         # Net amount is always the user input - never calculated
@@ -1676,6 +1705,8 @@ class LoanCalculator:
             'grossAmount': float(total_gross_amount),
             'propertyValue': float(property_value),
             'monthlyPayment': float(monthly_payment),
+            'quarterlyPayment': float(quarterly_payment),
+            'periodicInterest': float(periodic_interest),
             'totalInterest': float(total_interest),
             'totalAmount': float(total_gross_amount + total_interest),
             'netAmount': float(net_amount),  # Always user input (£800,000)
