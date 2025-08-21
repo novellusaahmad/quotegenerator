@@ -1497,9 +1497,21 @@ function handleEditMode() {
                 loanNameField.value = decodeURIComponent(loanName);
                 console.log('Set loan name field to:', decodeURIComponent(loanName));
             }
-            
+
             // Populate form with URL parameters
             populateFormFromParams(urlParams);
+
+            // Ensure toggle-dependent sections reflect loaded values
+            if (window.loanCalculator) {
+                try {
+                    window.loanCalculator.toggleAmountInputSections();
+                    window.loanCalculator.toggleGrossAmountInputs();
+                    window.loanCalculator.toggleRateInputs();
+                    window.loanCalculator.toggleTrancheMode();
+                } catch (err) {
+                    console.error('Error toggling sections in edit mode:', err);
+                }
+            }
         }
     }
 }
@@ -1508,10 +1520,12 @@ function populateFormFromParams(params) {
     // Basic input/select fields mapped by parameter name -> element ID
     const fieldMap = {
         'loan_type': 'loanType',
-        'gross_amount': 'grossAmount',
-        'net_amount': 'netAmount',
+        'gross_amount': 'grossAmountFixed',
+        'net_amount': 'netAmountInput',
+        'gross_amount_percentage': 'grossAmountPercentage',
         'property_value': 'propertyValue',
         'annual_rate': 'annualRateValue',
+        'monthly_rate': 'monthlyRateValue',
         'loan_term': 'loanTerm',
         'start_date': 'startDate',
         'end_date': 'endDate',
@@ -1539,7 +1553,7 @@ function populateFormFromParams(params) {
     }
 
     // Handle radio/button groups separately
-    const radioParams = ['amount_input_type', 'payment_timing', 'payment_frequency', 'tranche_mode'];
+    const radioParams = ['amount_input_type', 'gross_amount_type', 'rate_input_type', 'payment_timing', 'payment_frequency', 'tranche_mode'];
     radioParams.forEach(name => {
         const value = params.get(name);
         if (value !== null) {
