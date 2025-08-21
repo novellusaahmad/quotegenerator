@@ -2782,26 +2782,33 @@ class LoanCalculator:
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'flexible_payment':
-                # Flexible Payment: Same as Service + Capital - No interest factor but 360-day affects other calculations
-                # This formula itself doesn't use interest rate but we keep it for consistency
-                denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
+                # Flexible Payment: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)
+                if use_360_days:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12') * Decimal('365') / Decimal('360')
+                else:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12')
+                denominator = Decimal('1') - arrangement_fee_decimal - monthly_interest_factor - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
-                
+
                 logging.info(f"BRIDGE FLEXIBLE PAYMENT NET-TO-GROSS:")
-                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)")
-                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f})")
+                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)")
+                logging.info(f"Monthly interest factor: {annual_rate}%/12 = {monthly_interest_factor:.6f}")
+                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {monthly_interest_factor:.6f} - {title_insurance_decimal:.6f})")
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
-                
+
             elif repayment_option == 'capital_payment_only':
-                # Capital Payment Only: Same as Retained - Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Interest rate - Title insurance)
-                interest_factor = annual_rate_decimal * term_years
-                denominator = Decimal('1') - arrangement_fee_decimal - interest_factor - title_insurance_decimal
+                # Capital Payment Only: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)
+                if use_360_days:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12') * Decimal('365') / Decimal('360')
+                else:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12')
+                denominator = Decimal('1') - arrangement_fee_decimal - monthly_interest_factor - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
-                
+
                 logging.info(f"BRIDGE CAPITAL PAYMENT ONLY NET-TO-GROSS:")
-                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Interest rate - Title insurance)")
-                logging.info(f"Interest factor: {annual_rate}% × {term_years:.4f} years = {interest_factor:.6f}")
-                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {interest_factor:.6f} - {title_insurance_decimal:.6f})")
+                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)")
+                logging.info(f"Monthly interest factor: {annual_rate}%/12 = {monthly_interest_factor:.6f}")
+                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {monthly_interest_factor:.6f} - {title_insurance_decimal:.6f})")
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             else:
@@ -2946,26 +2953,33 @@ class LoanCalculator:
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'flexible_payment':
-                # Term Flexible Payment: Same as Service + Capital - No interest factor but 360-day affects other calculations
-                # This formula itself doesn't use interest rate but we keep it for consistency
-                denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
+                # Term Flexible Payment: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)
+                if use_360_days:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12') * Decimal('365') / Decimal('360')
+                else:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12')
+                denominator = Decimal('1') - arrangement_fee_decimal - monthly_interest_factor - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
-                
+
                 logging.info(f"TERM FLEXIBLE PAYMENT NET-TO-GROSS:")
-                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)")
-                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f})")
+                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)")
+                logging.info(f"Monthly interest factor: {annual_rate}%/12 = {monthly_interest_factor:.6f}")
+                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {monthly_interest_factor:.6f} - {title_insurance_decimal:.6f})")
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
-                
+
             elif repayment_option == 'capital_payment_only':
-                # Term Capital Payment Only: Same as Retained - Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Interest rate - Title insurance)
-                interest_factor = annual_rate_decimal * term_years
-                denominator = Decimal('1') - arrangement_fee_decimal - interest_factor - title_insurance_decimal
+                # Term Capital Payment Only: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)
+                if use_360_days:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12') * Decimal('365') / Decimal('360')
+                else:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12')
+                denominator = Decimal('1') - arrangement_fee_decimal - monthly_interest_factor - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
-                
+
                 logging.info(f"TERM CAPITAL PAYMENT ONLY NET-TO-GROSS:")
-                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Interest rate - Title insurance)")
-                logging.info(f"Interest factor: {annual_rate}% × {term_years:.4f} years = {interest_factor:.6f}")
-                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {interest_factor:.6f} - {title_insurance_decimal:.6f})")
+                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)")
+                logging.info(f"Monthly interest factor: {annual_rate}%/12 = {monthly_interest_factor:.6f}")
+                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {monthly_interest_factor:.6f} - {title_insurance_decimal:.6f})")
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             else:
