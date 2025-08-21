@@ -2734,14 +2734,19 @@ class LoanCalculator:
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'service_and_capital':
-                # Bridge Service + Capital: No interest factor but 360-day affects other calculations
-                # This formula itself doesn't use interest rate but we keep it for consistency
-                denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
+                # Bridge Service + Capital: use serviced interest factor like service_only
+                if use_360_days:
+                    # Apply 360-day rate adjustment (365/360 factor)
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12') * Decimal('365') / Decimal('360')
+                else:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12')
+                denominator = Decimal('1') - arrangement_fee_decimal - monthly_interest_factor - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
-                
+
                 logging.info(f"BRIDGE SERVICE + CAPITAL NET-TO-GROSS:")
-                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)")
-                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f})")
+                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)")
+                logging.info(f"Monthly interest factor: {annual_rate}%/12 = {monthly_interest_factor:.6f}")
+                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {monthly_interest_factor:.6f} - {title_insurance_decimal:.6f})")
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'flexible_payment':
@@ -2894,14 +2899,18 @@ class LoanCalculator:
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'service_and_capital':
-                # Term Service + Capital: No interest factor but 360-day affects other calculations
-                # This formula itself doesn't use interest rate but we keep it for consistency
-                denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
+                # Term Service + Capital: use serviced interest factor like service_only
+                if use_360_days:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12') * Decimal('365') / Decimal('360')
+                else:
+                    monthly_interest_factor = annual_rate_decimal / Decimal('12')
+                denominator = Decimal('1') - arrangement_fee_decimal - monthly_interest_factor - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
-                
+
                 logging.info(f"TERM SERVICE + CAPITAL NET-TO-GROSS:")
-                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)")
-                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f})")
+                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)")
+                logging.info(f"Monthly interest factor: {annual_rate}%/12 = {monthly_interest_factor:.6f}")
+                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {monthly_interest_factor:.6f} - {title_insurance_decimal:.6f})")
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'flexible_payment':
