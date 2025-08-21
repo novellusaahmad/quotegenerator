@@ -2585,9 +2585,17 @@ class LoanCalculator:
                 logging.info(f"Final balance payment required: {remaining_balance:.2f}")
         
         # Calculate interest savings compared to interest-only payments
-        # Interest-only scenario: gross_amount * annual_rate * term_years
-        term_years = Decimal(loan_term) / Decimal('12')
-        interest_only_total = gross_amount * (annual_rate / Decimal('100')) * term_years
+        # Interest-only scenario using same day-count conventions as interest-only calculations
+        if loan_term_days is not None:
+            interest_only_total = self.calculate_simple_interest_by_days(
+                gross_amount, annual_rate, loan_term_days, use_360_days
+            )
+        else:
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            total_days = (Decimal(loan_term) / Decimal('12')) * days_per_year
+            interest_only_total = self.calculate_simple_interest_by_days(
+                gross_amount, annual_rate, int(total_days), use_360_days
+            )
         interest_savings = interest_only_total - total_interest
         savings_percentage = (interest_savings / interest_only_total) * Decimal('100') if interest_only_total > 0 else Decimal('0')
         
@@ -6414,15 +6422,18 @@ class LoanCalculator:
         else:
             term_years = Decimal(loan_term) / Decimal('12')
         
-        # Calculate full interest for the entire loan term (retained at day 1) with 360-day adjustment if needed
-        if use_360_days:
-            # Apply 365/360 adjustment to the annual rate
-            adjusted_annual_rate = annual_rate * Decimal('365') / Decimal('360')
-            total_retained_interest = gross_amount * (adjusted_annual_rate / Decimal('100')) * term_years
-            import logging
-            logging.info(f"Term capital_payment_only: Using 360-day adjusted rate: {adjusted_annual_rate:.6f}%")
+        # Calculate full interest for the entire loan term (retained at day 1)
+        # Use the same method as interest-only calculations for consistency
+        if loan_term_days is not None:
+            total_retained_interest = self.calculate_simple_interest_by_days(
+                gross_amount, annual_rate, loan_term_days, use_360_days
+            )
         else:
-            total_retained_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            total_days = (Decimal(loan_term) / Decimal('12')) * days_per_year
+            total_retained_interest = self.calculate_simple_interest_by_days(
+                gross_amount, annual_rate, int(total_days), use_360_days
+            )
         
         # Calculate how much capital will be repaid over the loan term
         total_capital_payments = capital_repayment * loan_term
