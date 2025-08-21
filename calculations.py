@@ -38,6 +38,23 @@ class LoanCalculator:
         yearly_interest = principal * (annual_rate / Decimal('100'))
         daily_interest = yearly_interest / days_per_year
         return daily_interest * Decimal(str(days))
+
+    def _calculate_periodic_interest(
+        self, gross_amount: Decimal, annual_rate: Decimal, payment_frequency: str
+    ) -> Decimal:
+        """Calculate interest due each period based on payment frequency.
+
+        Args:
+            gross_amount: The loan principal on which interest is charged.
+            annual_rate: Annual interest rate as a percentage.
+            payment_frequency: 'monthly' or 'quarterly'.
+
+        Returns:
+            Decimal: The interest amount payable each period.
+        """
+
+        divisor = Decimal('12') if payment_frequency == 'monthly' else Decimal('4')
+        return gross_amount * (annual_rate / Decimal('100')) / divisor
         
     def calculate_interest_amount(
         self,
@@ -455,8 +472,9 @@ class LoanCalculator:
 
         # Calculate periodic interest based on payment frequency
         if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment']:
-            divisor = Decimal('12') if payment_frequency == 'monthly' else Decimal('4')
-            periodic_interest = gross_amount * (annual_rate / Decimal('100')) / divisor
+            periodic_interest = self._calculate_periodic_interest(
+                gross_amount, annual_rate, payment_frequency
+            )
             calculation['periodicInterest'] = float(periodic_interest)
 
         # Generate payment schedule
@@ -741,8 +759,9 @@ class LoanCalculator:
 
         # Calculate periodic interest based on payment frequency
         if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment']:
-            divisor = Decimal('12') if payment_frequency == 'monthly' else Decimal('4')
-            periodic_interest = gross_amount * (annual_rate / Decimal('100')) / divisor
+            periodic_interest = self._calculate_periodic_interest(
+                gross_amount, annual_rate, payment_frequency
+            )
             calculation['periodicInterest'] = float(periodic_interest)
 
         # Generate payment schedule

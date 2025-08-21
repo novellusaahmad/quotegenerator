@@ -774,23 +774,17 @@ class LoanCalculator {
             if (interestSavingsRow) interestSavingsRow.style.display = 'none';
         }
         
-        // Show/hide periodic interest payment for term loans with service only
+        // Show/hide periodic interest payment for supported repayment options
         const periodicInterestRow = document.getElementById('periodicInterestRow');
         const periodicInterestEl = document.getElementById('periodicInterestResult');
         const periodicInterestLabel = document.getElementById('periodicInterestLabel');
-        
-        console.log(`Periodic interest check: loanType=${loanType}, repaymentOption=${repaymentOption}, totalInterest=${results.totalInterest}`);
-        if ((loanType === 'term' || loanType === 'bridge') && repaymentOption === 'service_only') {
-            const totalInterest = results.totalInterest || results.total_interest || 0;
-            const loanTermMonths = results.loanTerm || results.loan_term || 0;
-            let periodicInterest = loanTermMonths ? totalInterest / loanTermMonths : 0;
-            if (paymentFrequency === 'quarterly') {
-                periodicInterest *= 3; // quarterly amount
-            }
 
+        const interestRepaymentTypes = ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment'];
+        console.log(`Periodic interest check: loanType=${loanType}, repaymentOption=${repaymentOption}, periodicInterest=${results.periodicInterest}`);
+        if ((loanType === 'term' || loanType === 'bridge') && interestRepaymentTypes.includes(repaymentOption) && results.periodicInterest) {
             if (periodicInterestRow) periodicInterestRow.style.display = 'table-row';
             if (periodicInterestEl) {
-                periodicInterestEl.textContent = periodicInterest.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                periodicInterestEl.textContent = results.periodicInterest.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             }
 
             // Update label based on payment frequency
