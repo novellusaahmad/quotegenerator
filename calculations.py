@@ -476,6 +476,12 @@ class LoanCalculator:
                 gross_amount, annual_rate, payment_frequency
             )
             calculation['periodicInterest'] = float(periodic_interest)
+            if payment_frequency == 'quarterly':
+                calculation['quarterlyPayment'] = float(periodic_interest)
+                calculation['monthlyPayment'] = 0
+            else:
+                calculation['monthlyPayment'] = float(periodic_interest)
+                calculation['quarterlyPayment'] = 0
 
         # Generate payment schedule
         try:
@@ -763,6 +769,12 @@ class LoanCalculator:
                 gross_amount, annual_rate, payment_frequency
             )
             calculation['periodicInterest'] = float(periodic_interest)
+            if payment_frequency == 'quarterly':
+                calculation['quarterlyPayment'] = float(periodic_interest)
+                calculation['monthlyPayment'] = 0
+            else:
+                calculation['monthlyPayment'] = float(periodic_interest)
+                calculation['quarterlyPayment'] = 0
 
         # Generate payment schedule
         try:
