@@ -46,15 +46,16 @@ class LoanCalculator:
 
         Args:
             gross_amount: The loan principal on which interest is charged.
-            annual_rate: Annual interest rate as a percentage.
-            payment_frequency: 'monthly' or 'quarterly'.
+            annual_rate: Annual interest rate expressed as a decimal
+                fraction (e.g. ``0.12`` for 12%).
+            payment_frequency: Either ``'monthly'`` or ``'quarterly'``.
 
         Returns:
             Decimal: The interest amount payable each period.
         """
 
         divisor = Decimal('12') if payment_frequency == 'monthly' else Decimal('4')
-        return gross_amount * (annual_rate / Decimal('100')) / divisor
+        return gross_amount * annual_rate / divisor
         
     def calculate_interest_amount(
         self,
@@ -473,7 +474,7 @@ class LoanCalculator:
         # Calculate periodic interest based on payment frequency
         if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment']:
             periodic_interest = self._calculate_periodic_interest(
-                gross_amount, annual_rate, payment_frequency
+                gross_amount, annual_rate / Decimal('100'), payment_frequency
             )
             calculation['periodicInterest'] = float(periodic_interest)
             if payment_frequency == 'quarterly':
@@ -766,7 +767,7 @@ class LoanCalculator:
         # Calculate periodic interest based on payment frequency
         if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment']:
             periodic_interest = self._calculate_periodic_interest(
-                gross_amount, annual_rate, payment_frequency
+                gross_amount, annual_rate / Decimal('100'), payment_frequency
             )
             calculation['periodicInterest'] = float(periodic_interest)
             if payment_frequency == 'quarterly':
@@ -3534,13 +3535,10 @@ class LoanCalculator:
             # Generate payment dates based on frequency and timing
             payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
             
-            # Calculate interest per payment period
-            if payment_frequency == 'quarterly':
-                periods_per_year = 4
-                interest_per_payment = gross_amount * (annual_rate / periods_per_year / 100)
-            else:
-                periods_per_year = 12
-                interest_per_payment = gross_amount * (monthly_rate / 100)
+            # Calculate interest per payment period using simple annual rate
+            interest_per_payment = self._calculate_periodic_interest(
+                gross_amount, annual_rate / Decimal('100'), payment_frequency
+            )
             
             fees_deducted_first = arrangement_fee + legal_fees
             fees_added_to_first = False
@@ -4110,10 +4108,6 @@ class LoanCalculator:
         # Generate payment dates based on frequency and timing
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
         
-        # Calculate daily rate
-        daily_rate = annual_rate / Decimal('365')
-        monthly_rate = annual_rate / Decimal('12')
-        
         arrangement_fee = Decimal(str(quote_data.get('arrangementFee', 0)))
         legal_fees = Decimal(str(quote_data.get('totalLegalFees', 0)))
         
@@ -4127,12 +4121,9 @@ class LoanCalculator:
             is_final_payment = (period == len(payment_dates))
             
             # Calculate interest per payment period
-            if payment_frequency == 'quarterly':
-                # 3 months of interest for quarterly payments
-                interest_payment = remaining_balance * (annual_rate / 4 / 100)
-            else:
-                # Monthly interest
-                interest_payment = remaining_balance * (monthly_rate / 100)
+            interest_payment = self._calculate_periodic_interest(
+                remaining_balance, annual_rate / Decimal('100'), payment_frequency
+            )
             
             # Calculate principal payment based on repayment option
             if repayment_option == 'service_only':
