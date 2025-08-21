@@ -2063,16 +2063,40 @@ class LoanCalculator:
         if net_amount is not None:
             # For net-to-gross conversions with flexible payment, the gross amount has already been calculated
             # using the Excel formula for flexible payment (interest in advance), so just calculate interest based on that gross
-            if use_360_days:
-                # Apply 360-day rate adjustment (365/360 factor)
-                term_years = Decimal(loan_term) / Decimal('12') * Decimal('365') / Decimal('360')
-                total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+            if loan_term_days is not None:
+                days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                days_total = Decimal(str(loan_term_days))
+                term_years = days_total / days_per_year
             else:
+                days_per_year = Decimal('360') if use_360_days else Decimal('365')
                 term_years = Decimal(loan_term) / Decimal('12')
+                days_total = days_per_year * term_years
+
+            if interest_type == 'simple':
+                total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+            elif interest_type == 'compound_daily':
+                daily_rate = annual_rate / Decimal('100') / days_per_year
+                compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
+                total_amount = gross_amount * compound_factor
+                total_interest = total_amount - gross_amount
+            elif interest_type == 'compound_monthly':
+                monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
+                compound_factor = (Decimal('1') + monthly_rate_decimal) ** loan_term
+                total_amount = gross_amount * compound_factor
+                total_interest = total_amount - gross_amount
+            elif interest_type == 'compound_quarterly':
+                quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
+                quarters_total = term_years * Decimal('4')
+                compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
+                total_amount = gross_amount * compound_factor
+                total_interest = total_amount - gross_amount
+            else:
                 total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
 
             import logging
-            logging.info(f"Bridge loan flexible (net-to-gross) using Excel formula gross amount: gross={gross_amount:.2f}, total_interest={total_interest:.2f}")
+            logging.info(
+                f"Bridge loan flexible (net-to-gross) using Excel formula gross amount: gross={gross_amount:.2f}, total_interest={total_interest:.2f}"
+            )
         else:
             # Standard gross-to-net calculation with flexible payments
             # Use proper month-by-month calculation for declining balance
@@ -6331,6 +6355,17 @@ class LoanCalculator:
             compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
             total_amount = gross_amount * compound_factor
             total_retained_interest = total_amount - gross_amount
+        elif interest_type == 'compound_monthly':
+            monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
+            compound_factor = (Decimal('1') + monthly_rate_decimal) ** loan_term
+            total_amount = gross_amount * compound_factor
+            total_retained_interest = total_amount - gross_amount
+        elif interest_type == 'compound_quarterly':
+            quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
+            quarters_total = term_years * Decimal('4')
+            compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
+            total_amount = gross_amount * compound_factor
+            total_retained_interest = total_amount - gross_amount
         else:
             # Default to simple interest
             total_retained_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
@@ -6364,9 +6399,33 @@ class LoanCalculator:
             # Gross = (Net + Fees) / (1 - rate * term)
             interest_rate = (annual_rate / Decimal('100')) * term_years
             gross_amount = (net_amount + total_fees) / (Decimal('1') - interest_rate)
-            
-            # Recalculate interest with new gross amount
-            total_retained_interest = gross_amount * interest_rate
+
+            # Recalculate interest with new gross amount using selected interest type
+            if interest_type == 'simple':
+                total_retained_interest = gross_amount * interest_rate
+            elif interest_type == 'compound_daily':
+                days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                daily_rate = annual_rate / Decimal('100') / days_per_year
+                if loan_term_days is not None:
+                    days_total = Decimal(str(loan_term_days))
+                else:
+                    days_total = days_per_year * term_years
+                compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
+                total_amount = gross_amount * compound_factor
+                total_retained_interest = total_amount - gross_amount
+            elif interest_type == 'compound_monthly':
+                monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
+                compound_factor = (Decimal('1') + monthly_rate_decimal) ** loan_term
+                total_amount = gross_amount * compound_factor
+                total_retained_interest = total_amount - gross_amount
+            elif interest_type == 'compound_quarterly':
+                quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
+                quarters_total = term_years * Decimal('4')
+                compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
+                total_amount = gross_amount * compound_factor
+                total_retained_interest = total_amount - gross_amount
+            else:
+                total_retained_interest = gross_amount * interest_rate
             total_capital_payments = capital_repayment * loan_term
             
             if total_capital_payments >= gross_amount:
