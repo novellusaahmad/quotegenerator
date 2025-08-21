@@ -1505,14 +1505,13 @@ function handleEditMode() {
 }
 
 function populateFormFromParams(params) {
-    // Populate all form fields from URL parameters
-    const paramMap = {
+    // Basic input/select fields mapped by parameter name -> element ID
+    const fieldMap = {
         'loan_type': 'loanType',
-        'amount_input_type': 'amountInputType',
         'gross_amount': 'grossAmount',
         'net_amount': 'netAmount',
         'property_value': 'propertyValue',
-        'annual_rate': 'annualRate',
+        'annual_rate': 'annualRateValue',
         'loan_term': 'loanTerm',
         'start_date': 'startDate',
         'end_date': 'endDate',
@@ -1521,27 +1520,39 @@ function populateFormFromParams(params) {
         'legal_fees': 'legalFees',
         'site_visit_fee': 'siteVisitFee',
         'title_insurance_rate': 'titleInsuranceRate',
-        'payment_timing': 'paymentTiming',
-        'payment_frequency': 'paymentFrequency',
         'capital_repayment': 'capitalRepayment',
         'flexible_payment': 'flexiblePayment',
         'currency': 'currency',
-        'day1_advance': 'day1Advance',
-        'tranche_mode': 'trancheMode'
+        'day1_advance': 'day1Advance'
     };
-    
-    for (const [paramName, fieldId] of Object.entries(paramMap)) {
-        const value = params.get(paramName);
-        if (value) {
-            const field = document.getElementById(fieldId);
+
+    for (const [param, id] of Object.entries(fieldMap)) {
+        const value = params.get(param);
+        if (value !== null) {
+            const field = document.getElementById(id);
             if (field) {
                 field.value = value;
-                // Trigger change event for dependent fields
+                // Trigger change for any dependent logic
                 field.dispatchEvent(new Event('change'));
             }
         }
     }
-    
+
+    // Handle radio/button groups separately
+    const radioParams = ['amount_input_type', 'payment_timing', 'payment_frequency', 'tranche_mode'];
+    radioParams.forEach(name => {
+        const value = params.get(name);
+        if (value !== null) {
+            const radio = document.querySelector(`input[name="${name}"][value="${value}"]`);
+            if (radio) {
+                radio.checked = true;
+                // Trigger events so UI updates (toggle styles, dependent sections)
+                radio.dispatchEvent(new Event('change'));
+                radio.dispatchEvent(new Event('click'));
+            }
+        }
+    });
+
     // Handle tranche data population for development loans
     populateTrancheData(params);
 }
