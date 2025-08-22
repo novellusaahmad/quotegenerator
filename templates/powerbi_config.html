@@ -346,8 +346,8 @@
                                                 <label class="form-check-label" for="sfAuthTypePassword">User &amp; Password</label>
                                             </div>
                                             <div class="form-check form-check-inline">
-                                                <input class="form-check-input" type="radio" name="sfAuthType" id="sfAuthTypeToken" value="token">
-                                                <label class="form-check-label" for="sfAuthTypeToken">Programmatic Access Token</label>
+                                                <input class="form-check-input" type="radio" name="sfAuthType" id="sfAuthTypePat" value="pat">
+                                                <label class="form-check-label" for="sfAuthTypePat">PAT Token</label>
                                             </div>
                                         </div>
                                     </div>
@@ -369,7 +369,7 @@
                                         </div>
                                     </div>
                                     <div id="sfTokenField" class="mb-3" style="display:none;">
-                                        <label class="form-label small fw-semibold text-secondary">Access Token</label>
+                                        <label class="form-label small fw-semibold text-secondary">PAT Token</label>
                                         <textarea class="form-control form-control-sm" id="sfToken" rows="2"></textarea>
                                     </div>
                                     <div class="row g-3 mb-3">
@@ -2720,7 +2720,7 @@ function saveSnowflakeConfig() {
         database: document.getElementById('sfDatabase').value.trim(),
         schema: document.getElementById('sfSchema').value.trim()
     };
-    if (method === 'token') {
+    if (method === 'pat') {
         payload.token = document.getElementById('sfToken').value.trim();
         if (!payload.token || !payload.account) {
             showNotification('Token and account are required', 'error');
@@ -2774,8 +2774,8 @@ function loadSnowflakeConfig() {
             document.getElementById('sfWarehouse').value = cfg.warehouse || '';
             document.getElementById('sfDatabase').value = cfg.database || '';
             document.getElementById('sfSchema').value = cfg.schema || '';
-            if (cfg.method === 'token') {
-                document.getElementById('sfAuthTypeToken').checked = true;
+            if (cfg.method === 'pat' || cfg.method === 'token') {
+                document.getElementById('sfAuthTypePat').checked = true;
                 document.getElementById('sfToken').value = cfg.token || '';
             } else {
                 document.getElementById('sfAuthTypePassword').checked = true;
@@ -2783,7 +2783,7 @@ function loadSnowflakeConfig() {
                 document.getElementById('sfPassword').value = cfg.password || '';
             }
             toggleSfAuthFields();
-            const summary = cfg.method === 'token'
+            const summary = (cfg.method === 'pat' || cfg.method === 'token')
                 ? `Token connection for account ${cfg.account}`
                 : `User ${cfg.user} on account ${cfg.account}`;
             document.getElementById('sfSavedDetails').textContent = summary;
@@ -2818,7 +2818,7 @@ function deleteSnowflakeConfig() {
 function toggleSfAuthFields() {
     const method = document.querySelector('input[name="sfAuthType"]:checked').value;
     document.getElementById('sfUserPasswordFields').style.display = method === 'password' ? 'block' : 'none';
-    document.getElementById('sfTokenField').style.display = method === 'token' ? 'block' : 'none';
+    document.getElementById('sfTokenField').style.display = method === 'pat' ? 'block' : 'none';
 }
 
 document.querySelectorAll('input[name="sfAuthType"]').forEach(el => {

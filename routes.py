@@ -3363,7 +3363,7 @@ def configure_snowflake():
 
         config = request.json or {}
         method = config.get('method', 'password')
-        if method == 'token':
+        if method in ('token', 'pat'):
             required = ['token', 'account']
         else:
             required = ['user', 'password', 'account']
