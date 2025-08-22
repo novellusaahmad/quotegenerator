@@ -1714,9 +1714,18 @@ def save_loan():
             loan_summary.capital_repayment = data.get('capitalRepayment', 0)
             loan_summary.flexible_payment = data.get('flexiblePayment', 0)
             loan_summary.arrangement_fee = fresh_calculation.get('arrangementFee', 0)
-            loan_summary.arrangement_fee_percentage = data.get('arrangementFeePercentage', 2.0)
-            loan_summary.legal_costs = data.get('legalCosts', 1500)
-            loan_summary.site_visit_fee = data.get('siteVisitFee', 500)
+            loan_summary.arrangement_fee_percentage = data.get(
+                'arrangementFeePercentage',
+                data.get('arrangement_fee_percentage', 2.0)
+            )
+            loan_summary.legal_costs = data.get(
+                'legalFees',
+                data.get('legal_fees', data.get('legalCosts', 1500))
+            )
+            loan_summary.site_visit_fee = data.get(
+                'siteVisitFee',
+                data.get('site_visit_fee', 500)
+            )
             loan_summary.title_insurance = fresh_calculation.get('titleInsurance', 1000)
             loan_summary.total_interest = fresh_calculation.get('totalInterest', 0)
             loan_summary.net_advance = fresh_calculation.get('netAdvance', 0)
@@ -1754,9 +1763,18 @@ def save_loan():
                 capital_repayment=data.get('capitalRepayment', 0),
                 flexible_payment=data.get('flexiblePayment', 0),
                 arrangement_fee=fresh_calculation.get('arrangementFee', 0),
-                arrangement_fee_percentage=data.get('arrangementFeePercentage', 2.0),
-                legal_costs=data.get('legalCosts', 1500),
-                site_visit_fee=data.get('siteVisitFee', 500),
+                arrangement_fee_percentage=data.get(
+                    'arrangementFeePercentage',
+                    data.get('arrangement_fee_percentage', 2.0)
+                ),
+                legal_costs=data.get(
+                    'legalFees',
+                    data.get('legal_fees', data.get('legalCosts', 1500))
+                ),
+                site_visit_fee=data.get(
+                    'siteVisitFee',
+                    data.get('site_visit_fee', 500)
+                ),
                 title_insurance=fresh_calculation.get('titleInsurance', 1000),
                 total_interest=fresh_calculation.get('totalInterest', 0),
                 net_advance=fresh_calculation.get('netAdvance', 0),
@@ -1913,9 +1931,9 @@ def get_saved_loans():
                 'propertyValue': float(loan.property_value) if loan.property_value else 0,
                 'startDate': loan.start_date.strftime('%Y-%m-%d') if loan.start_date else '',
                 'endDate': loan.end_date.strftime('%Y-%m-%d') if loan.end_date else '',
-                'legalFees': float(loan.legal_costs) if loan.legal_costs else 1500,
-                'siteVisitFee': float(loan.site_visit_fee) if loan.site_visit_fee else 500,
-                'arrangementFeePercentage': float(loan.arrangement_fee_percentage) if loan.arrangement_fee_percentage else 2.0,
+                'legalFees': float(loan.legal_costs) if loan.legal_costs is not None else 1500,
+                'siteVisitFee': float(loan.site_visit_fee) if loan.site_visit_fee is not None else 500,
+                'arrangementFeePercentage': float(loan.arrangement_fee_percentage) if loan.arrangement_fee_percentage is not None else 2.0,
                 'titleInsuranceRate': 0.01,  # Fixed rate
                 'paymentTiming': loan.payment_timing if loan.payment_timing else 'advance',
                 'paymentFrequency': loan.payment_frequency if loan.payment_frequency else 'monthly',
@@ -1999,9 +2017,9 @@ def get_loan_details(loan_id):
             # Repayment and fee parameters
             'repayment_option': loan.repayment_option,
             'arrangement_fee': float(loan.arrangement_fee) if loan.arrangement_fee else 0,
-            'arrangement_fee_percentage': float(loan.arrangement_fee_percentage) if loan.arrangement_fee_percentage else 2.0,
-            'legal_fees': float(loan.legal_costs) if loan.legal_costs else 1500,
-            'site_visit_fee': float(loan.site_visit_fee) if loan.site_visit_fee else 500,
+            'arrangement_fee_percentage': float(loan.arrangement_fee_percentage) if loan.arrangement_fee_percentage is not None else 2.0,
+            'legal_fees': float(loan.legal_costs) if loan.legal_costs is not None else 1500,
+            'site_visit_fee': float(loan.site_visit_fee) if loan.site_visit_fee is not None else 500,
             'title_insurance_rate': 0.01,  # Fixed rate
             
             # Payment parameters
@@ -2029,8 +2047,8 @@ def get_loan_details(loan_id):
             'monthlyPayment': float(loan.monthly_payment) if loan.monthly_payment else 0,
             'quarterlyPayment': float(loan.quarterly_payment) if loan.quarterly_payment else 0,
             'propertyValue': float(loan.property_value) if loan.property_value else 0,
-            'legalFees': float(loan.legal_costs) if loan.legal_costs else 1500,
-            'siteVisitFee': float(loan.site_visit_fee) if loan.site_visit_fee else 500,
+            'legalFees': float(loan.legal_costs) if loan.legal_costs is not None else 1500,
+            'siteVisitFee': float(loan.site_visit_fee) if loan.site_visit_fee is not None else 500,
             'titleInsurance': float(loan.title_insurance) if loan.title_insurance else 0,
             'ltvRatio': float(loan.start_ltv) if loan.start_ltv else 0,
             'startLtv': float(loan.start_ltv) if loan.start_ltv else 0,
@@ -2050,7 +2068,7 @@ def get_loan_details(loan_id):
             'paymentFrequency': loan.payment_frequency if loan.payment_frequency else 'monthly',
             'capitalRepayment': float(loan.capital_repayment) if loan.capital_repayment else 0,
             'flexiblePayment': float(loan.flexible_payment) if loan.flexible_payment else 0,
-            'arrangementFeePercentage': float(loan.arrangement_fee_percentage) if loan.arrangement_fee_percentage else 2.0,
+            'arrangementFeePercentage': float(loan.arrangement_fee_percentage) if loan.arrangement_fee_percentage is not None else 2.0,
             'titleInsuranceRate': 0.01,  # Fixed rate
             
             # Development loan specific fields
