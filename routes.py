@@ -1934,7 +1934,11 @@ def get_saved_loans():
                 'legalFees': float(loan.legal_costs) if loan.legal_costs is not None else 1500,
                 'siteVisitFee': float(loan.site_visit_fee) if loan.site_visit_fee is not None else 500,
                 'arrangementFeePercentage': float(loan.arrangement_fee_percentage) if loan.arrangement_fee_percentage is not None else 2.0,
-                'titleInsuranceRate': 0.01,  # Fixed rate
+                # Use stored title insurance amount to calculate the percentage rate when editing
+                'titleInsuranceRate': (
+                    (float(loan.title_insurance) / float(loan.gross_amount) * 100)
+                    if loan.title_insurance and loan.gross_amount else 0.0
+                ),
                 'paymentTiming': loan.payment_timing if loan.payment_timing else 'advance',
                 'paymentFrequency': loan.payment_frequency if loan.payment_frequency else 'monthly',
                 'capitalRepayment': float(loan.capital_repayment) if loan.capital_repayment else 0,
@@ -2020,7 +2024,11 @@ def get_loan_details(loan_id):
             'arrangement_fee_percentage': float(loan.arrangement_fee_percentage) if loan.arrangement_fee_percentage is not None else 2.0,
             'legal_fees': float(loan.legal_costs) if loan.legal_costs is not None else 1500,
             'site_visit_fee': float(loan.site_visit_fee) if loan.site_visit_fee is not None else 500,
-            'title_insurance_rate': 0.01,  # Fixed rate
+            # Calculate title insurance rate from stored amount and gross loan value
+            'title_insurance_rate': (
+                (float(loan.title_insurance) / float(loan.gross_amount) * 100)
+                if loan.title_insurance and loan.gross_amount else 0.0
+            ),
             
             # Payment parameters
             'payment_timing': loan.payment_timing if loan.payment_timing else 'advance',
@@ -2069,7 +2077,11 @@ def get_loan_details(loan_id):
             'capitalRepayment': float(loan.capital_repayment) if loan.capital_repayment else 0,
             'flexiblePayment': float(loan.flexible_payment) if loan.flexible_payment else 0,
             'arrangementFeePercentage': float(loan.arrangement_fee_percentage) if loan.arrangement_fee_percentage is not None else 2.0,
-            'titleInsuranceRate': 0.01,  # Fixed rate
+            # Preserve the original title insurance rate used when the loan was saved
+            'titleInsuranceRate': (
+                (float(loan.title_insurance) / float(loan.gross_amount) * 100)
+                if loan.title_insurance and loan.gross_amount else 0.0
+            ),
             
             # Development loan specific fields
             'day1Advance': float(loan.day_1_advance) if loan.day_1_advance else 0,
