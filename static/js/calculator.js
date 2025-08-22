@@ -2977,22 +2977,49 @@ class LoanCalculator {
             return 0;
         });
 
+        const interestData = schedule.map(entry => {
+            const interestRaw = entry.interest_amount || entry.interest || 0;
+            if (typeof interestRaw === 'number') {
+                return interestRaw;
+            } else if (typeof interestRaw === 'string') {
+                return parseFloat(interestRaw.replace(/[£€,]/g, '')) || 0;
+            }
+            return 0;
+        });
+
         const data = {
             labels: labels,
-            datasets: [{
-                label: 'Remaining Balance',
-                data: balanceData,
-                borderColor: 'rgba(184, 134, 11, 1)', // Novellus gold
-                backgroundColor: 'rgba(184, 134, 11, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.1,
-                pointRadius: 3,
-                pointHoverRadius: 6,
-                pointBackgroundColor: 'rgba(184, 134, 11, 1)',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
-            }]
+            datasets: [
+                {
+                    label: 'Remaining Balance',
+                    data: balanceData,
+                    borderColor: 'rgba(184, 134, 11, 1)', // Novellus gold
+                    backgroundColor: 'rgba(184, 134, 11, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgba(184, 134, 11, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                },
+                {
+                    label: 'Interest Payment',
+                    data: interestData,
+                    borderColor: 'rgba(70, 130, 180, 1)',
+                    backgroundColor: 'rgba(70, 130, 180, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgba(70, 130, 180, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    yAxisID: 'y1'
+                }
+            ]
         };
 
         console.log('Creating Balance Over Time chart with', balanceData.length, 'data points');
@@ -3026,12 +3053,23 @@ class LoanCalculator {
                                     text: `Balance (${results.currencySymbol || results.currency_symbol || '£'})`
                                 },
                                 beginAtZero: true
+                            },
+                            y1: {
+                                title: {
+                                    display: true,
+                                    text: `Interest (${results.currencySymbol || results.currency_symbol || '£'})`
+                                },
+                                position: 'right',
+                                beginAtZero: true,
+                                grid: {
+                                    drawOnChartArea: false
+                                }
                             }
                         },
                         plugins: {
                             title: {
                                 display: true,
-                                text: 'Loan Balance Over Time',
+                                text: 'Loan Balance & Interest Over Time',
                                 font: {
                                     size: 14,
                                     weight: 'bold'

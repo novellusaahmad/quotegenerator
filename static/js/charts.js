@@ -194,35 +194,52 @@ class ChartManager {
 
         const labels = schedule.map(payment => `Month ${payment.month}`);
         const balanceData = schedule.map(payment => payment.balance || 0);
+        const interestData = schedule.map(payment => payment.interest || payment.interest_amount || 0);
 
         const config = {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Outstanding Balance',
-                    data: balanceData,
-                    backgroundColor: this.addTransparency(this.defaultColors.primary, 0.1),
-                    borderColor: this.defaultColors.primary,
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: this.defaultColors.primary,
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4
-                }]
+                datasets: [
+                    {
+                        label: 'Outstanding Balance',
+                        data: balanceData,
+                        backgroundColor: this.addTransparency(this.defaultColors.primary, 0.1),
+                        borderColor: this.defaultColors.primary,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: this.defaultColors.primary,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4
+                    },
+                    {
+                        label: 'Interest Payment',
+                        data: interestData,
+                        backgroundColor: this.addTransparency(this.defaultColors.secondary, 0.1),
+                        borderColor: this.defaultColors.secondary,
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        pointBackgroundColor: this.defaultColors.secondary,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        yAxisID: 'y1'
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: false
+                        display: true
                     },
                     title: {
                         display: true,
-                        text: options.title || 'Loan Balance Over Time',
+                        text: options.title || 'Loan Balance & Interest Over Time',
                         font: {
                             size: 16,
                             weight: 'bold'
@@ -233,7 +250,7 @@ class ChartManager {
                             label: function(context) {
                                 const value = context.parsed.y;
                                 const currency = options.currency || '£';
-                                return `Balance: ${currency}${value.toLocaleString('en-GB', {minimumFractionDigits: 2})}`;
+                                return `${context.dataset.label}: ${currency}${value.toLocaleString('en-GB', {minimumFractionDigits: 2})}`;
                             }
                         }
                     }
@@ -249,6 +266,22 @@ class ChartManager {
                         title: {
                             display: true,
                             text: 'Outstanding Balance'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                const currency = options.currency || '£';
+                                return currency + value.toLocaleString('en-GB');
+                            }
+                        }
+                    },
+                    y1: {
+                        title: {
+                            display: true,
+                            text: 'Interest Payment'
+                        },
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false
                         },
                         ticks: {
                             callback: function(value) {
