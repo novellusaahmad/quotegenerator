@@ -197,6 +197,9 @@
                                         <input type="hidden" id="baseMonthlyRate" value="0">
                                         <input type="hidden" id="baseAmountInputType" value="gross">
                                         <input type="hidden" id="baseRateInputType" value="annual">
+                                        <input type="hidden" id="baseNetAmount" value="0">
+                                        <input type="hidden" id="baseGrossAmountType" value="fixed">
+                                        <input type="hidden" id="baseGrossAmountPercentage" value="0">
                                     </div>
                                 </div>
                                 
@@ -536,8 +539,19 @@
             if (urlParams.get('loan_type')) {
                 document.getElementById('baseLoanType').value = urlParams.get('loan_type');
             }
-            if (urlParams.get('gross_amount')) {
+            if (urlParams.get('amount_input_type') === 'net' && urlParams.get('net_amount')) {
+                document.getElementById('baseLoanAmount').value = urlParams.get('net_amount');
+            } else if (urlParams.get('gross_amount')) {
                 document.getElementById('baseLoanAmount').value = urlParams.get('gross_amount');
+            }
+            if (urlParams.get('net_amount')) {
+                document.getElementById('baseNetAmount').value = urlParams.get('net_amount');
+            }
+            if (urlParams.get('gross_amount_type')) {
+                document.getElementById('baseGrossAmountType').value = urlParams.get('gross_amount_type');
+            }
+            if (urlParams.get('gross_amount_percentage')) {
+                document.getElementById('baseGrossAmountPercentage').value = urlParams.get('gross_amount_percentage');
             }
             if (urlParams.get('annual_rate')) {
                 document.getElementById('baseInterestRate').value = urlParams.get('annual_rate');
@@ -630,6 +644,9 @@
             return {
                 loan_type: urlParams.get('loan_type') || document.getElementById('baseLoanType').value,
                 gross_amount: parseFloat(urlParams.get('gross_amount') || document.getElementById('baseLoanAmount').value),
+                net_amount: parseFloat(urlParams.get('net_amount') || document.getElementById('baseNetAmount')?.value || '0'),
+                gross_amount_type: urlParams.get('gross_amount_type') || document.getElementById('baseGrossAmountType')?.value || 'fixed',
+                gross_amount_percentage: parseFloat(urlParams.get('gross_amount_percentage') || document.getElementById('baseGrossAmountPercentage')?.value || '0'),
                 annual_rate: parseFloat(urlParams.get('annual_rate') || document.getElementById('baseInterestRate').value),
                 monthly_rate: parseFloat(urlParams.get('monthly_rate') || document.getElementById('baseMonthlyRate')?.value || '0'),
                 loan_term: parseInt(urlParams.get('loan_term') || document.getElementById('baseLoanTerm').value),

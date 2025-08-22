@@ -1791,8 +1791,15 @@ function openScenarioComparison() {
         const params = new URLSearchParams({
             loan_type: formData.loan_type || 'bridge',
             gross_amount: formData.gross_amount || formData.net_amount || 1000000,
+            net_amount: formData.net_amount || 0,
+            gross_amount_type: formData.gross_amount_type || 'fixed',
+            gross_amount_percentage: formData.gross_amount_percentage || 0,
             annual_rate: formData.annual_rate || (formData.monthly_rate ? formData.monthly_rate * 12 : 12),
+            monthly_rate: formData.monthly_rate || 0,
+            rate_input_type: formData.rate_input_type || 'annual',
             loan_term: formData.loan_term || 12,
+            start_date: formData.start_date || '',
+            end_date: formData.end_date || '',
             property_value: formData.property_value || 2000000,
             currency: formData.currency || 'GBP',
             amount_input_type: formData.amount_input_type || 'gross',
@@ -1803,7 +1810,11 @@ function openScenarioComparison() {
             repayment_option: formData.repayment_option || 'none',
             interest_type: formData.interest_type || 'simple',
             payment_timing: formData.payment_timing || 'arrears',
-            payment_frequency: formData.payment_frequency || 'monthly'
+            payment_frequency: formData.payment_frequency || 'monthly',
+            capital_repayment: formData.capital_repayment || 0,
+            flexible_payment: formData.flexible_payment || 0,
+            day1_advance: formData.day1_advance || 0,
+            use_360_days: formData.use_360_days || 'false'
         });
         
         // Open scenario comparison in new tab with current parameters
