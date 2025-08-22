@@ -291,6 +291,14 @@
                                                 <option value="quarterly">Quarterly</option>
                                             </select>
                                         </div>
+                                        <!-- Hidden fields for additional parameters loaded from calculator -->
+                                        <input type="hidden" id="baseCapitalRepayment" value="0">
+                                        <input type="hidden" id="baseFlexiblePayment" value="0">
+                                        <input type="hidden" id="baseDay1Advance" value="0">
+                                        <input type="hidden" id="baseUse360Days">
+                                        <input type="hidden" id="baseMonthlyRate" value="0">
+                                        <input type="hidden" id="baseAmountInputType" value="gross">
+                                        <input type="hidden" id="baseRateInputType" value="annual">
                                     </div>
                                 </div>
                                 
@@ -636,6 +644,9 @@
             if (urlParams.get('annual_rate')) {
                 document.getElementById('baseInterestRate').value = urlParams.get('annual_rate');
             }
+            if (urlParams.get('monthly_rate')) {
+                document.getElementById('baseMonthlyRate').value = urlParams.get('monthly_rate');
+            }
             if (urlParams.get('loan_term')) {
                 document.getElementById('baseLoanTerm').value = urlParams.get('loan_term');
             }
@@ -644,6 +655,54 @@
             }
             if (urlParams.get('currency')) {
                 document.getElementById('baseCurrency').value = urlParams.get('currency');
+            }
+            if (urlParams.get('repayment_option')) {
+                document.getElementById('baseRepaymentOption').value = urlParams.get('repayment_option');
+            }
+            if (urlParams.get('interest_type')) {
+                document.getElementById('baseInterestType').value = urlParams.get('interest_type');
+            }
+            if (urlParams.get('arrangement_fee_rate')) {
+                document.getElementById('baseArrangementFee').value = urlParams.get('arrangement_fee_rate');
+            }
+            if (urlParams.get('legal_fees')) {
+                document.getElementById('baseLegalFees').value = urlParams.get('legal_fees');
+            }
+            if (urlParams.get('site_visit_fee')) {
+                document.getElementById('baseSiteVisitFee').value = urlParams.get('site_visit_fee');
+            }
+            if (urlParams.get('title_insurance_rate')) {
+                document.getElementById('baseTitleInsuranceRate').value = urlParams.get('title_insurance_rate');
+            }
+            if (urlParams.get('start_date')) {
+                document.getElementById('baseStartDate').value = urlParams.get('start_date');
+            }
+            if (urlParams.get('end_date')) {
+                document.getElementById('baseEndDate').value = urlParams.get('end_date');
+            }
+            if (urlParams.get('payment_timing')) {
+                document.getElementById('basePaymentTiming').value = urlParams.get('payment_timing');
+            }
+            if (urlParams.get('payment_frequency')) {
+                document.getElementById('basePaymentFrequency').value = urlParams.get('payment_frequency');
+            }
+            if (urlParams.get('capital_repayment')) {
+                document.getElementById('baseCapitalRepayment').value = urlParams.get('capital_repayment');
+            }
+            if (urlParams.get('flexible_payment')) {
+                document.getElementById('baseFlexiblePayment').value = urlParams.get('flexible_payment');
+            }
+            if (urlParams.get('day1_advance')) {
+                document.getElementById('baseDay1Advance').value = urlParams.get('day1_advance');
+            }
+            if (urlParams.get('use_360_days')) {
+                document.getElementById('baseUse360Days').checked = urlParams.get('use_360_days') === 'true';
+            }
+            if (urlParams.get('amount_input_type')) {
+                document.getElementById('baseAmountInputType').value = urlParams.get('amount_input_type');
+            }
+            if (urlParams.get('rate_input_type')) {
+                document.getElementById('baseRateInputType').value = urlParams.get('rate_input_type');
             }
         }
 
@@ -668,12 +727,13 @@
         function getBaseParameters() {
             // Get parameters from URL first (if navigated from calculator)
             const urlParams = new URLSearchParams(window.location.search);
-            
+
             // If parameters exist in URL, use them; otherwise use form values
             return {
                 loan_type: urlParams.get('loan_type') || document.getElementById('baseLoanType').value,
                 gross_amount: parseFloat(urlParams.get('gross_amount') || document.getElementById('baseLoanAmount').value),
                 annual_rate: parseFloat(urlParams.get('annual_rate') || document.getElementById('baseInterestRate').value),
+                monthly_rate: parseFloat(urlParams.get('monthly_rate') || document.getElementById('baseMonthlyRate')?.value || '0'),
                 loan_term: parseInt(urlParams.get('loan_term') || document.getElementById('baseLoanTerm').value),
                 property_value: parseFloat(urlParams.get('property_value') || document.getElementById('basePropertyValue').value),
                 currency: urlParams.get('currency') || document.getElementById('baseCurrency').value,
@@ -687,8 +747,12 @@
                 end_date: urlParams.get('end_date') || document.getElementById('baseEndDate')?.value || '',
                 payment_timing: urlParams.get('payment_timing') || document.getElementById('basePaymentTiming')?.value || 'arrears',
                 payment_frequency: urlParams.get('payment_frequency') || document.getElementById('basePaymentFrequency')?.value || 'monthly',
-                amount_input_type: urlParams.get('amount_input_type') || 'gross',
-                rate_input_type: urlParams.get('rate_input_type') || 'annual'
+                amount_input_type: urlParams.get('amount_input_type') || document.getElementById('baseAmountInputType')?.value || 'gross',
+                rate_input_type: urlParams.get('rate_input_type') || document.getElementById('baseRateInputType')?.value || 'annual',
+                capital_repayment: parseFloat(urlParams.get('capital_repayment') || document.getElementById('baseCapitalRepayment')?.value || '0'),
+                flexible_payment: parseFloat(urlParams.get('flexible_payment') || document.getElementById('baseFlexiblePayment')?.value || '0'),
+                day1_advance: parseFloat(urlParams.get('day1_advance') || document.getElementById('baseDay1Advance')?.value || '0'),
+                use_360_days: urlParams.get('use_360_days') === 'true' || document.getElementById('baseUse360Days')?.checked || false
             };
         }
 
