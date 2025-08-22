@@ -102,7 +102,7 @@
                     <a class="btn btn-warning text-dark nav-btn" href="#" onclick="openScenarioComparison()">
                         <i class="fas fa-chart-line me-1"></i>Compare
                     </a>
-                    <a class="btn btn-success text-white nav-btn" href="{{ url_for('loan_history') }}">
+                    <a class="btn btn-maroon text-white nav-btn" href="{{ url_for('loan_history') }}">
                         <i class="fas fa-history me-1"></i>History
                     </a>
                     {% endif %}
@@ -163,10 +163,20 @@
         background-color: #28a745 !important;
         border-color: #28a745 !important;
     }
-    
+
     .nav-btn.btn-success:hover {
         background-color: #218838 !important;
         border-color: #218838 !important;
+    }
+
+    .nav-btn.btn-maroon {
+        background-color: #800000 !important;
+        border-color: #800000 !important;
+    }
+
+    .nav-btn.btn-maroon:hover {
+        background-color: #660000 !important;
+        border-color: #660000 !important;
     }
     
     /* Mobile responsiveness */
