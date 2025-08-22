@@ -4,99 +4,9 @@
 
 {% block head %}
 {{ super() }}
+<link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
+<link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet"/>
     <style>
-        :root {
-            --novellus-gold: #B8860B;
-            --novellus-navy: #1E2B3A;
-            --novellus-light-gold: #DAA520;
-            --novellus-dark-navy: #0F1419;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-dark-navy) 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-
-        .navbar {
-            background: linear-gradient(90deg, var(--novellus-navy) 0%, var(--novellus-dark-navy) 100%);
-            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
-        }
-
-        .container-fluid {
-            padding: 2rem 0;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.95);
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            backdrop-filter: blur(10px);
-        }
-
-        .card-header {
-            background: linear-gradient(90deg, var(--novellus-gold) 0%, var(--novellus-light-gold) 100%);
-            color: white;
-            border-radius: 15px 15px 0 0 !important;
-            padding: 1.5rem;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, var(--novellus-gold) 0%, var(--novellus-light-gold) 100%);
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(45deg, var(--novellus-light-gold) 0%, var(--novellus-gold) 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(184, 134, 11, 0.4);
-        }
-
-        .btn-outline-primary {
-            border: 2px solid var(--novellus-gold);
-            color: var(--novellus-gold);
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-outline-primary:hover {
-            background: var(--novellus-gold);
-            border-color: var(--novellus-gold);
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .table {
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .table thead th {
-            background: var(--novellus-navy);
-            color: white;
-            border: none;
-            font-weight: 600;
-            padding: 1rem;
-        }
-
-        .table tbody td {
-            padding: 0.75rem 1rem;
-            vertical-align: middle;
-            border-color: rgba(0,0,0,0.1);
-        }
-
-        .table tbody tr:hover {
-            background-color: rgba(184, 134, 11, 0.1);
-        }
-
         .scenario-card {
             border: 2px solid #e9ecef;
             border-radius: 10px;
@@ -148,18 +58,6 @@
         .alert {
             border-radius: 10px;
             border: none;
-        }
-
-        .form-control, .form-select {
-            border-radius: 8px;
-            border: 2px solid #e9ecef;
-            padding: 0.75rem;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--novellus-gold);
-            box-shadow: 0 0 0 0.2rem rgba(184, 134, 11, 0.25);
         }
 
         .notification-toast {
