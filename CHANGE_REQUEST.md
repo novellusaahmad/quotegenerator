@@ -1,7 +1,5 @@
 # Change Request Document
 
-This document summarizes the updates in each branch of the repository.
-
 
 | Branch | Description | Files | Time Spent | Deployment |
 | --- | --- | --- | --- | --- |
