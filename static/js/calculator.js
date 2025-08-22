@@ -2624,13 +2624,17 @@ class LoanCalculator {
         const totalInterest = results.totalInterest || 0;
         const totalNetAdvance = results.totalNetAdvance || 0;
 
+        // Dark palette colors for loan breakdown chart
+        const darkPalette = ['#0b0b16', '#b49b5c', '#ffffff', '#3a3a3a', '#6b6b6b', '#9e9e9e'];
+
         const data = {
             labels: ['Total Net Advance', 'Arrangement Fee', 'Legal Costs', 'Site Visit Fee', 'Title Insurance', 'Total Interest'],
             datasets: [{
                 data: [totalNetAdvance, arrangementFee, legalFees, siteVisitFee, titleInsurance, totalInterest],
-                backgroundColor: this.getCurrentThemeColors(results.currency).gradient,
+                backgroundColor: darkPalette,
                 borderWidth: 2,
-                borderColor: '#fff'
+                borderColor: '#0b0b16',
+                hoverOffset: 20
             }]
         };
 
