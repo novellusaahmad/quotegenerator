@@ -20,7 +20,7 @@ def _get_snowflake_connection():
         return None
     if snowflake_connector is None:
         raise RuntimeError("snowflake-connector-python is not installed")
-    if cfg.get("method") == "token":
+    if cfg.get("method") in ("token", "pat"):
         return snowflake_connector.connect(
             account=cfg.get("account"),
             warehouse=cfg.get("warehouse"),
