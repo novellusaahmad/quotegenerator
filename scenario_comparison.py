@@ -15,6 +15,31 @@ from decimal import Decimal
 logger = logging.getLogger(__name__)
 
 class ScenarioComparison:
+    """Compare multiple loan scenarios and summarize key metrics."""
+
+    # Map canonical metric names to possible result keys produced by the
+    # calculation engine. The calculation output mixes camelCase and
+    # snake_case, and some fields have multiple historical variants.
+    # These aliases ensure the comparison table can find the relevant
+    # value regardless of which variant is present.
+    METRIC_ALIASES = {
+        'grossAmount': ['grossAmount', 'gross_amount'],
+        'netAdvance': ['netAdvance', 'net_advance'],
+        'totalNetAdvance': [
+            'totalNetAdvance',
+            'total_net_advance',
+            'netAdvance',
+            'net_advance',
+        ],
+        'totalInterest': ['totalInterest', 'total_interest'],
+        'arrangementFee': ['arrangementFee', 'arrangement_fee'],
+        'legalCosts': ['legalCosts', 'legalFees', 'totalLegalFees', 'legal_costs'],
+        'siteVisitFee': ['siteVisitFee', 'site_visit_fee'],
+        'titleInsurance': ['titleInsurance', 'title_insurance'],
+        'endLTV': ['endLTV', 'end_ltv', 'endLtv'],
+        'interestSavings': ['interestSavings', 'interest_savings'],
+        'savingsPercentage': ['savingsPercentage', 'savings_percent'],
+    }
     def __init__(self):
         # Use the same loan calculation engine as the main calculator page
         self.calculation_engine = LoanCalculator()
@@ -63,6 +88,14 @@ class ScenarioComparison:
             except Exception as e:
                 results.append({'error': str(e)})
         return results
+
+    def _get_result_value(self, results, metric):
+        """Retrieve a metric value from calculation results handling key variants."""
+        keys = self.METRIC_ALIASES.get(metric, [metric])
+        for key in keys:
+            if key in results and results[key] not in (None, 'N/A'):
+                return results[key]
+        return None
     
     def get_comparison_table(self):
         """Generate comparison table data"""
@@ -86,24 +119,25 @@ class ScenarioComparison:
         
         # Build comparison table
         comparison_data = []
-        
+
         for metric in key_metrics:
             row = {
                 'metric': self._format_metric_name(metric),
                 'scenarios': []
             }
-            
+
             for scenario in self.scenarios:
                 if scenario.get('results'):
-                    value = scenario['results'].get(metric, 'N/A')
+                    value = self._get_result_value(scenario['results'], metric)
                     formatted_value = self._format_metric_value(metric, value)
                 else:
+                    value = None
                     formatted_value = 'Error' if scenario.get('error') else 'Not calculated'
-                
+
                 row['scenarios'].append({
                     'name': scenario['name'],
                     'value': formatted_value,
-                    'raw_value': value if scenario.get('results') else None
+                    'raw_value': value
                 })
             
             comparison_data.append(row)
@@ -130,11 +164,11 @@ class ScenarioComparison:
         for scenario in calculated_scenarios:
             results = scenario['results']
             total_cost = (
-                float(results.get('totalInterest', 0)) +
-                float(results.get('arrangementFee', 0)) +
-                float(results.get('legalCosts', 0)) +
-                float(results.get('siteVisitFee', 0)) +
-                float(results.get('titleInsurance', 0))
+                float(self._get_result_value(results, 'totalInterest') or 0) +
+                float(self._get_result_value(results, 'arrangementFee') or 0) +
+                float(self._get_result_value(results, 'legalCosts') or 0) +
+                float(self._get_result_value(results, 'siteVisitFee') or 0) +
+                float(self._get_result_value(results, 'titleInsurance') or 0)
             )
             if total_cost < min_cost:
                 min_cost = total_cost
@@ -147,7 +181,7 @@ class ScenarioComparison:
         max_net_advance = 0
         for scenario in calculated_scenarios:
             results = scenario['results']
-            net_advance = float(results.get('totalNetAdvance', 0))
+            net_advance = float(self._get_result_value(results, 'totalNetAdvance') or 0)
             if net_advance > max_net_advance:
                 max_net_advance = net_advance
                 analysis['highest_net_advance'] = {
@@ -159,7 +193,7 @@ class ScenarioComparison:
         min_interest = float('inf')
         for scenario in calculated_scenarios:
             results = scenario['results']
-            total_interest = float(results.get('totalInterest', 0))
+            total_interest = float(self._get_result_value(results, 'totalInterest') or 0)
             if total_interest < min_interest:
                 min_interest = total_interest
                 analysis['lowest_interest'] = {
@@ -171,7 +205,7 @@ class ScenarioComparison:
         min_ltv = float('inf')
         for scenario in calculated_scenarios:
             results = scenario['results']
-            end_ltv = results.get('endLTV')
+            end_ltv = self._get_result_value(results, 'endLTV')
             if end_ltv and end_ltv != 'N/A':
                 try:
                     if isinstance(end_ltv, str) and '%' in end_ltv:
@@ -194,7 +228,7 @@ class ScenarioComparison:
         max_savings = 0
         for scenario in calculated_scenarios:
             results = scenario['results']
-            savings = results.get('interestSavings', 0)
+            savings = self._get_result_value(results, 'interestSavings')
             if savings:
                 try:
                     savings_value = float(savings) if isinstance(savings, (str, int, float)) else 0
