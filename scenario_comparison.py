@@ -89,12 +89,58 @@ class ScenarioComparison:
                 results.append({'error': str(e)})
         return results
 
-    def _get_result_value(self, results, metric):
-        """Retrieve a metric value from calculation results handling key variants."""
+    def _get_result_value(self, results, metric, params=None):
+        """Retrieve a metric value from calculation results handling key variants.
+
+        If a metric isn't present (or is zero) in the calculation results,
+        attempt to derive it from the original scenario parameters. This is
+        especially useful for fee values which may not be included in some
+        calculation outputs but can be computed directly from the inputs.
+        """
+
         keys = self.METRIC_ALIASES.get(metric, [metric])
+        value = None
         for key in keys:
             if key in results and results[key] not in (None, 'N/A'):
-                return results[key]
+                value = results[key]
+                break
+
+        if value not in (None, 0):
+            return value
+
+        # For non-fee metrics return the value (even if 0)
+        fee_metrics = {'arrangementFee', 'siteVisitFee', 'titleInsurance', 'legalCosts'}
+        if metric not in fee_metrics:
+            return value
+
+        if not params:
+            return value
+
+        try:
+            if metric == 'arrangementFee':
+                gross = params.get('gross_amount') or params.get('grossAmount')
+                rate = params.get('arrangement_fee_rate') or params.get('arrangementFeeRate')
+                if gross and rate:
+                    return float(gross) * float(rate) / 100.0
+            elif metric == 'siteVisitFee':
+                fee = params.get('site_visit_fee') or params.get('siteVisitFee')
+                if fee:
+                    return float(fee)
+            elif metric == 'titleInsurance':
+                gross = params.get('gross_amount') or params.get('grossAmount')
+                rate = params.get('title_insurance_rate') or params.get('titleInsuranceRate')
+                if gross and rate:
+                    return float(gross) * float(rate) / 100.0
+            elif metric == 'legalCosts':
+                legal = params.get('legal_fees') or params.get('legalFees') or 0
+                site_visit = params.get('site_visit_fee') or params.get('siteVisitFee') or 0
+                gross = params.get('gross_amount') or params.get('grossAmount')
+                rate = params.get('title_insurance_rate') or params.get('titleInsuranceRate') or 0
+                title = float(gross) * float(rate) / 100.0 if gross and rate else 0
+                return float(legal) + float(site_visit) + float(title)
+        except Exception:
+            return None
+
         return None
     
     def get_comparison_table(self):
@@ -128,7 +174,7 @@ class ScenarioComparison:
 
             for scenario in self.scenarios:
                 if scenario.get('results'):
-                    value = self._get_result_value(scenario['results'], metric)
+                    value = self._get_result_value(scenario['results'], metric, scenario.get('parameters'))
                     formatted_value = self._format_metric_value(metric, value)
                 else:
                     value = None
