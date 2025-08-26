@@ -2411,6 +2411,10 @@ def download_working_report(filename):
 def powerbi_config():
     return render_template('powerbi_config.html')
 
+@app.route('/snowflake-config')
+def snowflake_config():
+    return render_template('snowflake_config.html')
+
 @app.route('/powerbi-scheduler')
 @login_required
 def powerbi_scheduler():
