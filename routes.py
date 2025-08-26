@@ -152,6 +152,14 @@ def parse_payment_date_flexible(payment_date_str):
             app.logger.warning(f"Could not parse payment date '{payment_date_str}', using current date")
             return datetime.now().date()
 
+def ensure_loan_tables():
+    """Create loan-related tables if they do not exist."""
+    inspector = sa.inspect(db.engine)
+    required_tables = ['loan_summary', 'payment_schedule']
+    missing = [t for t in required_tables if not inspector.has_table(t)]
+    if missing:
+        db.create_all()
+
 # Initialize calculator and quote generator
 calculator = LoanCalculator()
 # BIRT integration removed for simplified deployment
@@ -1649,6 +1657,9 @@ def save_loan():
         loan_name = data.get('loanName', '').strip()
         if not loan_name:
             return jsonify({'error': 'Loan name is required'}), 400
+
+        # Ensure required tables exist before performing any queries
+        ensure_loan_tables()
 
         loan_id = data.get('loanId') or data.get('loan_id')
         existing_loan = None
