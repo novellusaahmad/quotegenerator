@@ -172,16 +172,48 @@ print_status "Installing Python dependencies..."
 # Install dependencies
 if [ -f "deploy_requirements.txt" ]; then
     pip install -r deploy_requirements.txt
+    # Ensure critical libraries not listed are installed
+    pip install "requests>=2.32.4" "scipy>=1.16.0" "webdriver-manager>=4.0.2"
 elif [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
+    # Ensure critical libraries not listed are installed
+    pip install "requests>=2.32.4" "scipy>=1.16.0" "webdriver-manager>=4.0.2"
 else
     # Install core dependencies with specific versions for compatibility
-    pip install "flask>=2.3.0" "flask-sqlalchemy>=3.0.0" "flask-login>=0.6.0" "flask-cors>=4.0.0"
-    pip install "psycopg2-binary>=2.9.0" "python-dotenv>=1.0.0" "gunicorn>=21.0.0"
-    pip install "pandas>=2.0.0" "numpy>=1.24.0" "openpyxl>=3.1.0" "xlsxwriter>=3.1.0"
-    pip install "reportlab>=4.0.0" "python-docx>=0.8.11" "mammoth>=1.6.0"
+    pip install \
+        "email-validator>=2.2.0" \
+        "flask>=3.1.1" \
+        "flask-sqlalchemy>=3.1.1" \
+        "flask-login>=0.6.3" \
+        "flask-jwt-extended>=4.7.1" \
+        "flask-cors>=6.0.1" \
+        "flask-dance>=7.1.0" \
+        "sqlalchemy>=2.0.41" \
+        "psycopg2-binary>=2.9.10" \
+        "gunicorn>=23.0.0" \
+        "werkzeug>=3.1.3" \
+        "pyjwt>=2.10.1" \
+        "oauthlib>=3.3.1" \
+        "python-dateutil>=2.9.0.post0" \
+        "python-dotenv>=1.1.1" \
+        "requests>=2.32.4" \
+        "pandas>=2.3.1" \
+        "numpy>=2.3.1" \
+        "matplotlib>=3.10.3" \
+        "openpyxl>=3.1.5" \
+        "xlsxwriter>=3.2.5" \
+        "python-docx>=1.2.0" \
+        "docx>=0.2.4" \
+        "mammoth>=1.9.1" \
+        "reportlab>=4.4.2" \
+        "scipy>=1.16.0" \
+        "selenium>=4.34.2" \
+        "webdriver-manager>=4.0.2" \
+        "chromedriver-autoinstaller>=0.6.4" \
+        "schedule>=1.2.2" \
+        "apscheduler>=3.11.0"
     # WeasyPrint optional - may fail on some systems
-    pip install weasyprint || print_warning "WeasyPrint installation failed, but system will work without it"
+    pip install "weasyprint>=65.1" || print_warning "WeasyPrint installation failed, but system will work without it"
 fi
 
 # Install Snowflake connector for Snowflake testing feature
@@ -211,7 +243,7 @@ python database_init.py
 
 # Test installation
 print_status "Testing installation..."
-if python -c "import flask, psycopg2, pandas, numpy, snowflake.connector; from app import app; print('All dependencies imported successfully')"; then
+if python -c "import flask, psycopg2, pandas, numpy, requests, scipy, webdriver_manager, snowflake.connector; from app import app; print('All dependencies imported successfully')"; then
     print_status "✅ Installation completed successfully!"
     echo ""
     echo "============================================================"
