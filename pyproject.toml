@@ -2,7 +2,7 @@
 name = "repl-nix-workspace"
 version = "0.1.0"
 description = "Add your description here"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "email-validator>=2.2.0",
     "flask-dance>=7.1.0",
@@ -27,10 +27,10 @@ dependencies = [
     "weasyprint>=65.1",
     "matplotlib>=3.10.3",
     "xlsxwriter>=3.2.5",
-    "numpy>=2.3.1",
+    "numpy>=2.2.6",
     "requests>=2.32.4",
     "python-dotenv>=1.1.1",
-    "scipy>=1.16.0",
+    "scipy>=1.15.3",
     "selenium>=4.34.2",
     "webdriver-manager>=4.0.2",
     "chromedriver-autoinstaller>=0.6.4",
