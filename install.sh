@@ -178,6 +178,10 @@ elif [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
     # Ensure critical libraries not listed are installed
     pip install "requests>=2.32.4" "scipy>=1.16.0" "webdriver-manager>=4.0.2"
+elif [ -f "Requirements.txt" ]; then
+    pip install -r Requirements.txt
+    # Ensure critical libraries not listed are installed
+    pip install "requests>=2.32.4" "scipy>=1.16.0" "webdriver-manager>=4.0.2"
 else
     # Install core dependencies with specific versions for compatibility
     pip install \
