@@ -698,17 +698,18 @@ class LoanCalculator {
         const day1Advance = results.day1Advance || results.netDay1Advance || 0;
         
         // Update the display elements
-        if (valuationEl) valuationEl.textContent = propertyValue.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        if (grossAmountEl) grossAmountEl.textContent = grossAmount.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        const moneyFormat = {minimumFractionDigits: 4, maximumFractionDigits: 4};
+        if (valuationEl) valuationEl.textContent = propertyValue.toLocaleString('en-GB', moneyFormat);
+        if (grossAmountEl) grossAmountEl.textContent = grossAmount.toLocaleString('en-GB', moneyFormat);
         if (startDateEl) startDateEl.textContent = this.formatDate(startDate);
         if (endDateEl) endDateEl.textContent = this.formatDate(endDate);
         if (loanTermEl) loanTermEl.textContent = loanTerm.toFixed(2);
         if (loanTermDaysEl) loanTermDaysEl.textContent = loanTermDays;
-        if (arrangementFeeEl) arrangementFeeEl.textContent = arrangementFee.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        if (legalCostsEl) legalCostsEl.textContent = legalCosts.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        if (siteVisitFeeEl) siteVisitFeeEl.textContent = siteVisitFee.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        if (titleInsuranceEl) titleInsuranceEl.textContent = titleInsurance.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        if (totalInterestEl) totalInterestEl.textContent = totalInterest.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        if (arrangementFeeEl) arrangementFeeEl.textContent = arrangementFee.toLocaleString('en-GB', moneyFormat);
+        if (legalCostsEl) legalCostsEl.textContent = legalCosts.toLocaleString('en-GB', moneyFormat);
+        if (siteVisitFeeEl) siteVisitFeeEl.textContent = siteVisitFee.toLocaleString('en-GB', moneyFormat);
+        if (titleInsuranceEl) titleInsuranceEl.textContent = titleInsurance.toLocaleString('en-GB', moneyFormat);
+        if (totalInterestEl) totalInterestEl.textContent = totalInterest.toLocaleString('en-GB', moneyFormat);
         
         // For development loans, show user input Day 1 advance for display purposes
         if (netDay1AdvanceEl) {
