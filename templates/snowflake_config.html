@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Snowflake Configuration{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-3">Snowflake Configuration</h2>
+    <p>Store your Snowflake connection settings and verify the connection.</p>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#snowflakeModal">
+        <i class="fas fa-database me-1"></i>Configure Snowflake
+    </button>
+    <div id="testResult" class="mt-3"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="snowflakeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="snowflakeForm" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Snowflake Connection</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+            <label class="form-label">Account</label>
+            <input type="text" class="form-control" name="account" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">User</label>
+            <input type="text" class="form-control" name="user" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Warehouse</label>
+            <input type="text" class="form-control" name="warehouse" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Database</label>
+            <input type="text" class="form-control" name="database" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Schema</label>
+            <input type="text" class="form-control" name="schema" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">PAT Token</label>
+            <input type="password" class="form-control" name="token" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadConfig();
+    document.getElementById('snowflakeForm').addEventListener('submit', saveConfig);
+});
+
+async function loadConfig() {
+    const resp = await fetch('/api/snowflake/config');
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!data) return;
+    const form = document.getElementById('snowflakeForm');
+    form.account.value = data.account || '';
+    form.user.value = data.user || '';
+    form.warehouse.value = data.warehouse || '';
+    form.database.value = data.database || '';
+    form.schema.value = data.schema || '';
+    form.token.value = data.token || '';
+}
+
+async function saveConfig(e) {
+    e.preventDefault();
+    const form = e.target;
+    const payload = {
+        method: 'pat',
+        account: form.account.value,
+        user: form.user.value,
+        warehouse: form.warehouse.value,
+        database: form.database.value,
+        schema: form.schema.value,
+        token: form.token.value
+    };
+    const resp = await fetch('/api/snowflake/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (resp.ok) {
+        await testConnection();
+        bootstrap.Modal.getInstance(document.getElementById('snowflakeModal')).hide();
+    }
+}
+
+async function testConnection() {
+    const resultDiv = document.getElementById('testResult');
+    try {
+        const resp = await fetch('/api/snowflake/test', {method: 'POST'});
+        if (resp.ok) {
+            resultDiv.innerHTML = '<div class="alert alert-success">Connection successful.</div>';
+        } else {
+            const text = await resp.text();
+            resultDiv.innerHTML = '<div class="alert alert-danger">Connection failed: ' + text + '</div>';
+        }
+    } catch (err) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">Connection failed.</div>';
+    }
+}
+</script>
+{% endblock %}
