@@ -3479,27 +3479,26 @@ class LoanCalculator:
     
     def _generate_payment_dates(self, start_date: datetime, loan_term: int, frequency: str = 'monthly', timing: str = 'advance') -> List[datetime]:
         """Generate payment dates based on frequency and timing within loan period"""
-        from datetime import datetime, timedelta
-        from dateutil.relativedelta import relativedelta
-        
-        payment_dates = []
-        loan_end_date = start_date + relativedelta(months=loan_term)
-        
+        from datetime import timedelta
+
+        payment_dates: List[datetime] = []
+        loan_end_date = self._add_months(start_date, loan_term)
+
         if frequency == 'quarterly':
             # Quarterly payments (every 3 months)
             periods = (loan_term + 2) // 3  # Round up to cover all quarters
             for quarter in range(periods):
                 if timing == 'advance':
                     # Payment at start of quarter
-                    payment_date = start_date + relativedelta(months=quarter * 3)
+                    payment_date = self._add_months(start_date, quarter * 3)
                 else:
                     # Payment at end of quarter
-                    payment_date = start_date + relativedelta(months=(quarter + 1) * 3) - timedelta(days=1)
-                
+                    payment_date = self._add_months(start_date, (quarter + 1) * 3) - timedelta(days=1)
+
                 # Only include payments within loan period
                 if payment_date <= loan_end_date:
                     payment_dates.append(payment_date)
-                    
+
             # Ensure final payment is on loan end date if needed
             if payment_dates and payment_dates[-1] < loan_end_date and timing == 'arrears':
                 payment_dates[-1] = loan_end_date
@@ -3508,15 +3507,19 @@ class LoanCalculator:
             for month in range(loan_term):
                 if timing == 'advance':
                     # Payment at start of month
-                    payment_date = start_date + relativedelta(months=month)
+                    payment_date = self._add_months(start_date, month)
                 else:
                     # Payment at end of month
-                    payment_date = start_date + relativedelta(months=month + 1) - timedelta(days=1)
-                
+                    payment_date = self._add_months(start_date, month + 1) - timedelta(days=1)
+
                 # Only include payments within loan period
                 if payment_date <= loan_end_date:
                     payment_dates.append(payment_date)
-        
+
+            # For arrears timing, ensure the last payment includes the loan end date
+            if payment_dates and payment_dates[-1] < loan_end_date and timing == 'arrears':
+                payment_dates[-1] = loan_end_date
+
         return payment_dates
 
     def generate_payment_schedule(self, quote_data: Dict, currency_symbol: str = '£') -> List[Dict]:
