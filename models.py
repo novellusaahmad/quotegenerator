@@ -230,7 +230,11 @@ class LoanSummary(db.Model):
     property_value = db.Column(db.Numeric(15, 2))
     
     # Interest and term details
-    interest_rate = db.Column(db.Numeric(8, 4))
+    # Use a wider precision for percentage-based fields to avoid
+    # "numeric value out of range" errors when calculations produce
+    # unusually large values (e.g. very small property values causing
+    # extremely high LTV percentages).
+    interest_rate = db.Column(db.Numeric(15, 4))
     loan_term = db.Column(db.Integer)  # in months
     loan_term_days = db.Column(db.Integer)
     start_date = db.Column(db.Date)
@@ -245,7 +249,7 @@ class LoanSummary(db.Model):
     
     # Fees
     arrangement_fee = db.Column(db.Numeric(15, 2))
-    arrangement_fee_percentage = db.Column(db.Numeric(8, 4))
+    arrangement_fee_percentage = db.Column(db.Numeric(15, 4))
     legal_costs = db.Column(db.Numeric(15, 2))
     site_visit_fee = db.Column(db.Numeric(15, 2))
     title_insurance = db.Column(db.Numeric(15, 2))
@@ -258,13 +262,13 @@ class LoanSummary(db.Model):
     quarterly_payment = db.Column(db.Numeric(15, 2))
     
     # LTV calculations
-    start_ltv = db.Column(db.Numeric(8, 4))
-    end_ltv = db.Column(db.Numeric(8, 4))
+    start_ltv = db.Column(db.Numeric(15, 4))
+    end_ltv = db.Column(db.Numeric(15, 4))
     
     # Interest savings (for flexible payments)
     interest_only_total = db.Column(db.Numeric(15, 2))
     interest_savings = db.Column(db.Numeric(15, 2))
-    savings_percentage = db.Column(db.Numeric(8, 4))
+    savings_percentage = db.Column(db.Numeric(15, 4))
     
     # Development loan specific
     day_1_advance = db.Column(db.Numeric(15, 2))
