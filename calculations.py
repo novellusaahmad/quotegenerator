@@ -18,11 +18,16 @@ class LoanCalculator:
     def __init__(self):
         self.days_in_year = 365  # Default to 365 days
 
-    def _two_dp(self, value) -> float:
-        """Round a numeric value to two decimal places using HALF_UP."""
+    def _round(self, value, places: int = 2) -> float:
+        """Round a numeric value to the specified decimal places using HALF_UP."""
         if not isinstance(value, Decimal):
             value = Decimal(str(value))
-        return float(value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        quantize_value = Decimal('1').scaleb(-places)
+        return float(value.quantize(quantize_value, rounding=ROUND_HALF_UP))
+
+    def _two_dp(self, value) -> float:
+        """Round a numeric value to two decimal places using HALF_UP."""
+        return self._round(value, 2)
 
     def _add_months(self, start: datetime, months: int) -> datetime:
         """Add months to a date while preserving day when possible."""
@@ -1116,9 +1121,9 @@ class LoanCalculator:
                 tranche_breakdown.append({
                     'tranche_number': tranche_counter,  # Use sequential counter instead of month + 1
                     'release_date': release_date.strftime('%Y-%m-%d'),
-                    'amount': round(amount, 3),
+                    'amount': self._round(amount, 3),
                     'description': f'Tranche {tranche_counter}',  # Use sequential counter
-                    'cumulative_amount': round(cumulative, 3),
+                    'cumulative_amount': self._round(cumulative, 3),
                     'interest_rate': float(params.get('annual_rate', 12.0))
                 })
                 tranche_counter += 1  # Increment counter for next tranche
@@ -1134,13 +1139,13 @@ class LoanCalculator:
         
         # Return result in expected format with 3 decimal place rounding
         return {
-            'grossAmount': round(gross_amount_solution, 3),
-            'netAmount': round(total_net_advance, 3),  # This equals user input (Net Amount = Target)
-            'netAdvance': round(total_net_advance, 3),  # Available net advance
-            'totalNetAdvance': round(total_net_advance, 3),  # User requirement: Net Amount = Target Amount
-            'day1Advance': round(net_advance_day1, 3),
-            'propertyValue': round(property_value, 3),
-            'ltv': round(ltv, 3),
+            'grossAmount': self._round(gross_amount_solution, 3),
+            'netAmount': self._round(total_net_advance, 3),  # This equals user input (Net Amount = Target)
+            'netAdvance': self._round(total_net_advance, 3),  # Available net advance
+            'totalNetAdvance': self._round(total_net_advance, 3),  # User requirement: Net Amount = Target Amount
+            'day1Advance': self._round(net_advance_day1, 3),
+            'propertyValue': self._round(property_value, 3),
+            'ltv': self._round(ltv, 3),
             'currency': params.get('currency', 'GBP'),
             'loanTerm': loan_term,
             'loanTermDays': int(loan_term * float(Decimal('365.25') / Decimal('12'))),
@@ -1150,11 +1155,11 @@ class LoanCalculator:
             'loan_type': 'development2',
             'amount_input_type': 'net',
             'monthlyPayment': 0,
-            'arrangementFee': round(arrangement_fee, 3),
-            'legalFees': round(legals, 3),
-            'totalLegalFees': round(legals, 3),
-            'siteVisitFee': round(site_visit_fee, 3),
-            'titleInsurance': round(title_insurance, 3),
+            'arrangementFee': self._round(arrangement_fee, 3),
+            'legalFees': self._round(legals, 3),
+            'totalLegalFees': self._round(legals, 3),
+            'siteVisitFee': self._round(site_visit_fee, 3),
+            'titleInsurance': self._round(title_insurance, 3),
             'tranche_breakdown': tranche_breakdown,
             'detailed_payment_schedule': payment_schedule,
             'start_date': start_date_str,
@@ -1246,12 +1251,12 @@ class LoanCalculator:
             tranche_outstanding = outstanding + tranche_release
             
             # Calculate compound daily interest with 3 decimal place precision
-            interest_amount = round(tranche_outstanding * ((1 + daily_interest_rate) ** days_in_period - 1), 3)
-            
-            closing_balance = round(tranche_outstanding + interest_amount, 3)
-            
+            interest_amount = self._round(tranche_outstanding * ((1 + daily_interest_rate) ** days_in_period - 1), 3)
+
+            closing_balance = self._round(tranche_outstanding + interest_amount, 3)
+
             # Calculate balance change (closing - opening) with 3 decimal precision
-            balance_change = round(closing_balance - opening_balance, 3)
+            balance_change = self._round(closing_balance - opening_balance, 3)
             balance_change_indicator = '↑' if balance_change > 0 else '↓' if balance_change < 0 else '='
             
             # Create date range format: "01/08/2025 - 31/08/2025"
@@ -1283,7 +1288,7 @@ class LoanCalculator:
         # Final period - loan matures
         if payment_schedule:
             # Update final period for loan maturity with 3 decimal precision
-            final_outstanding = round(outstanding, 3)
+            final_outstanding = self._round(outstanding, 3)
             payment_schedule[-1]['principal_payment'] = f'£{final_outstanding:,.3f}'
             payment_schedule[-1]['total_payment'] = f'£{final_outstanding:,.3f}'  # Full repayment at maturity
             payment_schedule[-1]['closing_balance'] = '£0.000'
