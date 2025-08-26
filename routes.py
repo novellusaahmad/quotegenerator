@@ -23,6 +23,7 @@ from utils import (
 )
 from snowflake_utils import (
     set_snowflake_config,
+    get_snowflake_config,
     sync_data_to_snowflake,
     test_snowflake_connection,
     model_to_dict,
@@ -3373,11 +3374,15 @@ def configure_snowflake():
     """Configure Snowflake connection from frontend."""
     try:
         if request.method == 'GET':
-            cfg = current_app.config.get('SNOWFLAKE_CONFIG', {})
+            cfg = get_snowflake_config()
             return jsonify({'config': cfg})
 
         if request.method == 'DELETE':
             current_app.config.pop('SNOWFLAKE_CONFIG', None)
+            try:
+                os.remove('snowflake_config.json')
+            except FileNotFoundError:
+                pass
             return jsonify({'success': True})
 
         config = request.json or {}
