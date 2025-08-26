@@ -26,8 +26,18 @@ class LoanCalculator:
         return float(value.quantize(quantize_value, rounding=ROUND_HALF_UP))
 
     def _two_dp(self, value) -> float:
-        """Round a numeric value to two decimal places using HALF_UP."""
-        return self._round(value, 2)
+        """Round a numeric value to four decimal places using HALF_UP.
+
+        Historically the calculator rounded values to two decimal places at
+        each step of the calculation.  This introduced small cumulative
+        rounding errors on the summary page – totals such as the overall
+        interest could end up a penny short (e.g. ``11999.99`` instead of the
+        expected ``12000``).  To ensure the summary totals are mathematically
+        consistent we now maintain four decimal places of precision throughout
+        the calculation pipeline and only let the presentation layer decide how
+        many decimals to display.
+        """
+        return self._round(value, 4)
 
     def _add_months(self, start: datetime, months: int) -> datetime:
         """Add months to a date while preserving day when possible."""
