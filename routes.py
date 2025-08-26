@@ -1821,6 +1821,10 @@ def save_loan():
         db.session.commit()
 
         try:
+            # Ensure the Snowflake connection is valid before attempting to
+            # load data. If the connection test fails, the sync will be
+            # skipped and logged.
+            test_snowflake_connection()
             sync_data_to_snowflake('loan_summary', model_to_dict(loan_summary))
             if snowflake_payments:
                 sync_data_to_snowflake('payment_schedule', snowflake_payments)
@@ -3386,7 +3390,9 @@ def configure_snowflake():
 def test_snowflake():
     """Test the configured Snowflake connection."""
     try:
-        cfg = request.json or None
+        # Use silent JSON parsing so requests without the correct
+        # ``Content-Type`` header don't trigger a 415 error
+        cfg = request.get_json(silent=True)
         if cfg:
             set_snowflake_config(cfg)
         test_snowflake_connection()
