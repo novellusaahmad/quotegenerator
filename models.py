@@ -99,14 +99,21 @@ class Quote(db.Model):
     loan_term = db.Column(db.Integer, nullable=False)
     
     # Fees
-    arrangement_fee = db.Column(db.Numeric(10, 2), default=0)
-    legal_fees = db.Column(db.Numeric(10, 2), default=0)
-    valuation_fee = db.Column(db.Numeric(10, 2), default=0)
-    title_insurance = db.Column(db.Numeric(10, 2), default=0)
-    exit_fee = db.Column(db.Numeric(10, 2), default=0)
+    # Fees may exceed eight digits before the decimal point for large loans
+    # so we allow up to thirteen digits (e.g. values over £99,999,999.99).
+    # Using Numeric(15, 2) matches the precision used for other monetary
+    # fields in the application and avoids "numeric value out of range"
+    # errors when persisting amounts like 100,000,000.
+    arrangement_fee = db.Column(db.Numeric(15, 2), default=0)
+    legal_fees = db.Column(db.Numeric(15, 2), default=0)
+    valuation_fee = db.Column(db.Numeric(15, 2), default=0)
+    title_insurance = db.Column(db.Numeric(15, 2), default=0)
+    exit_fee = db.Column(db.Numeric(15, 2), default=0)
     
     # Calculated Values
-    monthly_payment = db.Column(db.Numeric(10, 2))
+    # Monthly payments can also surpass 99,999,999.99 in extreme cases.
+    # Increase precision to keep consistency with other monetary columns.
+    monthly_payment = db.Column(db.Numeric(15, 2))
     total_interest = db.Column(db.Numeric(15, 2))
     total_amount = db.Column(db.Numeric(15, 2))
     ltv_ratio = db.Column(db.Numeric(5, 2))
