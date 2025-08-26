@@ -329,8 +329,9 @@
 }
 
 .btn-primary:hover {
-    background-color: var(--novellus-gold-dark);
-    border-color: var(--novellus-gold-dark);
+    background-color: var(--novellus-gold);
+    border-color: var(--novellus-gold);
+    color: white;
 }
 
 .btn-outline-secondary {
@@ -397,9 +398,18 @@ canvas {
 }
 
 .calculate-button:hover, .btn-primary:hover {
-    background: linear-gradient(135deg, var(--novellus-gold-dark) 0%, var(--novellus-gold-darker) 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 10px rgba(184, 134, 11, 0.3);
+    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%);
+    box-shadow: 0 3px 6px rgba(184, 134, 11, 0.2);
+    color: white;
+    transform: none;
+}
+
+/* Consistent primary button style without hover variance */
+.btn-primary,
+.btn-primary:hover,
+.btn-primary:focus {
+    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%);
+    border-color: var(--novellus-gold);
     color: white;
 }
 
