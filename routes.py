@@ -3382,6 +3382,9 @@ def configure_snowflake():
 def test_snowflake():
     """Test the configured Snowflake connection."""
     try:
+        cfg = request.json or None
+        if cfg:
+            set_snowflake_config(cfg)
         test_snowflake_connection()
         return jsonify({'success': True})
     except Exception as e:
