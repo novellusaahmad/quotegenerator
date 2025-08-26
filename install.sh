@@ -173,15 +173,15 @@ print_status "Installing Python dependencies..."
 if [ -f "deploy_requirements.txt" ]; then
     pip install -r deploy_requirements.txt
     # Ensure critical libraries not listed are installed
-    pip install "requests>=2.32.4" "scipy>=1.16.0" "webdriver-manager>=4.0.2"
+    pip install "requests>=2.32.4" "scipy>=1.15.3" "webdriver-manager>=4.0.2"
 elif [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
     # Ensure critical libraries not listed are installed
-    pip install "requests>=2.32.4" "scipy>=1.16.0" "webdriver-manager>=4.0.2"
+    pip install "requests>=2.32.4" "scipy>=1.15.3" "webdriver-manager>=4.0.2"
 elif [ -f "Requirements.txt" ]; then
     pip install -r Requirements.txt
     # Ensure critical libraries not listed are installed
-    pip install "requests>=2.32.4" "scipy>=1.16.0" "webdriver-manager>=4.0.2"
+    pip install "requests>=2.32.4" "scipy>=1.15.3" "webdriver-manager>=4.0.2"
 else
     # Install core dependencies with specific versions for compatibility
     pip install \
@@ -202,7 +202,7 @@ else
         "python-dotenv>=1.1.1" \
         "requests>=2.32.4" \
         "pandas>=2.3.1" \
-        "numpy>=2.3.1" \
+        "numpy>=2.2.6" \
         "matplotlib>=3.10.3" \
         "openpyxl>=3.1.5" \
         "xlsxwriter>=3.2.5" \
@@ -210,7 +210,7 @@ else
         "docx>=0.2.4" \
         "mammoth>=1.9.1" \
         "reportlab>=4.4.2" \
-        "scipy>=1.16.0" \
+        "scipy>=1.15.3" \
         "selenium>=4.34.2" \
         "webdriver-manager>=4.0.2" \
         "chromedriver-autoinstaller>=0.6.4" \
