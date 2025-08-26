@@ -2,7 +2,7 @@ import math
 import re
 import calendar
 from datetime import datetime, timedelta
-from decimal import Decimal, getcontext
+from decimal import Decimal, getcontext, ROUND_HALF_UP
 from typing import Dict, List, Optional, Tuple
 # Removed model imports - not needed for calculations
 import logging
@@ -17,6 +17,12 @@ class LoanCalculator:
     
     def __init__(self):
         self.days_in_year = 365  # Default to 365 days
+
+    def _two_dp(self, value) -> float:
+        """Round a numeric value to two decimal places using HALF_UP."""
+        if not isinstance(value, Decimal):
+            value = Decimal(str(value))
+        return float(value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
 
     def _add_months(self, start: datetime, months: int) -> datetime:
         """Add months to a date while preserving day when possible."""
@@ -350,8 +356,11 @@ class LoanCalculator:
             
             # For net-to-gross retained interest, ensure interest uses yearly→daily calculation
             if amount_input_type == 'net' and net_amount is not None:
-                calculated_interest = float(self.calculate_simple_interest_by_days(
-                    gross_amount, annual_rate, loan_term_days, use_360_days))
+                calculated_interest = self._two_dp(
+                    self.calculate_simple_interest_by_days(
+                        gross_amount, annual_rate, loan_term_days, use_360_days
+                    )
+                )
                 calculation['totalInterest'] = calculated_interest
                 calculation['total_interest'] = calculated_interest
                 logging.info(
@@ -382,6 +391,7 @@ class LoanCalculator:
                     interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
                     total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
 
+                total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
         elif repayment_option == 'service_and_capital':
@@ -609,8 +619,11 @@ class LoanCalculator:
             
             # For net-to-gross retained interest, use yearly→daily interest calculation
             if amount_input_type == 'net' and net_amount is not None:
-                calculated_interest = float(self.calculate_simple_interest_by_days(
-                    gross_amount, annual_rate, loan_term_days, use_360_days))
+                calculated_interest = self._two_dp(
+                    self.calculate_simple_interest_by_days(
+                        gross_amount, annual_rate, loan_term_days, use_360_days
+                    )
+                )
                 calculation['totalInterest'] = calculated_interest
                 calculation['total_interest'] = calculated_interest
                 logging.info(
@@ -641,6 +654,7 @@ class LoanCalculator:
                     interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
                     total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
 
+                total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
         elif repayment_option == 'service_and_capital':
@@ -663,7 +677,8 @@ class LoanCalculator:
                     interest_str = payment.get('interest_amount', '£0.00')
                     interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
                     total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
-                
+
+                total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
                 
@@ -691,7 +706,8 @@ class LoanCalculator:
                     interest_str = payment.get('interest_amount', '£0.00')
                     interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
                     total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
-                
+
+                total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
                 
@@ -719,7 +735,8 @@ class LoanCalculator:
                     interest_str = payment.get('interest_amount', '£0.00')
                     interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
                     total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
-                
+
+                total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
                 
@@ -1128,7 +1145,7 @@ class LoanCalculator:
             'loanTerm': loan_term,
             'loanTermDays': int(loan_term * float(Decimal('365.25') / Decimal('12'))),
             'interestRate': float(params.get('annual_rate', 12.0)),
-            'totalInterest': round(total_interest_val, 3),
+            'totalInterest': self._two_dp(total_interest_val),
             'repaymentOption': 'none',
             'loan_type': 'development2',
             'amount_input_type': 'net',
@@ -1707,8 +1724,8 @@ class LoanCalculator:
             'monthlyPayment': float(monthly_payment),
             'quarterlyPayment': float(quarterly_payment),
             'periodicInterest': float(periodic_interest),
-            'totalInterest': float(total_interest),
-            'totalAmount': float(total_gross_amount + total_interest),
+            'totalInterest': self._two_dp(total_interest),
+            'totalAmount': self._two_dp(total_gross_amount + total_interest),
             'netAmount': float(net_amount),  # Always user input (£800,000)
             'netAdvance': float(calculated_net_advance),  # Calculated available cash after fees
             'totalNetAdvance': float(calculated_net_advance),  # Gross Amount - All Fees - Interest
@@ -1822,10 +1839,10 @@ class LoanCalculator:
         return {
             'gross_amount': float(gross_amount),
             'monthlyPayment': 0,
-            'totalInterest': float(total_interest),
-            'total_interest': float(total_interest),
-            'totalAmount': float(gross_amount + total_interest),
-            'netAdvance': float(net_advance)
+            'totalInterest': self._two_dp(total_interest),
+            'total_interest': self._two_dp(total_interest),
+            'totalAmount': self._two_dp(gross_amount + total_interest),
+            'netAdvance': self._two_dp(net_advance)
         }
     
     def _calculate_bridge_interest_only(self, gross_amount: Decimal, monthly_rate: Decimal,
@@ -1920,13 +1937,13 @@ class LoanCalculator:
         
         return {
             'gross_amount': float(gross_amount),
-            'monthlyPayment': float(periodic_interest),
-            'totalInterest': float(total_interest),
-            'total_interest': float(total_interest),
-            'totalAmount': float(gross_amount + total_interest),
-            'netAdvance': float(net_advance_after_first_interest),  # Use net advance after first period interest deduction
-            'firstPeriodInterest': float(first_period_interest),
-            'netAdvanceBeforeInterest': float(net_advance)  # Keep original for reference
+            'monthlyPayment': self._two_dp(periodic_interest),
+            'totalInterest': self._two_dp(total_interest),
+            'total_interest': self._two_dp(total_interest),
+            'totalAmount': self._two_dp(gross_amount + total_interest),
+            'netAdvance': self._two_dp(net_advance_after_first_interest),  # Use net advance after first period interest deduction
+            'firstPeriodInterest': self._two_dp(first_period_interest),
+            'netAdvanceBeforeInterest': self._two_dp(net_advance)  # Keep original for reference
         }
     
     def _calculate_bridge_service_capital(self, gross_amount: Decimal, monthly_rate: Decimal,
@@ -2044,13 +2061,13 @@ class LoanCalculator:
         
         return {
             'gross_amount': float(gross_amount),
-            'monthlyPayment': float(monthly_payment),
-            'totalInterest': float(total_interest),
-            'total_interest': float(total_interest),
-            'totalAmount': float(gross_amount + total_interest),
-            'netAdvance': float(net_advance),
-            'interestOnlyTotal': float(interest_only_total),
-            'interestSavings': float(interest_savings),
+            'monthlyPayment': self._two_dp(monthly_payment),
+            'totalInterest': self._two_dp(total_interest),
+            'total_interest': self._two_dp(total_interest),
+            'totalAmount': self._two_dp(gross_amount + total_interest),
+            'netAdvance': self._two_dp(net_advance),
+            'interestOnlyTotal': self._two_dp(interest_only_total),
+            'interestSavings': self._two_dp(interest_savings),
             'savingsPercentage': float(savings_percentage)
         }
     
@@ -2205,14 +2222,14 @@ class LoanCalculator:
         logging.info(f"Bridge flexible: gross={gross_amount}, net_advance={net_advance} (no fee deduction)")
 
         return {
-            'monthlyPayment': float(flexible_payment),
-            'totalInterest': float(total_interest),
-            'totalAmount': float(gross_amount + total_interest),
-            'netAdvance': float(net_advance),
-            'interestSavings': float(interest_savings),
+            'monthlyPayment': self._two_dp(flexible_payment),
+            'totalInterest': self._two_dp(total_interest),
+            'totalAmount': self._two_dp(gross_amount + total_interest),
+            'netAdvance': self._two_dp(net_advance),
+            'interestSavings': self._two_dp(interest_savings),
             'savingsPercentage': float(savings_percentage),
-            'interestOnlyTotal': float(interest_only_total),
-            'remainingBalance': float(remaining_balance)
+            'interestOnlyTotal': self._two_dp(interest_only_total),
+            'remainingBalance': self._two_dp(remaining_balance)
         }
     
     def _calculate_bridge_capital_only(self, gross_amount: Decimal, annual_rate: Decimal,
@@ -2227,10 +2244,10 @@ class LoanCalculator:
         net_advance = gross_amount - fees['arrangementFee'] - fees['totalLegalFees'] - monthly_interest
 
         return {
-            'monthlyPayment': float(capital_repayment),
+            'monthlyPayment': self._two_dp(capital_repayment),
             'totalInterest': 0,  # Interest is refunded
-            'totalAmount': float(gross_amount),
-            'netAdvance': float(net_advance)
+            'totalAmount': self._two_dp(gross_amount),
+            'netAdvance': self._two_dp(net_advance)
         }
     
     def _calculate_term_interest_only(self, gross_amount: Decimal, annual_rate: Decimal,
@@ -2324,12 +2341,12 @@ class LoanCalculator:
         logging.info(f"Term loan interest-only: first_period_interest={first_period_interest}, net_advance_after_advance_payment={net_advance_after_first_interest}")
         
         return {
-            'monthlyPayment': float(monthly_payment),
-            'totalInterest': float(total_interest),
-            'totalAmount': float(gross_amount + total_interest),
-            'netAdvance': float(net_advance_after_first_interest),  # Use net advance after first period interest deduction
-            'firstPeriodInterest': float(first_period_interest),
-            'netAdvanceBeforeInterest': float(net_advance)  # Keep original for reference
+            'monthlyPayment': self._two_dp(monthly_payment),
+            'totalInterest': self._two_dp(total_interest),
+            'totalAmount': self._two_dp(gross_amount + total_interest),
+            'netAdvance': self._two_dp(net_advance_after_first_interest),  # Use net advance after first period interest deduction
+            'firstPeriodInterest': self._two_dp(first_period_interest),
+            'netAdvanceBeforeInterest': self._two_dp(net_advance)  # Keep original for reference
         }
     
     def _calculate_term_retained_interest(self, gross_amount: Decimal, annual_rate: Decimal,
@@ -2392,9 +2409,9 @@ class LoanCalculator:
         
         return {
             'monthlyPayment': 0,  # No monthly payments for retained interest
-            'totalInterest': float(total_interest),
-            'totalAmount': float(gross_amount + total_interest),
-            'netAdvance': float(net_advance)
+            'totalInterest': self._two_dp(total_interest),
+            'totalAmount': self._two_dp(gross_amount + total_interest),
+            'netAdvance': self._two_dp(net_advance)
         }
     
     def _calculate_term_amortizing(self, gross_amount: Decimal, annual_rate: Decimal,
@@ -2453,12 +2470,12 @@ class LoanCalculator:
         logging.info(f"Term loan amortizing: net_advance={net_advance:.2f} (same as gross, no fee deduction)")
         
         return {
-            'monthlyPayment': float(monthly_payment),
-            'totalInterest': float(total_interest),
-            'totalAmount': float(gross_amount + total_interest),
-            'netAdvance': float(net_advance),
-            'interestOnlyTotal': float(interest_only_total),
-            'interestSavings': float(interest_savings),
+            'monthlyPayment': self._two_dp(monthly_payment),
+            'totalInterest': self._two_dp(total_interest),
+            'totalAmount': self._two_dp(gross_amount + total_interest),
+            'netAdvance': self._two_dp(net_advance),
+            'interestOnlyTotal': self._two_dp(interest_only_total),
+            'interestSavings': self._two_dp(interest_savings),
             'savingsPercentage': float(savings_percentage)
         }
     
@@ -2521,14 +2538,14 @@ class LoanCalculator:
         # For term service+capital loans, Net Advance = Gross Amount (no fee deduction)
         # Fees are handled separately, not deducted from net advance
         return {
-            'netAdvance': float(gross_amount),
-            'totalInterest': float(total_interest),
-            'monthlyPayment': float(capital_repayment + (gross_amount * effective_monthly_rate / Decimal('100'))),
-            'totalAmount': float(total_payment),
-            'remainingBalance': float(remaining_balance),
+            'netAdvance': self._two_dp(gross_amount),
+            'totalInterest': self._two_dp(total_interest),
+            'monthlyPayment': self._two_dp(capital_repayment + (gross_amount * effective_monthly_rate / Decimal('100'))),
+            'totalAmount': self._two_dp(total_payment),
+            'remainingBalance': self._two_dp(remaining_balance),
             'interestRate': float(annual_rate),
-            'interestOnlyTotal': float(interest_only_total),
-            'interestSavings': float(interest_savings),
+            'interestOnlyTotal': self._two_dp(interest_only_total),
+            'interestSavings': self._two_dp(interest_savings),
             'savingsPercentage': float(savings_percentage)
         }
     
@@ -2640,14 +2657,14 @@ class LoanCalculator:
         logging.info(f"Term flexible: gross={gross_amount}, net_advance={net_advance} (no fee deduction)")
         
         return {
-            'monthlyPayment': float(flexible_payment),  # Show the user's flexible payment amount
-            'totalInterest': float(total_interest),
-            'totalAmount': float(gross_amount + total_interest),
-            'netAdvance': float(net_advance),
-            'remainingBalance': float(remaining_balance) if 'remaining_balance' in locals() else 0,
-            'interestSavings': float(interest_savings),
+            'monthlyPayment': self._two_dp(flexible_payment),  # Show the user's flexible payment amount
+            'totalInterest': self._two_dp(total_interest),
+            'totalAmount': self._two_dp(gross_amount + total_interest),
+            'netAdvance': self._two_dp(net_advance),
+            'remainingBalance': self._two_dp(remaining_balance) if 'remaining_balance' in locals() else 0,
+            'interestSavings': self._two_dp(interest_savings),
             'savingsPercentage': float(savings_percentage),
-            'interestOnlyTotal': float(interest_only_total)
+            'interestOnlyTotal': self._two_dp(interest_only_total)
         }
     
     def _calculate_fees(self, gross_amount: Decimal, arrangement_fee_rate: Decimal,
@@ -5286,7 +5303,7 @@ class LoanCalculator:
             'loanTerm': loan_term,
             'loanTermDays': loan_term_days,  # Add loan term in days
             'interestRate': float(annual_rate),
-            'totalInterest': float(total_interest),
+            'totalInterest': self._two_dp(total_interest),
             'repaymentOption': repayment_option,
             'loan_type': 'development',
             'amount_input_type': 'net',
@@ -6485,15 +6502,15 @@ class LoanCalculator:
         
         return {
             'grossAmount': float(gross_amount),
-            'totalInterest': float(net_interest_paid),  # Show net interest after refund
-            'retainedInterest': float(total_retained_interest),  # Full interest retained at day 1
-            'interestRefund': float(interest_refund),  # Potential refund
-            'interestOnlyTotal': float(interest_only_total),  # For frontend comparison
-            'interestSavings': float(interest_savings),  # For frontend comparison
+            'totalInterest': self._two_dp(net_interest_paid),  # Show net interest after refund
+            'retainedInterest': self._two_dp(total_retained_interest),  # Full interest retained at day 1
+            'interestRefund': self._two_dp(interest_refund),  # Potential refund
+            'interestOnlyTotal': self._two_dp(interest_only_total),  # For frontend comparison
+            'interestSavings': self._two_dp(interest_savings),  # For frontend comparison
             'savingsPercentage': savings_percentage,  # For frontend comparison
-            'netAdvance': float(net_advance),
-            'monthlyPayment': float(capital_repayment),
-            'remainingBalance': float(final_balance),
+            'netAdvance': self._two_dp(net_advance),
+            'monthlyPayment': self._two_dp(capital_repayment),
+            'remainingBalance': self._two_dp(final_balance),
             'loan_type': 'bridge',
             'repayment_option': 'capital_payment_only',
             **{k: float(v) for k, v in fees.items()}
@@ -6585,15 +6602,15 @@ class LoanCalculator:
         
         return {
             'grossAmount': float(gross_amount),
-            'totalInterest': float(net_interest_paid),  # Show net interest after refund
-            'retainedInterest': float(total_retained_interest),  # Full interest retained at day 1
-            'interestRefund': float(interest_refund),  # Potential refund
-            'interestOnlyTotal': float(interest_only_total),  # For frontend comparison
-            'interestSavings': float(interest_savings),  # For frontend comparison
+            'totalInterest': self._two_dp(net_interest_paid),  # Show net interest after refund
+            'retainedInterest': self._two_dp(total_retained_interest),  # Full interest retained at day 1
+            'interestRefund': self._two_dp(interest_refund),  # Potential refund
+            'interestOnlyTotal': self._two_dp(interest_only_total),  # For frontend comparison
+            'interestSavings': self._two_dp(interest_savings),  # For frontend comparison
             'savingsPercentage': savings_percentage,  # For frontend comparison
-            'netAdvance': float(net_advance),
-            'monthlyPayment': float(capital_repayment),
-            'remainingBalance': float(final_balance),
+            'netAdvance': self._two_dp(net_advance),
+            'monthlyPayment': self._two_dp(capital_repayment),
+            'remainingBalance': self._two_dp(final_balance),
             'loan_type': 'term',
             'repayment_option': 'capital_payment_only',
             **{k: float(v) for k, v in fees.items()}
