@@ -1117,9 +1117,7 @@ class LoanCalculator {
 
         const selectors = [
             '[data-bs-target="#paymentScheduleModal"]',
-            '[data-bs-target="#balanceModal"]',
-            '[data-bs-target="#compoundInterestModal"]',
-            '[data-bs-target="#trancheModal"]'
+            '[data-bs-target="#balanceModal"]'
         ];
 
         selectors.forEach(sel => {
@@ -1131,21 +1129,18 @@ class LoanCalculator {
 
         if (isServicedOnly) {
             const hideSelectors = [
-                '[data-bs-target="#balanceModal"]',
-                '[data-bs-target="#compoundInterestModal"]',
-                '[data-bs-target="#trancheModal"]'
+                '[data-bs-target="#balanceModal"]'
             ];
             hideSelectors.forEach(sel => {
                 const btn = document.querySelector(sel);
                 if (btn) btn.style.display = 'none';
             });
-
-            ['balanceModal', 'compoundInterestModal', 'trancheModal'].forEach(id => {
+            ['balanceModal'].forEach(id => {
                 const modal = document.getElementById(id);
                 if (modal) modal.style.display = 'none';
             });
         } else {
-            ['balanceModal', 'compoundInterestModal', 'trancheModal'].forEach(id => {
+            ['balanceModal'].forEach(id => {
                 const modal = document.getElementById(id);
                 if (modal) modal.style.display = '';
             });
@@ -2553,11 +2548,6 @@ class LoanCalculator {
                         this.createBalanceOverTimeChart(results);
                     }
 
-                    if (!isServicedOnly && (results.loan_type === 'development' || results.loan_type === 'development2')) {
-                        this.createCompoundInterestChart(results);
-                        this.createTrancheReleaseChart(results);
-                    }
-
                     console.log('All charts generated successfully');
                 } catch (delayedError) {
                     console.error('Error in delayed chart generation:', delayedError);
@@ -2574,9 +2564,7 @@ class LoanCalculator {
     setupModalResizeHandlers() {
         const mappings = [
             {modal: 'loanBreakdownModal', key: 'loanBreakdown'},
-            {modal: 'balanceModal', key: 'balanceOverTime'},
-            {modal: 'compoundInterestModal', key: 'compoundInterest'},
-            {modal: 'trancheModal', key: 'trancheRelease'}
+            {modal: 'balanceModal', key: 'balanceOverTime'}
         ];
         mappings.forEach(({modal, key}) => {
             const modalEl = document.getElementById(modal);
@@ -2720,47 +2708,11 @@ class LoanCalculator {
             } catch (error) {
                 console.error('Error creating monthly breakdown chart:', error);
             }
-            
+
             try {
                 this.createBalanceOverTimeChart(results);
             } catch (error) {
                 console.error('Error creating balance over time chart:', error);
-            }
-            
-            // Debug compound interest chart
-            console.log('Creating compound interest chart with data:', {
-                monthly_breakdown: results.monthly_breakdown,
-                detailed_payment_schedule: results.detailed_payment_schedule ? results.detailed_payment_schedule.length + ' entries' : 'none'
-            });
-            
-            try {
-                this.createCompoundInterestChart(results);
-            } catch (error) {
-                console.error('Error creating compound interest chart:', error);
-            }
-            
-            // Show tranche charts if tranche data is available
-            if (results.tranche_release_schedule || (results.detailed_payment_schedule && 
-                results.detailed_payment_schedule.some(entry => {
-                    if (!entry.tranche_release) return false;
-                    const trancheValue = typeof entry.tranche_release === 'number' ? 
-                        entry.tranche_release : 
-                        parseFloat(String(entry.tranche_release).replace(/[£€,]/g, '')) || 0;
-                    return trancheValue > 0;
-                }))) {
-                
-                const trancheChartsRow = document.getElementById('trancheChartsRow');
-                if (trancheChartsRow) {
-                    trancheChartsRow.style.display = 'block';
-                    console.log('Creating tranche release chart with schedule entries:', 
-                        results.detailed_payment_schedule ? results.detailed_payment_schedule.length : 'none');
-                    
-                    try {
-                        this.createTrancheReleaseChart(results);
-                    } catch (error) {
-                        console.error('Error creating tranche release chart:', error);
-                    }
-                }
             }
         } catch (error) {
             console.error('Error in createDevelopmentLoanCharts:', error);
@@ -3111,225 +3063,6 @@ class LoanCalculator {
         }
     }
 
-    // Create compound interest breakdown chart for development loans
-    createCompoundInterestChart(results) {
-        const ctx = document.getElementById('compoundInterestChart');
-        if (!ctx) {
-            console.error('Compound interest chart canvas not found');
-            return;
-        }
-
-        // Use detailed_payment_schedule if monthly_breakdown is not available (Development 2)
-        const monthlyBreakdown = results.monthly_breakdown || results.detailed_payment_schedule || [];
-        console.log('Compound interest chart data source:', {
-            monthly_breakdown_length: results.monthly_breakdown ? results.monthly_breakdown.length : 0,
-            detailed_schedule_length: results.detailed_payment_schedule ? results.detailed_payment_schedule.length : 0,
-            using_data_length: monthlyBreakdown.length
-        });
-        
-        if (monthlyBreakdown.length === 0) {
-            console.warn('No data available for compound interest chart');
-            return;
-        }
-
-        const labels = monthlyBreakdown.map(entry => {
-            // Use actual dates if available
-            const dateStr = entry.date || entry.payment_date || entry.month || 'N/A';
-            if (dateStr && dateStr.includes('-')) {
-                // Parse ISO date format and convert to DD/MM/YY
-                const date = new Date(dateStr);
-                if (!isNaN(date.getTime())) {
-                    const day = date.getDate().toString().padStart(2, '0');
-                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                    const year = date.getFullYear().toString().slice(-2);
-                    return `${day}/${month}/${year}`;
-                }
-            }
-            return dateStr;
-        });
-        
-        const interestData = monthlyBreakdown.map(entry => {
-            // Handle both monthly_breakdown format and detailed_payment_schedule format
-            const interest = entry.interest || entry.interest_amount || 0;
-            if (typeof interest === 'number') {
-                return interest;
-            } else if (typeof interest === 'string') {
-                return parseFloat(interest.replace(/[£€,]/g, '')) || 0;
-            }
-            return 0;
-        });
-        
-        const principalData = monthlyBreakdown.map(entry => {
-            // Handle both formats
-            const principal = entry.principal || entry.principal_payment || entry.tranche_release || 0;
-            if (typeof principal === 'number') {
-                return principal;
-            } else if (typeof principal === 'string') {
-                return parseFloat(principal.replace(/[£€,]/g, '')) || 0;
-            }
-            return 0;
-        });
-
-        const data = {
-            labels: labels,
-            datasets: [{
-                label: 'Monthly Interest',
-                data: interestData,
-                backgroundColor: 'rgba(30, 43, 58, 0.7)', // Novellus navy
-                borderColor: 'rgba(30, 43, 58, 1)',
-                borderWidth: 1,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }, {
-                label: 'Principal Amount',
-                data: principalData,
-                backgroundColor: 'rgba(184, 134, 11, 0.7)', // Novellus gold
-                borderColor: 'rgba(184, 134, 11, 1)',
-                borderWidth: 1,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        };
-
-        this.charts.compoundInterest = new Chart(ctx, {
-            type: 'bar',
-            data: data,
-            options: {
-                responsive: true,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Month'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: `Amount (${results.currencySymbol || results.currency_symbol || '£'})`
-                        },
-                        beginAtZero: true
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Monthly Compound Interest Breakdown',
-                        font: {
-                            size: 14,
-                            weight: 'bold'
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const currency = results.currencySymbol || results.currency_symbol || '£';
-                                return `${context.dataset.label}: ${currency}${context.parsed.y.toLocaleString('en-GB')}`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    // Create tranche release schedule chart
-    createTrancheReleaseChart(results) {
-        const ctx = document.getElementById('trancheReleaseChart');
-        if (!ctx) return;
-
-        const schedule = results.detailed_payment_schedule || [];
-        const trancheData = schedule.filter(entry => {
-            const trancheValue = entry.tranche_release || 0;
-            if (typeof trancheValue === 'number') {
-                return trancheValue > 0;
-            } else if (typeof trancheValue === 'string') {
-                return parseFloat(trancheValue.replace(/[£€,]/g, '')) > 0;
-            }
-            return false;
-        });
-
-        if (trancheData.length === 0) return;
-
-        const labels = trancheData.map(entry => {
-            const dateStr = entry.payment_date || 'N/A';
-            if (dateStr && dateStr.includes('-')) {
-                // Parse ISO date format and convert to DD/MM/YY
-                const date = new Date(dateStr);
-                if (!isNaN(date.getTime())) {
-                    const day = date.getDate().toString().padStart(2, '0');
-                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                    const year = date.getFullYear().toString().slice(-2);
-                    return `${day}/${month}/${year}`;
-                }
-            }
-            return dateStr;
-        });
-        
-        const amounts = trancheData.map(entry => {
-            const trancheValue = entry.tranche_release || 0;
-            if (typeof trancheValue === 'number') {
-                return trancheValue;
-            } else if (typeof trancheValue === 'string') {
-                return parseFloat(trancheValue.replace(/[£€,]/g, '')) || 0;
-            }
-            return 0;
-        });
-
-        const data = {
-            labels: labels,
-            datasets: [{
-                label: 'Tranche Release Amount',
-                data: amounts,
-                backgroundColor: 'rgba(184, 134, 11, 0.7)', // Novellus gold
-                borderColor: 'rgba(184, 134, 11, 1)',
-                borderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        };
-
-        this.charts.trancheRelease = new Chart(ctx, {
-            type: 'bar',
-            data: data,
-            options: {
-                responsive: true,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Release Date'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: `Amount (${results.currencySymbol || '£'})`
-                        },
-                        beginAtZero: true
-                    }
-                },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Tranche Release Schedule',
-                        font: {
-                            size: 14,
-                            weight: 'bold'
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const currency = results.currencySymbol || '£';
-                                return `${context.dataset.label}: ${currency}${context.parsed.y.toLocaleString('en-GB')}`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
 
     // Update percentage displays with actual user input values
     updatePercentageDisplays() {
