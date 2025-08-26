@@ -330,7 +330,7 @@
                         <!-- Snowflake Config Panel -->
                         <div class="tab-pane fade" id="snowflake-panel" role="tabpanel">
                             <div class="p-3">
-                                <div id="snowflakeSavedConfig" class="alert alert-secondary d-flex justify-content-between align-items-center mb-3" style="display:none;">
+                                <div id="snowflakeSavedConfig" class="alert alert-light border text-dark d-flex justify-content-between align-items-center mb-3" style="display:none;">
                                     <div id="sfSavedDetails"></div>
                                     <div>
                                         <button type="button" class="btn btn-sm btn-primary me-2" onclick="editSnowflakeConfig()">Edit</button>
@@ -339,7 +339,7 @@
                                 </div>
                                 <form id="snowflakeForm" autocomplete="off">
                                     <div class="mb-3">
-                                        <label class="form-label small fw-semibold text-secondary">Authentication Method</label>
+                                        <label class="form-label small fw-semibold text-dark">Authentication Method</label>
                                         <div>
                                             <div class="form-check form-check-inline">
                                                 <input class="form-check-input" type="radio" name="sfAuthType" id="sfAuthTypePassword" value="password" checked>
@@ -354,11 +354,11 @@
                                     <div id="sfUserPasswordFields">
                                         <div class="row g-3 mb-3">
                                             <div class="col-md-6">
-                                                <label class="form-label small fw-semibold text-secondary">User</label>
+                                                <label class="form-label small fw-semibold text-dark">User</label>
                                                 <input type="text" class="form-control form-control-sm" id="sfUser">
                                             </div>
                                             <div class="col-md-6">
-                                                <label class="form-label small fw-semibold text-secondary">Password</label>
+                                                <label class="form-label small fw-semibold text-dark">Password</label>
                                                 <div class="input-group input-group-sm">
                                                     <input type="password" class="form-control" id="sfPassword">
                                                     <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('sfPassword', this)">
@@ -369,26 +369,26 @@
                                         </div>
                                     </div>
                                     <div id="sfTokenField" class="mb-3" style="display:none;">
-                                        <label class="form-label small fw-semibold text-secondary">PAT Token</label>
+                                        <label class="form-label small fw-semibold text-dark">PAT Token</label>
                                         <textarea class="form-control form-control-sm" id="sfToken" rows="2"></textarea>
                                     </div>
                                     <div class="row g-3 mb-3">
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-semibold text-secondary">Account</label>
+                                            <label class="form-label small fw-semibold text-dark">Account</label>
                                             <input type="text" class="form-control form-control-sm" id="sfAccount" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-semibold text-secondary">Warehouse</label>
+                                            <label class="form-label small fw-semibold text-dark">Warehouse</label>
                                             <input type="text" class="form-control form-control-sm" id="sfWarehouse">
                                         </div>
                                     </div>
                                     <div class="row g-3 mb-3">
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-semibold text-secondary">Database</label>
+                                            <label class="form-label small fw-semibold text-dark">Database</label>
                                             <input type="text" class="form-control form-control-sm" id="sfDatabase">
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label small fw-semibold text-secondary">Schema</label>
+                                            <label class="form-label small fw-semibold text-dark">Schema</label>
                                             <input type="text" class="form-control form-control-sm" id="sfSchema">
                                         </div>
                                     </div>
@@ -2712,28 +2712,8 @@ function refreshAllReports() {
 }
 
 function saveSnowflakeConfig() {
-    const method = document.querySelector('input[name="sfAuthType"]:checked').value;
-    const payload = {
-        method: method,
-        account: document.getElementById('sfAccount').value.trim(),
-        warehouse: document.getElementById('sfWarehouse').value.trim(),
-        database: document.getElementById('sfDatabase').value.trim(),
-        schema: document.getElementById('sfSchema').value.trim()
-    };
-    if (method === 'pat') {
-        payload.token = document.getElementById('sfToken').value.trim();
-        if (!payload.token || !payload.account) {
-            showNotification('Token and account are required', 'error');
-            return;
-        }
-    } else {
-        payload.user = document.getElementById('sfUser').value.trim();
-        payload.password = document.getElementById('sfPassword').value.trim();
-        if (!payload.user || !payload.password || !payload.account) {
-            showNotification('User, password and account are required', 'error');
-            return;
-        }
-    }
+    const payload = getSnowflakeFormData();
+    if (!payload) return;
 
     fetch('/api/snowflake/config', {
         method: 'POST',
@@ -2745,6 +2725,7 @@ function saveSnowflakeConfig() {
     .then(resp => resp.json())
     .then(data => {
         if (data.success) {
+            localStorage.setItem('snowflake_config', JSON.stringify(payload));
             showNotification('Snowflake configuration saved', 'success');
             loadSnowflakeConfig();
         } else {
@@ -2760,7 +2741,13 @@ function loadSnowflakeConfig() {
     fetch('/api/snowflake/config')
         .then(resp => resp.json())
         .then(data => {
-            const cfg = data.config || {};
+            let cfg = data.config || {};
+            if (!cfg.method) {
+                const stored = localStorage.getItem('snowflake_config');
+                if (stored) {
+                    cfg = JSON.parse(stored);
+                }
+            }
             const form = document.getElementById('snowflakeForm');
             const savedDiv = document.getElementById('snowflakeSavedConfig');
             if (!cfg.method) {
@@ -2804,6 +2791,7 @@ function deleteSnowflakeConfig() {
         .then(resp => resp.json())
         .then(data => {
             if (data.success) {
+                localStorage.removeItem('snowflake_config');
                 showNotification('Snowflake configuration deleted', 'success');
                 loadSnowflakeConfig();
             } else {
@@ -2830,7 +2818,13 @@ async function testSnowflakeConnection() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Testing...';
     try {
-        const resp = await fetch('/api/snowflake/test', { method: 'POST' });
+        const payload = getSnowflakeFormData();
+        if (!payload) throw new Error('Missing required fields');
+        const resp = await fetch('/api/snowflake/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
         const data = await resp.json();
         if (data.success) {
             showNotification('Snowflake connection successful', 'success');
@@ -2843,6 +2837,32 @@ async function testSnowflakeConnection() {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-vial me-1"></i>Test';
     }
+}
+
+function getSnowflakeFormData() {
+    const method = document.querySelector('input[name="sfAuthType"]:checked').value;
+    const payload = {
+        method: method,
+        account: document.getElementById('sfAccount').value.trim(),
+        warehouse: document.getElementById('sfWarehouse').value.trim(),
+        database: document.getElementById('sfDatabase').value.trim(),
+        schema: document.getElementById('sfSchema').value.trim()
+    };
+    if (method === 'pat') {
+        payload.token = document.getElementById('sfToken').value.trim();
+        if (!payload.token || !payload.account) {
+            showNotification('Token and account are required', 'error');
+            return null;
+        }
+    } else {
+        payload.user = document.getElementById('sfUser').value.trim();
+        payload.password = document.getElementById('sfPassword').value.trim();
+        if (!payload.user || !payload.password || !payload.account) {
+            showNotification('User, password and account are required', 'error');
+            return null;
+        }
+    }
+    return payload;
 }
 
 // Enhanced clear form to handle saved settings
