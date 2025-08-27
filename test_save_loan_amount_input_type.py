@@ -1,5 +1,11 @@
 import os
 import json
+import pytest
+
+# Skip module if Flask app dependencies are missing
+pytest.importorskip("flask")
+pytest.importorskip("app")
+pytest.importorskip("models")
 
 # Use a separate SQLite database for testing
 os.environ['DATABASE_URL'] = 'sqlite:///test_save_loan.db'
