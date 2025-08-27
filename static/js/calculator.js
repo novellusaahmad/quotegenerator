@@ -698,7 +698,7 @@ class LoanCalculator {
         const day1Advance = results.day1Advance || results.netDay1Advance || 0;
         
         // Update the display elements
-        const moneyFormat = {minimumFractionDigits: 4, maximumFractionDigits: 4};
+        const moneyFormat = {minimumFractionDigits: 2, maximumFractionDigits: 2};
         if (valuationEl) valuationEl.textContent = propertyValue.toLocaleString('en-GB', moneyFormat);
         if (grossAmountEl) grossAmountEl.textContent = grossAmount.toLocaleString('en-GB', moneyFormat);
         if (startDateEl) startDateEl.textContent = this.formatDate(startDate);

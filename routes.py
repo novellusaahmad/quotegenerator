@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 from flask import render_template, request, redirect, url_for, flash, jsonify, session, send_file, make_response, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_cors import cross_origin
@@ -315,6 +316,17 @@ def api_calculate():
         
     try:
         data = request.get_json()
+
+        def round_two_decimals(value):
+            if isinstance(value, dict):
+                return {k: round_two_decimals(v) for k, v in value.items()}
+            if isinstance(value, list):
+                return [round_two_decimals(v) for v in value]
+            if isinstance(value, Decimal):
+                return float(value.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            if isinstance(value, float):
+                return float(Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            return value
         
         # Extract parameters
         loan_type = data.get('loan_type', 'bridge')
@@ -588,16 +600,16 @@ def api_calculate():
                         total_net_advance = gross_amount_value - arrangement_fee_value - legal_fees - site_visit_fee - title_insurance_value
                         app.logger.info(f'ROUTES.PY {repayment_option.upper()} NET ADVANCE ({loan_type}): £{gross_amount_value:.2f} - £{arrangement_fee_value:.2f} - £{legal_fees:.2f} - £{site_visit_fee:.2f} - £{title_insurance_value:.2f} = £{total_net_advance:.2f}')
             
-        # NO ROUNDING - maintain exact precision
+        # Store values as floats prior to rounding
         result['totalNetAdvance'] = float(total_net_advance)
-        
-        # Store individual fee components for display (no rounding)
+
+        # Store individual fee components for display
         result['siteVisitFee'] = float(site_visit_fee)
         result['titleInsurance'] = float(title_insurance_value)
         result['legalCosts'] = float(legal_fees)
         result['totalLegalCosts'] = float(total_legal_costs)
-        
-        # NO ROUNDING - maintain exact precision for all financial results
+
+        # Convert financial results to float before rounding
         if 'grossAmount' in result:
             result['grossAmount'] = float(result['grossAmount'])
         if 'totalInterest' in result:
@@ -619,7 +631,9 @@ def api_calculate():
         # Add currency symbol field mapping for DOCX generation
         if 'currency_symbol' in result and 'currencySymbol' not in result:
             result['currencySymbol'] = result['currency_symbol']
-        
+
+        result = round_two_decimals(result)
+
         # Store minimal essential data in session to avoid cookie size limit
         essential_data = {
             'loan_type': result.get("loan_type"),
