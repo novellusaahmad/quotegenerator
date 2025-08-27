@@ -1,8 +1,13 @@
 import os
 import json
-from flask import current_app
+import pytest
+
+# Skip module if Flask app dependencies are missing
+pytest.importorskip("flask")
+pytest.importorskip("app")
 
 from app import app
+from flask import current_app
 from snowflake_utils import SNOWFLAKE_CONFIG_FILE
 
 
