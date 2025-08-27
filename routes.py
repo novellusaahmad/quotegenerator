@@ -1725,7 +1725,7 @@ def save_loan():
             loan_summary.version = (loan_summary.version or 1) + 1
             loan_summary.loan_type = loan_type
             loan_summary.currency = data.get('currency', 'GBP')
-            loan_summary.amount_input_type = data.get('amountInputType', 'gross')
+            loan_summary.amount_input_type = data.get('amountInputType') or data.get('amount_input_type', 'gross')
             loan_summary.gross_amount = fresh_calculation.get('grossAmount', 0)
             loan_summary.net_amount = fresh_calculation.get('netAmount', 0)
             loan_summary.property_value = fresh_calculation.get('propertyValue', 0)
@@ -1774,7 +1774,7 @@ def save_loan():
                 version=1,
                 loan_type=loan_type,
                 currency=data.get('currency', 'GBP'),
-                amount_input_type=data.get('amountInputType', 'gross'),
+                amount_input_type=data.get('amountInputType') or data.get('amount_input_type', 'gross'),
                 gross_amount=fresh_calculation.get('grossAmount', 0),
                 net_amount=fresh_calculation.get('netAmount', 0),
                 property_value=fresh_calculation.get('propertyValue', 0),
