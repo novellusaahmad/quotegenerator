@@ -49,7 +49,7 @@ def test_capital_payment_only_advance_has_zero_final_interest():
     assert _parse_interest(schedule[-1]) == pytest.approx(0, abs=0.01)
 
 
-def test_service_and_capital_arrears_still_zero_final_interest():
+def test_service_and_capital_arrears_has_final_interest():
     calc = LoanCalculator()
     params = {
         'repayment_option': 'service_and_capital',
@@ -68,7 +68,31 @@ def test_service_and_capital_arrears_still_zero_final_interest():
         'totalInterest': 0
     }
     schedule = calc._generate_detailed_bridge_schedule(data, params, '£')
-    assert _parse_interest(schedule[-1]) == pytest.approx(0, abs=0.01)
+    assert _parse_interest(schedule[-1]) > 0
+
+
+def test_service_and_capital_interest_differs_by_timing():
+    calc = LoanCalculator()
+    base_params = {
+        'repayment_option': 'service_and_capital',
+        'loan_term': 12,
+        'annual_rate': 12,
+        'capital_repayment': 1000,
+        'payment_frequency': 'monthly',
+        'start_date': '2024-01-01',
+        'loan_term_days': 366
+    }
+    data = {
+        'gross_amount': 100000,
+        'arrangementFee': 0,
+        'totalLegalFees': 0,
+        'totalInterest': 0
+    }
+    params_adv = dict(base_params, payment_timing='advance')
+    params_arr = dict(base_params, payment_timing='arrears')
+    schedule_adv = calc._generate_detailed_bridge_schedule(data, params_adv, '£')
+    schedule_arr = calc._generate_detailed_bridge_schedule(data, params_arr, '£')
+    assert _parse_interest(schedule_arr[0]) > _parse_interest(schedule_adv[0])
 
 
 def test_capital_payment_only_arrears_still_zero_final_interest():
