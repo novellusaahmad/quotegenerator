@@ -4165,7 +4165,32 @@ class LoanCalculator:
                 
                 if remaining_balance <= 0:
                     break
-        
+
+        # Ensure interest serviced totals align with loan summary totals
+        summary_interest = Decimal(str(calculation.get('totalInterest', calculation.get('total_interest', 0))))
+        if summary_interest and detailed_schedule:
+            total_interest_schedule = Decimal('0')
+            for entry in detailed_schedule:
+                amt_str = entry.get('interest_amount', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                try:
+                    total_interest_schedule += Decimal(amt_str)
+                except Exception:
+                    continue
+            diff = summary_interest - total_interest_schedule
+            if abs(diff) > Decimal('0.01'):
+                last = detailed_schedule[-1]
+                last_interest = Decimal(last['interest_amount'].replace(currency_symbol, '').replace(',', ''))
+                last['interest_amount'] = f"{currency_symbol}{(last_interest + diff):,.2f}"
+                tp_str = last.get('total_payment', f"{currency_symbol}0")
+                if '+' in tp_str:
+                    base_part = tp_str.split('+')[0].strip()
+                    suffix = tp_str[len(base_part):]
+                    base_val = Decimal(base_part.replace(currency_symbol, '').replace(',', ''))
+                    last['total_payment'] = f"{currency_symbol}{(base_val + diff):,.2f}{suffix}"
+                else:
+                    base_val = Decimal(tp_str.replace(currency_symbol, '').replace(',', ''))
+                    last['total_payment'] = f"{currency_symbol}{(base_val + diff):,.2f}"
+
         return detailed_schedule
     
     def _generate_term_schedule(self, quote_data: Dict, currency_symbol: str = '£') -> List[Dict]:
