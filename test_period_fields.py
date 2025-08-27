@@ -28,6 +28,7 @@ from calculations import LoanCalculator
         ("term", "calculate_term_loan", "service_only"),
         ("bridge", "calculate_bridge_loan", "service_and_capital"),
         ("term", "calculate_term_loan", "service_and_capital"),
+        ("bridge", "calculate_bridge_loan", "capital_payment_only"),
         ("bridge", "calculate_bridge_loan", "flexible_payment"),
     ],
 )
