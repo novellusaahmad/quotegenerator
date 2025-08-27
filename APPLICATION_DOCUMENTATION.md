@@ -1,174 +1,177 @@
 # Novellus Loan Management Application – Calculation & Integration Guide
 
-## Overview
-This document walks through the core features of the Novellus Loan Management application in everyday language.  It explains what each financial term means, shows the exact formulas used by the software, and provides step‑by‑step examples.  The second half of the guide demonstrates how to send the application’s data to Power BI for dashboards and to Snowflake for long‑term storage.
+## 1. Introduction
+The guide explains the main calculations in the Novellus Loan Management application and shows how to connect its data to Power BI and Snowflake. Each section uses everyday language, examples, and references to the matching code.
 
-## Loan Calculation Formulas
+## 2. Loan Calculations
+### 2.1 Simple Interest
+Simple interest charges a daily fee on the amount borrowed. The balance itself does not increase.
 
-### 1. Simple Interest Calculations
-Simple interest is the easiest way to charge interest on a loan.  The loan balance does not grow; instead the lender just collects a fee for each day the money is outstanding.  This approach is used for **retained interest** (where interest is taken from the loan at the start) and for **interest‑only** monthly payments.
+Steps:
+1. Convert the annual rate to a daily rate.
+2. Count the exact number of days between start and end dates.
+3. Multiply the daily rate by the number of days and the principal.
 
-To work out the charge, the application follows three steps:
-1. Convert the annual rate into a daily rate.
-2. Count the exact number of days between the start and end dates.
-3. Multiply the daily rate by the number of days and by the amount borrowed.
+**Formula**
 
-In formula form the calculation is:
-
-\[
-\text{Interest} = \frac{\text{Principal} \times \text{Annual Rate} \times \text{Days}}{\text{Days in Year} \times 100}
-\]
+`Interest = (Principal × Annual Rate × Days) / (Days in Year × 100)`
 
 Where:
-- **Principal** – the amount you borrow.
-- **Annual Rate** – the yearly interest rate as a percentage (for example, 12 means 12%).
-- **Days** – how long you borrow the money.
-- **Days in Year** – normally 365, or 366 in a leap year.
+- Principal – amount borrowed.
+- Annual Rate – yearly percentage rate (e.g., 12 means 12%).
+- Days – number of days the money is borrowed.
+- Days in Year – usually 365, or 366 in a leap year.
 
-**Example** – Borrow £100,000 for 30 days at 12% per year:
+**Example**
+
+Borrow £100,000 for 30 days at 12% per year.
+
 1. Daily rate = 12 ÷ 365 = 0.0329% per day.
-2. Interest = £100,000 × 0.0329% × 30 = **£986.30**.
+2. Interest = £100,000 × 0.0329% × 30 = £986.30.
 
-The implementation performs these steps automatically, converting the annual rate to a daily rate and multiplying by the exact number of days in the term【F:calculations.py†L55-L61】.
+The application automates these steps【F:calculations.py†L55-L61】.
 
-### 2. Net‑to‑Gross Conversion
-Borrowers often state how much cash they need **after** fees.  This is called the *net* amount.  The application must work backwards to find the *gross* amount that must be borrowed so that, after fees and interest are removed, the borrower still receives the desired net amount.
+### 2.2 Net-to-Gross Conversion
+Borrowers normally specify the cash they need after fees (net). The application works backwards to find the gross amount that delivers the required net once fees and interest are deducted.
 
-For simple interest the relationship is:
+**Formula**
 
-\[
-\text{Gross} = \text{Net} \times (1 + r \times t)
-\]
+`Gross = Net × (1 + r × t)`
 
 Where:
-- \(r\) – annual interest rate expressed as a decimal (10% becomes 0.10).
-- \(t\) – loan term in years (6 months is 0.5).
+- r – annual interest rate as a decimal (10% becomes 0.10).
+- t – loan term in years (6 months is 0.5).
 
-**Example** – The borrower needs £95,000 net, the annual rate is 10%, and the term is one year:
+**Example**
+
+Need £95,000 net, annual rate 10%, term 1 year:
 1. Factor = 1 + 0.10 × 1 = 1.10.
-2. Gross = £95,000 × 1.10 = **£104,500**.
+2. Gross = £95,000 × 1.10 = £104,500.
 
-The code generalizes this for other interest types, including daily and monthly compounding【F:calculations.py†L191-L239】.
+The code also handles daily and monthly compounding【F:calculations.py†L191-L239】.
 
-### 3. Amortizing (Capital + Interest) Payments
-Some loans require the borrower to repay both the capital and interest over time.  Each payment is the same amount, making budgeting easier.  The application uses the standard amortization formula to work out this fixed payment for any combination of term and interest rate:
+### 2.3 Amortizing Payments
+Some loans repay capital and interest through equal instalments.
 
-\[
-\text{Payment} = P \times \frac{r(1+r)^n}{(1+r)^n - 1}
-\]
+**Formula**
+
+`Payment = P × [r(1 + r)^n] / [(1 + r)^n − 1]`
 
 Where:
-- \(P\) – the amount borrowed.
-- \(r\) – the interest rate for one period (for monthly payments this is annual rate ÷ 12).
-- \(n\) – the total number of payments.
+- P – principal.
+- r – periodic interest rate (annual rate ÷ 12 for monthly payments).
+- n – number of payments.
 
-**Example** – Borrow £100,000 over two years at 8% per year with monthly payments:
-1. Periodic rate \(r\) = 0.08 ÷ 12 = 0.006666...
-2. Number of periods \(n\) = 24.
-3. Payment = £100,000 × [0.006666 × (1 + 0.006666)^24] ÷ [(1 + 0.006666)^24 − 1] ≈ **£4,507.07** per month.
+**Example**
 
-This logic appears in the amortizing term loan function【F:calculations.py†L2432-L2459】.
+Borrow £100,000 over two years at 8% with monthly payments:
+1. r = 0.08 ÷ 12 = 0.006666...
+2. n = 24.
+3. Payment ≈ £4,507.07 per month.
 
-### 4. Development Loans
-Property development often needs money in stages, called **tranches**, to match the construction schedule.  The calculator lets you enter each tranche with its own date and amount.  Interest is then calculated separately on each tranche from the day it is drawn until it is repaid or the loan completes.
+Implemented in the amortizing loan function【F:calculations.py†L2432-L2459】.
 
-The loan dispatcher links the tranches together, applies any fees, and totals the interest so you can see the full cost of the project【F:calculations.py†L1312-L1360】.
+### 2.4 Development Loans
+Development finance often releases funds in tranches. Each tranche accrues interest from its own draw date until repayment.
 
-**Example** – Borrow £50,000 on 1 January and a further £20,000 on 1 April.  Interest on the first tranche runs for the full term, while interest on the second tranche only accrues from April onwards.  The application keeps track of these timings automatically.
+The dispatcher ties tranches together, adds fees, and totals interest for the full project cost【F:calculations.py†L1312-L1360】.
 
-### 5. Fee Structures and Net Advance Impact
-The application accounts for several fee types when deriving both gross and net amounts:
+**Example**
 
-- **Arrangement Fee** – a percentage charged by the lender for setting up the loan.
-- **Legal Fees** – cash paid to lawyers for preparing documents.
-- **Site Visit Fee** – a fixed charge for any property inspection.
-- **Title Insurance** – a percentage that protects the lender against title defects.
-- **Exit Fee** – a percentage charged when the loan is repaid.
+Borrow £50,000 on 1 January and £20,000 on 1 April. The first tranche accrues interest for the full term; the second only from April. The application tracks each automatically.
 
-The first four fees are taken at the start of the loan.  The exit fee is calculated up front but only paid at the end.
+### 2.5 Fees and Net Advance
+Fees applied at the start of a loan affect the amount available to the borrower.
 
-All fees are computed in a dedicated helper which returns each component and a combined legal fee total:
+Common fees:
+- Arrangement Fee – percentage of the gross amount.
+- Legal Fees – fixed legal costs.
+- Site Visit Fee – fixed inspection charge.
+- Title Insurance – percentage for title protection.
+- Exit Fee – percentage paid when the loan is repaid.
 
-\[
-\begin{aligned}
-\text{Arrangement Fee} &= \text{Gross} \times \frac{\text{Arrangement %}}{100} \\
-\text{Title Insurance} &= \text{Gross} \times \frac{\text{Title %}}{100} \\
-\text{Exit Fee} &= \text{Gross} \times \frac{\text{Exit %}}{100} \\
-\text{Total Legal Fees} &= \text{Legal Fees} + \text{Site Visit Fee} + \text{Title Insurance}
-\end{aligned}
-\]【F:calculations.py†L2685-L2701】
+**Fee Formulas**
 
-These fees influence available funds differently depending on the repayment structure:
+```
+Arrangement Fee = Gross × (Arrangement % / 100)
+Title Insurance = Gross × (Title % / 100)
+Exit Fee        = Gross × (Exit % / 100)
+Total Legal Fees = Legal Fees + Site Visit Fee + Title Insurance
+```
+【F:calculations.py†L2685-L2701】
 
-- **Interest Retained** – net advance deducts all fees and the calculated interest:
-  \[\text{Net} = \text{Gross} - \text{Arrangement Fee} - \text{Total Legal Fees} - \text{Interest}\]【F:calculations.py†L1852-L1860】
-- **Serviced Options** – only upfront fees reduce the advance, while interest is paid periodically:
-  \[\text{Net} = \text{Gross} - \text{Arrangement Fee} - \text{Total Legal Fees}\]【F:calculations.py†L2069-L2073】
+**Impact on Net Advance**
 
-When solving gross from a desired net amount, fixed fees are added to the numerator and percentage‑based fees are included with the interest factor in the denominator:
+- Interest Retained:
 
-\[
-\text{Gross} = \frac{\text{Net} + \text{Legal Fees} + \text{Site Visit Fee}}{1 - (r \times t + \text{Arrangement %} + \text{Title %})}
-\]【F:calculations.py†L2721-L2734】
+  `Net = Gross − Arrangement Fee − Total Legal Fees − Interest`【F:calculations.py†L1852-L1860】
 
-**Worked Example** – Suppose the gross loan is £100,000 with 2% arrangement fee, £1,000 legal fees, £500 site visit fee, 0.5% title insurance and 1% exit fee.
+- Serviced Options:
 
-1. Arrangement fee = £100,000 × 2% = £2,000.
-2. Title insurance = £100,000 × 0.5% = £500.
-3. Total legal fees = £1,000 + £500 (site) + £500 (title) = £2,000.
-4. Exit fee = £100,000 × 1% = £1,000 (paid later).
+  `Net = Gross − Arrangement Fee − Total Legal Fees`【F:calculations.py†L2069-L2073】
 
-**Net Advance (Interest Retained)** – subtract arrangement, legal fees and interest from the gross to find the amount released to the borrower.
+To determine the gross amount from a desired net:
 
-**Net Advance (Serviced)** – subtract only arrangement and legal fees; interest and exit fee are paid separately.
+`Gross = (Net + Legal Fees + Site Visit Fee) / [1 − (r × t + Arrangement % + Title %)]`
+【F:calculations.py†L2721-L2734】
 
-Exit fees are calculated but not deducted upfront; they are applied when the loan is repaid.
+**Worked Example**
 
-## Integration with Power BI
-The application stores data in a PostgreSQL database.  A helper script called `start.sh` prepares this database and prints out the connection details you need.  You do not need any prior knowledge of databases to follow the steps:
+Gross loan £100,000 with 2% arrangement fee, £1,000 legal fees, £500 site visit fee, 0.5% title insurance and 1% exit fee:
 
-1. In a terminal, run `./start.sh` and wait until it says the server is ready.
-2. The script displays the **server name**, **database**, **username** and **password**.  Leave this window open so you can copy the values.
-3. Open **Power BI Desktop** and choose **Get Data → PostgreSQL database**.
-4. Enter the server and database details from step 2.  When prompted for credentials, pick **Basic** and type the username and password.
-5. Select the tables you want, such as `loan_summary` or `payment_schedule`, and click **Load**.
-6. Create visuals as required.  You can later publish the report to Power BI Service and schedule automatic refreshes using the same connection details.
+1. Arrangement fee = £100,000 × 2% = £2,000  
+2. Title insurance = £100,000 × 0.5% = £500  
+3. Total legal fees = £1,000 + £500 + £500 = £2,000  
+4. Exit fee = £100,000 × 1% = £1,000 (paid at the end)
 
-If you host the application on‑premises, an optional Data Gateway can be configured for cloud refreshes【F:ONPREMISE_POWERBI_SETUP.md†L41-L65】.
+For interest-retained loans, subtract fees and interest from the gross to obtain the net. For serviced loans, deduct only the upfront fees; interest and exit fee are paid later.
 
-## Integration with Snowflake
-Snowflake is a cloud data warehouse that can store large amounts of information for reporting or sharing with other systems.  The application includes a helper module to send data to Snowflake without writing any SQL.
+## 3. Power BI Integration
+The application stores data in PostgreSQL. A helper script (`start.sh`) prepares the database and shows the connection settings.
 
-1. **Configure the Connection**
-   ```python
-   from snowflake_utils import set_snowflake_config
-   set_snowflake_config({
-       "account": "your_account",
-       "user": "your_username",
-       "password": "your_password",
-       "warehouse": "COMPUTE_WH",
-       "database": "NOVELLUS",
-       "schema": "PUBLIC"
-   })
-   ```
-   The function saves the details so they are remembered next time【F:snowflake_utils.py†L20-L37】.
+Steps:
+1. Run `./start.sh` and wait until the server is ready.
+2. Note the server name, database, username and password displayed.
+3. In Power BI Desktop choose **Get Data → PostgreSQL database**.
+4. Enter the connection details. Select **Basic** authentication and supply the username and password.
+5. Choose tables such as `loan_summary` or `payment_schedule` and click **Load**.
+6. Build visuals. You can publish the report and schedule refreshes with the same credentials.
 
-2. **Test the Connection**
-   ```python
-   from snowflake_utils import test_snowflake_connection
-   test_snowflake_connection()
-   ```
-   If the credentials are correct it prints a success message【F:snowflake_utils.py†L93-L104】.
+For on‑premises hosting, configure a Data Gateway for cloud refreshes【F:ONPREMISE_POWERBI_SETUP.md†L41-L65】.
 
-3. **Send Data**
-   ```python
-   from snowflake_utils import sync_data_to_snowflake
-   sync_data_to_snowflake("loan_summary", [loan.__dict__])
-   ```
-   This converts the loan object into a dictionary and inserts it into the `loan_summary` table【F:snowflake_utils.py†L107-L156】.
+## 4. Snowflake Integration
+Snowflake is a cloud data warehouse. The application includes helpers so you can send data without writing SQL.
 
-Once configured, loan records can be pushed to Snowflake for advanced analytics or to share with other teams.
+1. **Configure the connection**
 
-## Summary
-You now have a plain‑English reference for how the application calculates interest, fees and repayments, plus hands‑on steps for connecting the results to Power BI and Snowflake.  Armed with these details, even a first‑time user can follow the calculations and build reports without needing to understand the underlying code.
+```python
+from snowflake_utils import set_snowflake_config
+set_snowflake_config({
+    "account": "your_account",
+    "user": "your_username",
+    "password": "your_password",
+    "warehouse": "COMPUTE_WH",
+    "database": "NOVELLUS",
+    "schema": "PUBLIC"
+})
+```
+The configuration is saved for reuse【F:snowflake_utils.py†L20-L37】.
 
+2. **Test the connection**
+
+```python
+from snowflake_utils import test_snowflake_connection
+test_snowflake_connection()
+```
+Displays a success message if credentials are valid【F:snowflake_utils.py†L93-L104】.
+
+3. **Send data**
+
+```python
+from snowflake_utils import sync_data_to_snowflake
+sync_data_to_snowflake("loan_summary", [loan.__dict__])
+```
+Inserts a loan record into the `loan_summary` table【F:snowflake_utils.py†L107-L156】.
+
+## 5. Summary
+This guide provides a plain‑English explanation of loan calculations and shows how to connect the application to Power BI and Snowflake. With these steps, new users can follow the calculations and build reports without needing to study the source code.
