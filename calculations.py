@@ -499,7 +499,7 @@ class LoanCalculator:
         })
 
         # Calculate periodic interest based on payment frequency
-        if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment']:
+        if repayment_option in ['service_only', 'service_and_capital']:
             periodic_interest = self._calculate_periodic_interest(
                 gross_amount, annual_rate / Decimal('100'), payment_frequency
             )
@@ -602,10 +602,10 @@ class LoanCalculator:
 
         # Determine gross amount based on input type
         if amount_input_type == 'net' and net_amount > 0:
-            gross_amount = self._calculate_gross_from_net_term(
+            gross_amount = self._calculate_gross_from_net_bridge(
                 net_amount, annual_rate, loan_term, repayment_option,
                 arrangement_fee_rate, legal_fees, site_visit_fee, title_insurance_rate,
-                loan_start_date, loan_term_days, use_360_days
+                loan_term_days, use_360_days
             )
         elif amount_input_type == 'percentage' and property_value > 0:
             percentage = params.get('loan_percentage', 0)
@@ -625,42 +625,17 @@ class LoanCalculator:
             daily_rate = annual_rate / Decimal(str(self.days_in_year))
             monthly_rate = annual_rate / Decimal('12')
             
-        # Calculate based on repayment option (NOW using updated loan_term)
-        if repayment_option == 'none':
-            # Retained interest calculation - same as bridge loans
-            calculation = self._calculate_term_retained_interest(
-                gross_amount, annual_rate, loan_term, fees, loan_start_date, params.get('interest_type', 'simple'), loan_term_days, use_360_days
-            )
-            
-            # For net-to-gross retained interest, use yearly→daily interest calculation
-            if amount_input_type == 'net' and net_amount is not None:
-                calculated_interest = self._two_dp(
-                    self.calculate_simple_interest_by_days(
-                        gross_amount, annual_rate, loan_term_days, use_360_days
-                    )
-                )
-                calculation['totalInterest'] = calculated_interest
-                calculation['total_interest'] = calculated_interest
-                logging.info(
-                    f"CALCULATION ENGINE NET-TO-GROSS (term): Updated totalInterest to £{calculated_interest:.2f} using daily interest over {loan_term_days} days"
-                )
-            
-            # Generate detailed payment schedule
-            currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
-            calculation['detailed_payment_schedule'] = self._generate_detailed_term_schedule(calculation, params, currency_symbol)
-        elif repayment_option == 'service_only':
-            # Interest only with specified interest type calculation
-            # Pass net_amount if this is a net-to-gross conversion to use retained interest formula
+        # Calculate based on repayment option using bridge loan logic
+        if repayment_option == 'service_only':
             net_for_calculation = net_amount if amount_input_type == 'net' else None
-            calculation = self._calculate_term_interest_only(
-                gross_amount, annual_rate, loan_term, fees, loan_start_date, params.get('interest_type', 'simple'), net_for_calculation, loan_term_days, use_360_days
+            calculation = self._calculate_bridge_interest_only(
+                gross_amount, monthly_rate, loan_term, fees,
+                params.get('interest_type', 'simple'), net_for_calculation,
+                loan_term_days, use_360_days, params.get('payment_frequency', 'monthly')
             )
-            
-            # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
-            calculation['detailed_payment_schedule'] = self._generate_detailed_term_schedule(calculation, params, currency_symbol)
+            calculation['detailed_payment_schedule'] = self._generate_detailed_bridge_schedule(calculation, params, currency_symbol)
 
-            # Update total interest to match the detailed schedule
             detailed_schedule = calculation.get('detailed_payment_schedule', [])
             if detailed_schedule:
                 total_interest_from_schedule = 0
@@ -673,20 +648,18 @@ class LoanCalculator:
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
         elif repayment_option == 'service_and_capital':
-            # Capital + Interest using user-specified capital repayment amount
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
             net_for_calculation = net_amount if amount_input_type == 'net' else None
-            calculation = self._calculate_term_service_capital(
-                gross_amount, annual_rate, loan_term, capital_repayment, fees, net_for_calculation, loan_term_days, use_360_days
+            calculation = self._calculate_bridge_service_capital(
+                gross_amount, monthly_rate, loan_term, capital_repayment, fees,
+                params.get('interest_type', 'simple'), net_for_calculation,
+                loan_term_days, use_360_days
             )
-            # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
-            calculation['detailed_payment_schedule'] = self._generate_detailed_term_schedule(calculation, params, currency_symbol)
-            
-            # Apply consistency fix to align with detailed payment schedule totals  
+            calculation['detailed_payment_schedule'] = self._generate_detailed_bridge_schedule(calculation, params, currency_symbol)
+
             detailed_schedule = calculation.get('detailed_payment_schedule', [])
             if detailed_schedule:
-                # Extract total interest from detailed schedule to match 360-day calculations
                 total_interest_from_schedule = 0
                 for payment in detailed_schedule:
                     interest_str = payment.get('interest_amount', '£0.00')
@@ -696,69 +669,8 @@ class LoanCalculator:
                 total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
-                
-                logging.info(f"Term loan service_and_capital CONSISTENCY FIX: totalInterest={total_interest_from_schedule:.2f} (extracted from detailed schedule)")
-            else:
-                logging.info(f"Term loan service_and_capital: No detailed schedule available for consistency fix")
-        elif repayment_option == 'capital_payment_only':
-            # Capital Payment Only - interest retained at start, payments reduce balance directly
-            capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
-            net_for_calculation = net_amount if amount_input_type == 'net' else None
-            logging.info(f"Term capital_payment_only calculation: gross={gross_amount}, capital_repayment={capital_repayment}")
-            calculation = self._calculate_term_capital_payment_only(
-                gross_amount, annual_rate, loan_term, capital_repayment, fees, net_for_calculation, loan_term_days, use_360_days
-            )
-            # Generate detailed payment schedule
-            currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
-            calculation['detailed_payment_schedule'] = self._generate_detailed_term_schedule(calculation, params, currency_symbol)
-            
-            # Apply consistency fix to align with detailed payment schedule totals  
-            detailed_schedule = calculation.get('detailed_payment_schedule', [])
-            if detailed_schedule:
-                # Extract total interest from detailed schedule to match 360-day calculations
-                total_interest_from_schedule = 0
-                for payment in detailed_schedule:
-                    interest_str = payment.get('interest_amount', '£0.00')
-                    interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
-                    total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
-
-                total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
-                calculation['totalInterest'] = total_interest_from_schedule
-                calculation['total_interest'] = total_interest_from_schedule
-                
-                logging.info(f"Term loan capital_payment_only CONSISTENCY FIX: totalInterest={total_interest_from_schedule:.2f} (extracted from detailed schedule)")
-            else:
-                logging.info(f"Term loan capital_payment_only: No detailed schedule available for consistency fix")
-        elif repayment_option == 'flexible_payment':
-            # Flexible payment schedule - payments knock off interest first, remaining reduces balance
-            flexible_payment = Decimal(str(params.get('flexible_payment', 0)))
-            payment_frequency = params.get('payment_frequency', 'monthly')
-            net_for_calculation = net_amount if amount_input_type == 'net' else None
-            calculation = self._calculate_term_flexible_payment(
-                gross_amount, annual_rate, loan_term, flexible_payment, payment_frequency, fees, loan_start_date, params.get('interest_type', 'simple'), net_for_calculation, loan_term_days, use_360_days
-            )
-            # Generate detailed payment schedule
-            currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
-            calculation['detailed_payment_schedule'] = self._generate_detailed_term_schedule(calculation, params, currency_symbol)
-            
-            # Apply consistency fix to align with detailed payment schedule totals  
-            detailed_schedule = calculation.get('detailed_payment_schedule', [])
-            if detailed_schedule:
-                # Extract total interest from detailed schedule to match 360-day calculations
-                total_interest_from_schedule = 0
-                for payment in detailed_schedule:
-                    interest_str = payment.get('interest_amount', '£0.00')
-                    interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
-                    total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
-
-                total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
-                calculation['totalInterest'] = total_interest_from_schedule
-                calculation['total_interest'] = total_interest_from_schedule
-                
-                logging.info(f"Term loan flexible_payment CONSISTENCY FIX: totalInterest={total_interest_from_schedule:.2f} (extracted from detailed schedule)")
-            else:
-                logging.info(f"Term loan flexible_payment: No detailed schedule available for consistency fix")
         else:
+            logging.warning(f"Term loan unrecognized repayment_option: '{repayment_option}' - using empty calculation")
             calculation = self._get_empty_calculation(params)
         
         # Add common calculations
@@ -799,7 +711,7 @@ class LoanCalculator:
         })
 
         # Calculate periodic interest based on payment frequency
-        if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment']:
+        if repayment_option in ['service_only', 'service_and_capital']:
             periodic_interest = self._calculate_periodic_interest(
                 gross_amount, annual_rate / Decimal('100'), payment_frequency
             )
@@ -824,18 +736,6 @@ class LoanCalculator:
                     closing_balance = Decimal(str(closing_balance_raw).replace('£', '').replace(',', ''))
                 except Exception:
                     closing_balance = Decimal('0')
-
-                # Mirror bridge loan logic: for capital_payment_only the final
-                # schedule entry has a closing balance of 0 after applying the
-                # last capital repayment (and any interest refund).  Use the
-                # opening balance of that entry to reflect the outstanding
-                # balance prior to repayment when calculating End LTV.
-                if repayment_option == 'capital_payment_only' and closing_balance == 0:
-                    opening_balance_raw = last_entry.get('opening_balance') or last_entry.get('openingBalance') or 0
-                    try:
-                        closing_balance = Decimal(str(opening_balance_raw).replace('£', '').replace(',', ''))
-                    except Exception:
-                        closing_balance = Decimal('0')
 
                 updated_end_ltv = float((closing_balance / property_value * 100)) if property_value > 0 else 0
                 calculation['endLTV'] = updated_end_ltv
