@@ -311,7 +311,7 @@
     font-size: 0.9rem;
     color: var(--novellus-text-light);
     font-weight: 500;
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 0.5px;
 }
 
