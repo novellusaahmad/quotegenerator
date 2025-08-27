@@ -20,16 +20,25 @@ sys.modules['dateutil.relativedelta'] = relativedelta_module
 import pytest
 from calculations import LoanCalculator
 
-@pytest.mark.parametrize("loan_type, func_name", [
-    ("bridge", "calculate_bridge_loan"),
-    ("term", "calculate_term_loan"),
-])
+
+@pytest.mark.parametrize(
+    "loan_type, func_name, repayment_option",
+    [
+        ("bridge", "calculate_bridge_loan", "service_only"),
+        ("term", "calculate_term_loan", "service_only"),
+        ("bridge", "calculate_bridge_loan", "service_and_capital"),
+        ("term", "calculate_term_loan", "service_and_capital"),
+        ("bridge", "calculate_bridge_loan", "flexible_payment"),
+    ],
+)
 @pytest.mark.parametrize("interest_type", ["simple", "compound_daily"])
-def test_schedule_includes_period_fields(loan_type, func_name, interest_type):
+def test_schedule_includes_period_fields(
+    loan_type, func_name, repayment_option, interest_type
+):
     calc = LoanCalculator()
     params = {
         'loan_type': loan_type,
-        'repayment_option': 'service_only',
+        'repayment_option': repayment_option,
         'gross_amount': 100000,
         'loan_term': 12,
         'annual_rate': 12,
@@ -39,6 +48,11 @@ def test_schedule_includes_period_fields(loan_type, func_name, interest_type):
         'site_visit_fee': 0,
         'title_insurance_rate': 0,
     }
+    if repayment_option == 'service_and_capital':
+        params['capital_repayment'] = 1000
+    elif repayment_option == 'flexible_payment':
+        params['flexible_payment'] = 1000
+
     func = getattr(calc, func_name)
     result = func(params)
     schedule = result.get('detailed_payment_schedule')
