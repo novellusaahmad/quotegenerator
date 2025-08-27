@@ -173,5 +173,4 @@ sync_data_to_snowflake("loan_summary", [loan.__dict__])
 ```
 Inserts a loan record into the `loan_summary` table【F:snowflake_utils.py†L107-L156】.
 
-## 5. Summary
-This guide provides a plain‑English explanation of loan calculations and shows how to connect the application to Power BI and Snowflake. With these steps, new users can follow the calculations and build reports without needing to study the source code.
+
