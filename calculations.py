@@ -7,6 +7,11 @@ from typing import Dict, List, Optional, Tuple
 # Removed model imports - not needed for calculations
 import logging
 
+try:
+    from dateutil.relativedelta import relativedelta
+except Exception:  # pragma: no cover
+    relativedelta = None
+
 # Set decimal precision for financial calculations
 getcontext().prec = 28
 
@@ -3728,6 +3733,10 @@ class LoanCalculator:
         # Get payment timing and frequency parameters
         payment_timing = params.get('payment_timing', 'advance')
         payment_frequency = params.get('payment_frequency', 'monthly')
+
+        # Always show advance schedule for certain repayment options
+        if repayment_option in ('service_and_capital', 'capital_payment_only', 'flexible_payment'):
+            payment_timing = 'advance'
         
         # Get start date
         from datetime import datetime, timedelta
@@ -3800,8 +3809,10 @@ class LoanCalculator:
             if loan_term_days_param is not None:
                 loan_end_date = start_date + timedelta(days=int(loan_term_days_param))
             else:
-                from dateutil.relativedelta import relativedelta
-                loan_end_date = start_date + relativedelta(months=loan_term)
+                if relativedelta:
+                    loan_end_date = start_date + relativedelta(months=loan_term)
+                else:
+                    loan_end_date = self._add_months(start_date, loan_term)
 
             # Build period boundaries based on payment timing
             if payment_timing == 'advance':
@@ -3878,15 +3889,13 @@ class LoanCalculator:
             if loan_term_days_param is not None:
                 loan_end_date = start_date + timedelta(days=int(loan_term_days_param))
             else:
-                from dateutil.relativedelta import relativedelta
-                loan_end_date = start_date + relativedelta(months=loan_term)
+                if relativedelta:
+                    loan_end_date = start_date + relativedelta(months=loan_term)
+                else:
+                    loan_end_date = self._add_months(start_date, loan_term)
 
-            if payment_timing == 'advance':
-                period_starts = payment_dates
-                period_ends = payment_dates[1:] + [loan_end_date]
-            else:
-                period_starts = [start_date] + payment_dates[:-1]
-                period_ends = payment_dates
+            period_starts = payment_dates
+            period_ends = payment_dates[1:] + [loan_end_date]
 
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
 
@@ -3914,7 +3923,8 @@ class LoanCalculator:
                     f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate:.3f}% "
                     f"× {days_in_period}/{days_per_year} days")
 
-                if payment_timing == 'advance' and period == len(payment_dates):
+                is_final = (period == len(payment_dates)) or (capital_per_payment == remaining_balance)
+                if is_final:
                     total_payment -= interest_amount
                     interest_amount = Decimal('0')
                     interest_calc = "Interest paid in previous period"
@@ -3954,57 +3964,66 @@ class LoanCalculator:
         elif repayment_option == 'flexible_payment':
             # Flexible payment schedule
             flexible_payment = Decimal(str(params.get('flexible_payment', 30000)))
-            
+
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
-                
+
                 # Calculate interest on remaining balance
                 if payment_frequency == 'quarterly':
                     interest_amount = remaining_balance * (annual_rate / 4 / 100)
-                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate/4:.3f}% (quarterly)"
+                    interest_calc_base = f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate/4:.3f}% (quarterly)"
                 else:
                     interest_amount = remaining_balance * (annual_rate / 12 / 100)
-                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate/12:.3f}% (monthly)"
-                
-                # Apply flexible payment logic: payment covers interest first, remainder to principal
-                if flexible_payment > interest_amount:
-                    principal_payment = flexible_payment - interest_amount
-                    # Ensure we don't pay more principal than remaining
-                    if principal_payment > remaining_balance:
+                    interest_calc_base = f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate/12:.3f}% (monthly)"
+
+                projected_principal = flexible_payment - interest_amount if flexible_payment > interest_amount else Decimal('0')
+                is_final = (period == len(payment_dates)) or (projected_principal >= remaining_balance)
+
+                if is_final:
+                    actual_interest_paid = Decimal('0')
+                    if projected_principal > 0:
                         principal_payment = remaining_balance
+                        total_payment = principal_payment
+                    else:
+                        principal_payment = Decimal('0')
+                        total_payment = Decimal('0')
+                    interest_calc = "Interest paid in previous period"
                 else:
-                    # Flexible payment doesn't cover full interest - no principal payment
-                    principal_payment = Decimal('0')
-                
-                # Total payment is just the flexible payment amount
-                total_payment = flexible_payment
-                
+                    if flexible_payment > interest_amount:
+                        principal_payment = projected_principal
+                        if principal_payment > remaining_balance:
+                            principal_payment = remaining_balance
+                    else:
+                        principal_payment = Decimal('0')
+                    actual_interest_paid = min(flexible_payment, interest_amount)
+                    total_payment = flexible_payment
+                    interest_calc = f"Flexible payment {currency_symbol}{flexible_payment:,.2f} allocated (Interest: {currency_symbol}{actual_interest_paid:,.2f}, Principal: {currency_symbol}{principal_payment:,.2f})"
+
                 # Add fees to first payment (but keep showing flexible payment as base amount)
                 fees_added = Decimal('0')
                 if period == 1:
                     fees_added = arrangement_fee + legal_fees
                     total_payment += fees_added
-                
+                    if not is_final:
+                        interest_calc += " + fees"
+
                 balance_change = f"↓ -{currency_symbol}{principal_payment:,.2f}" if principal_payment > 0 else "↔ No Change"
                 closing_balance = remaining_balance - principal_payment
-                
-                # Show the actual interest paid from flexible payment
-                actual_interest_paid = min(flexible_payment, interest_amount)
-                
+
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
                     'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
-                    'interest_calculation': f"Flexible payment {currency_symbol}{flexible_payment:,.2f} allocated (Interest: {currency_symbol}{actual_interest_paid:,.2f}, Principal: {currency_symbol}{principal_payment:,.2f})" + (" + fees" if period == 1 and fees_added > 0 else ""),
+                    'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{actual_interest_paid:,.2f}",
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
-                    'total_payment': f"{currency_symbol}{flexible_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 else ""),
+                    'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and not is_final else ""),
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
                     'balance_change': balance_change
                 })
-                
+
                 remaining_balance = closing_balance
-                
+
                 if remaining_balance <= 0:
                     break
         
@@ -4199,14 +4218,17 @@ class LoanCalculator:
         # Get fees
         arrangement_fee = Decimal(str(calculation.get('arrangementFee', 0)))
         legal_fees = Decimal(str(calculation.get('totalLegalFees', calculation.get('legalFees', 0))))
-        
+
         # Get payment timing and frequency parameters
         payment_timing = params.get('payment_timing', 'advance')
         payment_frequency = params.get('payment_frequency', 'monthly')
-        
+
+        # Always show advance schedule for certain repayment options
+        if repayment_option in ('service_and_capital', 'capital_payment_only', 'flexible_payment'):
+            payment_timing = 'advance'
+
         # Get start date
         from datetime import datetime, timedelta
-        from dateutil.relativedelta import relativedelta
         start_date_str = params.get('start_date', params.get('loan_start_date', datetime.now().strftime('%Y-%m-%d')))
         if isinstance(start_date_str, str):
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
@@ -4297,7 +4319,10 @@ class LoanCalculator:
                 interest_calc_text = f"{currency_symbol}{gross_amount:,.2f} × {monthly_rate_display:.3f}%{days_label}"
 
             # Calculate loan end date for period calculations
-            loan_end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
+            if relativedelta:
+                loan_end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
+            else:
+                loan_end_date = self._add_months(start_date, loan_term) - timedelta(days=1)
 
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
@@ -4388,7 +4413,8 @@ class LoanCalculator:
                 
                 total_payment = interest_amount + capital_per_payment
 
-                if payment_timing == 'advance' and period == len(payment_dates):
+                is_final = (period == len(payment_dates)) or (capital_per_payment == remaining_balance)
+                if is_final:
                     total_payment -= interest_amount
                     interest_amount = Decimal('0')
                     interest_calc = "Interest paid in previous period"
@@ -4445,7 +4471,8 @@ class LoanCalculator:
                 
                 total_payment = interest_amount + capital_per_payment
 
-                if payment_timing == 'advance' and period == len(payment_dates):
+                is_final = (period == len(payment_dates)) or (capital_per_payment == remaining_balance)
+                if is_final:
                     total_payment -= interest_amount
                     interest_amount = Decimal('0')
                     interest_calc = "Interest paid in previous period"
@@ -4561,35 +4588,46 @@ class LoanCalculator:
                     flexible_per_payment = flexible_payment_amount
                     interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {monthly_rate_display:.3f}%{days_label}"
                 
-                # Calculate how much of flexible payment goes to interest vs principal
-                actual_interest_paid = min(flexible_per_payment, interest_amount)
-                principal_payment = flexible_per_payment - actual_interest_paid
-                
-                # Ensure principal doesn't exceed remaining balance
-                if principal_payment > remaining_balance:
-                    principal_payment = remaining_balance
-                    actual_interest_paid = flexible_per_payment - principal_payment
-                
-                # Total payment is just the flexible payment amount
-                total_payment = flexible_per_payment
-                
+                projected_principal = flexible_per_payment - min(flexible_per_payment, interest_amount)
+                is_final = (period == len(payment_dates)) or (projected_principal >= remaining_balance)
+
+                if is_final:
+                    actual_interest_paid = Decimal('0')
+                    if projected_principal > 0:
+                        principal_payment = remaining_balance
+                        total_payment = principal_payment
+                    else:
+                        principal_payment = Decimal('0')
+                        total_payment = Decimal('0')
+                    interest_calc = "Interest paid in previous period"
+                else:
+                    actual_interest_paid = min(flexible_per_payment, interest_amount)
+                    principal_payment = flexible_per_payment - actual_interest_paid
+                    if principal_payment > remaining_balance:
+                        principal_payment = remaining_balance
+                        actual_interest_paid = flexible_per_payment - principal_payment
+                    total_payment = flexible_per_payment
+                    interest_calc = f"Flexible payment {currency_symbol}{flexible_per_payment:,.2f} allocated (Interest: {currency_symbol}{actual_interest_paid:,.2f}, Principal: {currency_symbol}{principal_payment:,.2f})"
+
                 # Add fees to first payment
                 fees_added = Decimal('0')
                 if period == 1:
                     fees_added = arrangement_fee + legal_fees
-                    interest_calc += " + fees"
-                
+                    if not is_final:
+                        interest_calc += " + fees"
+                    total_payment += fees_added
+
                 balance_change = f"↓ -{currency_symbol}{principal_payment:,.2f}" if principal_payment > 0 else "↔ No Change"
                 closing_balance = remaining_balance - principal_payment
-                
+
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
                     'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
-                    'interest_calculation': f"Flexible payment {currency_symbol}{flexible_per_payment:,.2f} allocated (Interest: {currency_symbol}{actual_interest_paid:,.2f}, Principal: {currency_symbol}{principal_payment:,.2f})" + (" + fees" if period == 1 and fees_added > 0 else ""),
+                    'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{actual_interest_paid:,.2f}",
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
-                    'total_payment': f"{currency_symbol}{flexible_per_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 else ""),
+                    'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and not is_final else ""),
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
                     'balance_change': balance_change
                 })
