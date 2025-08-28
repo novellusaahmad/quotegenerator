@@ -4295,8 +4295,18 @@ class LoanCalculator:
                     total_savings_schedule += Decimal(amt_str)
                 except Exception:
                     continue
-            if params.get('repayment_option') != 'capital_payment_only' and abs(summary_savings - total_savings_schedule) > Decimal('0.01'):
-                calculation['interestSavings'] = float(total_savings_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            if params.get('repayment_option') != 'capital_payment_only':
+                diff = summary_savings - total_savings_schedule
+                if abs(diff) > Decimal('0.01'):
+                    if diff > 0:
+                        # Increase the last period's savings to match the summary
+                        last = detailed_schedule[-1]
+                        last_amt = Decimal(last.get('interest_saving', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', ''))
+                        adjusted_amt = last_amt + diff
+                        last['interest_saving'] = f"{currency_symbol}{max(adjusted_amt, Decimal('0')):,.2f}"
+                    else:
+                        # Summary is lower than schedule - adjust summary to match schedule
+                        calculation['interestSavings'] = float(total_savings_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
 
         # Attach period info to all entries
         for i, entry in enumerate(detailed_schedule):
