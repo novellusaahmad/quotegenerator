@@ -38,13 +38,13 @@ def test_capital_only_schedule_fields_present():
     result = calc.calculate_bridge_loan(params)
     schedule = result.get('detailed_payment_schedule')
     assert schedule, 'No schedule generated'
-    first = schedule[0]
-    last = schedule[-1]
     required_fields = [
+        'start_period', 'end_period', 'days_held',
         'capital_outstanding', 'annual_interest_rate', 'interest_pa',
         'scheduled_repayment', 'interest_accrued', 'interest_retained',
         'interest_refund', 'running_ltv'
     ]
-    for field in required_fields:
-        assert field in first, f"Missing field {field} in first period"
-    assert last.get('interest_refund') not in (None, ''), 'Interest refund missing in last period'
+    for idx, entry in enumerate(schedule, start=1):
+        for field in required_fields:
+            assert field in entry, f"Missing field {field} in period {idx}"
+    assert schedule[-1].get('interest_refund') not in (None, ''), 'Interest refund missing in last period'
