@@ -811,9 +811,13 @@ class LoanCalculator {
         const savingsPercentageEl = document.getElementById('savingsPercentageResult');
         
         // Check if we should show interest savings comparison
+        // Support both camelCase and snake_case fields returned from backend
+        const interestOnlyTotalVal = parseFloat(results.interestOnlyTotal ?? results.interest_only_total ?? 0);
+        const interestSavingsVal = parseFloat(results.interestSavings ?? results.interest_savings ?? 0);
+
         const shouldShowInterestComparison = (
-            (results.interestSavings !== undefined && results.interestSavings > 0) ||
-            (results.interestOnlyTotal !== undefined && results.interestOnlyTotal > 0) ||
+            (interestSavingsVal > 0) ||
+            (interestOnlyTotalVal > 0) ||
             (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment')
         );
         
@@ -821,12 +825,11 @@ class LoanCalculator {
             // Show interest-only total row
             if (interestOnlyTotalRow) interestOnlyTotalRow.style.display = 'table-row';
             if (interestOnlyTotalEl) {
-                const interestOnlyTotal = results.interestOnlyTotal || 0;
-                interestOnlyTotalEl.textContent = interestOnlyTotal.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                interestOnlyTotalEl.textContent = interestOnlyTotalVal.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             }
             
             // Show interest savings row only if there are actual savings
-            const interestSavings = results.interestSavings || 0;
+            const interestSavings = interestSavingsVal;
             if (interestSavings > 0 && interestSavingsRow) {
                 interestSavingsRow.style.display = 'table-row';
                 if (interestSavingsEl) {
@@ -2264,9 +2267,10 @@ class LoanCalculator {
                 '</tbody></table>';
         }
 
+        const interestSavingsValue = parseFloat(r.interestSavings ?? r.interest_savings ?? 0);
         let interestSavingsHtml = '';
-        if (r.interestSavings && r.interestSavings > 0) {
-            interestSavingsHtml = `<p><strong>Interest Savings:</strong> ${formatMoney(r.interestSavings)} compared to an interest-only loan.</p>`;
+        if (interestSavingsValue > 0) {
+            interestSavingsHtml = `<p><strong>Interest Savings:</strong> ${formatMoney(interestSavingsValue)} compared to an interest-only loan.</p>`;
         }
 
         // Determine interest calculation description
