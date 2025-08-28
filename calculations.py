@@ -4020,21 +4020,32 @@ class LoanCalculator:
                     balance_for_interest = remaining_balance
                     principal_payment = capital_per_payment
 
-                interest_amount = self.calculate_simple_interest_by_days(
-                    balance_for_interest, annual_rate, days_in_period, use_360_days)
+                if loan_term_days_param is not None:
+                    interest_amount = self.calculate_simple_interest_by_days(
+                        balance_for_interest, annual_rate, days_in_period, use_360_days)
+                    interest_only = self.calculate_simple_interest_by_days(
+                        gross_amount, annual_rate, days_in_period, use_360_days)
+                    interest_calc_base = (
+                        f"{currency_symbol}{balance_for_interest:,.2f} × {annual_rate:.3f}% "
+                        f"× {days_in_period}/{days_per_year} days")
+                else:
+                    if payment_frequency == 'quarterly':
+                        period_rate = annual_rate / Decimal('100') / Decimal('4')
+                        rate_display = annual_rate / Decimal('4')
+                    else:
+                        period_rate = annual_rate / Decimal('100') / Decimal('12')
+                        rate_display = annual_rate / Decimal('12')
+                    interest_amount = balance_for_interest * period_rate
+                    interest_only = gross_amount * period_rate
+                    interest_calc_base = (
+                        f"{currency_symbol}{balance_for_interest:,.2f} × {rate_display:.3f}%")
 
                 if payment_timing == 'arrears':
                     remaining_balance -= principal_payment
 
                 total_payment = interest_amount + principal_payment
 
-                interest_only = self.calculate_simple_interest_by_days(
-                    gross_amount, annual_rate, days_in_period, use_360_days)
                 interest_saving = max(interest_only - interest_amount, Decimal('0'))
-
-                interest_calc_base = (
-                    f"{currency_symbol}{balance_for_interest:,.2f} × {annual_rate:.3f}% "
-                    f"× {days_in_period}/{days_per_year} days")
 
                 is_final = remaining_balance == 0
                 if payment_timing == 'advance' and is_final:
@@ -4388,6 +4399,7 @@ class LoanCalculator:
         use_360_days = params.get('use_360_days', False)
         loan_term = int(params.get('loan_term', 18))
         annual_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
+        loan_term_days_param = params.get('loan_term_days')
         
         # Get fees
         arrangement_fee = Decimal(str(calculation.get('arrangementFee', 0)))
@@ -4579,24 +4591,36 @@ class LoanCalculator:
                     balance_for_interest = remaining_balance
                     principal_payment = capital_per_payment
 
-                interest_amount = self.calculate_simple_interest_by_days(
-                    balance_for_interest, annual_rate, days_in_period, use_360_days
-                )
+                if loan_term_days_param is not None:
+                    interest_amount = self.calculate_simple_interest_by_days(
+                        balance_for_interest, annual_rate, days_in_period, use_360_days
+                    )
+                    interest_only = self.calculate_simple_interest_by_days(
+                        gross_amount, annual_rate, days_in_period, use_360_days
+                    )
+                    interest_calc_base = (
+                        f"{currency_symbol}{balance_for_interest:,.2f} × {annual_rate:.3f}% "
+                        f"× {days_in_period}/{days_per_year} days"
+                    )
+                else:
+                    if payment_frequency == 'quarterly':
+                        period_rate = annual_rate / Decimal('100') / Decimal('4')
+                        rate_display = annual_rate / Decimal('4')
+                    else:
+                        period_rate = annual_rate / Decimal('100') / Decimal('12')
+                        rate_display = annual_rate / Decimal('12')
+                    interest_amount = balance_for_interest * period_rate
+                    interest_only = gross_amount * period_rate
+                    interest_calc_base = (
+                        f"{currency_symbol}{balance_for_interest:,.2f} × {rate_display:.3f}%"
+                    )
 
                 if payment_timing == 'arrears':
                     remaining_balance -= principal_payment
 
                 total_payment = interest_amount + principal_payment
 
-                interest_only = self.calculate_simple_interest_by_days(
-                    gross_amount, annual_rate, days_in_period, use_360_days
-                )
                 interest_saving = max(interest_only - interest_amount, Decimal('0'))
-
-                interest_calc_base = (
-                    f"{currency_symbol}{balance_for_interest:,.2f} × {annual_rate:.3f}% "
-                    f"× {days_in_period}/{days_per_year} days"
-                )
 
                 is_final = remaining_balance == 0
                 if payment_timing == 'advance' and is_final:
