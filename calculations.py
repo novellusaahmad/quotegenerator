@@ -44,8 +44,20 @@ class LoanCalculator:
         """
         return self._round(value, 4)
 
+    def _normalize_date(self, dt: datetime) -> datetime:
+        """Clear the time component from a datetime value.
+
+        Args:
+            dt: Datetime that may include time information.
+
+        Returns:
+            Datetime set to 00:00:00 for consistent day calculations.
+        """
+        return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
     def _add_months(self, start: datetime, months: int) -> datetime:
         """Add months to a date while preserving day when possible."""
+        start = self._normalize_date(start)
         month = start.month - 1 + months
         year = start.year + month // 12
         month = month % 12 + 1
@@ -54,6 +66,7 @@ class LoanCalculator:
 
     def _calculate_term_days(self, start_date: datetime, term_months: int) -> int:
         """Calculate exact number of days for a term based on calendar months."""
+        start_date = self._normalize_date(start_date)
         end_date = self._add_months(start_date, term_months)
         return (end_date - start_date).days
 
@@ -3373,6 +3386,7 @@ class LoanCalculator:
         """Generate payment dates based on frequency and timing within loan period"""
         from datetime import timedelta
 
+        start_date = self._normalize_date(start_date)
         payment_dates: List[datetime] = []
         loan_end_date = self._add_months(start_date, loan_term)
 
@@ -3434,7 +3448,7 @@ class LoanCalculator:
             List of dictionaries with ``start``, ``end`` and ``days_held`` keys.
         """
         from datetime import timedelta
-
+        start_date = self._normalize_date(start_date)
         ranges: List[Dict[str, object]] = []
         loan_end = self._add_months(start_date, loan_term)
 
@@ -3443,15 +3457,15 @@ class LoanCalculator:
 
         if timing == 'advance':
             for i, pay_date in enumerate(payment_dates):
-                period_start = pay_date
-                period_end = payment_dates[i + 1] if i + 1 < len(payment_dates) else loan_end
+                period_start = self._normalize_date(pay_date)
+                period_end = self._normalize_date(payment_dates[i + 1]) if i + 1 < len(payment_dates) else loan_end
                 days = (period_end - period_start).days
                 ranges.append({'start': period_start, 'end': period_end, 'days_held': days})
         else:  # arrears
             prev = start_date
             for pay_date in payment_dates:
-                period_start = prev
-                period_end = pay_date
+                period_start = self._normalize_date(prev)
+                period_end = self._normalize_date(pay_date)
                 days = (period_end - period_start).days
                 ranges.append({'start': period_start, 'end': period_end, 'days_held': days})
                 prev = pay_date
