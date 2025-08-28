@@ -4027,6 +4027,10 @@ class LoanCalculator:
 
                 total_payment = interest_amount + principal_payment
 
+                interest_only = self.calculate_simple_interest_by_days(
+                    gross_amount, annual_rate, days_in_period, use_360_days)
+                interest_saving = max(interest_only - interest_amount, Decimal('0'))
+
                 interest_calc_base = (
                     f"{currency_symbol}{balance_for_interest:,.2f} × {annual_rate:.3f}% "
                     f"× {days_in_period}/{days_per_year} days")
@@ -4058,6 +4062,7 @@ class LoanCalculator:
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{interest_amount:,.2f}",
+                    'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
@@ -4130,6 +4135,9 @@ class LoanCalculator:
                         )
                     remaining_balance -= principal_payment
 
+                interest_only = gross_amount * rate
+                interest_saving = max(interest_only - interest_paid, Decimal('0'))
+
                 fees_added = Decimal('0')
                 if period == 1:
                     fees_added = arrangement_fee + legal_fees
@@ -4144,6 +4152,7 @@ class LoanCalculator:
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{interest_paid:,.2f}",
+                    'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and interest_paid > 0 else ""),
                     'closing_balance': f"{currency_symbol}{remaining_balance:,.2f}",
@@ -4166,66 +4175,71 @@ class LoanCalculator:
             # Get retained interest and refund info from calculation results
             retained_interest = Decimal(str(calculation.get('retainedInterest', total_interest)))
             interest_refund = Decimal(str(calculation.get('interestRefund', 0)))
+            monthly_rate = annual_rate / Decimal('100') / Decimal('12')
+            baseline_rate = monthly_rate * 3 if payment_frequency == 'quarterly' else monthly_rate
             
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
-                
+                interest_only = gross_amount * baseline_rate
+
                 if period == 1:
-                    # First period: show all retained amounts (interest + fees)
                     retained_amount = retained_interest + arrangement_fee + legal_fees
+                    interest_amount = retained_interest
                     interest_calc = f"Interest retained for full term: {currency_symbol}{retained_interest:,.2f}"
-                    
+                    interest_saving = Decimal('0')
+                    interest_display = f"{currency_symbol}{interest_amount:,.2f}"
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),
                         'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                         'tranche_release': f"{currency_symbol}0.00",
                         'interest_calculation': interest_calc + " + fees",
-                        'interest_amount': f"{currency_symbol}{retained_interest:,.2f}",
+                        'interest_amount': interest_display,
+                        'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                         'principal_payment': f"{currency_symbol}0.00",
                         'total_payment': f"{currency_symbol}{retained_amount:,.2f}",
                         'closing_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                         'balance_change': "Interest & fees retained"
                     })
                 elif period < len(payment_dates):
-                    # Regular capital payments (no interest)
-                    # Ensure we don't pay more capital than remaining
                     if capital_per_payment > remaining_balance:
                         capital_per_payment = remaining_balance
-                    
+                    interest_amount = Decimal('0')
+                    interest_saving = max(interest_only - interest_amount, Decimal('0'))
                     balance_change = f"↓ -{currency_symbol}{capital_per_payment:,.2f}" if capital_per_payment > 0 else "↔ No Change"
                     closing_balance = remaining_balance - capital_per_payment
-                    
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),
                         'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                         'tranche_release': f"{currency_symbol}0.00",
                         'interest_calculation': "Capital payment only",
-                        'interest_amount': f"{currency_symbol}0.00",
+                        'interest_amount': f"{currency_symbol}{interest_amount:,.2f}",
+                        'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                         'principal_payment': f"{currency_symbol}{capital_per_payment:,.2f}",
                         'total_payment': f"{currency_symbol}{capital_per_payment:,.2f}",
                         'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
                         'balance_change': balance_change
                     })
-                    
                     remaining_balance = closing_balance
                 else:
-                    # Final payment includes remaining principal + interest refund
                     final_principal = remaining_balance
-                    total_final_payment = final_principal - interest_refund  # Refund reduces final payment
-                    
+                    interest_amount = -interest_refund
+                    interest_saving = max(interest_only - interest_amount, Decimal('0'))
+                    total_final_payment = final_principal - interest_refund
+                    interest_display = f"-{currency_symbol}{interest_refund:,.2f}"
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),
                         'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                         'tranche_release': f"{currency_symbol}0.00",
                         'interest_calculation': f"Final payment with interest refund: -{currency_symbol}{interest_refund:,.2f}",
-                        'interest_amount': f"-{currency_symbol}{interest_refund:,.2f}",
+                        'interest_amount': interest_display,
+                        'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                         'principal_payment': f"{currency_symbol}{final_principal:,.2f}",
                         'total_payment': f"{currency_symbol}{total_final_payment:,.2f}",
                         'closing_balance': f"{currency_symbol}0.00",
                         'balance_change': "Loan complete + refund"
                     })
                     break
-                
+
                 if remaining_balance <= 0:
                     break
 
@@ -4577,6 +4591,9 @@ class LoanCalculator:
 
                 total_payment = interest_amount + principal_payment
 
+                interest_only = gross_amount * rate_decimal
+                interest_saving = max(interest_only - interest_amount, Decimal('0'))
+
                 interest_calc_base = f"{currency_symbol}{balance_for_interest:,.2f} × {rate_display:.3f}%{days_label}"
 
                 is_final = remaining_balance == 0
@@ -4600,6 +4617,7 @@ class LoanCalculator:
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{interest_amount:,.2f}",
+                    'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
@@ -4616,7 +4634,7 @@ class LoanCalculator:
             
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
-                
+
                 # Interest charged on current balance
                 interest_amount = remaining_balance * monthly_rate
 
@@ -4631,7 +4649,8 @@ class LoanCalculator:
                 # Ensure we don't pay more capital than remaining
                 if capital_per_payment > remaining_balance:
                     capital_per_payment = remaining_balance
-                
+
+                interest_only = gross_amount * monthly_rate * (3 if payment_frequency == 'quarterly' else 1)
                 total_payment = interest_amount + capital_per_payment
 
                 is_final = (period == len(payment_dates)) or (capital_per_payment == remaining_balance)
@@ -4645,17 +4664,18 @@ class LoanCalculator:
                         total_payment += arrangement_fee + legal_fees
                         if arrangement_fee + legal_fees > 0:
                             interest_calc += " + fees"
-                    
-                
+                interest_saving = max(interest_only - interest_amount, Decimal('0'))
+
                 balance_change = f"↓ -{currency_symbol}{capital_per_payment:,.2f}" if capital_per_payment > 0 else "↔ No Change"
                 closing_balance = remaining_balance - capital_per_payment
-                
+
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
                     'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{interest_amount:,.2f}",
+                    'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                     'principal_payment': f"{currency_symbol}{capital_per_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
@@ -4736,6 +4756,7 @@ class LoanCalculator:
                         quarterly_rate_display = annual_rate / 4
                         days_label = " (quarterly)"
                     interest_amount = remaining_balance * quarterly_rate
+                    baseline_rate = quarterly_rate
                     flexible_per_payment = flexible_payment_amount * 3  # 3 months worth
                     interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {quarterly_rate_display:.3f}%{days_label}"
                 else:
@@ -4748,6 +4769,7 @@ class LoanCalculator:
                         monthly_rate_display = annual_rate / 12
                         days_label = " (monthly)"
                     interest_amount = remaining_balance * monthly_rate
+                    baseline_rate = monthly_rate
                     flexible_per_payment = flexible_payment_amount
                     interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {monthly_rate_display:.3f}%{days_label}"
                 
@@ -4772,6 +4794,9 @@ class LoanCalculator:
                     total_payment = flexible_per_payment
                     interest_calc = f"Flexible payment {currency_symbol}{flexible_per_payment:,.2f} allocated (Interest: {currency_symbol}{actual_interest_paid:,.2f}, Principal: {currency_symbol}{principal_payment:,.2f})"
 
+                interest_only = gross_amount * baseline_rate
+                interest_saving = max(interest_only - actual_interest_paid, Decimal('0'))
+
                 # Add fees to first payment
                 fees_added = Decimal('0')
                 if period == 1:
@@ -4789,6 +4814,7 @@ class LoanCalculator:
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{actual_interest_paid:,.2f}",
+                    'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and not is_final else ""),
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
