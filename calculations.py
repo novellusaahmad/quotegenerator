@@ -4336,6 +4336,29 @@ class LoanCalculator:
                         # Summary is lower than schedule - adjust summary to match schedule
                         calculation['interestSavings'] = float(total_savings_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
 
+        # Ensure interest accrued total matches loan summary
+        expected_accrued = Decimal(
+            str(
+                calculation.get(
+                    'retainedInterest',
+                    calculation.get('interestOnlyTotal', summary_interest + summary_savings)
+                )
+            )
+        )
+        if detailed_schedule:
+            total_accrued = Decimal('0')
+            for entry in detailed_schedule:
+                acc_str = entry.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                try:
+                    total_accrued += Decimal(acc_str)
+                except Exception:
+                    continue
+            diff = expected_accrued - total_accrued
+            if abs(diff) > Decimal('0.01'):
+                last = detailed_schedule[-1]
+                last_acc = Decimal(last.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', ''))
+                last['interest_accrued'] = f"{currency_symbol}{(last_acc + diff):,.2f}"
+
         # Attach period info to all entries
         for i, entry in enumerate(detailed_schedule):
             if i < len(period_ranges):
