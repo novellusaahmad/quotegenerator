@@ -453,7 +453,9 @@ class LoanCalculator:
             net_for_calculation = net_amount if amount_input_type == 'net' else None
             logging.info(f"Bridge capital_payment_only calculation: gross={gross_amount}, capital_repayment={capital_repayment}")
             calculation = self._calculate_bridge_capital_payment_only(
-                gross_amount, annual_rate, loan_term, capital_repayment, fees, interest_type, net_for_calculation, loan_term_days, use_360_days, payment_frequency, payment_timing
+                gross_amount, annual_rate, loan_term, capital_repayment, fees,
+                interest_type, net_for_calculation, loan_term_days, use_360_days,
+                payment_frequency, payment_timing, start_date
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
@@ -6595,7 +6597,10 @@ class LoanCalculator:
 
     def _calculate_bridge_capital_payment_only(self, gross_amount: Decimal, annual_rate: Decimal,
                                               loan_term: int, capital_repayment: Decimal, fees: Dict,
-                                              interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False, payment_frequency: str = 'monthly', payment_timing: str = 'arrears') -> Dict:
+                                              interest_type: str = 'simple', net_amount: Decimal = None,
+                                              loan_term_days: int = None, use_360_days: bool = False,
+                                              payment_frequency: str = 'monthly', payment_timing: str = 'arrears',
+                                              start_date: Optional[datetime] = None) -> Dict:
         """Calculate bridge loan with capital payment only - interest retained at day 1 with potential refund.
 
         Interest refund now considers payment timing (advance/arrears) and
@@ -6694,18 +6699,42 @@ class LoanCalculator:
 
         remaining_balance = gross_amount
         interest_refund = Decimal('0')
-        for i in range(periods):
-            if remaining_balance <= 0:
-                break
-            pay = min(capital_per_payment, remaining_balance)
-            if payment_timing == 'advance':
-                remaining_periods = periods - i
-            else:
-                remaining_periods = periods - i - 1
-            if remaining_periods < 0:
-                remaining_periods = 0
-            interest_refund += total_retained_interest * (pay / gross_amount) * (Decimal(remaining_periods) / Decimal(periods))
-            remaining_balance -= pay
+
+        # Use actual calendar days for interest refund when a start date is provided
+        if start_date:
+            end_date = self._add_months(start_date, loan_term)
+            current_date = start_date
+            months_step = 3 if payment_frequency == 'quarterly' else 1
+
+            for _ in range(periods):
+                if remaining_balance <= 0:
+                    break
+                pay = min(capital_per_payment, remaining_balance)
+
+                if payment_timing == 'advance':
+                    days_remaining = (end_date - current_date).days
+                    current_date = self._add_months(current_date, months_step)
+                else:
+                    next_date = self._add_months(current_date, months_step)
+                    days_remaining = (end_date - next_date).days
+                    current_date = next_date
+
+                interest_refund += pay * (annual_rate / Decimal('100')) * Decimal(days_remaining) / days_per_year
+                remaining_balance -= pay
+        else:
+            # Fallback to proportional method when dates aren't available
+            for i in range(periods):
+                if remaining_balance <= 0:
+                    break
+                pay = min(capital_per_payment, remaining_balance)
+                if payment_timing == 'advance':
+                    remaining_periods = periods - i
+                else:
+                    remaining_periods = periods - i - 1
+                if remaining_periods < 0:
+                    remaining_periods = 0
+                interest_refund += total_retained_interest * (pay / gross_amount) * (Decimal(remaining_periods) / Decimal(periods))
+                remaining_balance -= pay
 
         final_balance = remaining_balance
         net_interest_paid = total_retained_interest - interest_refund
