@@ -1311,11 +1311,11 @@ class LoanCalculator:
             fees = self._calculate_fees(gross_amount, arrangement_fee_rate, legal_fees,
                                       site_visit_fee, title_insurance_rate, 0)
             
-            # Calculate interest for development loan
-            term_years = Decimal(loan_term) / Decimal('12')
+            # Calculate interest for development loan using actual day count
             annual_rate_decimal = annual_rate / Decimal('100')
-            interest_rate = annual_rate_decimal * term_years
-            total_interest = gross_amount * interest_rate
+            days_in_year = Decimal('360') if use_360_days else Decimal('365')
+            term_years = Decimal(loan_term_days) / days_in_year
+            total_interest = gross_amount * annual_rate_decimal * term_years
             
             # Calculate Day 1 advance properly
             total_day1_advance = day1_advance + fees['arrangementFee'] + legal_fees
@@ -1323,10 +1323,15 @@ class LoanCalculator:
             # Get user's tranche input - DO NOT calculate our own
             user_tranches = params.get('tranches', [])
             
+            # Update params with derived values for downstream calculations
+            params['end_date'] = end_date_str
+            params['loan_term_days'] = loan_term_days
+            params['loan_term'] = loan_term
+
             # Return proper calculation result using calculated gross amount
             return self._build_development_loan_result(
-                params, gross_amount, fees, total_interest, 
-                net_amount, property_value, loan_term, annual_rate, 
+                params, gross_amount, fees, total_interest,
+                net_amount, property_value, loan_term, annual_rate,
                 repayment_option, currency, total_day1_advance
             )
         
