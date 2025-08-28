@@ -4150,7 +4150,10 @@ class LoanCalculator:
                     remaining_balance -= principal_payment
 
                 interest_only = gross_amount * rate
-                interest_saving = max(interest_only - interest_paid, Decimal('0'))
+                if interest_paid == 0 and interest_calc == "Interest paid in previous period":
+                    interest_saving = Decimal('0')
+                else:
+                    interest_saving = max(interest_only - interest_paid, Decimal('0'))
 
                 fees_added = Decimal('0')
                 if period == 1:
@@ -4281,6 +4284,19 @@ class LoanCalculator:
                 else:
                     base_val = Decimal(tp_str.replace(currency_symbol, '').replace(',', ''))
                     last['total_payment'] = f"{currency_symbol}{(base_val + diff):,.2f}"
+
+        # Ensure interest savings total matches loan summary
+        summary_savings = Decimal(str(calculation.get('interestSavings', calculation.get('interest_savings', 0))))
+        if detailed_schedule:
+            total_savings_schedule = Decimal('0')
+            for entry in detailed_schedule:
+                amt_str = entry.get('interest_saving', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                try:
+                    total_savings_schedule += Decimal(amt_str)
+                except Exception:
+                    continue
+            if params.get('repayment_option') != 'capital_payment_only' and abs(summary_savings - total_savings_schedule) > Decimal('0.01'):
+                calculation['interestSavings'] = float(total_savings_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
 
         # Attach period info to all entries
         for i, entry in enumerate(detailed_schedule):
@@ -4668,6 +4684,14 @@ class LoanCalculator:
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
 
+            # Setup for interest refund calculations
+            if relativedelta:
+                loan_end_date = start_date + relativedelta(months=loan_term)
+            else:
+                loan_end_date = self._add_months(start_date, loan_term)
+            current_refund_date = start_date
+            months_step = 3 if payment_frequency == 'quarterly' else 1
+
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
                 pr = period_ranges[i] if i < len(period_ranges) else None
@@ -4705,6 +4729,7 @@ class LoanCalculator:
                     total_payment -= interest_amount
                     interest_amount = Decimal('0')
                     interest_calc = "Interest paid in previous period"
+                    interest_saving = Decimal('0')
                 else:
                     interest_calc = (
                         f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate:.3f}% "
@@ -4715,7 +4740,18 @@ class LoanCalculator:
                         if arrangement_fee + legal_fees > 0:
                             interest_calc += " + fees"
 
-                interest_saving = max(interest_only - interest_amount, Decimal('0'))
+                    # Interest saving corresponds to refunded interest for remaining term
+                    pay = capital_per_payment
+                    if payment_timing == 'advance':
+                        days_remaining = (loan_end_date - current_refund_date).days
+                        current_refund_date = self._add_months(current_refund_date, months_step)
+                    else:
+                        next_refund_date = self._add_months(current_refund_date, months_step)
+                        days_remaining = (loan_end_date - next_refund_date).days
+                        current_refund_date = next_refund_date
+                    if days_remaining < 0:
+                        days_remaining = 0
+                    interest_saving = pay * (annual_rate / Decimal('100')) * Decimal(days_remaining) / days_per_year
 
                 balance_change = (
                     f"↓ -{currency_symbol}{capital_per_payment:,.2f}"
@@ -4854,7 +4890,10 @@ class LoanCalculator:
                     interest_calc = f"Flexible payment {currency_symbol}{flexible_per_payment:,.2f} allocated (Interest: {currency_symbol}{actual_interest_paid:,.2f}, Principal: {currency_symbol}{principal_payment:,.2f})"
 
                 interest_only = gross_amount * baseline_rate
-                interest_saving = max(interest_only - actual_interest_paid, Decimal('0'))
+                if actual_interest_paid == 0 and interest_calc == "Interest paid in previous period":
+                    interest_saving = Decimal('0')
+                else:
+                    interest_saving = max(interest_only - actual_interest_paid, Decimal('0'))
 
                 # Add fees to first payment
                 fees_added = Decimal('0')

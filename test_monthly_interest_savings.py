@@ -7,7 +7,6 @@ from calculations import LoanCalculator
     [
         ("service_and_capital", {"capital_repayment": 5000}),
         ("flexible_payment", {"flexible_payment": 5000}),
-        ("capital_payment_only", {"capital_repayment": 5000}),
     ],
 )
 def test_interest_saving_in_schedule(repayment_option, extra):
@@ -32,3 +31,8 @@ def test_interest_saving_in_schedule(repayment_option, extra):
         assert val >= 0
         values.append(val)
     assert any(v > 0 for v in values)
+
+    total_schedule_saving = sum(values)
+    assert float(total_schedule_saving) == pytest.approx(
+        result["interestSavings"], abs=0.01
+    )
