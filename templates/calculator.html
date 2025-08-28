@@ -1122,50 +1122,32 @@
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
 <script>
-// Synchronise start date, end date and loan term fields
-function calculateEndDate(trigger) {
-    const startDateEl = document.getElementById('startDate');
-    const endDateEl = document.getElementById('endDate');
-    const loanTermEl = document.getElementById('loanTerm');
+// End date calculation functionality with automatic recalculation
+function calculateEndDate() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
 
-    const startDate = startDateEl.value;
-    const endDate = endDateEl.value;
-    const termMonths = parseInt(loanTermEl.value);
+    if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
 
-    let start, end;
-
-    // If loan term changed (or start date changed with existing term), calculate end date
-    if ((trigger === 'term' || trigger === 'start') && startDate && termMonths) {
-        start = new Date(startDate);
-        end = new Date(startDate);
-        end.setMonth(end.getMonth() + termMonths);
-        // Set date to previous day to represent end of period
-        end.setDate(end.getDate() - 1);
-        endDateEl.value = end.toISOString().split('T')[0];
-    } else if (startDate && endDate) {
-        start = new Date(startDate);
-        end = new Date(endDate);
-    }
-
-    // When we have both start and end dates, update day count and loan term if needed
-    if (start && end) {
+        // Calculate actual days difference
         const timeDiff = end.getTime() - start.getTime();
         const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        console.log(`Date range: ${daysDiff} days between ${start.toISOString().split('T')[0]} and ${end.toISOString().split('T')[0]}`);
+        console.log(`Date range: ${daysDiff} days between ${startDate} and ${endDate}`);
 
+        // Update displayed day count if loan summary exists
         const loanTermDaysEl = document.getElementById('loanTermDaysResult');
         if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
 
-        // Only overwrite loan term when not triggered by loan term field
-        if (trigger !== 'term') {
-            let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 +
-                             (end.getMonth() - start.getMonth());
-            if (end.getDate() < start.getDate()) {
-                monthsDiff -= 1;
-            }
-            const loanTerm = Math.max(1, monthsDiff);
-            loanTermEl.value = loanTerm;
+        // Determine loan term in months based on dates
+        let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 +
+                         (end.getMonth() - start.getMonth());
+        if (end.getDate() < start.getDate()) {
+            monthsDiff -= 1;
         }
+        const loanTerm = Math.max(1, monthsDiff);
+        document.getElementById('loanTerm').value = loanTerm;
 
         // Trigger calculation update if calculator instance exists and form has data
         triggerCalculationUpdate();
@@ -1224,16 +1206,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add event listeners with error handling
         const startDate = document.getElementById('startDate');
         const endDate = document.getElementById('endDate');
-        const loanTerm = document.getElementById('loanTerm');
 
         if (startDate) {
-            startDate.addEventListener('change', () => calculateEndDate('start'));
+            startDate.addEventListener('change', calculateEndDate);
         }
         if (endDate) {
-            endDate.addEventListener('change', () => calculateEndDate('end'));
-        }
-        if (loanTerm) {
-            loanTerm.addEventListener('input', () => calculateEndDate('term'));
+            endDate.addEventListener('change', calculateEndDate);
         }
         
         // Initialize the main loan calculator and store global reference
