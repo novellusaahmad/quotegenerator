@@ -3639,58 +3639,55 @@ class LoanCalculator:
         elif repayment_option == 'service_and_capital':
             # Service + Capital payments with declining balance and timing/frequency support
             from datetime import datetime, timedelta
-            
-            # Get payment timing and frequency parameters
+
             payment_timing = quote_data.get('payment_timing', 'advance')
             payment_frequency = quote_data.get('payment_frequency', 'monthly')
             capital_repayment = Decimal(str(quote_data.get('capital_repayment', 1000)))
-            
-            # Get start date
+            use_360_days = quote_data.get('use_360_days', False)
+
             start_date_str = quote_data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
             if isinstance(start_date_str, str):
                 start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
             else:
                 start_date = start_date_str
-            
-            # Generate payment dates based on frequency and timing
+
             payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-            
-            # Adjust capital repayment based on frequency
+            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+
             if payment_frequency == 'quarterly':
-                capital_per_payment = capital_repayment * 3  # 3 months worth
+                capital_per_payment = capital_repayment * 3
             else:
                 capital_per_payment = capital_repayment
-            
+
             fees_deducted_first = arrangement_fee + legal_fees
             fees_added_to_first = False
-            
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
+                pr = period_ranges[i]
+                days_in_period = pr['days_held'] + (1 if payment_timing == 'arrears' else 0)
 
-                # Determine principal payment (cannot exceed remaining balance)
                 principal_payment = capital_per_payment
                 if principal_payment > remaining_balance:
                     principal_payment = remaining_balance
 
                 if payment_timing == 'advance':
-                    # Deduct principal before interest calculation
                     remaining_balance -= principal_payment
                     opening_balance = remaining_balance
-                    if payment_frequency == 'quarterly':
-                        interest_payment = remaining_balance * (annual_rate / 4 / 100)
-                    else:
-                        interest_payment = remaining_balance * (monthly_rate / 100)
-                    total_payment = interest_payment + principal_payment
-                else:  # arrears
+                    balance_for_interest = remaining_balance
+                else:
                     opening_balance = remaining_balance
-                    if payment_frequency == 'quarterly':
-                        interest_payment = remaining_balance * (annual_rate / 4 / 100)
-                    else:
-                        interest_payment = remaining_balance * (monthly_rate / 100)
-                    total_payment = interest_payment + principal_payment
+                    balance_for_interest = remaining_balance
+
+                interest_payment = self.calculate_simple_interest_by_days(
+                    balance_for_interest, annual_rate, days_in_period, use_360_days
+                )
+                total_payment = interest_payment + principal_payment
+
+                if payment_timing == 'arrears':
                     remaining_balance -= principal_payment
 
-                # Add fees to first payment
                 if not fees_added_to_first:
                     total_payment += fees_deducted_first
                     note = 'Fees deducted'
@@ -3698,7 +3695,6 @@ class LoanCalculator:
                 else:
                     note = None
 
-                # For advance timing, final payment has no interest
                 if payment_timing == 'advance' and remaining_balance == 0:
                     total_payment -= interest_payment
                     interest_payment = Decimal('0')
@@ -4548,31 +4544,25 @@ class LoanCalculator:
                 remaining_balance = closing_balance
         
         elif repayment_option == 'service_and_capital':
-            # Capital + interest with reducing balance
+            # Capital + interest with reducing balance using day-level interest
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
-            
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
+                pr = period_ranges[i] if i < len(period_ranges) else None
+                if pr:
+                    days_in_period = pr['days_held'] + (1 if payment_timing == 'arrears' else 0)
+                    period_start = pr['start']
+                    period_end = pr['end']
+                else:
+                    days_in_period = 0
+                    period_start = payment_date
+                    period_end = payment_date
 
                 if payment_frequency == 'quarterly':
-                    if use_360_days:
-                        rate_decimal = annual_rate / 4 / 100 * Decimal('365') / Decimal('360')
-                        rate_display = annual_rate / 4 * 365 / 360
-                        days_label = " (360-day quarterly)"
-                    else:
-                        rate_decimal = annual_rate / 4 / 100
-                        rate_display = annual_rate / 4
-                        days_label = " (quarterly)"
                     capital_per_payment = capital_repayment * 3
                 else:
-                    if use_360_days:
-                        rate_decimal = annual_rate / 12 / 100 * Decimal('365') / Decimal('360')
-                        rate_display = annual_rate / 12 * 365 / 360
-                        days_label = " (360-day monthly)"
-                    else:
-                        rate_decimal = annual_rate / 12 / 100
-                        rate_display = annual_rate / 12
-                        days_label = " (monthly)"
                     capital_per_payment = capital_repayment
 
                 if period == len(payment_dates) and capital_per_payment < remaining_balance:
@@ -4589,17 +4579,24 @@ class LoanCalculator:
                     balance_for_interest = remaining_balance
                     principal_payment = capital_per_payment
 
-                interest_amount = balance_for_interest * rate_decimal
+                interest_amount = self.calculate_simple_interest_by_days(
+                    balance_for_interest, annual_rate, days_in_period, use_360_days
+                )
 
                 if payment_timing == 'arrears':
                     remaining_balance -= principal_payment
 
                 total_payment = interest_amount + principal_payment
 
-                interest_only = gross_amount * rate_decimal
+                interest_only = self.calculate_simple_interest_by_days(
+                    gross_amount, annual_rate, days_in_period, use_360_days
+                )
                 interest_saving = max(interest_only - interest_amount, Decimal('0'))
 
-                interest_calc_base = f"{currency_symbol}{balance_for_interest:,.2f} × {rate_display:.3f}%{days_label}"
+                interest_calc_base = (
+                    f"{currency_symbol}{balance_for_interest:,.2f} × {annual_rate:.3f}% "
+                    f"× {days_in_period}/{days_per_year} days"
+                )
 
                 is_final = remaining_balance == 0
                 if payment_timing == 'advance' and is_final:
@@ -4613,11 +4610,19 @@ class LoanCalculator:
                     total_payment += arrangement_fee + legal_fees
                     interest_calc += " + fees"
 
-                balance_change = f"↓ -{currency_symbol}{principal_payment:,.2f}" if principal_payment > 0 else "↔ No Change"
+                balance_change = (
+                    f"↓ -{currency_symbol}{principal_payment:,.2f}"
+                    if principal_payment > 0 else "↔ No Change"
+                )
                 closing_balance = remaining_balance
 
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
+                    'start_period': period_start.strftime('%d/%m/%Y'),
+                    'end_period': (
+                        (period_end - timedelta(days=1)) if payment_timing == 'advance' else period_end
+                    ).strftime('%d/%m/%Y'),
+                    'days_held': int(days_in_period),
                     'opening_balance': f"{currency_symbol}{opening_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
@@ -4626,36 +4631,47 @@ class LoanCalculator:
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
-                    'balance_change': balance_change
+                    'balance_change': balance_change,
                 })
 
                 if remaining_balance <= 0:
                     break
-        
+
         elif repayment_option == 'capital_payment_only':
-            # Capital Payment Only - interest charged on reducing balance, capital payments reduce balance
+            # Capital Payment Only - interest charged on reducing balance with day-level interest
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
-            monthly_rate = annual_rate / Decimal('100') / Decimal('12')
-            
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
-
-                # Interest charged on current balance
-                interest_amount = remaining_balance * monthly_rate
+                pr = period_ranges[i] if i < len(period_ranges) else None
+                if pr:
+                    days_in_period = pr['days_held'] + (1 if payment_timing == 'arrears' else 0)
+                    period_start = pr['start']
+                    period_end = pr['end']
+                else:
+                    days_in_period = 0
+                    period_start = payment_date
+                    period_end = payment_date
 
                 # Capital payment amount
                 if payment_frequency == 'quarterly':
-                    capital_per_payment = capital_repayment * 3  # 3 months worth
-                    # Interest for quarterly period (3 months of interest)
-                    interest_amount = remaining_balance * monthly_rate * 3
+                    capital_per_payment = capital_repayment * 3
                 else:
                     capital_per_payment = capital_repayment
-                
+
+                # Interest charged on current balance
+                interest_amount = self.calculate_simple_interest_by_days(
+                    remaining_balance, annual_rate, days_in_period, use_360_days
+                )
+
                 # Ensure we don't pay more capital than remaining
                 if capital_per_payment > remaining_balance:
                     capital_per_payment = remaining_balance
 
-                interest_only = gross_amount * monthly_rate * (3 if payment_frequency == 'quarterly' else 1)
+                interest_only = self.calculate_simple_interest_by_days(
+                    gross_amount, annual_rate, days_in_period, use_360_days
+                )
                 total_payment = interest_amount + capital_per_payment
 
                 is_final = (period == len(payment_dates)) or (capital_per_payment == remaining_balance)
@@ -4664,18 +4680,30 @@ class LoanCalculator:
                     interest_amount = Decimal('0')
                     interest_calc = "Interest paid in previous period"
                 else:
-                    interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate}% ÷ 12 = {currency_symbol}{interest_amount:,.2f}"
+                    interest_calc = (
+                        f"{currency_symbol}{remaining_balance:,.2f} × {annual_rate:.3f}% "
+                        f"× {days_in_period}/{days_per_year} days"
+                    )
                     if period == 1:
                         total_payment += arrangement_fee + legal_fees
                         if arrangement_fee + legal_fees > 0:
                             interest_calc += " + fees"
+
                 interest_saving = max(interest_only - interest_amount, Decimal('0'))
 
-                balance_change = f"↓ -{currency_symbol}{capital_per_payment:,.2f}" if capital_per_payment > 0 else "↔ No Change"
+                balance_change = (
+                    f"↓ -{currency_symbol}{capital_per_payment:,.2f}"
+                    if capital_per_payment > 0 else "↔ No Change"
+                )
                 closing_balance = remaining_balance - capital_per_payment
 
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
+                    'start_period': period_start.strftime('%d/%m/%Y'),
+                    'end_period': (
+                        (period_end - timedelta(days=1)) if payment_timing == 'advance' else period_end
+                    ).strftime('%d/%m/%Y'),
+                    'days_held': int(days_in_period),
                     'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
@@ -4684,11 +4712,11 @@ class LoanCalculator:
                     'principal_payment': f"{currency_symbol}{capital_per_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
-                    'balance_change': balance_change
+                    'balance_change': balance_change,
                 })
-                
+
                 remaining_balance = closing_balance
-                
+
                 if remaining_balance <= 0:
                     break
         
