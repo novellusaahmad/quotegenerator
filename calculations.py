@@ -44,6 +44,18 @@ class LoanCalculator:
         """
         return self._round(value, 4)
 
+    def _to_decimal(self, value, currency_symbol: str = '£') -> Decimal:
+        """Convert currency formatted strings or numbers to ``Decimal``.
+
+        This helper is tolerant of values that may already be numeric or that
+        include a currency symbol and thousands separators.  Any parsing errors
+        simply return ``Decimal('0')`` so aggregation logic remains robust.
+        """
+        try:
+            return Decimal(str(value).replace(currency_symbol, '').replace(',', ''))
+        except Exception:
+            return Decimal('0')
+
     def _normalize_date(self, dt: datetime) -> datetime:
         """Clear the time component from a datetime value.
 
@@ -4312,42 +4324,21 @@ class LoanCalculator:
             total_refund = Decimal('0')
             total_accrued = Decimal('0')
             for entry in detailed_schedule:
-                try:
-                    amt = entry.get('interest_amount', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                    total_interest_amt += Decimal(amt)
-                except Exception:
-                    pass
-                try:
-                    save_amt = entry.get('interest_saving', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                    total_savings += Decimal(save_amt)
-                except Exception:
-                    pass
-                try:
-                    ret_amt = entry.get('interest_retained', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                    total_retained += Decimal(ret_amt)
-                except Exception:
-                    pass
-                try:
-                    refund_amt = entry.get('interest_refund', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                    total_refund += Decimal(refund_amt)
-                except Exception:
-                    pass
-                try:
-                    acc_amt = entry.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                    total_accrued += Decimal(acc_amt)
-                except Exception:
-                    pass
+                total_interest_amt += self._to_decimal(entry.get('interest_amount', 0), currency_symbol)
+                total_savings += self._to_decimal(entry.get('interest_saving', 0), currency_symbol)
+                total_retained += self._to_decimal(entry.get('interest_retained', 0), currency_symbol)
+                total_refund += self._to_decimal(entry.get('interest_refund', 0), currency_symbol)
+                total_accrued += self._to_decimal(entry.get('interest_accrued', 0), currency_symbol)
 
             rounding = Decimal('0.01')
             total_interest = total_accrued if total_accrued else total_interest_amt
-            if total_interest:
+            if total_interest > 0:
                 total_interest = total_interest.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['totalInterest'] = float(total_interest)
                 calculation['total_interest'] = float(total_interest)
 
-            if total_savings:
-                total_savings = total_savings.quantize(rounding, rounding=ROUND_HALF_UP)
-                calculation['interestSavings'] = float(total_savings)
+            total_savings = total_savings.quantize(rounding, rounding=ROUND_HALF_UP)
+            calculation['interestSavings'] = float(total_savings)
             if total_retained:
                 total_retained = total_retained.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['retainedInterest'] = float(total_retained)
@@ -4994,35 +4985,19 @@ class LoanCalculator:
             total_retained = Decimal('0')
             total_refund = Decimal('0')
             for entry in detailed_schedule:
-                try:
-                    amt = entry.get('interest_amount', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                    total_interest += Decimal(amt)
-                except Exception:
-                    pass
-                try:
-                    save_amt = entry.get('interest_saving', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                    total_savings += Decimal(save_amt)
-                except Exception:
-                    pass
-                try:
-                    ret_amt = entry.get('interest_retained', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                    total_retained += Decimal(ret_amt)
-                except Exception:
-                    pass
-                try:
-                    refund_amt = entry.get('interest_refund', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                    total_refund += Decimal(refund_amt)
-                except Exception:
-                    pass
+                total_interest += self._to_decimal(entry.get('interest_amount', 0), currency_symbol)
+                total_savings += self._to_decimal(entry.get('interest_saving', 0), currency_symbol)
+                total_retained += self._to_decimal(entry.get('interest_retained', 0), currency_symbol)
+                total_refund += self._to_decimal(entry.get('interest_refund', 0), currency_symbol)
 
             rounding = Decimal('0.01')
-            if total_interest:
+            if total_interest > 0:
                 total_interest = total_interest.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['totalInterest'] = float(total_interest)
                 calculation['total_interest'] = float(total_interest)
-            if total_savings:
-                total_savings = total_savings.quantize(rounding, rounding=ROUND_HALF_UP)
-                calculation['interestSavings'] = float(total_savings)
+
+            total_savings = total_savings.quantize(rounding, rounding=ROUND_HALF_UP)
+            calculation['interestSavings'] = float(total_savings)
             if total_retained:
                 total_retained = total_retained.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['retainedInterest'] = float(total_retained)
