@@ -4351,16 +4351,10 @@ class LoanCalculator:
                         # Summary is lower than schedule - adjust summary to match schedule
                         calculation['interestSavings'] = float(total_savings_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
 
-        # Ensure interest accrued total matches loan summary
-        expected_accrued = Decimal(
-            str(
-                calculation.get(
-                    'retainedInterest',
-                    calculation.get('interestOnlyTotal', summary_interest + summary_savings)
-                )
-            )
-        )
-        if detailed_schedule:
+        # Ensure interest accrued total matches the net interest in the loan summary
+        has_accrued_column = any('interest_accrued' in entry for entry in detailed_schedule)
+        if has_accrued_column:
+            expected_accrued = summary_interest
             total_accrued = Decimal('0')
             for entry in detailed_schedule:
                 acc_str = entry.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
@@ -4372,7 +4366,7 @@ class LoanCalculator:
             # the loan summary interest to the penny. Round the difference to
             # 2 decimal places and apply it to the last entry if needed.
             diff = (expected_accrued - total_accrued).quantize(Decimal('0.01'))
-            if diff != 0:
+            if diff != 0 and detailed_schedule:
                 last = detailed_schedule[-1]
                 last_acc = Decimal(
                     last.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
