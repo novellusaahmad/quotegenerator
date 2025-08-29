@@ -3747,6 +3747,12 @@ class LoanCalculator:
                 )
             )
 
+            # Scale flexible payment to the correct per-payment amount for quarterly frequency
+            if payment_frequency == "quarterly":
+                flexible_per_payment = flexible_payment * Decimal('3')
+            else:
+                flexible_per_payment = flexible_payment
+
             start_date_str = quote_data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
             if isinstance(start_date_str, str):
                 start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
@@ -3766,31 +3772,31 @@ class LoanCalculator:
                 if payment_timing == 'advance':
                     balance_before = remaining_balance
                     interest_due = balance_before * daily_rate * days_in_period
-                    if flexible_payment >= interest_due:
+                    if flexible_per_payment >= interest_due:
                         interest_paid = interest_due
-                        principal_payment = flexible_payment - interest_due
+                        principal_payment = flexible_per_payment - interest_due
                         if principal_payment > remaining_balance:
                             principal_payment = remaining_balance
-                            interest_paid = flexible_payment - principal_payment
+                            interest_paid = flexible_per_payment - principal_payment
                         remaining_balance = balance_before - principal_payment
                     else:
-                        interest_paid = flexible_payment
+                        interest_paid = flexible_per_payment
                         principal_payment = Decimal('0')
-                        unpaid_interest = interest_due - flexible_payment
+                        unpaid_interest = interest_due - flexible_per_payment
                         remaining_balance = balance_before + unpaid_interest
                     opening_balance = balance_before
-                    total_payment = flexible_payment
+                    total_payment = flexible_per_payment
                 else:  # arrears
                     opening_balance = remaining_balance
                     interest_due = opening_balance * daily_rate * days_in_period
-                    interest_paid = min(flexible_payment, interest_due)
+                    interest_paid = min(flexible_per_payment, interest_due)
                     unpaid_interest = interest_due - interest_paid
-                    principal_payment = flexible_payment - interest_paid if flexible_payment > interest_paid else Decimal('0')
+                    principal_payment = flexible_per_payment - interest_paid if flexible_per_payment > interest_paid else Decimal('0')
                     if principal_payment > remaining_balance:
                         principal_payment = remaining_balance
-                        interest_paid = flexible_payment - principal_payment
+                        interest_paid = flexible_per_payment - principal_payment
                         unpaid_interest = interest_due - interest_paid
-                    total_payment = flexible_payment
+                    total_payment = flexible_per_payment
                     remaining_balance = opening_balance + unpaid_interest - principal_payment
 
                 if period == 1:
@@ -4050,6 +4056,12 @@ class LoanCalculator:
             flexible_payment = Decimal(
                 str(params.get('flexible_payment', params.get('flexiblePayment', 30000)))
             )
+            # Scale flexible payment to the correct per-payment amount for quarterly frequency
+            if payment_frequency == "quarterly":
+                flexible_per_payment = flexible_payment * Decimal('3')
+            else:
+                flexible_per_payment = flexible_payment
+
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
             daily_rate = annual_rate / Decimal('100') / days_per_year
 
@@ -4063,32 +4075,32 @@ class LoanCalculator:
                 if payment_timing == 'advance':
                     balance_before = remaining_balance
                     interest_amount = balance_before * daily_rate * days_in_period
-                    if flexible_payment >= interest_amount:
+                    if flexible_per_payment >= interest_amount:
                         interest_paid = interest_amount
-                        principal_payment = flexible_payment - interest_amount
+                        principal_payment = flexible_per_payment - interest_amount
                         if principal_payment > remaining_balance:
                             principal_payment = remaining_balance
-                            interest_paid = flexible_payment - principal_payment
+                            interest_paid = flexible_per_payment - principal_payment
                         remaining_balance = balance_before - principal_payment
                     else:
-                        interest_paid = flexible_payment
+                        interest_paid = flexible_per_payment
                         principal_payment = Decimal('0')
-                        unpaid_interest = interest_amount - flexible_payment
+                        unpaid_interest = interest_amount - flexible_per_payment
                         remaining_balance = balance_before + unpaid_interest
                     opening_balance = balance_before
                 else:
                     opening_balance = remaining_balance
                     interest_amount = opening_balance * daily_rate * days_in_period
-                    interest_paid = min(flexible_payment, interest_amount)
+                    interest_paid = min(flexible_per_payment, interest_amount)
                     unpaid_interest = interest_amount - interest_paid
-                    principal_payment = flexible_payment - interest_paid if flexible_payment > interest_paid else Decimal('0')
+                    principal_payment = flexible_per_payment - interest_paid if flexible_per_payment > interest_paid else Decimal('0')
                     if principal_payment > remaining_balance:
                         principal_payment = remaining_balance
-                        interest_paid = flexible_payment - principal_payment
+                        interest_paid = flexible_per_payment - principal_payment
                         unpaid_interest = interest_amount - interest_paid
                     remaining_balance = opening_balance + unpaid_interest - principal_payment
 
-                total_payment = flexible_payment
+                total_payment = flexible_per_payment
                 interest_calc = (
                     f"{currency_symbol}{opening_balance:,.2f} × {annual_rate:.3f}% × {int(days_in_period)}/{days_per_year} days"
                 )
@@ -4122,7 +4134,7 @@ class LoanCalculator:
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and interest_paid > 0 else ""),
                     'closing_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                     'balance_change': balance_change,
-                    'flexible_payment_calculation': f"{currency_symbol}{principal_payment:,.2f} + {currency_symbol}{interest_paid:,.2f} = {currency_symbol}{flexible_payment:,.2f}"
+                    'flexible_payment_calculation': f"{currency_symbol}{principal_payment:,.2f} + {currency_symbol}{interest_paid:,.2f} = {currency_symbol}{flexible_per_payment:,.2f}"
                 })
 
                 if remaining_balance <= 0:

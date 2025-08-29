@@ -24,3 +24,31 @@ def test_flexible_payment_interest_split():
     assert math.isclose(first['interest'], expected_interest, rel_tol=1e-9)
     assert math.isclose(first['principal'], expected_principal, rel_tol=1e-9)
     assert math.isclose(first['closing_balance'], expected_closing, rel_tol=1e-9)
+
+
+def test_quarterly_flexible_payment_scaled_amount():
+    """Ensure flexible payments are scaled for quarterly frequency"""
+    calc = LoanCalculator()
+    quote_data = {
+        'loan_type': 'bridge',
+        'repayment_option': 'flexible_payment',
+        'gross_amount': 100000,
+        'annual_rate': 12,
+        'loan_term': 12,
+        'flexiblePayment': 2000,
+        'payment_frequency': 'quarterly',
+        'payment_timing': 'arrears',
+        'start_date': '2024-01-01',
+        'arrangementFee': 0,
+        'totalLegalFees': 0,
+    }
+
+    schedule = calc.generate_payment_schedule(quote_data)
+    first = schedule[0]
+
+    # Payment should be scaled to three months' worth of the flexible payment
+    assert math.isclose(first['total_payment'], 6000, rel_tol=1e-9)
+    # Allocation should sum to the per-payment amount
+    assert math.isclose(first['interest'] + first['principal'], 6000, rel_tol=1e-9)
+    # Ensure principal reduction occurred
+    assert first['closing_balance'] < first['opening_balance']
