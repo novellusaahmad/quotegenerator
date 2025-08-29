@@ -22,6 +22,7 @@ from utils import (
     validate_quote_data, generate_payment_schedule_csv, format_currency,
     parse_currency_amount, generate_application_reference, validate_email
 )
+from report_utils import generate_report_schedule
 from snowflake_utils import (
     set_snowflake_config,
     get_snowflake_config,
@@ -457,10 +458,17 @@ def api_calculate():
         # Handle net-to-gross conversion if needed
         if amount_input_type == 'net':
             calc_params['net_amount'] = net_amount
-        
+
         # Use the unified calculation method
         result = calculator.calculate_loan(calc_params)
-        
+
+        # Ensure detailed schedule structure for serviced + capital and flexible payments
+        if loan_type == 'bridge' and repayment_option in ('service_and_capital', 'flexible_payment'):
+            try:
+                result['detailed_payment_schedule'] = generate_report_schedule(calc_params)
+            except Exception as e:
+                app.logger.warning(f"Report schedule generation failed: {str(e)}")
+
         # Generate payment schedule
         try:
             # Add the original parameters to the result for payment schedule generation
