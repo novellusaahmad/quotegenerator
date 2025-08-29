@@ -115,5 +115,9 @@ def test_capital_payment_only_advance_totals_match():
     }
     result = calc.calculate_bridge_loan(params)
     schedule = result['detailed_payment_schedule']
-    total_interest_schedule = sum(currency_to_decimal(r['interest_amount']) for r in schedule)
-    assert total_interest_schedule.quantize(Decimal('0.01')) == Decimal(str(result['totalInterest'])).quantize(Decimal('0.01'))
+    total_accrued = sum(currency_to_decimal(r['interest_accrued']) for r in schedule)
+    retained = Decimal(str(result['retainedInterest']))
+    refund = Decimal(str(result['interestRefund']))
+    summary_interest = Decimal(str(result['totalInterest']))
+    assert total_accrued.quantize(Decimal('0.01')) == summary_interest.quantize(Decimal('0.01'))
+    assert (retained - refund).quantize(Decimal('0.01')) == summary_interest.quantize(Decimal('0.01'))
