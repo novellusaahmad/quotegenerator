@@ -6382,7 +6382,8 @@ class LoanCalculator:
         net_amount = Decimal(str(params.get('net_amount', 0)))
         
         # Parse start date
-        from datetime import datetime, timedelta
+        from datetime import datetime
+        from dateutil.relativedelta import relativedelta
         if isinstance(start_date_str, str):
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
         else:
@@ -6414,42 +6415,30 @@ class LoanCalculator:
         if day1_advance > 0:
             # Day 1 advance calculation - compound daily for full term
             current_balance_day1 = day1_advance
-            
+            current_date = start_date
+
             for month in range(1, loan_term + 1):
                 month_start_balance = current_balance_day1
-                
-                # Calculate days in this month
-                current_date = start_date
-                for _ in range(month - 1):
-                    if current_date.month == 12:
-                        current_date = current_date.replace(year=current_date.year + 1, month=1)
-                    else:
-                        current_date = current_date.replace(month=current_date.month + 1)
-                
-                # Get days in current month
-                if current_date.month == 12:
-                    next_month = current_date.replace(year=current_date.year + 1, month=1)
-                else:
-                    next_month = current_date.replace(month=current_date.month + 1)
-                
-                days_in_month = (next_month - current_date).days
-                
+
+                # Determine actual calendar days in the current month
+                days_in_month = calendar.monthrange(current_date.year, current_date.month)[1]
+
                 # Calculate compound daily interest for this month
                 month_interest = Decimal('0')
                 daily_balance = current_balance_day1
-                
-                for day in range(days_in_month):
+
+                for _ in range(days_in_month):
                     daily_interest = daily_balance * daily_rate
                     daily_balance += daily_interest
                     month_interest += daily_interest
-                
+
                 current_balance_day1 = daily_balance
-                
+
                 # Update monthly summary
                 monthly_summary[month]['date'] = current_date.strftime('%Y-%m-%d')
                 monthly_summary[month]['day1_advance_balance'] = float(current_balance_day1)
                 monthly_summary[month]['total_interest'] += float(month_interest)
-                
+
                 breakdown.append({
                     'month': month,
                     'date': current_date.strftime('%Y-%m-%d'),
@@ -6461,6 +6450,9 @@ class LoanCalculator:
                     'closing_balance': float(current_balance_day1),
                     'calculation_formula': f"£{float(month_start_balance):,.2f} × (1 + {float(daily_rate):.6f})^{days_in_month}"
                 })
+
+                # Move to the first day of the next month
+                current_date += relativedelta(months=1)
         
         # CRITICAL FIX: Use user's actual tranche values instead of calculated amounts
         user_tranches = params.get('tranches', [])
@@ -6468,20 +6460,21 @@ class LoanCalculator:
         # Calculate remaining amount (released progressively from month 2)
         if net_amount > day1_advance:
             remaining_amount = net_amount - day1_advance
-            
+
             cumulative_released = Decimal('0')
             cumulative_balance = Decimal('0')
-            
+            current_date = start_date + relativedelta(months=1)
+
             for month in range(2, loan_term + 1):  # Start from month 2
                 # CRITICAL FIX: Use user's tranche amount for this month
                 monthly_release_amount = Decimal('0')
-                
+
                 # Find user's tranche for this month
                 for tranche in user_tranches:
                     if tranche.get('month') == month:
                         monthly_release_amount = Decimal(str(tranche.get('amount', 0)))
                         break
-                
+
                 # If no user tranche found, use calculated amount as fallback
                 if monthly_release_amount == 0:
                     monthly_release = remaining_amount / Decimal(str(loan_term - 1)) if loan_term > 1 else remaining_amount
@@ -6491,46 +6484,33 @@ class LoanCalculator:
                             monthly_release_amount = remaining_amount - cumulative_released
                         else:
                             monthly_release_amount = monthly_release
-                
+
                 cumulative_released += monthly_release_amount
                 cumulative_balance += monthly_release_amount
-                
+
                 month_start_balance = cumulative_balance - monthly_release_amount
-                
-                # Calculate compound daily interest on outstanding balance
-                current_date = start_date
-                for _ in range(month - 1):
-                    if current_date.month == 12:
-                        current_date = current_date.replace(year=current_date.year + 1, month=1)
-                    else:
-                        current_date = current_date.replace(month=current_date.month + 1)
-                
-                # Get days in current month
-                if current_date.month == 12:
-                    next_month = current_date.replace(year=current_date.year + 1, month=1)
-                else:
-                    next_month = current_date.replace(month=current_date.month + 1)
-                
-                days_in_month = (next_month - current_date).days
-                
+
+                # Use actual calendar days for current month
+                days_in_month = calendar.monthrange(current_date.year, current_date.month)[1]
+
                 # Calculate compound daily interest for existing balance
                 month_interest = Decimal('0')
                 daily_balance = month_start_balance
-                
+
                 for day in range(days_in_month):
                     if day == 0:  # Add new tranche on first day
                         daily_balance += monthly_release_amount
                     daily_interest = daily_balance * daily_rate
                     daily_balance += daily_interest
                     month_interest += daily_interest
-                
+
                 cumulative_balance = daily_balance
-                
+
                 # Update monthly summary
                 monthly_summary[month]['progressive_balance'] = float(cumulative_balance)
                 monthly_summary[month]['new_tranche_release'] = float(monthly_release_amount)
                 monthly_summary[month]['total_interest'] += float(month_interest)
-                
+
                 breakdown.append({
                     'month': month,
                     'date': current_date.strftime('%Y-%m-%d'),
@@ -6543,6 +6523,9 @@ class LoanCalculator:
                     'closing_balance': float(cumulative_balance),
                     'calculation_formula': f"(£{float(month_start_balance):,.2f} + £{float(monthly_release_amount):,.2f}) × (1 + {float(daily_rate):.6f})^{days_in_month}"
                 })
+
+                # Advance to the next month
+                current_date += relativedelta(months=1)
         
         # Create combined monthly summary
         combined_breakdown = []
@@ -6582,99 +6565,6 @@ class LoanCalculator:
         # CRITICAL FIX: Return the combined breakdown directly for frontend compatibility
         # Frontend expects a flat list of monthly entries with tranche_release fields
         return combined_breakdown
-        
-        gross_amount = Decimal(str(params.get('gross_amount', 0)))
-        day1_advance = Decimal(str(params.get('day1_net_advance', 0)))
-        tranches = params.get('tranches', [])
-        
-        # Calculate arrangement fee and legal fees to get actual loan amount
-        arrangement_fee_rate = params.get('arrangement_fee_rate', 0)
-        legal_fees = Decimal(str(params.get('legal_fees', 0)))
-        site_visit_fee = Decimal(str(params.get('site_visit_fee', 0)))
-        title_insurance_rate = params.get('title_insurance_rate', 0)
-        
-        arrangement_fee = gross_amount * Decimal(str(arrangement_fee_rate)) / Decimal('100')
-        title_insurance = gross_amount * Decimal(str(title_insurance_rate)) / Decimal('100') 
-        total_legal_fees = legal_fees + site_visit_fee + title_insurance
-        
-        # Daily compound interest rate
-        daily_rate = Decimal(str(annual_rate)) / Decimal('100') / Decimal('365')
-        
-        # Calculate remaining amount for equal monthly tranches
-        remaining_amount = gross_amount - day1_advance - arrangement_fee - total_legal_fees
-        
-        breakdown = []
-        outstanding_balance = Decimal('0')
-        
-        # Start with Day 1 advance + fees (if applicable) 
-        if day1_advance > 0:
-            outstanding_balance = day1_advance + arrangement_fee + total_legal_fees
-        else:
-            outstanding_balance = Decimal('0')
-        
-        for month in range(1, loan_term + 1):
-            # Calculate period start and end dates
-            period_start = start_date + timedelta(days=(month - 1) * 30)
-            period_end = period_start + timedelta(days=30)
-            
-            # Use realistic month days like Excel
-            period_days = 31
-            if month in [4, 6, 9, 11]:  # April, June, Sept, Nov have 30 days
-                period_days = 30
-            elif month == 2:  # February
-                period_days = 28
-            
-            # Outstanding balance at start of period
-            opening_balance = outstanding_balance
-            
-            # Get tranche for this month
-            tranche_amount = Decimal('0')
-            if month <= len(tranches):
-                tranche_data = tranches[month - 1]
-                tranche_amount = Decimal(str(tranche_data.get('amount', 0)))
-            
-            # Add new tranche BEFORE calculating interest
-            if tranche_amount > 0:
-                outstanding_balance += tranche_amount
-            
-            # Calculate compound interest for the full period using Excel methodology
-            # Formula: Outstanding * (1 + daily_rate)^period_days - Outstanding
-            if outstanding_balance > 0:
-                compound_factor = (Decimal('1') + daily_rate) ** period_days
-                new_balance = outstanding_balance * compound_factor
-                interest_earned = new_balance - outstanding_balance
-                outstanding_balance = new_balance
-            else:
-                interest_earned = Decimal('0')
-                compound_factor = Decimal('1')
-            
-            # Calculate cumulative amounts
-            total_funds_released = sum(Decimal(str(tranches[i].get('amount', 0))) for i in range(min(month, len(tranches))))
-            
-            # Calculate cumulative interest
-            total_principal_released = total_funds_released + arrangement_fee + total_legal_fees
-            if month == 1 and day1_advance > 0:
-                total_principal_released += day1_advance
-                total_funds_released += day1_advance
-            
-            breakdown.append({
-                'month': month,
-                'period_start': period_start.strftime('%Y-%m-%d'),
-                'period_end': period_end.strftime('%Y-%m-%d'),
-                'period_days': period_days,
-                'opening_balance': float(opening_balance),
-                'tranche_release': float(tranche_amount),
-                'balance_after_tranche': float(outstanding_balance - interest_earned) if interest_earned > 0 else float(outstanding_balance),
-                'interest_rate_daily': float(daily_rate * 100),
-                'compound_factor': float(compound_factor),
-                'interest_earned': float(interest_earned),
-                'closing_balance': float(outstanding_balance),
-                'total_funds_released': float(total_funds_released),
-                'total_principal_released': float(total_principal_released),
-                'cumulative_interest': float(outstanding_balance - total_principal_released) if outstanding_balance > total_principal_released else 0
-            })
-        
-        return breakdown
 
     def _calculate_bridge_capital_payment_only(self, gross_amount: Decimal, annual_rate: Decimal,
                                               loan_term: int, capital_repayment: Decimal, fees: Dict,
