@@ -94,3 +94,26 @@ def test_capital_payment_only_final_refund_formula():
     accrued = currency_to_decimal(last['interest_accrued'])
     assert accrued > 0
     assert refund.quantize(Decimal('0.01')) == (retained - accrued).quantize(Decimal('0.01'))
+
+
+def test_capital_payment_only_advance_totals_match():
+    calc = LoanCalculator()
+    params = {
+        'loan_type': 'bridge',
+        'repayment_option': 'capital_payment_only',
+        'gross_amount': 2000000,
+        'loan_term': 12,
+        'annual_rate': 12,
+        'capital_repayment': 200000,
+        'arrangement_fee_rate': 0,
+        'legal_fees': 0,
+        'site_visit_fee': 0,
+        'title_insurance_rate': 0,
+        'start_date': '2025-08-01',
+        'property_value': 3000000,
+        'payment_timing': 'advance',
+    }
+    result = calc.calculate_bridge_loan(params)
+    schedule = result['detailed_payment_schedule']
+    total_interest_schedule = sum(currency_to_decimal(r['interest_amount']) for r in schedule)
+    assert total_interest_schedule.quantize(Decimal('0.01')) == Decimal(str(result['totalInterest'])).quantize(Decimal('0.01'))

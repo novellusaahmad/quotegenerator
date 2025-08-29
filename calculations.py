@@ -4235,7 +4235,11 @@ class LoanCalculator:
                     interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_accrued_disp = interest_accrued.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_saving_disp = (interest_retained_disp - interest_accrued_disp).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    interest_amount = Decimal('0')
+                    # For advance payments, show refund as negative interest so totals match
+                    if payment_timing == 'advance':
+                        interest_amount = -interest_refund_current
+                    else:
+                        interest_amount = Decimal('0')
                     cumulative_refund += interest_refund_current
                     balance_change = f"↓ -{currency_symbol}{capital_per_payment:,.2f}" if capital_per_payment > 0 else "↔ No Change"
                     closing_balance = remaining_balance - capital_per_payment
@@ -4335,10 +4339,16 @@ class LoanCalculator:
                     pass
 
             rounding = Decimal('0.01')
-            if total_interest:
-                total_interest = total_interest.quantize(rounding, rounding=ROUND_HALF_UP)
-                calculation['totalInterest'] = float(total_interest)
-                calculation['total_interest'] = float(total_interest)
+            if payment_timing == 'advance':
+                if total_interest:
+                    total_interest = total_interest.quantize(rounding, rounding=ROUND_HALF_UP)
+                    calculation['totalInterest'] = float(total_interest)
+                    calculation['total_interest'] = float(total_interest)
+            else:
+                if total_accrued:
+                    total_accrued = total_accrued.quantize(rounding, rounding=ROUND_HALF_UP)
+                    calculation['totalInterest'] = float(total_accrued)
+                    calculation['total_interest'] = float(total_accrued)
             if total_savings:
                 total_savings = total_savings.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['interestSavings'] = float(total_savings)
@@ -4348,10 +4358,9 @@ class LoanCalculator:
             if total_refund:
                 total_refund = total_refund.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['interestRefund'] = float(total_refund)
-            if total_accrued:
+            if payment_timing == 'advance' and total_accrued:
                 total_accrued = total_accrued.quantize(rounding, rounding=ROUND_HALF_UP)
-                calculation['totalInterest'] = float(total_accrued)
-                calculation['total_interest'] = float(total_accrued)
+                calculation['total_interest_accrued'] = float(total_accrued)
 
         # Attach period info to all entries
         for i, entry in enumerate(detailed_schedule):
