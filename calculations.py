@@ -4196,12 +4196,21 @@ class LoanCalculator:
             baseline_rate = monthly_rate * 3 if payment_frequency == 'quarterly' else monthly_rate
             property_value = Decimal(str(params.get('property_value', params.get('propertyValue', 0))))
 
+            # Split retained interest evenly across periods (adjust last for rounding)
+            periods = len(payment_dates)
+            interest_retained_per_period = gross_amount * baseline_rate
+            remaining_retained = retained_interest
+
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
                 opening_balance = remaining_balance
                 interest_only = opening_balance * baseline_rate
                 annual_interest_amount = opening_balance * (annual_rate / Decimal('100'))
                 running_ltv = float((opening_balance / property_value * 100)) if property_value > 0 else 0
+
+                interest_retained_current = interest_retained_per_period if period < periods else remaining_retained
+                if period < periods:
+                    remaining_retained -= interest_retained_current
 
                 if period == 1:
                     retained_amount = retained_interest + arrangement_fee + legal_fees
@@ -4225,7 +4234,7 @@ class LoanCalculator:
                         'interest_pa': f"{baseline_rate:.6f}",
                         'scheduled_repayment': f"{currency_symbol}0.00",
                         'interest_accrued': f"{currency_symbol}{interest_only:,.2f}",
-                        'interest_retained': f"{currency_symbol}{retained_interest:,.2f}",
+                        'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
                         'interest_refund': f"{currency_symbol}0.00",
                         'running_ltv': f"{running_ltv:.2f}"
                     })
@@ -4252,7 +4261,7 @@ class LoanCalculator:
                         'interest_pa': f"{baseline_rate:.6f}",
                         'scheduled_repayment': f"{currency_symbol}{capital_per_payment:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_only:,.2f}",
-                        'interest_retained': f"{currency_symbol}0.00",
+                        'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
                         'interest_refund': f"{currency_symbol}0.00",
                         'running_ltv': f"{running_ltv:.2f}"
                     })
@@ -4279,7 +4288,7 @@ class LoanCalculator:
                         'interest_pa': f"{baseline_rate:.6f}",
                         'scheduled_repayment': f"{currency_symbol}{final_principal:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_only:,.2f}",
-                        'interest_retained': f"{currency_symbol}0.00",
+                        'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
                         'interest_refund': f"-{currency_symbol}{interest_refund:,.2f}",
                         'running_ltv': f"{running_ltv:.2f}"
                     })
