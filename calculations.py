@@ -4189,6 +4189,19 @@ class LoanCalculator:
                     interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_accrued_disp = interest_retained_disp - interest_saving_disp
                     interest_display = f"{currency_symbol}{interest_amount:,.2f}"
+
+                    principal_payment = Decimal('0')
+                    closing_balance = opening_balance
+                    balance_change = "Interest & fees retained"
+                    scheduled_repayment = Decimal('0')
+                    if payment_timing == 'arrears' and capital_per_payment > 0:
+                        principal_payment = min(capital_per_payment, opening_balance)
+                        closing_balance = opening_balance - principal_payment
+                        retained_amount += principal_payment
+                        balance_change = f"↓ -{currency_symbol}{principal_payment:,.2f}"
+                        scheduled_repayment = principal_payment
+                        remaining_balance = closing_balance
+
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),
                         'opening_balance': f"{currency_symbol}{opening_balance:,.2f}",
@@ -4196,14 +4209,14 @@ class LoanCalculator:
                         'interest_calculation': interest_calc + " + fees",
                         'interest_amount': interest_display,
                         'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
-                        'principal_payment': f"{currency_symbol}0.00",
+                        'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                         'total_payment': f"{currency_symbol}{retained_amount:,.2f}",
-                        'closing_balance': f"{currency_symbol}{opening_balance:,.2f}",
-                        'balance_change': "Interest & fees retained",
+                        'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
+                        'balance_change': balance_change,
                         'capital_outstanding': f"{currency_symbol}{opening_balance:,.2f}",
                         'annual_interest_rate': f"{annual_rate:.2f}%",
                         'interest_pa': f"{daily_rate:.6f}",
-                        'scheduled_repayment': f"{currency_symbol}0.00",
+                        'scheduled_repayment': f"{currency_symbol}{scheduled_repayment:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
                         'interest_refund': f"{currency_symbol}0.00",
@@ -4212,7 +4225,9 @@ class LoanCalculator:
                 elif period < len(payment_dates):
                     if capital_per_payment > remaining_balance:
                         capital_per_payment = remaining_balance
-                    if period == len(payment_dates) - 1 and capital_per_payment >= remaining_balance:
+                    if payment_timing == 'arrears':
+                        interest_accrued = opening_balance * daily_rate * days_in_period
+                    elif period == len(payment_dates) - 1 and capital_per_payment >= remaining_balance:
                         interest_accrued = opening_balance * daily_rate * days_in_period
                     else:
                         interest_accrued = (opening_balance - capital_per_payment) * daily_rate * days_in_period
@@ -4245,6 +4260,8 @@ class LoanCalculator:
                         'running_ltv': f"{running_ltv:.2f}"
                     })
                     remaining_balance = closing_balance
+                    if remaining_balance == 0:
+                        break
                 else:
                     final_principal = remaining_balance
                     interest_accrued = opening_balance * daily_rate * days_in_period
