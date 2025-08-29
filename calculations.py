@@ -4368,10 +4368,15 @@ class LoanCalculator:
                     total_accrued += Decimal(acc_str)
                 except Exception:
                     continue
-            diff = expected_accrued - total_accrued
-            if abs(diff) > Decimal('0.01'):
+            # Adjust final period so that interest accrued column matches
+            # the loan summary interest to the penny. Round the difference to
+            # 2 decimal places and apply it to the last entry if needed.
+            diff = (expected_accrued - total_accrued).quantize(Decimal('0.01'))
+            if diff != 0:
                 last = detailed_schedule[-1]
-                last_acc = Decimal(last.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', ''))
+                last_acc = Decimal(
+                    last.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                )
                 last['interest_accrued'] = f"{currency_symbol}{(last_acc + diff):,.2f}"
 
         # Attach period info to all entries

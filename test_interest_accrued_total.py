@@ -17,7 +17,7 @@ sys.modules['dateutil'] = types.ModuleType('dateutil')
 sys.modules['dateutil'].relativedelta = relativedelta_module
 sys.modules['dateutil.relativedelta'] = relativedelta_module
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 import pytest
 from calculations import LoanCalculator
 
@@ -45,6 +45,10 @@ def test_interest_accrued_matches_summary():
     for entry in schedule:
         amt = entry['interest_accrued'].replace('£', '').replace(',', '')
         total_accrued += Decimal(amt)
+    total_accrued = total_accrued.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-    summary_accrued = Decimal(str(result.get('retainedInterest', result.get('interestOnlyTotal', 0))))
-    assert float(total_accrued) == pytest.approx(float(summary_accrued))
+    summary_accrued = Decimal(
+        str(result.get('retainedInterest', result.get('interestOnlyTotal', 0)))
+    ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    assert total_accrued == summary_accrued
