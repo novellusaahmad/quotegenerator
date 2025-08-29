@@ -4373,16 +4373,6 @@ class LoanCalculator:
                 )
                 last['interest_accrued'] = f"{currency_symbol}{(last_acc + diff):,.2f}"
 
-        # Ensure interest refund equals retained minus accrued for capital repayments
-        if params.get('repayment_option') == 'capital_payment_only':
-            for entry in detailed_schedule:
-                try:
-                    retained_val = Decimal(entry.get('interest_retained', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', ''))
-                    accrued_val = Decimal(entry.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', ''))
-                    entry['interest_refund'] = f"{currency_symbol}{(retained_val - accrued_val):,.2f}"
-                except Exception:
-                    continue
-
         # Attach period info to all entries
         for i, entry in enumerate(detailed_schedule):
             if i < len(period_ranges):
