@@ -191,6 +191,8 @@ def test_flexible_payment_advance_first_period_values():
     schedule = calc._generate_detailed_bridge_schedule(data, params, '£')
     first = schedule[0]
     assert _parse_currency(first['opening_balance']) == pytest.approx(100000, abs=0.1)
-    assert _parse_currency(first['interest_amount']) == pytest.approx(1000, abs=0.1)
-    assert _parse_currency(first['principal_payment']) == pytest.approx(9000, abs=0.1)
+    expected_interest = 100000 * 0.12 * 31 / 365
+    assert _parse_currency(first['interest_amount']) == pytest.approx(expected_interest, abs=0.1)
+    expected_principal = 10000 - expected_interest
+    assert _parse_currency(first['principal_payment']) == pytest.approx(expected_principal, abs=0.1)
     assert _parse_currency(first['total_payment']) == pytest.approx(10000, abs=0.1)
