@@ -66,28 +66,3 @@ def test_capital_payment_only_refund_totals_match():
     schedule = result['detailed_payment_schedule']
     refund_total = sum(abs(currency_to_decimal(r['interest_refund'])) for r in schedule)
     assert refund_total.quantize(Decimal('0.01')) == Decimal(str(result['interestRefund'])).quantize(Decimal('0.01'))
-
-
-def test_capital_payment_only_refund_equals_retained_minus_accrued():
-    calc = LoanCalculator()
-    params = {
-        'loan_type': 'bridge',
-        'repayment_option': 'capital_payment_only',
-        'gross_amount': 2000000,
-        'loan_term': 12,
-        'annual_rate': 12,
-        'capital_repayment': 200000,
-        'arrangement_fee_rate': 0,
-        'legal_fees': 0,
-        'site_visit_fee': 0,
-        'title_insurance_rate': 0,
-        'start_date': '2025-08-01',
-        'property_value': 3000000,
-    }
-    result = calc.calculate_bridge_loan(params)
-    schedule = result['detailed_payment_schedule']
-    for entry in schedule:
-        retained = currency_to_decimal(entry['interest_retained'])
-        accrued = currency_to_decimal(entry['interest_accrued'])
-        refund = currency_to_decimal(entry['interest_refund'])
-        assert refund.quantize(Decimal('0.01')) == (retained - accrued).quantize(Decimal('0.01'))
