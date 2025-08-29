@@ -18,6 +18,9 @@ def test_flexible_payment_interest_split():
     }
     schedule = calc.generate_payment_schedule(quote_data)
     first = schedule[0]
-    assert math.isclose(first['interest'], 1000.0, rel_tol=1e-9)
-    assert math.isclose(first['principal'], 1000.0, rel_tol=1e-9)
-    assert math.isclose(first['closing_balance'], 99000.0, rel_tol=1e-9)
+    expected_interest = 100000 * 0.12 * 31 / 365
+    expected_principal = 2000 - expected_interest
+    expected_closing = 100000 - expected_principal
+    assert math.isclose(first['interest'], expected_interest, rel_tol=1e-9)
+    assert math.isclose(first['principal'], expected_principal, rel_tol=1e-9)
+    assert math.isclose(first['closing_balance'], expected_closing, rel_tol=1e-9)

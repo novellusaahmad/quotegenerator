@@ -75,6 +75,7 @@ def test_flexible_payment_end_ltv_matches_schedule():
         'legal_fees': 0,
         'site_visit_fee': 0,
         'title_insurance_rate': 0,
+        'start_date': '2024-01-01',
     }
     result = calc.calculate_bridge_loan(params)
     assert 'detailed_payment_schedule' in result and result['detailed_payment_schedule'], "schedule missing"
@@ -100,6 +101,7 @@ def test_flexible_payment_zero_end_ltv_increases():
         'legal_fees': 0,
         'site_visit_fee': 0,
         'title_insurance_rate': 0,
+        'start_date': '2024-01-01',
     }
     result = calc.calculate_bridge_loan(params)
     assert result['detailed_payment_schedule'], "schedule missing"

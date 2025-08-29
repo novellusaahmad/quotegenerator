@@ -8,6 +8,7 @@ def test_service_and_capital_matches_capital_payment_schedule():
         'loan_term': 12,
         'payment_frequency': 'monthly',
         'payment_timing': 'arrears',
+        'start_date': '2024-01-01',
     }
     params_capital = dict(base, repayment_option='capital_payment_only', capital_repayment=2000)
     params_service = dict(base, repayment_option='service_and_capital', capital_repayment=2000)
@@ -23,6 +24,7 @@ def test_flexible_payment_matches_capital_payment_schedule():
         'loan_term': 12,
         'payment_frequency': 'monthly',
         'payment_timing': 'arrears',
+        'start_date': '2024-01-01',
     }
     params_capital = dict(base, repayment_option='capital_payment_only', capital_repayment=2000)
     params_flex = dict(base, repayment_option='flexible_payment', flexible_payment=2000)
@@ -38,6 +40,7 @@ def test_schedule_field_sets_match_capital_format():
         'loan_term': 12,
         'payment_frequency': 'monthly',
         'payment_timing': 'arrears',
+        'start_date': '2024-01-01',
     }
     params_capital = dict(base, repayment_option='capital_payment_only', capital_repayment=2000)
     params_service = dict(base, repayment_option='service_and_capital', capital_repayment=2000)
