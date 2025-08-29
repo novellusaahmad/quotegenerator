@@ -4244,10 +4244,11 @@ class LoanCalculator:
                     remaining_balance = closing_balance
                 else:
                     final_principal = remaining_balance
-                    interest_refund_current = interest_retained_current - interest_only_full
+                    interest_accrued = (opening_balance - final_principal) * daily_rate * days_in_period
+                    interest_refund_current = interest_retained_current - interest_accrued
                     interest_saving_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    interest_accrued_disp = interest_retained_disp - interest_saving_disp
+                    interest_accrued_disp = interest_accrued.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_amount = -interest_refund_current
                     total_final_payment = final_principal - interest_refund_current
                     interest_display = f"-{currency_symbol}{interest_saving_disp:,.2f}"
