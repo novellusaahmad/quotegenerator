@@ -46,7 +46,7 @@ def test_service_and_capital_summary_matches_schedule():
     result = calc.calculate_bridge_loan(params)
     schedule = result['detailed_payment_schedule']
 
-    interest_total = sum(_currency_to_decimal(r['interest_amount']) for r in schedule)
+    interest_total = sum(_currency_to_decimal(r.get('interest_accrued', r['interest_amount'])) for r in schedule)
     capital_total = sum(_currency_to_decimal(r['principal_payment']) for r in schedule)
     closing_balance = _currency_to_decimal(schedule[-1]['closing_balance'])
 
