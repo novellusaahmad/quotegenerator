@@ -36,6 +36,7 @@ def test_interest_accrued_matches_summary():
         'site_visit_fee': 0,
         'title_insurance_rate': 0,
         'property_value': 3000000,
+        'payment_timing': 'arrears',
     }
     result = calc.calculate_bridge_loan(params)
     schedule = result.get('detailed_payment_schedule')
