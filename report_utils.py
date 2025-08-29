@@ -5,9 +5,14 @@ from calculations import LoanCalculator
 def generate_report_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Generate a detailed payment schedule for report output.
 
-    Service + Capital and Flexible Payment reports should present a payment
-    schedule identical to the Capital Payment Only option. This helper
-    provides that behaviour while leaving standard calculations untouched.
+
+    Capital Payment Only already produces the desired report format. For
+    Service + Capital and Flexible Payment the underlying engine yields a
+    different schedule layout, so this helper re-runs the calculation using
+    the Capital Payment Only breakdown to ensure all three repayment options
+    share an identical structure in generated reports while leaving standard
+    calculations untouched.
+
     """
     calc = LoanCalculator()
     repayment_option = params.get('repayment_option')
