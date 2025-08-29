@@ -4184,7 +4184,10 @@ class LoanCalculator:
                     retained_amount = retained_interest + arrangement_fee + legal_fees
                     interest_amount = retained_interest
                     interest_calc = f"Interest retained for full term: {currency_symbol}{retained_interest:,.2f}"
-                    interest_saving = Decimal('0')
+                    interest_refund_current = interest_retained_current - interest_only_full
+                    interest_saving_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    interest_accrued_disp = interest_retained_disp - interest_saving_disp
                     interest_display = f"{currency_symbol}{interest_amount:,.2f}"
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),
@@ -4192,7 +4195,7 @@ class LoanCalculator:
                         'tranche_release': f"{currency_symbol}0.00",
                         'interest_calculation': interest_calc + " + fees",
                         'interest_amount': interest_display,
-                        'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
+                        'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
                         'principal_payment': f"{currency_symbol}0.00",
                         'total_payment': f"{currency_symbol}{retained_amount:,.2f}",
                         'closing_balance': f"{currency_symbol}{opening_balance:,.2f}",
@@ -4201,18 +4204,20 @@ class LoanCalculator:
                         'annual_interest_rate': f"{annual_rate:.2f}%",
                         'interest_pa': f"{daily_rate:.6f}",
                         'scheduled_repayment': f"{currency_symbol}0.00",
-                        'interest_accrued': f"{currency_symbol}{interest_only_full:,.2f}",
-                        'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
+                        'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
+                        'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
                         'interest_refund': f"{currency_symbol}0.00",
                         'running_ltv': f"{running_ltv:.2f}"
                     })
                 elif period < len(payment_dates):
                     if capital_per_payment > remaining_balance:
                         capital_per_payment = remaining_balance
-                    interest_only = (opening_balance - capital_per_payment) * daily_rate * days_in_period
-                    interest_refund_current = max(interest_retained_current - interest_only, Decimal('0'))
+                    interest_accrued = (opening_balance - capital_per_payment) * daily_rate * days_in_period
+                    interest_refund_current = interest_retained_current - interest_accrued
+                    interest_saving_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    interest_accrued_disp = interest_retained_disp - interest_saving_disp
                     interest_amount = Decimal('0')
-                    interest_saving = interest_refund_current
                     cumulative_refund += interest_refund_current
                     balance_change = f"↓ -{currency_symbol}{capital_per_payment:,.2f}" if capital_per_payment > 0 else "↔ No Change"
                     closing_balance = remaining_balance - capital_per_payment
@@ -4222,7 +4227,7 @@ class LoanCalculator:
                         'tranche_release': f"{currency_symbol}0.00",
                         'interest_calculation': "Capital payment only",
                         'interest_amount': f"{currency_symbol}{interest_amount:,.2f}",
-                        'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
+                        'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
                         'principal_payment': f"{currency_symbol}{capital_per_payment:,.2f}",
                         'total_payment': f"{currency_symbol}{(capital_per_payment - interest_refund_current):,.2f}",
                         'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
@@ -4231,27 +4236,29 @@ class LoanCalculator:
                         'annual_interest_rate': f"{annual_rate:.2f}%",
                         'interest_pa': f"{daily_rate:.6f}",
                         'scheduled_repayment': f"{currency_symbol}{capital_per_payment:,.2f}",
-                        'interest_accrued': f"{currency_symbol}{interest_only:,.2f}",
-                        'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
-                        'interest_refund': f"{currency_symbol}{interest_refund_current:,.2f}",
+                        'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
+                        'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
+                        'interest_refund': f"{currency_symbol}{interest_saving_disp:,.2f}",
                         'running_ltv': f"{running_ltv:.2f}"
                     })
                     remaining_balance = closing_balance
                 else:
                     final_principal = remaining_balance
-                    interest_refund_current = max(interest_retained_current - interest_only_full, Decimal('0'))
+                    interest_refund_current = interest_retained_current - interest_only_full
+                    interest_saving_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    interest_accrued_disp = interest_retained_disp - interest_saving_disp
                     interest_amount = -interest_refund_current
-                    interest_saving = interest_refund_current
                     total_final_payment = final_principal - interest_refund_current
-                    interest_display = f"-{currency_symbol}{interest_refund_current:,.2f}"
+                    interest_display = f"-{currency_symbol}{interest_saving_disp:,.2f}"
                     cumulative_refund += interest_refund_current
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),
                         'opening_balance': f"{currency_symbol}{opening_balance:,.2f}",
                         'tranche_release': f"{currency_symbol}0.00",
-                        'interest_calculation': f"Final payment with interest refund: -{currency_symbol}{interest_refund_current:,.2f}",
+                        'interest_calculation': f"Final payment with interest refund: -{currency_symbol}{interest_saving_disp:,.2f}",
                         'interest_amount': interest_display,
-                        'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
+                        'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
                         'principal_payment': f"{currency_symbol}{final_principal:,.2f}",
                         'total_payment': f"{currency_symbol}{total_final_payment:,.2f}",
                         'closing_balance': f"{currency_symbol}0.00",
@@ -4260,9 +4267,9 @@ class LoanCalculator:
                         'annual_interest_rate': f"{annual_rate:.2f}%",
                         'interest_pa': f"{daily_rate:.6f}",
                         'scheduled_repayment': f"{currency_symbol}{final_principal:,.2f}",
-                        'interest_accrued': f"{currency_symbol}{interest_only_full:,.2f}",
-                        'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
-                        'interest_refund': f"-{currency_symbol}{interest_refund_current:,.2f}",
+                        'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
+                        'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
+                        'interest_refund': f"-{currency_symbol}{interest_saving_disp:,.2f}",
                         'running_ltv': f"{running_ltv:.2f}"
                     })
                     break
