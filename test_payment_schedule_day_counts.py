@@ -42,3 +42,24 @@ def test_payment_schedule_uses_calendar_days():
     schedule = result['detailed_payment_schedule']
     assert schedule[0]['days_held'] == 31
     assert schedule[1]['days_held'] == 29
+
+
+def test_payment_schedule_handles_short_month_rollover():
+    calc = LoanCalculator()
+    params = {
+        'loan_type': 'bridge',
+        'repayment_option': 'service_only',
+        'gross_amount': 100000,
+        'loan_term': 2,
+        'annual_rate': 12,
+        'arrangement_fee_rate': 0,
+        'legal_fees': 0,
+        'site_visit_fee': 0,
+        'title_insurance_rate': 0,
+        'payment_timing': 'arrears',
+        'start_date': '2026-01-29',
+    }
+    result = calc.calculate_bridge_loan(params)
+    schedule = result['detailed_payment_schedule']
+    assert schedule[0]['days_held'] == 31
+    assert schedule[0]['end_period'] == '28/02/2026'
