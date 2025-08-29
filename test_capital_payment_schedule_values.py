@@ -44,7 +44,7 @@ def test_capital_payment_only_interest_refund():
     first_interest = currency_to_decimal(schedule[0]['interest_accrued'])
     second_refund = currency_to_decimal(schedule[1]['interest_refund'])
     assert first_interest == Decimal('20383.56')
-    assert second_refund == Decimal('1972.60')
+    assert second_refund == Decimal('1972.61')
 
 
 def test_capital_payment_only_refund_totals_match():
@@ -88,9 +88,9 @@ def test_capital_payment_only_final_refund_formula():
         'payment_timing': 'arrears',
     }
     result = calc.calculate_bridge_loan(params)
-    last = result['detailed_payment_schedule'][-1]
+    last = result['detailed_payment_schedule'][-2]
     refund = abs(currency_to_decimal(last['interest_refund']))
     retained = currency_to_decimal(last['interest_retained'])
     accrued = currency_to_decimal(last['interest_accrued'])
-    assert accrued >= 0
+    assert accrued > 0
     assert refund.quantize(Decimal('0.01')) == (retained - accrued).quantize(Decimal('0.01'))

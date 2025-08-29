@@ -4212,11 +4212,14 @@ class LoanCalculator:
                 elif period < len(payment_dates):
                     if capital_per_payment > remaining_balance:
                         capital_per_payment = remaining_balance
-                    interest_accrued = (opening_balance - capital_per_payment) * daily_rate * days_in_period
+                    if period == len(payment_dates) - 1 and capital_per_payment >= remaining_balance:
+                        interest_accrued = opening_balance * daily_rate * days_in_period
+                    else:
+                        interest_accrued = (opening_balance - capital_per_payment) * daily_rate * days_in_period
                     interest_refund_current = interest_retained_current - interest_accrued
-                    interest_saving_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    interest_accrued_disp = interest_retained_disp - interest_saving_disp
+                    interest_accrued_disp = interest_accrued.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    interest_saving_disp = (interest_retained_disp - interest_accrued_disp).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_amount = Decimal('0')
                     cumulative_refund += interest_refund_current
                     balance_change = f"↓ -{currency_symbol}{capital_per_payment:,.2f}" if capital_per_payment > 0 else "↔ No Change"
@@ -4244,24 +4247,26 @@ class LoanCalculator:
                     remaining_balance = closing_balance
                 else:
                     final_principal = remaining_balance
-                    interest_accrued = (opening_balance - final_principal) * daily_rate * days_in_period
+                    interest_accrued = opening_balance * daily_rate * days_in_period
                     interest_refund_current = interest_retained_current - interest_accrued
-                    interest_saving_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_accrued_disp = interest_accrued.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    interest_refund_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_amount = -interest_refund_current
-                    total_final_payment = final_principal - interest_refund_current
-                    interest_display = f"-{currency_symbol}{interest_saving_disp:,.2f}"
+                    interest_amount_disp = interest_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    total_final_payment = final_principal + interest_amount
+                    total_final_payment_disp = total_final_payment.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    interest_display = f"-{currency_symbol}{interest_refund_disp:,.2f}"
                     cumulative_refund += interest_refund_current
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),
                         'opening_balance': f"{currency_symbol}{opening_balance:,.2f}",
                         'tranche_release': f"{currency_symbol}0.00",
-                        'interest_calculation': f"Final payment with interest refund: -{currency_symbol}{interest_saving_disp:,.2f}",
+                        'interest_calculation': f"Final payment with interest refund: {currency_symbol}{interest_refund_disp:,.2f}",
                         'interest_amount': interest_display,
-                        'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
+                        'interest_saving': f"{currency_symbol}{interest_refund_disp:,.2f}",
                         'principal_payment': f"{currency_symbol}{final_principal:,.2f}",
-                        'total_payment': f"{currency_symbol}{total_final_payment:,.2f}",
+                        'total_payment': f"{currency_symbol}{total_final_payment_disp:,.2f}",
                         'closing_balance': f"{currency_symbol}0.00",
                         'balance_change': "Loan complete + refund",
                         'capital_outstanding': f"{currency_symbol}{opening_balance:,.2f}",
@@ -4270,7 +4275,7 @@ class LoanCalculator:
                         'scheduled_repayment': f"{currency_symbol}{final_principal:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
-                        'interest_refund': f"-{currency_symbol}{interest_saving_disp:,.2f}",
+                        'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
                         'running_ltv': f"{running_ltv:.2f}"
                     })
                     break
@@ -4360,6 +4365,8 @@ class LoanCalculator:
                 entry.setdefault('end_period', end_display.strftime('%d/%m/%Y'))
                 entry.setdefault('days_held', pr['days_held'])
 
+        if 'cumulative_refund' in locals():
+            calculation['interestRefund'] = float(cumulative_refund.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
         return detailed_schedule
     
     def _generate_term_schedule(self, quote_data: Dict, currency_symbol: str = '£') -> List[Dict]:
