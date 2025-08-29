@@ -4200,6 +4200,7 @@ class LoanCalculator:
             periods = len(payment_dates)
             interest_retained_per_period = gross_amount * baseline_rate
             remaining_retained = retained_interest
+            cumulative_refund = Decimal('0')
 
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
@@ -4245,6 +4246,7 @@ class LoanCalculator:
                     interest_refund_current = max(interest_retained_current - interest_only, Decimal('0'))
                     interest_amount = Decimal('0')
                     interest_saving = interest_refund_current
+                    cumulative_refund += interest_refund_current
                     balance_change = f"↓ -{currency_symbol}{capital_per_payment:,.2f}" if capital_per_payment > 0 else "↔ No Change"
                     closing_balance = remaining_balance - capital_per_payment
                     detailed_schedule.append({
@@ -4270,15 +4272,17 @@ class LoanCalculator:
                     remaining_balance = closing_balance
                 else:
                     final_principal = remaining_balance
-                    interest_amount = -interest_refund
-                    interest_saving = max(interest_only - interest_amount, Decimal('0'))
-                    total_final_payment = final_principal - interest_refund
-                    interest_display = f"-{currency_symbol}{interest_refund:,.2f}"
+                    remaining_refund = interest_refund - cumulative_refund
+                    interest_amount = -remaining_refund
+                    interest_saving = remaining_refund
+                    total_final_payment = final_principal - remaining_refund
+                    interest_display = f"-{currency_symbol}{remaining_refund:,.2f}"
+                    cumulative_refund += remaining_refund
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),
                         'opening_balance': f"{currency_symbol}{opening_balance:,.2f}",
                         'tranche_release': f"{currency_symbol}0.00",
-                        'interest_calculation': f"Final payment with interest refund: -{currency_symbol}{interest_refund:,.2f}",
+                        'interest_calculation': f"Final payment with interest refund: -{currency_symbol}{remaining_refund:,.2f}",
                         'interest_amount': interest_display,
                         'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                         'principal_payment': f"{currency_symbol}{final_principal:,.2f}",
@@ -4291,12 +4295,12 @@ class LoanCalculator:
                         'scheduled_repayment': f"{currency_symbol}{final_principal:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_only:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
-                        'interest_refund': f"-{currency_symbol}{interest_refund:,.2f}",
+                        'interest_refund': f"-{currency_symbol}{remaining_refund:,.2f}",
                         'running_ltv': f"{running_ltv:.2f}"
                     })
                     break
 
-                if remaining_balance <= 0:
+                if remaining_balance <= 0 and cumulative_refund >= interest_refund:
                     break
 
         # Ensure interest serviced totals align with loan summary totals

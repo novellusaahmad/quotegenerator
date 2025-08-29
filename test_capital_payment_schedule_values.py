@@ -44,3 +44,25 @@ def test_capital_payment_only_interest_refund():
     second_refund = currency_to_decimal(schedule[1]['interest_refund'])
     assert first_interest == Decimal('20000.00')
     assert second_refund == Decimal('2000.00')
+
+
+def test_capital_payment_only_refund_totals_match():
+    calc = LoanCalculator()
+    params = {
+        'loan_type': 'bridge',
+        'repayment_option': 'capital_payment_only',
+        'gross_amount': 2000000,
+        'loan_term': 12,
+        'annual_rate': 12,
+        'capital_repayment': 200000,
+        'arrangement_fee_rate': 0,
+        'legal_fees': 0,
+        'site_visit_fee': 0,
+        'title_insurance_rate': 0,
+        'start_date': '2025-08-01',
+        'property_value': 3000000,
+    }
+    result = calc.calculate_bridge_loan(params)
+    schedule = result['detailed_payment_schedule']
+    refund_total = sum(abs(currency_to_decimal(r['interest_refund'])) for r in schedule)
+    assert refund_total.quantize(Decimal('0.01')) == Decimal(str(result['interestRefund'])).quantize(Decimal('0.01'))
