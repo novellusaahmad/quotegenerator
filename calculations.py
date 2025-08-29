@@ -3472,15 +3472,17 @@ class LoanCalculator:
             prev = start_date
             for pay_date in payment_dates:
                 period_start = self._normalize_date(prev)
-                period_end = self._normalize_date(pay_date)
+                period_end = self._normalize_date(pay_date) + timedelta(days=1)
                 days = (period_end - period_start).days
                 ranges.append({'start': period_start, 'end': period_end, 'days_held': days})
-                prev = pay_date
+                prev = period_end
 
-            # Ensure final period ends on loan_end
-            if ranges and ranges[-1]['end'] < loan_end:
-                ranges[-1]['end'] = loan_end
-                ranges[-1]['days_held'] = (loan_end - ranges[-1]['start']).days
+            # Ensure final period ends exactly on loan_end
+            if ranges:
+                final = ranges[-1]
+                if final['end'] != loan_end:
+                    final['end'] = loan_end
+                    final['days_held'] = (loan_end - final['start']).days
 
         return ranges
 
@@ -3668,7 +3670,7 @@ class LoanCalculator:
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
                 pr = period_ranges[i]
-                days_in_period = pr['days_held'] + (1 if payment_timing == 'arrears' else 0)
+                days_in_period = pr['days_held']
 
                 principal_payment = capital_per_payment
                 if principal_payment > remaining_balance:
@@ -3892,35 +3894,16 @@ class LoanCalculator:
             # Interest-only payments using exact day counts
 
             # Determine loan end date for accurate day calculations
-            loan_term_days_param = params.get('loan_term_days')
-            if loan_term_days_param is not None:
-                loan_end_date = start_date + timedelta(days=int(loan_term_days_param))
-            else:
-                if relativedelta:
-                    loan_end_date = start_date + relativedelta(months=loan_term)
-                else:
-                    loan_end_date = self._add_months(start_date, loan_term)
-
-            # Build period boundaries based on payment timing
-            if payment_timing == 'advance':
-                period_starts = payment_dates
-                period_ends = payment_dates[1:] + [loan_end_date]
-            else:  # arrears
-                period_starts = [start_date] + payment_dates[:-1]
-                period_ends = payment_dates
-
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
 
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
                 is_final = (period == len(payment_dates))
+                pr = period_ranges[i]
 
-                # Calculate days in this interest period
-                days_in_period = (period_ends[i] - period_starts[i]).days
-
-                # Determine period start/end for display (end is inclusive)
-                period_start = period_starts[i]
-                period_end = period_ends[i] - timedelta(days=1)
+                period_start = pr['start']
+                period_end = pr['end'] - timedelta(days=1)
+                days_in_period = pr['days_held']
                 days_held = days_in_period
 
                 interest_amount = self.calculate_simple_interest_by_days(
@@ -3929,19 +3912,16 @@ class LoanCalculator:
                 principal_payment = remaining_balance if is_final else Decimal('0')
                 total_payment = interest_amount + principal_payment
 
-                # Advance timing: no interest on final payment
                 if payment_timing == 'advance' and is_final:
                     total_payment -= interest_amount
                     interest_amount = Decimal('0')
                     interest_calc = "Interest paid in previous period"
                 else:
-                    # Build interest calculation text
                     interest_calc = (
                         f"{currency_symbol}{gross_amount:,.2f} × {annual_rate:.3f}% "
                         f"× {days_in_period}/{days_per_year} days"
                     )
 
-                # Add fees to first payment
                 if period == 1:
                     total_payment += arrangement_fee + legal_fees
                     interest_calc += " + fees"
@@ -3973,34 +3953,14 @@ class LoanCalculator:
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
 
             loan_term_days_param = params.get('loan_term_days')
-            if loan_term_days_param is not None:
-                loan_end_date = start_date + timedelta(days=int(loan_term_days_param))
-            else:
-                if relativedelta:
-                    loan_end_date = start_date + relativedelta(months=loan_term)
-                else:
-                    loan_end_date = self._add_months(start_date, loan_term)
-
-            if payment_timing == 'advance':
-                period_starts = payment_dates
-                period_ends = payment_dates[1:] + [loan_end_date]
-            else:
-                period_starts = [start_date] + payment_dates[:-1]
-                period_ends = payment_dates
-
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
 
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
-
-                if payment_timing == 'advance':
-                    days_in_period = (period_ends[i] - period_starts[i]).days
-                    period_start = period_starts[i]
-                    period_end = period_ends[i] - timedelta(days=1)
-                else:
-                    days_in_period = (period_ends[i] - period_starts[i]).days + 1
-                    period_start = period_starts[i]
-                    period_end = period_ends[i]
+                pr = period_ranges[i]
+                days_in_period = pr['days_held']
+                period_start = pr['start']
+                period_end = pr['end'] - timedelta(days=1)
 
                 if payment_frequency == 'quarterly':
                     capital_per_payment = capital_repayment * 3
@@ -4205,7 +4165,7 @@ class LoanCalculator:
                 opening_balance = remaining_balance
                 pr = period_ranges[i] if i < len(period_ranges) else None
                 if pr:
-                    days_in_period = pr['days_held'] + (1 if payment_timing == 'arrears' else 0)
+                    days_in_period = pr['days_held']
                 else:
                     days_in_period = 30
                 interest_only_full = opening_balance * daily_rate * days_in_period
@@ -4380,8 +4340,9 @@ class LoanCalculator:
         for i, entry in enumerate(detailed_schedule):
             if i < len(period_ranges):
                 pr = period_ranges[i]
+                end_display = pr['end'] - timedelta(days=1)
                 entry.setdefault('start_period', pr['start'].strftime('%d/%m/%Y'))
-                entry.setdefault('end_period', pr['end'].strftime('%d/%m/%Y'))
+                entry.setdefault('end_period', end_display.strftime('%d/%m/%Y'))
                 entry.setdefault('days_held', pr['days_held'])
 
         return detailed_schedule
@@ -4660,9 +4621,9 @@ class LoanCalculator:
                 period = i + 1
                 pr = period_ranges[i] if i < len(period_ranges) else None
                 if pr:
-                    days_in_period = pr['days_held'] + (1 if payment_timing == 'arrears' else 0)
+                    days_in_period = pr['days_held']
                     period_start = pr['start']
-                    period_end = pr['end']
+                    period_end = pr['end'] - timedelta(days=1)
                 else:
                     days_in_period = 0
                     period_start = payment_date
@@ -4774,9 +4735,9 @@ class LoanCalculator:
                 period = i + 1
                 pr = period_ranges[i] if i < len(period_ranges) else None
                 if pr:
-                    days_in_period = pr['days_held'] + (1 if payment_timing == 'arrears' else 0)
+                    days_in_period = pr['days_held']
                     period_start = pr['start']
-                    period_end = pr['end']
+                    period_end = pr['end'] - timedelta(days=1)
                 else:
                     days_in_period = 0
                     period_start = payment_date
@@ -5006,8 +4967,9 @@ class LoanCalculator:
         for i, entry in enumerate(detailed_schedule):
             if i < len(period_ranges):
                 pr = period_ranges[i]
+                end_display = pr['end'] - timedelta(days=1)
                 entry.setdefault('start_period', pr['start'].strftime('%d/%m/%Y'))
-                entry.setdefault('end_period', pr['end'].strftime('%d/%m/%Y'))
+                entry.setdefault('end_period', end_display.strftime('%d/%m/%Y'))
                 entry.setdefault('days_held', pr['days_held'])
 
         return detailed_schedule
@@ -5773,8 +5735,9 @@ class LoanCalculator:
         for i, entry in enumerate(schedule):
             if i < len(period_ranges):
                 pr = period_ranges[i]
+                end_display = pr['end'] - timedelta(days=1)
                 entry.setdefault('start_period', pr['start'].strftime('%d/%m/%Y'))
-                entry.setdefault('end_period', pr['end'].strftime('%d/%m/%Y'))
+                entry.setdefault('end_period', end_display.strftime('%d/%m/%Y'))
                 entry.setdefault('days_held', pr['days_held'])
 
         return schedule
@@ -6338,8 +6301,9 @@ class LoanCalculator:
         for i, entry in enumerate(schedule):
             if i < len(period_ranges):
                 pr = period_ranges[i]
+                end_display = pr['end'] - timedelta(days=1)
                 entry.setdefault('start_period', pr['start'].strftime('%Y-%m-%d'))
-                entry.setdefault('end_period', pr['end'].strftime('%Y-%m-%d'))
+                entry.setdefault('end_period', end_display.strftime('%Y-%m-%d'))
                 entry.setdefault('days_held', pr['days_held'])
 
         return schedule
