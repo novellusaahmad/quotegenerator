@@ -4300,78 +4300,58 @@ class LoanCalculator:
                 if remaining_balance <= 0 and cumulative_refund >= interest_refund:
                     break
 
-        # Ensure interest serviced totals align with loan summary totals
-        summary_interest = Decimal(str(calculation.get('totalInterest', calculation.get('total_interest', 0))))
-        if summary_interest and detailed_schedule:
-            total_interest_schedule = Decimal('0')
-            for entry in detailed_schedule:
-                amt_str = entry.get('interest_amount', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                try:
-                    total_interest_schedule += Decimal(amt_str)
-                except Exception:
-                    continue
-            diff = summary_interest - total_interest_schedule
-            if abs(diff) > Decimal('0.01'):
-                last = detailed_schedule[-1]
-                last_interest = Decimal(last['interest_amount'].replace(currency_symbol, '').replace(',', ''))
-                last['interest_amount'] = f"{currency_symbol}{(last_interest + diff):,.2f}"
-                tp_str = last.get('total_payment', f"{currency_symbol}0")
-                if '+' in tp_str:
-                    base_part = tp_str.split('+')[0].strip()
-                    suffix = tp_str[len(base_part):]
-                    base_val = Decimal(base_part.replace(currency_symbol, '').replace(',', ''))
-                    last['total_payment'] = f"{currency_symbol}{(base_val + diff):,.2f}{suffix}"
-                else:
-                    base_val = Decimal(tp_str.replace(currency_symbol, '').replace(',', ''))
-                    last['total_payment'] = f"{currency_symbol}{(base_val + diff):,.2f}"
-
-        # Ensure interest savings total matches loan summary
-        summary_savings = Decimal(str(calculation.get('interestSavings', calculation.get('interest_savings', 0))))
+        # Aggregate totals from the detailed schedule and update loan summary fields
         if detailed_schedule:
-            total_savings_schedule = Decimal('0')
-            for entry in detailed_schedule:
-                amt_str = entry.get('interest_saving', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                try:
-                    total_savings_schedule += Decimal(amt_str)
-                except Exception:
-                    continue
-            if params.get('repayment_option') != 'capital_payment_only':
-                diff = summary_savings - total_savings_schedule
-                if abs(diff) > Decimal('0.01'):
-                    if diff > 0:
-                        # Increase the last period's savings to match the summary
-                        last = detailed_schedule[-1]
-                        last_amt = Decimal(last.get('interest_saving', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', ''))
-                        adjusted_amt = last_amt + diff
-                        last['interest_saving'] = f"{currency_symbol}{max(adjusted_amt, Decimal('0')):,.2f}"
-                    else:
-                        # Summary is lower than schedule - adjust summary to match schedule
-                        calculation['interestSavings'] = float(total_savings_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
-
-        # Ensure interest accrued total matches the net interest in the loan summary
-        has_accrued_column = any('interest_accrued' in entry for entry in detailed_schedule)
-        if has_accrued_column:
-            expected_accrued = summary_interest
+            total_interest = Decimal('0')
+            total_savings = Decimal('0')
+            total_retained = Decimal('0')
+            total_refund = Decimal('0')
             total_accrued = Decimal('0')
             for entry in detailed_schedule:
-                acc_str = entry.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
                 try:
-                    total_accrued += Decimal(acc_str)
+                    amt = entry.get('interest_amount', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                    total_interest += Decimal(amt)
                 except Exception:
-                    continue
-            # Adjust final period so that interest accrued column matches
-            # the loan summary interest to the penny. Round the difference to
-            # 2 decimal places and apply it to the last entry if needed.
-            diff = (expected_accrued - total_accrued).quantize(Decimal('0.01'))
-            if diff != 0 and detailed_schedule:
-                last = detailed_schedule[-1]
-                last_acc = Decimal(
-                    last.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
-                )
-                adjusted = last_acc + diff
-                if params.get('repayment_option', params.get('repaymentOption', '')) == 'capital_payment_only' and adjusted < 0:
-                    adjusted = Decimal('0')
-                last['interest_accrued'] = f"{currency_symbol}{adjusted:,.2f}"
+                    pass
+                try:
+                    save_amt = entry.get('interest_saving', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                    total_savings += Decimal(save_amt)
+                except Exception:
+                    pass
+                try:
+                    ret_amt = entry.get('interest_retained', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                    total_retained += Decimal(ret_amt)
+                except Exception:
+                    pass
+                try:
+                    refund_amt = entry.get('interest_refund', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                    total_refund += Decimal(refund_amt)
+                except Exception:
+                    pass
+                try:
+                    acc_amt = entry.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                    total_accrued += Decimal(acc_amt)
+                except Exception:
+                    pass
+
+            rounding = Decimal('0.01')
+            if total_interest:
+                total_interest = total_interest.quantize(rounding, rounding=ROUND_HALF_UP)
+                calculation['totalInterest'] = float(total_interest)
+                calculation['total_interest'] = float(total_interest)
+            if total_savings:
+                total_savings = total_savings.quantize(rounding, rounding=ROUND_HALF_UP)
+                calculation['interestSavings'] = float(total_savings)
+            if total_retained:
+                total_retained = total_retained.quantize(rounding, rounding=ROUND_HALF_UP)
+                calculation['retainedInterest'] = float(total_retained)
+            if total_refund:
+                total_refund = total_refund.quantize(rounding, rounding=ROUND_HALF_UP)
+                calculation['interestRefund'] = float(total_refund)
+            if total_accrued:
+                total_accrued = total_accrued.quantize(rounding, rounding=ROUND_HALF_UP)
+                calculation['totalInterest'] = float(total_accrued)
+                calculation['total_interest'] = float(total_accrued)
 
         # Attach period info to all entries
         for i, entry in enumerate(detailed_schedule):
@@ -5002,6 +4982,49 @@ class LoanCalculator:
                 if remaining_balance <= 0:
                     break
         
+        # Aggregate totals from the detailed schedule and update loan summary fields
+        if detailed_schedule:
+            total_interest = Decimal('0')
+            total_savings = Decimal('0')
+            total_retained = Decimal('0')
+            total_refund = Decimal('0')
+            for entry in detailed_schedule:
+                try:
+                    amt = entry.get('interest_amount', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                    total_interest += Decimal(amt)
+                except Exception:
+                    pass
+                try:
+                    save_amt = entry.get('interest_saving', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                    total_savings += Decimal(save_amt)
+                except Exception:
+                    pass
+                try:
+                    ret_amt = entry.get('interest_retained', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                    total_retained += Decimal(ret_amt)
+                except Exception:
+                    pass
+                try:
+                    refund_amt = entry.get('interest_refund', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
+                    total_refund += Decimal(refund_amt)
+                except Exception:
+                    pass
+
+            rounding = Decimal('0.01')
+            if total_interest:
+                total_interest = total_interest.quantize(rounding, rounding=ROUND_HALF_UP)
+                calculation['totalInterest'] = float(total_interest)
+                calculation['total_interest'] = float(total_interest)
+            if total_savings:
+                total_savings = total_savings.quantize(rounding, rounding=ROUND_HALF_UP)
+                calculation['interestSavings'] = float(total_savings)
+            if total_retained:
+                total_retained = total_retained.quantize(rounding, rounding=ROUND_HALF_UP)
+                calculation['retainedInterest'] = float(total_retained)
+            if total_refund:
+                total_refund = total_refund.quantize(rounding, rounding=ROUND_HALF_UP)
+                calculation['interestRefund'] = float(total_refund)
+
         # Attach period info to all entries
         for i, entry in enumerate(detailed_schedule):
             if i < len(period_ranges):
