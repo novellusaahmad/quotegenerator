@@ -63,7 +63,7 @@ def generate_report_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     if repayment_option in ('service_and_capital', 'flexible_payment'):
         cap_params = params.copy()
         cap_params['repayment_option'] = 'capital_payment_only'
-        if repayment_option == 'flexible_payment' and 'capital_repayment' not in cap_params:
+        if repayment_option == 'flexible_payment':
             cap_params['capital_repayment'] = params.get('flexible_payment', params.get('flexiblePayment', 0))
         return calc.calculate_bridge_loan(cap_params).get('detailed_payment_schedule', [])
     return calc.calculate_bridge_loan(params).get('detailed_payment_schedule', [])
