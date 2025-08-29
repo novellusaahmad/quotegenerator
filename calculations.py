@@ -457,7 +457,8 @@ class LoanCalculator:
             net_for_calculation = net_amount if amount_input_type == 'net' else None
             logging.info(f"Bridge flexible_payment calculation: gross={gross_amount}, flexible_payment={flexible_payment}")
             calculation = self._calculate_bridge_flexible(
-                gross_amount, annual_rate, loan_term, flexible_payment, fees, interest_type, net_for_calculation, loan_term_days, use_360_days
+                gross_amount, annual_rate, loan_term, flexible_payment, fees, interest_type,
+                net_for_calculation, loan_term_days, use_360_days, start_date, payment_frequency, payment_timing
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
@@ -1988,7 +1989,7 @@ class LoanCalculator:
         }
     
     def _calculate_bridge_flexible(self, gross_amount: Decimal, annual_rate: Decimal,
-                                 loan_term: int, flexible_payment: Decimal, fees: Dict, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False) -> Dict:
+                                 loan_term: int, flexible_payment: Decimal, fees: Dict, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False, start_date: datetime = None, payment_frequency: str = 'monthly', payment_timing: str = 'advance') -> Dict:
         """Calculate bridge loan with flexible payments"""
         
         # If net_amount is provided, this is a net-to-gross conversion
@@ -2032,61 +2033,50 @@ class LoanCalculator:
             )
         else:
             # Standard gross-to-net calculation with flexible payments
-            # Use proper month-by-month calculation for declining balance
+            # Use exact day counts for each period
             total_interest = Decimal('0')
 
-            if loan_term_days is not None:
-                # Use precise day-based calculation when loan_term_days is provided
-                days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                daily_rate = annual_rate / Decimal('100') / days_per_year
-                days_in_period = Decimal(str(loan_term_days)) / Decimal(str(loan_term))
-                import logging
-                logging.info(
-                    f"Bridge flexible using loan_term_days={loan_term_days}, days_per_year={days_per_year}, days_in_period={days_in_period:.2f}")
+            if start_date is None:
+                start_date = datetime.now()
 
-                for month in range(loan_term):
-                    if interest_type == 'simple':
-                        interest_payment = remaining_balance * daily_rate * days_in_period
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            daily_rate = annual_rate / Decimal('100') / days_per_year
+
+            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
+            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+
+            for pr in period_ranges:
+                days_in_period = Decimal(str(pr['days_held']))
+
+                if payment_timing == 'advance':
+                    balance_before = remaining_balance
+                    interest_due = balance_before * daily_rate * days_in_period
+                    if flexible_payment >= interest_due:
+                        interest_paid = interest_due
+                        principal_payment = flexible_payment - interest_due
+                        if principal_payment > remaining_balance:
+                            principal_payment = remaining_balance
+                            interest_paid = flexible_payment - principal_payment
+                        remaining_balance = balance_before - principal_payment
                     else:
-                        compound_factor = (Decimal('1') + daily_rate) ** int(days_in_period)
-                        interest_payment = remaining_balance * (compound_factor - Decimal('1'))
+                        interest_paid = flexible_payment
+                        principal_payment = Decimal('0')
+                        unpaid_interest = interest_due - flexible_payment
+                        remaining_balance = balance_before + unpaid_interest
+                else:
+                    interest_due = remaining_balance * daily_rate * days_in_period
+                    interest_paid = min(flexible_payment, interest_due)
+                    principal_payment = flexible_payment - interest_paid if flexible_payment > interest_paid else Decimal('0')
+                    if principal_payment > remaining_balance:
+                        principal_payment = remaining_balance
+                        interest_paid = flexible_payment - principal_payment
+                    unpaid_interest = interest_due - interest_paid
+                    remaining_balance = remaining_balance + unpaid_interest - principal_payment
 
-                    total_interest += interest_payment
-                    principal_payment = max(Decimal('0'), flexible_payment - interest_payment)
-                    remaining_balance -= principal_payment
-                    if remaining_balance <= 0:
-                        break
-            else:
-                effective_monthly_rate = annual_rate / Decimal('12')
+                total_interest += interest_paid
 
-                # Apply interest calculation based on type using average month length
-                for month in range(loan_term):
-                    if interest_type == 'simple':
-                        interest_payment = remaining_balance * (effective_monthly_rate / 100)
-                    elif interest_type == 'compound_daily':
-                        days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                        daily_rate = annual_rate / Decimal('100') / days_per_year
-                        days_in_period = Decimal('365.25') / Decimal('12')
-                        compound_factor = (Decimal('1') + daily_rate) ** int(days_in_period)
-                        interest_payment = remaining_balance * (compound_factor - Decimal('1'))
-                    elif interest_type == 'compound_monthly':
-                        monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
-                        compound_factor = (Decimal('1') + monthly_rate_decimal)
-                        interest_payment = remaining_balance * (compound_factor - Decimal('1'))
-                    elif interest_type == 'compound_quarterly':
-                        quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
-                        quarterly_factor = (Decimal('1') + quarterly_rate) ** (Decimal('1')/Decimal('3'))
-                        interest_payment = remaining_balance * (quarterly_factor - Decimal('1'))
-                    else:
-                        interest_payment = remaining_balance * (effective_monthly_rate / 100)
-
-                    total_interest += interest_payment
-
-                    principal_payment = max(Decimal('0'), flexible_payment - interest_payment)
-                    remaining_balance -= principal_payment
-
-                    if remaining_balance <= 0:
-                        break
+                if remaining_balance <= 0:
+                    break
         
         # Calculate interest savings compared to interest-only payments using same interest type
         if loan_term_days is not None:
@@ -4066,6 +4056,8 @@ class LoanCalculator:
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
                 pr = period_ranges[i]
+                period_start = pr['start']
+                period_end = pr['end']
                 days_in_period = Decimal(str(pr['days_held']))
 
                 if payment_timing == 'advance':
@@ -4118,6 +4110,9 @@ class LoanCalculator:
                 )
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
+                    'start_period': period_start.strftime('%d/%m/%Y'),
+                    'end_period': period_end.strftime('%d/%m/%Y'),
+                    'days_held': int(days_in_period),
                     'opening_balance': f"{currency_symbol}{opening_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
@@ -4126,7 +4121,8 @@ class LoanCalculator:
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and interest_paid > 0 else ""),
                     'closing_balance': f"{currency_symbol}{remaining_balance:,.2f}",
-                    'balance_change': balance_change
+                    'balance_change': balance_change,
+                    'flexible_payment_calculation': f"{currency_symbol}{principal_payment:,.2f} + {currency_symbol}{interest_paid:,.2f} = {currency_symbol}{flexible_payment:,.2f}"
                 })
 
                 if remaining_balance <= 0:
