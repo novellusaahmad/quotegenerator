@@ -48,3 +48,4 @@ def test_schedule_field_sets_match_capital_format():
     cap_fields = set(cap[0].keys())
     assert set(svc[0].keys()) == cap_fields
     assert set(flex[0].keys()) == cap_fields
+
