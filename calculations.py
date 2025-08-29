@@ -3523,7 +3523,15 @@ class LoanCalculator:
         repayment_option = quote_data.get('repaymentOption', quote_data.get('repayment_option', 'none'))
         gross_amount = Decimal(str(quote_data.get('grossAmount', quote_data.get('gross_amount', 0))))
         loan_term = int(quote_data.get('loanTerm', quote_data.get('loan_term', 12)))
-        annual_rate = Decimal(str(quote_data.get('interestRate', quote_data.get('interest_rate', 0))))
+        # Accept both legacy and new field names for interest rate
+        annual_rate = Decimal(
+            str(
+                quote_data.get(
+                    'interestRate',
+                    quote_data.get('interest_rate', quote_data.get('annual_rate', 0))
+                )
+            )
+        )
         monthly_rate = annual_rate / 12
         
         # Get fees for first month display
@@ -3723,7 +3731,15 @@ class LoanCalculator:
 
             payment_timing = quote_data.get('payment_timing', 'advance')
             payment_frequency = quote_data.get('payment_frequency', 'monthly')
-            flexible_payment = Decimal(str(quote_data.get('flexible_payment', 0)))
+            # "Flexible Payment per Payment" may arrive in either snake or camel case
+            flexible_payment = Decimal(
+                str(
+                    quote_data.get(
+                        'flexible_payment',
+                        quote_data.get('flexiblePayment', 0)
+                    )
+                )
+            )
 
             start_date_str = quote_data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
             if isinstance(start_date_str, str):
