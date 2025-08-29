@@ -86,7 +86,7 @@ def test_flexible_payment_end_ltv_matches_schedule():
     assert result['endLtv'] == pytest.approx(expected_end_ltv)
 
 
-def test_flexible_payment_zero_end_ltv_equals_start():
+def test_flexible_payment_zero_end_ltv_increases():
     calc = LoanCalculator()
     params = {
         'loan_type': 'bridge',
@@ -102,9 +102,9 @@ def test_flexible_payment_zero_end_ltv_equals_start():
         'title_insurance_rate': 0,
     }
     result = calc.calculate_bridge_loan(params)
-    assert result['payment_schedule'], "schedule missing"
-    last = result['payment_schedule'][-1]
+    assert result['detailed_payment_schedule'], "schedule missing"
+    last = result['detailed_payment_schedule'][-1]
     closing_balance = parse_currency(last.get('closing_balance') or last.get('closingBalance'))
     expected_end_ltv = float((closing_balance / Decimal('200000')) * 100)
-    assert result['startLTV'] == pytest.approx(result['endLTV'])
     assert result['endLTV'] == pytest.approx(expected_end_ltv)
+    assert result['endLTV'] > result['startLTV']
