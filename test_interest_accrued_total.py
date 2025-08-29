@@ -47,8 +47,16 @@ def test_interest_accrued_matches_summary():
         total_accrued += Decimal(amt)
     total_accrued = total_accrued.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-    summary_accrued = Decimal(
-        str(result.get('retainedInterest', result.get('interestOnlyTotal', 0)))
-    ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    summary_accrued = Decimal(str(result.get('totalInterest', 0))).quantize(
+        Decimal('0.01'), rounding=ROUND_HALF_UP
+    )
+
+    retained = Decimal(str(result.get('retainedInterest'))).quantize(
+        Decimal('0.01'), rounding=ROUND_HALF_UP
+    )
+    interest_only_total = Decimal(str(result.get('interestOnlyTotal'))).quantize(
+        Decimal('0.01'), rounding=ROUND_HALF_UP
+    )
 
     assert total_accrued == summary_accrued
+    assert retained == interest_only_total
