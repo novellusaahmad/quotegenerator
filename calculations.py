@@ -4241,8 +4241,10 @@ class LoanCalculator:
                 elif period < len(payment_dates):
                     if capital_per_payment > remaining_balance:
                         capital_per_payment = remaining_balance
+                    interest_only = (opening_balance - capital_per_payment) * baseline_rate
+                    interest_refund_current = max(interest_retained_current - interest_only, Decimal('0'))
                     interest_amount = Decimal('0')
-                    interest_saving = max(interest_only - interest_amount, Decimal('0'))
+                    interest_saving = interest_refund_current
                     balance_change = f"↓ -{currency_symbol}{capital_per_payment:,.2f}" if capital_per_payment > 0 else "↔ No Change"
                     closing_balance = remaining_balance - capital_per_payment
                     detailed_schedule.append({
@@ -4253,7 +4255,7 @@ class LoanCalculator:
                         'interest_amount': f"{currency_symbol}{interest_amount:,.2f}",
                         'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                         'principal_payment': f"{currency_symbol}{capital_per_payment:,.2f}",
-                        'total_payment': f"{currency_symbol}{capital_per_payment:,.2f}",
+                        'total_payment': f"{currency_symbol}{(capital_per_payment - interest_refund_current):,.2f}",
                         'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
                         'balance_change': balance_change,
                         'capital_outstanding': f"{currency_symbol}{opening_balance:,.2f}",
@@ -4262,7 +4264,7 @@ class LoanCalculator:
                         'scheduled_repayment': f"{currency_symbol}{capital_per_payment:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_only:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
-                        'interest_refund': f"{currency_symbol}0.00",
+                        'interest_refund': f"{currency_symbol}{interest_refund_current:,.2f}",
                         'running_ltv': f"{running_ltv:.2f}"
                     })
                     remaining_balance = closing_balance
