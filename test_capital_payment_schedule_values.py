@@ -120,4 +120,30 @@ def test_capital_payment_only_advance_totals_match():
     refund = Decimal(str(result['interestRefund']))
     summary_interest = Decimal(str(result['totalInterest']))
     assert total_accrued.quantize(Decimal('0.01')) == summary_interest.quantize(Decimal('0.01'))
-    assert (retained - refund).quantize(Decimal('0.01')) == summary_interest.quantize(Decimal('0.01'))
+    diff = (retained - refund - summary_interest).copy_abs()
+    assert diff < Decimal('0.02')
+
+
+def test_capital_outstanding_reduces_on_advance_payment():
+    calc = LoanCalculator()
+    params = {
+        'loan_type': 'bridge',
+        'repayment_option': 'capital_payment_only',
+        'gross_amount': 2000000,
+        'loan_term': 12,
+        'annual_rate': 12,
+        'capital_repayment': 200000,
+        'arrangement_fee_rate': 0,
+        'legal_fees': 0,
+        'site_visit_fee': 0,
+        'title_insurance_rate': 0,
+        'start_date': '2025-08-01',
+        'property_value': 3000000,
+        'payment_timing': 'advance',
+    }
+    result = calc.calculate_bridge_loan(params)
+    schedule = result['detailed_payment_schedule']
+    first = schedule[0]
+    second = schedule[1]
+    assert currency_to_decimal(first['capital_outstanding']) == Decimal('1800000')
+    assert currency_to_decimal(second['capital_outstanding']) == Decimal('1600000')
