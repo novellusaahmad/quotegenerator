@@ -4192,24 +4192,27 @@ class LoanCalculator:
             # Get retained interest and refund info from calculation results
             retained_interest = Decimal(str(calculation.get('retainedInterest', total_interest)))
             interest_refund = Decimal(str(calculation.get('interestRefund', 0)))
-            monthly_rate = annual_rate / Decimal('100') / Decimal('12')
-            baseline_rate = monthly_rate * 3 if payment_frequency == 'quarterly' else monthly_rate
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            daily_rate = annual_rate / Decimal('100') / days_per_year
             property_value = Decimal(str(params.get('property_value', params.get('propertyValue', 0))))
 
-            # Split retained interest evenly across periods (adjust last for rounding)
             periods = len(payment_dates)
-            interest_retained_per_period = gross_amount * baseline_rate
             remaining_retained = retained_interest
             cumulative_refund = Decimal('0')
 
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
                 opening_balance = remaining_balance
-                interest_only = opening_balance * baseline_rate
+                pr = period_ranges[i] if i < len(period_ranges) else None
+                if pr:
+                    days_in_period = pr['days_held'] + (1 if payment_timing == 'arrears' else 0)
+                else:
+                    days_in_period = 30
+                interest_only_full = opening_balance * daily_rate * days_in_period
                 annual_interest_amount = opening_balance * (annual_rate / Decimal('100'))
                 running_ltv = float((opening_balance / property_value * 100)) if property_value > 0 else 0
 
-                interest_retained_current = interest_retained_per_period if period < periods else remaining_retained
+                interest_retained_current = gross_amount * daily_rate * days_in_period
                 if period < periods:
                     remaining_retained -= interest_retained_current
 
@@ -4232,9 +4235,9 @@ class LoanCalculator:
                         'balance_change': "Interest & fees retained",
                         'capital_outstanding': f"{currency_symbol}{opening_balance:,.2f}",
                         'annual_interest_rate': f"{annual_rate:.2f}%",
-                        'interest_pa': f"{baseline_rate:.6f}",
+                        'interest_pa': f"{daily_rate:.6f}",
                         'scheduled_repayment': f"{currency_symbol}0.00",
-                        'interest_accrued': f"{currency_symbol}{interest_only:,.2f}",
+                        'interest_accrued': f"{currency_symbol}{interest_only_full:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
                         'interest_refund': f"{currency_symbol}0.00",
                         'running_ltv': f"{running_ltv:.2f}"
@@ -4242,7 +4245,7 @@ class LoanCalculator:
                 elif period < len(payment_dates):
                     if capital_per_payment > remaining_balance:
                         capital_per_payment = remaining_balance
-                    interest_only = (opening_balance - capital_per_payment) * baseline_rate
+                    interest_only = (opening_balance - capital_per_payment) * daily_rate * days_in_period
                     interest_refund_current = max(interest_retained_current - interest_only, Decimal('0'))
                     interest_amount = Decimal('0')
                     interest_saving = interest_refund_current
@@ -4262,7 +4265,7 @@ class LoanCalculator:
                         'balance_change': balance_change,
                         'capital_outstanding': f"{currency_symbol}{opening_balance:,.2f}",
                         'annual_interest_rate': f"{annual_rate:.2f}%",
-                        'interest_pa': f"{baseline_rate:.6f}",
+                        'interest_pa': f"{daily_rate:.6f}",
                         'scheduled_repayment': f"{currency_symbol}{capital_per_payment:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_only:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
@@ -4291,9 +4294,9 @@ class LoanCalculator:
                         'balance_change': "Loan complete + refund",
                         'capital_outstanding': f"{currency_symbol}{opening_balance:,.2f}",
                         'annual_interest_rate': f"{annual_rate:.2f}%",
-                        'interest_pa': f"{baseline_rate:.6f}",
+                        'interest_pa': f"{daily_rate:.6f}",
                         'scheduled_repayment': f"{currency_symbol}{final_principal:,.2f}",
-                        'interest_accrued': f"{currency_symbol}{interest_only:,.2f}",
+                        'interest_accrued': f"{currency_symbol}{interest_only_full:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
                         'interest_refund': f"-{currency_symbol}{remaining_refund:,.2f}",
                         'running_ltv': f"{running_ltv:.2f}"
@@ -6722,23 +6725,24 @@ class LoanCalculator:
         return to the borrower when capital is repaid early.
         """
         
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
         if loan_term_days is not None:
-            # Use configurable day count for term calculation
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(loan_term_days) / days_per_year
+            total_days = Decimal(str(loan_term_days))
+        elif start_date is not None:
+            end_date = self._add_months(start_date, loan_term)
+            total_days = Decimal((end_date - start_date).days)
         else:
-            term_years = Decimal(loan_term) / Decimal('12')
-        
+            total_days = days_per_year * Decimal(loan_term) / Decimal('12')
+        term_years = total_days / days_per_year
+
         # Calculate full interest for the entire loan term (retained at day 1)
         if interest_type == 'simple':
-            total_retained_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+            daily_rate = annual_rate / Decimal('100') / days_per_year
+            total_retained_interest = gross_amount * daily_rate * total_days
         elif interest_type == 'compound_daily':
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
             daily_rate = annual_rate / Decimal('100') / days_per_year
-            if loan_term_days is not None:
-                days_total = Decimal(str(loan_term_days))
-            else:
-                days_total = days_per_year * term_years
+            days_total = total_days
             compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
             total_amount = gross_amount * compound_factor
             total_retained_interest = total_amount - gross_amount

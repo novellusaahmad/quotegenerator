@@ -42,8 +42,8 @@ def test_capital_payment_only_interest_refund():
     schedule = result['detailed_payment_schedule']
     first_interest = currency_to_decimal(schedule[0]['interest_accrued'])
     second_refund = currency_to_decimal(schedule[1]['interest_refund'])
-    assert first_interest == Decimal('20000.00')
-    assert second_refund == Decimal('2000.00')
+    assert first_interest == Decimal('20383.56')
+    assert second_refund == Decimal('1972.60')
 
 
 def test_capital_payment_only_refund_totals_match():

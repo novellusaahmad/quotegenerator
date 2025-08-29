@@ -43,14 +43,16 @@ def test_interest_retained_split_monthly():
         'site_visit_fee': 0,
         'title_insurance_rate': 0,
         'property_value': 3000000,
+        'start_date': '2025-01-01',
     }
     result = calc.calculate_bridge_loan(params)
     schedule = result['detailed_payment_schedule']
     retained_total = Decimal(str(result['retainedInterest']))
     periods = len(schedule)
     first_period_retained = Decimal(schedule[0]['interest_retained'].replace('£', '').replace(',', ''))
-    # Expect first period retained to be roughly total/periods
-    expected = retained_total / periods
+    expected = calc.calculate_simple_interest_by_days(
+        Decimal('2000000'), Decimal('7'), 31, False
+    )
     assert abs(first_period_retained - expected) < Decimal('0.01')
     # Ensure total retained across schedule equals retainedInterest
     total_split = sum(Decimal(entry['interest_retained'].replace('£', '').replace(',', '')) for entry in schedule)
