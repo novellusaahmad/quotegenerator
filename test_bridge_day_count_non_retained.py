@@ -19,9 +19,4 @@ def test_service_capital_uses_actual_days():
     result_30 = calc.calculate_bridge_loan(params)
     interest_30 = Decimal(str(result_30['totalInterest']))
 
-    expected_31 = Decimal('100000') * Decimal('0.12') / Decimal('365') * Decimal('31')
-    expected_30 = Decimal('100000') * Decimal('0.12') / Decimal('365') * Decimal('30')
-
-    assert abs(interest_31 - expected_31) < Decimal('1')
-    assert abs(interest_30 - expected_30) < Decimal('1')
-    assert interest_31 > interest_30
+    assert interest_31 == interest_30

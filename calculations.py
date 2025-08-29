@@ -1930,29 +1930,24 @@ class LoanCalculator:
             if remaining_balance <= 0:
                 break
 
-            # Capital paid at start if in advance
-            if payment_timing == 'advance' and capital_per_payment > 0:
-                pay = min(capital_per_payment, remaining_balance)
-                remaining_balance -= pay
+            opening_balance = remaining_balance
 
             if loan_term_days is not None and interest_type == 'simple':
                 days_per_year = Decimal('360') if use_360_days else Decimal('365')
                 days_per_period = Decimal(str(loan_term_days)) / Decimal(str(periods))
-                interest_payment = remaining_balance * (annual_rate / Decimal('100')) * (days_per_period / days_per_year)
+                interest_payment = opening_balance * (annual_rate / Decimal('100')) * (days_per_period / days_per_year)
             else:
                 # Only simple interest is fully supported with frequency/timing.
                 if interest_type == 'simple':
-                    interest_payment = remaining_balance * rate_per_period
+                    interest_payment = opening_balance * rate_per_period
                 else:
                     # Fallback to original monthly calculation for other types
-                    interest_payment = remaining_balance * rate_per_period
+                    interest_payment = opening_balance * rate_per_period
 
             total_interest += interest_payment
 
-            # Capital paid at end if in arrears
-            if payment_timing == 'arrears' and capital_per_payment > 0:
-                pay = min(capital_per_payment, remaining_balance)
-                remaining_balance -= pay
+            pay = min(capital_per_payment, remaining_balance)
+            remaining_balance -= pay
 
         # Interest-only comparison assumes no capital repayments
         interest_only_total = gross_amount * rate_per_period * periods
@@ -3629,10 +3624,7 @@ class LoanCalculator:
                 principal_payment = remaining_balance if is_final_payment else 0
                 total_payment = interest_payment + principal_payment
 
-                # Advance timing: no interest on final payment
-                if payment_timing == 'advance' and is_final_payment:
-                    total_payment -= interest_payment
-                    interest_payment = Decimal('0')
+                # Interest is charged for the full period regardless of payment timing
 
                 # Add fees to first payment
                 if not fees_added_to_first:
@@ -3688,25 +3680,17 @@ class LoanCalculator:
                 pr = period_ranges[i]
                 days_in_period = pr['days_held']
 
+                opening_balance = remaining_balance
                 principal_payment = capital_per_payment
                 if principal_payment > remaining_balance:
                     principal_payment = remaining_balance
 
-                if payment_timing == 'advance':
-                    remaining_balance -= principal_payment
-                    opening_balance = remaining_balance
-                    balance_for_interest = remaining_balance
-                else:
-                    opening_balance = remaining_balance
-                    balance_for_interest = remaining_balance
-
                 interest_payment = self.calculate_simple_interest_by_days(
-                    balance_for_interest, annual_rate, days_in_period, use_360_days
+                    opening_balance, annual_rate, days_in_period, use_360_days
                 )
                 total_payment = interest_payment + principal_payment
 
-                if payment_timing == 'arrears':
-                    remaining_balance -= principal_payment
+                remaining_balance -= principal_payment
 
                 if not fees_added_to_first:
                     total_payment += fees_deducted_first
@@ -3714,10 +3698,6 @@ class LoanCalculator:
                     fees_added_to_first = True
                 else:
                     note = None
-
-                if payment_timing == 'advance' and remaining_balance == 0:
-                    total_payment -= interest_payment
-                    interest_payment = Decimal('0')
 
                 schedule_entry = {
                     'period': period,
@@ -3776,7 +3756,7 @@ class LoanCalculator:
                             principal_payment = remaining_balance
                         interest_paid = flexible_payment - principal_payment
                         remaining_balance = balance_before - principal_payment
-                        opening_balance = remaining_balance
+                        opening_balance = balance_before
                     total_payment = flexible_payment
                 else:  # arrears
                     opening_balance = remaining_balance
@@ -3796,9 +3776,7 @@ class LoanCalculator:
                 else:
                     note = None
 
-                if payment_timing == 'advance' and remaining_balance == 0:
-                    total_payment = principal_payment
-                    interest_paid = Decimal('0')
+                # Interest is always charged for the full period
 
                 entry = {
                     'period': period,
@@ -3928,15 +3906,10 @@ class LoanCalculator:
                 principal_payment = remaining_balance if is_final else Decimal('0')
                 total_payment = interest_amount + principal_payment
 
-                if payment_timing == 'advance' and is_final:
-                    total_payment -= interest_amount
-                    interest_amount = Decimal('0')
-                    interest_calc = "Interest paid in previous period"
-                else:
-                    interest_calc = (
-                        f"{currency_symbol}{gross_amount:,.2f} × {annual_rate:.3f}% "
-                        f"× {days_in_period}/{days_per_year} days"
-                    )
+                interest_calc = (
+                    f"{currency_symbol}{gross_amount:,.2f} × {annual_rate:.3f}% "
+                    f"× {days_in_period}/{days_per_year} days"
+                )
 
                 if period == 1:
                     total_payment += arrangement_fee + legal_fees
@@ -3988,23 +3961,18 @@ class LoanCalculator:
                 elif capital_per_payment > remaining_balance:
                     capital_per_payment = remaining_balance
 
-                if payment_timing == 'advance':
-                    principal_payment = capital_per_payment
-                    remaining_balance -= principal_payment
-                    opening_balance = remaining_balance
-                    balance_for_interest = remaining_balance
-                else:
-                    opening_balance = remaining_balance
-                    balance_for_interest = remaining_balance
-                    principal_payment = capital_per_payment
+                opening_balance = remaining_balance
+                principal_payment = capital_per_payment
+                if principal_payment > remaining_balance:
+                    principal_payment = remaining_balance
 
                 if loan_term_days_param is not None:
                     interest_amount = self.calculate_simple_interest_by_days(
-                        balance_for_interest, annual_rate, days_in_period, use_360_days)
+                        opening_balance, annual_rate, days_in_period, use_360_days)
                     interest_only = self.calculate_simple_interest_by_days(
                         gross_amount, annual_rate, days_in_period, use_360_days)
                     interest_calc_base = (
-                        f"{currency_symbol}{balance_for_interest:,.2f} × {annual_rate:.3f}% "
+                        f"{currency_symbol}{opening_balance:,.2f} × {annual_rate:.3f}% "
                         f"× {days_in_period}/{days_per_year} days")
                 else:
                     if payment_frequency == 'quarterly':
@@ -4013,25 +3981,19 @@ class LoanCalculator:
                     else:
                         period_rate = annual_rate / Decimal('100') / Decimal('12')
                         rate_display = annual_rate / Decimal('12')
-                    interest_amount = balance_for_interest * period_rate
+                    interest_amount = opening_balance * period_rate
                     interest_only = gross_amount * period_rate
                     interest_calc_base = (
-                        f"{currency_symbol}{balance_for_interest:,.2f} × {rate_display:.3f}%")
+                        f"{currency_symbol}{opening_balance:,.2f} × {rate_display:.3f}%")
 
-                if payment_timing == 'arrears':
-                    remaining_balance -= principal_payment
+                remaining_balance -= principal_payment
 
                 total_payment = interest_amount + principal_payment
 
                 interest_saving = max(interest_only - interest_amount, Decimal('0'))
 
                 is_final = remaining_balance == 0
-                if payment_timing == 'advance' and is_final:
-                    total_payment -= interest_amount
-                    interest_amount = Decimal('0')
-                    interest_calc = "Interest paid in previous period"
-                else:
-                    interest_calc = interest_calc_base
+                interest_calc = interest_calc_base
 
                 if period == 1:
                     total_payment += arrangement_fee + legal_fees
@@ -4076,54 +4038,30 @@ class LoanCalculator:
 
                 if payment_timing == 'advance':
                     balance_before = remaining_balance
-                    if flexible_payment <= rate * balance_before:
-                        principal_payment = Decimal('0')
-                        interest_paid = flexible_payment
-                        remaining_balance = balance_before
-                    else:
-                        principal_payment = (flexible_payment - rate * balance_before) / (1 - rate)
-                        if principal_payment > remaining_balance:
-                            principal_payment = remaining_balance
+                    interest_paid = balance_before * rate
+                    principal_payment = flexible_payment - interest_paid
+                    if principal_payment > remaining_balance:
+                        principal_payment = remaining_balance
                         interest_paid = flexible_payment - principal_payment
-                        remaining_balance = balance_before - principal_payment
-                    opening_balance = remaining_balance
+                    remaining_balance = balance_before - principal_payment
+                    opening_balance = balance_before
                     total_payment = flexible_payment
-                    if remaining_balance == 0:
-                        total_payment = principal_payment
-                        interest_paid = Decimal('0')
-                        interest_calc = "Interest paid in previous period"
-                    else:
-                        interest_calc = (
-                            f"Flexible payment {currency_symbol}{flexible_payment:,.2f} allocated (Interest: {currency_symbol}{interest_paid:,.2f}, Principal: {currency_symbol}{principal_payment:,.2f})"
-                        )
+                    interest_calc = (
+                        f"Flexible payment {currency_symbol}{flexible_payment:,.2f} allocated (Interest: {currency_symbol}{interest_paid:,.2f}, Principal: {currency_symbol}{principal_payment:,.2f})"
+                    )
                 else:
                     opening_balance = remaining_balance
                     interest_amount = remaining_balance * rate
-                    projected_principal = flexible_payment - interest_amount if flexible_payment > interest_amount else Decimal('0')
-                    is_final = (period == len(payment_dates)) or (projected_principal >= remaining_balance)
-
-                    if is_final:
-                        interest_paid = Decimal('0')
-                        if projected_principal > 0:
-                            principal_payment = remaining_balance
-                            total_payment = principal_payment
-                        else:
-                            principal_payment = Decimal('0')
-                            total_payment = Decimal('0')
-                        interest_calc = "Interest paid in previous period"
-                    else:
-                        if flexible_payment > interest_amount:
-                            principal_payment = projected_principal
-                            if principal_payment > remaining_balance:
-                                principal_payment = remaining_balance
-                        else:
-                            principal_payment = Decimal('0')
-                        interest_paid = min(flexible_payment, interest_amount)
-                        total_payment = flexible_payment
-                        interest_calc = (
-                            f"Flexible payment {currency_symbol}{flexible_payment:,.2f} allocated (Interest: {currency_symbol}{interest_paid:,.2f}, Principal: {currency_symbol}{principal_payment:,.2f})"
-                        )
+                    interest_paid = min(flexible_payment, interest_amount)
+                    principal_payment = flexible_payment - interest_paid
+                    if principal_payment > remaining_balance:
+                        principal_payment = remaining_balance
+                        interest_paid = flexible_payment - principal_payment
+                    total_payment = flexible_payment
                     remaining_balance -= principal_payment
+                    interest_calc = (
+                        f"Flexible payment {currency_symbol}{flexible_payment:,.2f} allocated (Interest: {currency_symbol}{interest_paid:,.2f}, Principal: {currency_symbol}{principal_payment:,.2f})"
+                    )
 
                 interest_only = gross_amount * rate
                 if interest_paid == 0 and interest_calc == "Interest paid in previous period":
@@ -4426,10 +4364,7 @@ class LoanCalculator:
 
             total_payment = interest_payment + principal_payment
 
-            # Advance timing: final payment has no interest
-            if payment_timing == 'advance' and is_final_payment:
-                total_payment -= interest_payment
-                interest_payment = Decimal('0')
+            # Interest is charged for the full period regardless of payment timing
             
             # Add fees to first payment
             if not fees_added_to_first:
@@ -4596,12 +4531,7 @@ class LoanCalculator:
                 principal_payment = remaining_balance if is_final else Decimal('0')
                 total_payment = interest_amount + principal_payment
 
-                if payment_timing == 'advance' and is_final:
-                    total_payment -= interest_amount
-                    interest_amount = Decimal('0')
-                    interest_calc = "Interest paid in previous period"
-                else:
-                    interest_calc = interest_calc_text
+                interest_calc = interest_calc_text
 
                 # Add fees to first payment but do not show 'fees' text
                 if period == 1:
@@ -4655,23 +4585,19 @@ class LoanCalculator:
                     capital_per_payment = remaining_balance
 
                 opening_balance = remaining_balance
-                if payment_timing == 'advance':
-                    principal_payment = capital_per_payment
-                    remaining_balance -= principal_payment
-                    balance_for_interest = remaining_balance
-                else:
-                    balance_for_interest = remaining_balance
-                    principal_payment = capital_per_payment
+                principal_payment = capital_per_payment
+                if principal_payment > remaining_balance:
+                    principal_payment = remaining_balance
 
                 if loan_term_days_param is not None:
                     interest_amount = self.calculate_simple_interest_by_days(
-                        balance_for_interest, annual_rate, days_in_period, use_360_days
+                        opening_balance, annual_rate, days_in_period, use_360_days
                     )
                     interest_only = self.calculate_simple_interest_by_days(
                         gross_amount, annual_rate, days_in_period, use_360_days
                     )
                     interest_calc_base = (
-                        f"{currency_symbol}{balance_for_interest:,.2f} × {annual_rate:.3f}% "
+                        f"{currency_symbol}{opening_balance:,.2f} × {annual_rate:.3f}% "
                         f"× {days_in_period}/{days_per_year} days"
                     )
                 else:
@@ -4681,26 +4607,20 @@ class LoanCalculator:
                     else:
                         period_rate = annual_rate / Decimal('100') / Decimal('12')
                         rate_display = annual_rate / Decimal('12')
-                    interest_amount = balance_for_interest * period_rate
+                    interest_amount = opening_balance * period_rate
                     interest_only = gross_amount * period_rate
                     interest_calc_base = (
-                        f"{currency_symbol}{balance_for_interest:,.2f} × {rate_display:.3f}%"
+                        f"{currency_symbol}{opening_balance:,.2f} × {rate_display:.3f}%"
                     )
 
-                if payment_timing == 'arrears':
-                    remaining_balance -= principal_payment
+                remaining_balance -= principal_payment
 
                 total_payment = interest_amount + principal_payment
 
                 interest_saving = max(interest_only - interest_amount, Decimal('0'))
 
                 is_final = remaining_balance == 0
-                if payment_timing == 'advance' and is_final:
-                    total_payment -= interest_amount
-                    interest_amount = Decimal('0')
-                    interest_calc = "Interest paid in previous period"
-                else:
-                    interest_calc = interest_calc_base
+                interest_calc = interest_calc_base
 
                 if period == 1:
                     total_payment += arrangement_fee + legal_fees
