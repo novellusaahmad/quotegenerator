@@ -924,7 +924,7 @@ class LoanCalculator {
         const isFlexiblePayment = repaymentOption === 'flexible_payment';
         const isCapitalPaymentOnly = repaymentOption === 'capital_payment_only';
 
-        if ((isServicedOnly || isServicedCapital || isCapitalPaymentOnly || isFlexiblePayment) && headerRow) {
+        if (headerRow) {
             if (isServicedOnly) {
                 headerRow.innerHTML = `
                     <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
@@ -934,21 +934,7 @@ class LoanCalculator {
                     <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
                     <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Interest Serviced</th>
                 `;
-            } else if (isServicedCapital) {
-                headerRow.innerHTML = `
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Serviced</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Saving</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal Payment</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
-                    <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Balance Change</th>
-                `;
-            } else if (isCapitalPaymentOnly) {
+            } else if (isServicedCapital || isFlexiblePayment || isCapitalPaymentOnly) {
                 headerRow.innerHTML = `
                     <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
                     <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
@@ -963,23 +949,9 @@ class LoanCalculator {
                     <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Refund</th>
                     <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Running LTV</th>
                 `;
-            } else {
-                headerRow.innerHTML = `
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Amount</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Saving</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal Payment</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
-                    <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
-                    <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Balance Change</th>
-                `;
+            } else if (this.defaultScheduleHeader) {
+                headerRow.innerHTML = this.defaultScheduleHeader;
             }
-        } else if (headerRow && this.defaultScheduleHeader) {
-            headerRow.innerHTML = this.defaultScheduleHeader;
         }
 
         if (isServicedOnly) {
@@ -1026,77 +998,7 @@ class LoanCalculator {
             return;
         }
 
-        if (isServicedCapital || isFlexiblePayment) {
-            let totalInterest = 0;
-            let totalInterestSaving = 0;
-            let totalPrincipal = 0;
-            let totalPayment = 0;
-
-            results.detailed_payment_schedule.forEach((row, index) => {
-                const tr = document.createElement('tr');
-                tr.style.border = '1px solid #000';
-                tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
-
-                const fixedRow = {
-                    start_period: row.start_period,
-                    end_period: row.end_period,
-                    days_held: row.days_held,
-                    opening_balance: String(row.opening_balance || '').replace(/[£€]/g, currentSymbol),
-                    interest_calculation: String(row.interest_calculation || '').replace(/[£€]/g, currentSymbol).replace(/\s*\+?\s*fees/gi, '').trim(),
-                    interest_amount: String(row.interest_amount || '').replace(/[£€]/g, currentSymbol),
-                    interest_saving: String(row.interest_saving || '').replace(/[£€]/g, currentSymbol),
-                    principal_payment: String(row.principal_payment || '').replace(/[£€]/g, currentSymbol),
-                    total_payment: String(row.total_payment || '').replace(/[£€]/g, currentSymbol),
-                    closing_balance: String(row.closing_balance || '').replace(/[£€]/g, currentSymbol),
-                    balance_change: row.balance_change
-                };
-
-                const interestNumeric = parseFloat(fixedRow.interest_amount.replace(/[^0-9.-]/g, '')) || 0;
-                const interestSavingNumeric = parseFloat(fixedRow.interest_saving.replace(/[^0-9.-]/g, '')) || 0;
-                const principalNumeric = parseFloat(fixedRow.principal_payment.replace(/[^0-9.-]/g, '')) || 0;
-                const totalNumeric = parseFloat(fixedRow.total_payment.replace(/[^0-9.-]/g, '')) || 0;
-
-                totalInterest += interestNumeric;
-                totalInterestSaving += interestSavingNumeric;
-                totalPrincipal += principalNumeric;
-                totalPayment += totalNumeric;
-
-                tr.innerHTML = `
-                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.start_period}</td>
-                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.end_period}</td>
-                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.days_held}</td>
-                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.opening_balance}</td>
-                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.interest_calculation}</td>
-                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.interest_amount}</td>
-                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.interest_saving}</td>
-                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.principal_payment}</td>
-                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.total_payment}</td>
-                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.closing_balance}</td>
-                    <td class="py-1 px-2 text-center" style="color: #000; font-size: 0.875rem;">${fixedRow.balance_change}</td>
-                `;
-
-                scheduleBody.appendChild(tr);
-            });
-
-            const totalRow = document.createElement('tr');
-            totalRow.style.border = '1px solid #000';
-            totalRow.style.background = '#f8f9fa';
-            totalRow.innerHTML = `
-                <td colspan="5" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">Total</td>
-                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalInterest.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalInterestSaving.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalPrincipal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalPayment.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                <td class="py-1 px-2" style="border-right: 1px solid #000;"></td>
-                <td class="py-1 px-2"></td>
-            `;
-            scheduleBody.appendChild(totalRow);
-
-            console.log('Detailed payment schedule displayed with', results.detailed_payment_schedule.length, 'rows');
-            return;
-        }
-
-        if (isCapitalPaymentOnly) {
+        if (isServicedCapital || isFlexiblePayment || isCapitalPaymentOnly) {
             let totalScheduled = 0;
             let totalAccrued = 0;
             let totalRetained = 0;
@@ -1153,7 +1055,7 @@ class LoanCalculator {
             totalRow.style.border = '1px solid #000';
             totalRow.style.background = '#f8f9fa';
             totalRow.innerHTML = `
-                <td colspan="7" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">Total</td>
+                <td colspan="7" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">Total</td>
                 <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalScheduled.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                 <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalAccrued.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                 <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalRetained.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
