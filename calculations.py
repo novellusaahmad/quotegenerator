@@ -318,7 +318,9 @@ class LoanCalculator:
         title_insurance_rate = Decimal(str(params.get('title_insurance_rate', 0)))
         exit_fee_rate = Decimal(str(params.get('exit_fee_rate', 0)))
         capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
-        flexible_payment = Decimal(str(params.get('flexible_payment', 0)))
+        # Accept both snake_case and camelCase for flexible payment
+        flexible_payment_input = params.get('flexible_payment', params.get('flexiblePayment', 0))
+        flexible_payment = Decimal(str(flexible_payment_input))
         
         # Convert interest rate to annual if needed
         if rate_input_type == 'monthly':
@@ -522,7 +524,8 @@ class LoanCalculator:
             'loan_type': 'bridge',
             'interest_type': interest_type,
             'capital_repayment': params.get('capital_repayment', 1000),
-            'flexible_payment': params.get('flexible_payment', 2000),
+            # Preserve the original flexible payment value, checking both naming styles
+            'flexible_payment': params.get('flexible_payment', params.get('flexiblePayment', 2000)),
             'payment_timing': payment_timing,
             'payment_frequency': payment_frequency,
             'monthlyPayment': adjusted_payment,  # Override with frequency-adjusted amount
@@ -4042,7 +4045,9 @@ class LoanCalculator:
                     
         elif repayment_option == 'flexible_payment':
             # Flexible payment schedule
-            flexible_payment = Decimal(str(params.get('flexible_payment', 30000)))
+            flexible_payment = Decimal(
+                str(params.get('flexible_payment', params.get('flexiblePayment', 30000)))
+            )
 
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
@@ -4824,7 +4829,9 @@ class LoanCalculator:
         
         elif repayment_option == 'flexible_payment':
             # Flexible payments (same as bridge loan)
-            flexible_payment_amount = Decimal(str(params.get('flexible_payment', 1000)))
+            flexible_payment_amount = Decimal(
+                str(params.get('flexible_payment', params.get('flexiblePayment', 1000)))
+            )
             
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
