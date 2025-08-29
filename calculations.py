@@ -4239,17 +4239,17 @@ class LoanCalculator:
                     remaining_balance = closing_balance
                 else:
                     final_principal = remaining_balance
-                    remaining_refund = interest_refund - cumulative_refund
-                    interest_amount = -remaining_refund
-                    interest_saving = remaining_refund
-                    total_final_payment = final_principal - remaining_refund
-                    interest_display = f"-{currency_symbol}{remaining_refund:,.2f}"
-                    cumulative_refund += remaining_refund
+                    interest_refund_current = max(interest_retained_current - interest_only_full, Decimal('0'))
+                    interest_amount = -interest_refund_current
+                    interest_saving = interest_refund_current
+                    total_final_payment = final_principal - interest_refund_current
+                    interest_display = f"-{currency_symbol}{interest_refund_current:,.2f}"
+                    cumulative_refund += interest_refund_current
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),
                         'opening_balance': f"{currency_symbol}{opening_balance:,.2f}",
                         'tranche_release': f"{currency_symbol}0.00",
-                        'interest_calculation': f"Final payment with interest refund: -{currency_symbol}{remaining_refund:,.2f}",
+                        'interest_calculation': f"Final payment with interest refund: -{currency_symbol}{interest_refund_current:,.2f}",
                         'interest_amount': interest_display,
                         'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
                         'principal_payment': f"{currency_symbol}{final_principal:,.2f}",
@@ -4262,7 +4262,7 @@ class LoanCalculator:
                         'scheduled_repayment': f"{currency_symbol}{final_principal:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_only_full:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_current:,.2f}",
-                        'interest_refund': f"-{currency_symbol}{remaining_refund:,.2f}",
+                        'interest_refund': f"-{currency_symbol}{interest_refund_current:,.2f}",
                         'running_ltv': f"{running_ltv:.2f}"
                     })
                     break
@@ -4338,7 +4338,10 @@ class LoanCalculator:
                 last_acc = Decimal(
                     last.get('interest_accrued', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', '')
                 )
-                last['interest_accrued'] = f"{currency_symbol}{(last_acc + diff):,.2f}"
+                adjusted = last_acc + diff
+                if params.get('repayment_option', params.get('repaymentOption', '')) == 'capital_payment_only' and adjusted < 0:
+                    adjusted = Decimal('0')
+                last['interest_accrued'] = f"{currency_symbol}{adjusted:,.2f}"
 
         # Attach period info to all entries
         for i, entry in enumerate(detailed_schedule):
@@ -6676,41 +6679,34 @@ class LoanCalculator:
         remaining_balance = gross_amount
         interest_refund = Decimal('0')
 
-        # Use actual calendar days for interest refund when a start date is provided
+        # Use actual calendar days when start date is provided
         if start_date:
-            end_date = self._add_months(start_date, loan_term)
             current_date = start_date
             months_step = 3 if payment_frequency == 'quarterly' else 1
-
             for _ in range(periods):
-                if remaining_balance <= 0:
-                    break
-                pay = min(capital_per_payment, remaining_balance)
-
+                next_date = self._add_months(current_date, months_step)
+                days_in_period = (next_date - current_date).days
+                interest_retained_current = gross_amount * (annual_rate / Decimal('100')) * Decimal(days_in_period) / days_per_year
                 if payment_timing == 'advance':
-                    days_remaining = (end_date - current_date).days
-                    current_date = self._add_months(current_date, months_step)
-                else:
-                    next_date = self._add_months(current_date, months_step)
-                    days_remaining = (end_date - next_date).days
-                    current_date = next_date
-
-                interest_refund += pay * (annual_rate / Decimal('100')) * Decimal(days_remaining) / days_per_year
-                remaining_balance -= pay
+                    remaining_balance = max(remaining_balance - capital_per_payment, Decimal('0'))
+                    interest_accrued_current = remaining_balance * (annual_rate / Decimal('100')) * Decimal(days_in_period) / days_per_year
+                else:  # arrears
+                    interest_accrued_current = remaining_balance * (annual_rate / Decimal('100')) * Decimal(days_in_period) / days_per_year
+                    remaining_balance = max(remaining_balance - capital_per_payment, Decimal('0'))
+                interest_refund += max(interest_retained_current - interest_accrued_current, Decimal('0'))
+                current_date = next_date
         else:
-            # Fallback to proportional method when dates aren't available
-            for i in range(periods):
-                if remaining_balance <= 0:
-                    break
-                pay = min(capital_per_payment, remaining_balance)
+            # Fallback without exact dates
+            period_fraction = Decimal('3')/Decimal('12') if payment_frequency == 'quarterly' else Decimal('1')/Decimal('12')
+            for _ in range(periods):
+                interest_retained_current = gross_amount * (annual_rate / Decimal('100')) * period_fraction
                 if payment_timing == 'advance':
-                    remaining_periods = periods - i
+                    remaining_balance = max(remaining_balance - capital_per_payment, Decimal('0'))
+                    interest_accrued_current = remaining_balance * (annual_rate / Decimal('100')) * period_fraction
                 else:
-                    remaining_periods = periods - i - 1
-                if remaining_periods < 0:
-                    remaining_periods = 0
-                interest_refund += total_retained_interest * (pay / gross_amount) * (Decimal(remaining_periods) / Decimal(periods))
-                remaining_balance -= pay
+                    interest_accrued_current = remaining_balance * (annual_rate / Decimal('100')) * period_fraction
+                    remaining_balance = max(remaining_balance - capital_per_payment, Decimal('0'))
+                interest_refund += max(interest_retained_current - interest_accrued_current, Decimal('0'))
 
         final_balance = remaining_balance
         net_interest_paid = total_retained_interest - interest_refund
