@@ -3423,7 +3423,11 @@ class LoanCalculator:
                     payment_date = self._add_months(start_date, month)
                 else:
                     # Payment at end of month
-                    payment_date = self._add_months(start_date, month + 1) - timedelta(days=1)
+                    next_date = self._add_months(start_date, month + 1)
+                    if next_date.day < start_date.day:
+                        payment_date = next_date
+                    else:
+                        payment_date = next_date - timedelta(days=1)
 
                 # Only include payments within loan period
                 if payment_date <= loan_end_date:
