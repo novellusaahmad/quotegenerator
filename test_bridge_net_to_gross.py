@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import datetime
 import pytest
 from calculations import LoanCalculator
 
@@ -267,19 +268,18 @@ def test_flexible_payment_net_to_gross_roundtrip(payment_frequency, payment_timi
         Decimal("0"),
     )
 
-    period_interest = (
-        calc._calculate_periodic_interest(
-            gross_amount, annual_rate / Decimal("100"), payment_frequency
-        )
-        if payment_timing == "advance"
-        else Decimal("0")
+    # Net advance is the result of gross-to-net flexible payment calculation
+    net_result = calc._calculate_bridge_flexible(
+        gross_amount,
+        annual_rate,
+        loan_term,
+        flexible_payment,
+        fees,
+        start_date=datetime(2024, 1, 1),
+        payment_frequency=payment_frequency,
+        payment_timing=payment_timing,
     )
-    net_advance = (
-        gross_amount
-        - fees["arrangementFee"]
-        - fees["totalLegalFees"]
-        - period_interest
-    )
+    net_advance = Decimal(str(net_result['netAdvance']))
 
     gross_calculated = calc._calculate_gross_from_net_bridge(
         net_advance,
@@ -330,21 +330,16 @@ def test_capital_payment_only_net_to_gross_roundtrip(payment_frequency, payment_
         Decimal("0"),
     )
 
-    period_interest = (
-        calc._calculate_periodic_interest(
-            gross_amount, annual_rate / Decimal("100"), payment_frequency
-        )
-        if payment_timing == "advance"
-        else Decimal("0")
+    net_result = calc._calculate_bridge_capital_payment_only(
+        gross_amount,
+        annual_rate,
+        loan_term,
+        capital_repayment,
+        fees,
+        payment_frequency=payment_frequency,
+        payment_timing=payment_timing,
     )
-    net_amount = (
-        gross_amount
-        - fees["arrangementFee"]
-        - fees["legalFees"]
-        - fees["siteVisitFee"]
-        - fees["titleInsurance"]
-        - period_interest
-    )
+    net_amount = Decimal(str(net_result['netAdvance']))
 
     gross_calculated = calc._calculate_gross_from_net_bridge(
         net_amount,

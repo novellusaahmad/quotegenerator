@@ -39,12 +39,14 @@ def test_bridge_capital_only_net_matches_input():
         Decimal('0'),
     )
 
-    res = calc._calculate_bridge_capital_only(
+    res = calc._calculate_bridge_capital_payment_only(
         gross,
         annual_rate,
         loan_term,
         capital_repayment,
         fees,
+        payment_frequency='monthly',
+        payment_timing='advance'
     )
 
     assert res['netAdvance'] == pytest.approx(float(net_amount))

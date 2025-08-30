@@ -2766,73 +2766,31 @@ class LoanCalculator:
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'flexible_payment':
-                # Flexible Payment: adjust for payment timing and frequency
-                if payment_timing == 'advance':
-                    if payment_frequency == 'quarterly':
-                        period_factor = annual_rate_decimal / Decimal('4')
-                    else:
-                        period_factor = annual_rate_decimal / Decimal('12')
-                    if use_360_days:
-                        period_factor = period_factor * Decimal('365') / Decimal('360')
-                    denominator = (
-                        Decimal('1')
-                        - arrangement_fee_decimal
-                        - title_insurance_decimal
-                        - period_factor
-                    )
-                    logging.info("BRIDGE FLEXIBLE PAYMENT NET-TO-GROSS (advance):")
-                    logging.info(
-                        "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Period Interest - Title insurance)"
-                    )
-                    logging.info(f"Period interest factor: {period_factor:.6f}")
-                else:
-                    denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
-                    logging.info("BRIDGE FLEXIBLE PAYMENT NET-TO-GROSS (arrears):")
-                    logging.info(
-                        "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)"
-                    )
-
-                gross_amount = (net_amount + total_legal_fees) / denominator
-
+                # Flexible Payment: borrower receives the full gross amount
+                gross_amount = net_amount
                 logging.info(
-                    f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f}"
-                    + (f" - {period_factor:.6f}" if payment_timing == 'advance' else "")
-                    + f") = £{gross_amount:.2f}"
+                    "BRIDGE FLEXIBLE PAYMENT NET-TO-GROSS: Gross equals net (fees paid separately)"
                 )
 
             elif repayment_option == 'capital_payment_only':
-                # Capital Payment Only: interest for first period retained upfront
-                if payment_timing == 'advance':
-                    if payment_frequency == 'quarterly':
-                        period_factor = annual_rate_decimal / Decimal('4')
-                    else:
-                        period_factor = annual_rate_decimal / Decimal('12')
-                    if use_360_days:
-                        period_factor = period_factor * Decimal('365') / Decimal('360')
-                    denominator = (
-                        Decimal('1')
-                        - arrangement_fee_decimal
-                        - title_insurance_decimal
-                        - period_factor
-                    )
-                    logging.info("BRIDGE CAPITAL PAYMENT ONLY NET-TO-GROSS (advance):")
-                    logging.info(
-                        "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Period Interest - Title insurance)"
-                    )
-                    logging.info(f"Period interest factor: {period_factor:.6f}")
-                else:
-                    denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
-                    logging.info("BRIDGE CAPITAL PAYMENT ONLY NET-TO-GROSS (arrears):")
-                    logging.info(
-                        "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)"
-                    )
+                # Capital Payment Only: interest for entire term retained upfront
+                interest_factor = annual_rate_decimal * term_years
+                fixed_fees = (legal_fees + site_visit_fee) * Decimal('2')
+                denominator = (
+                    Decimal('1')
+                    - arrangement_fee_decimal
+                    - (title_insurance_decimal * Decimal('2'))
+                    - interest_factor
+                )
+                gross_amount = (net_amount + fixed_fees) / denominator
 
-                gross_amount = (net_amount + total_legal_fees) / denominator
-
+                logging.info("BRIDGE CAPITAL PAYMENT ONLY NET-TO-GROSS:")
                 logging.info(
-                    f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f}"
-                    + (f" - {period_factor:.6f}" if payment_timing == 'advance' else "")
-                    + f") = £{gross_amount:.2f}"
+                    "Formula: Gross = (Net + 2×(Legals + Site)) / (1 - Arrangement Fee - 2×Title - Term Interest)"
+                )
+                logging.info(f"Term interest factor: {interest_factor:.6f}")
+                logging.info(
+                    f"Gross = (£{net_amount} + £{fixed_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal*Decimal('2'):.6f} - {interest_factor:.6f})"
                 )
                 
             else:
@@ -2845,9 +2803,14 @@ class LoanCalculator:
                 logging.info(f"Gross = £{gross_amount:.2f}")
             
             # Verification - calculate actual net from computed gross
-            verification_fees = self._calculate_fees(gross_amount, arrangement_fee_rate, legal_fees,
-                                                   site_visit_fee, title_insurance_rate, 0)
-            actual_net = gross_amount - verification_fees['arrangementFee'] - verification_fees['totalLegalFees']
+            verification_fees = self._calculate_fees(
+                gross_amount, arrangement_fee_rate, legal_fees,
+                site_visit_fee, title_insurance_rate, 0
+            )
+            if repayment_option == 'flexible_payment':
+                actual_net = gross_amount
+            else:
+                actual_net = gross_amount - verification_fees['arrangementFee'] - verification_fees['totalLegalFees']
             accuracy = (actual_net / net_amount * Decimal('100'))
             
             logging.info(f"VERIFICATION:")
