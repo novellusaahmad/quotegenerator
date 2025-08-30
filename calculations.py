@@ -4105,10 +4105,8 @@ class LoanCalculator:
                     f"{currency_symbol}{opening_balance:,.2f} × {annual_rate:.3f}% × {int(days_in_period)}/{days_per_year} days"
                 )
 
-                interest_only = self.calculate_simple_interest_by_days(
-                    gross_amount, annual_rate, int(days_in_period), use_360_days
-                )
-                interest_saving = max(interest_only - interest_paid, Decimal('0'))
+                interest_retained_current = gross_amount * daily_rate * days_in_period
+                interest_saving = max(interest_retained_current - interest_paid, Decimal('0'))
 
                 fees_added = Decimal('0')
                 if period == 1:
@@ -4129,6 +4127,11 @@ class LoanCalculator:
                     f"{currency_symbol}{principal_payment:,.2f} = "
                     f"{currency_symbol}{remaining_balance:,.2f}"
                 )
+
+                interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                interest_saving_disp = interest_saving.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                interest_paid_disp = interest_paid.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
                     'start_period': period_start.strftime('%d/%m/%Y'),
@@ -4137,20 +4140,20 @@ class LoanCalculator:
                     'opening_balance': f"{currency_symbol}{opening_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
-                    'interest_amount': f"{currency_symbol}{interest_paid:,.2f}",
-                    'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
+                    'interest_amount': f"{currency_symbol}{interest_paid_disp:,.2f}",
+                    'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and interest_paid > 0 else ""),
                     'closing_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                     'balance_change': balance_change,
-                    'flexible_payment_calculation': f"{currency_symbol}{principal_payment:,.2f} + {currency_symbol}{interest_paid:,.2f} = {currency_symbol}{flexible_per_payment:,.2f}",
+                    'flexible_payment_calculation': f"{currency_symbol}{principal_payment:,.2f} + {currency_symbol}{interest_paid_disp:,.2f} = {currency_symbol}{flexible_per_payment:,.2f}",
                     'amortisation_calculation': amortisation_calc,
                     'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
                     'annual_interest_rate': f"{annual_rate:.2f}%",
                     'interest_pa': f"{daily_rate:.6f}",
                     'scheduled_repayment': f"{currency_symbol}{flexible_per_payment:,.2f}",
-                    'interest_accrued': f"{currency_symbol}{interest_paid:,.2f}",
-                    'interest_retained': f"{currency_symbol}0.00",
+                    'interest_accrued': f"{currency_symbol}{interest_paid_disp:,.2f}",
+                    'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
                     'interest_refund': f"{currency_symbol}0.00",
                     'running_ltv': f"{running_ltv:.2f}"
                 })
