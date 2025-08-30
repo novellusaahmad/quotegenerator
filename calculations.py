@@ -487,10 +487,24 @@ class LoanCalculator:
                 # For service-only loans, total interest equals the interest-only total
                 calculation['interestOnlyTotal'] = float(total_interest_from_schedule)
         elif repayment_option == 'service_and_capital':
-            # Service + Capital - always calculate using the derived gross amount
-            logging.info(f"Bridge service_and_capital calculation: gross={gross_amount}, capital_repayment={capital_repayment}")
+            # Service + Capital - use the derived gross amount and, for net inputs,
+            # run the gross-to-net calculation with the original net advance.
+            net_for_calculation = net_amount if amount_input_type == 'net' else None
+            logging.info(
+                f"Bridge service_and_capital calculation: gross={gross_amount}, capital_repayment={capital_repayment}"
+            )
             calculation = self._calculate_bridge_service_capital(
-                gross_amount, monthly_rate, loan_term, capital_repayment, fees, interest_type, None, loan_term_days, use_360_days, payment_frequency, payment_timing
+                gross_amount,
+                monthly_rate,
+                loan_term,
+                capital_repayment,
+                fees,
+                interest_type,
+                net_for_calculation,
+                loan_term_days,
+                use_360_days,
+                payment_frequency,
+                payment_timing,
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
