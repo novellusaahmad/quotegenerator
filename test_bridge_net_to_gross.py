@@ -139,6 +139,69 @@ def test_bridge_interest_only_net_matches_input():
     assert res['netAdvance'] == pytest.approx(float(net_amount))
 
 
+def test_interest_only_total_interest_matches_between_paths():
+    """Total interest should be the same for gross-to-net and net-to-gross paths."""
+    calc = LoanCalculator()
+    net_amount = Decimal('90000')
+    annual_rate = Decimal('12')
+    loan_term = 9
+    arrangement_fee_rate = Decimal('2')
+    legal_fees = Decimal('1000')
+    site_visit_fee = Decimal('500')
+    title_insurance_rate = Decimal('1')
+    loan_term_days = 274
+
+    gross = calc._calculate_gross_from_net_bridge(
+        net_amount,
+        annual_rate,
+        loan_term,
+        'service_only',
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        loan_term_days,
+        use_360_days=False,
+    )
+
+    fees = calc._calculate_fees(
+        gross,
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        Decimal('0'),
+    )
+
+    monthly_rate = annual_rate / Decimal('12')
+
+    res_net_to_gross = calc._calculate_bridge_interest_only(
+        gross,
+        monthly_rate,
+        loan_term,
+        fees,
+        'simple',
+        net_amount,
+        loan_term_days,
+        use_360_days=False,
+    )
+
+    res_gross_to_net = calc._calculate_bridge_interest_only(
+        gross,
+        monthly_rate,
+        loan_term,
+        fees,
+        'simple',
+        net_amount=None,
+        loan_term_days=loan_term_days,
+        use_360_days=False,
+    )
+
+    assert res_net_to_gross['totalInterest'] == pytest.approx(
+        res_gross_to_net['totalInterest']
+    )
+
+
 def test_service_only_net_to_gross_roundtrip():
     """Service-only net to gross should invert gross to net when no interest is deducted."""
     calc = LoanCalculator()

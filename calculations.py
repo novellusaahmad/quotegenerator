@@ -1911,70 +1911,63 @@ class LoanCalculator:
             gross_amount, annual_rate / Decimal('100'), payment_frequency
         )
 
-        # If net_amount is provided, this is a net-to-gross conversion - use retained interest calculation
-        if net_amount is not None:
-            # For net-to-gross conversions, total interest should match retained interest calculation
-            # but paid periodically instead of deducted upfront
-            if loan_term_days is not None:
-                # Use configurable day count for net-to-gross conversion
-                days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                term_years = Decimal(loan_term_days) / days_per_year
-                import logging
-                logging.info(f"BRIDGE NET-TO-GROSS: use_360_days={use_360_days} -> days_per_year={days_per_year}, loan_term_days={loan_term_days}, term_years={term_years:.4f}")
-            else:
-                term_years = Decimal(loan_term) / Decimal('12')
-
-            interest_rate = (annual_rate / Decimal('100')) * term_years
-            total_interest = net_amount * interest_rate / (Decimal('1') - interest_rate)
-
-            logging.info(f"Bridge loan (net-to-gross) using retained interest formula: net={net_amount:.2f}, days_per_year={'360' if use_360_days else '365'}, term_years={term_years:.4f}, total_interest={total_interest:.2f}")
+        # Determine term length in years for interest calculations
+        if loan_term_days is not None:
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            term_years = Decimal(loan_term_days) / days_per_year
+            import logging
+            logging.info(
+                f"Bridge interest-only{' (net-to-gross)' if net_amount is not None else ''}: "
+                f"use_360_days={use_360_days} -> days_per_year={days_per_year}, "
+                f"loan_term_days={loan_term_days}, term_years={term_years:.4f}"
+            )
         else:
-            # Standard gross-to-net calculation
-            # For interest-only payments, calculate based on interest type
-            # Use loan_term_days for accurate calculation if provided
-            if loan_term_days is not None:
-                term_years = Decimal(loan_term_days) / Decimal('365')
-                import logging
-                logging.info(f"Bridge interest-only using loan_term_days={loan_term_days}, term_years={term_years:.4f}")
-            else:
-                term_years = Decimal(loan_term) / 12
+            term_years = Decimal(loan_term) / Decimal('12')
 
-            if interest_type == 'simple':
-                if loan_term_days is not None:
-                    total_interest = self.calculate_simple_interest_by_days(
-                        gross_amount, annual_rate, loan_term_days, use_360_days
-                    )
-                    logging.info(f"Bridge interest-only simple interest: gross={gross_amount}, rate={annual_rate}%, days={loan_term_days}, interest={total_interest:.2f}")
-                else:
-                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                    total_days = term_years * days_per_year
-                    total_interest = self.calculate_simple_interest_by_days(
-                        gross_amount, annual_rate, int(total_days), use_360_days
-                    )
-            elif interest_type == 'compound_daily':
-                # Compound daily: A = P(1 + r/days_per_year)^(days_per_year*t) - P
-                days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                daily_rate = annual_rate / Decimal('100') / days_per_year
-                days_total = days_per_year * term_years
-                compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
-                total_amount = gross_amount * compound_factor
-                total_interest = total_amount - gross_amount
-            elif interest_type == 'compound_monthly':
-                # Compound monthly: A = P(1 + r/12)^(12*t) - P
-                monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
-                compound_factor = (Decimal('1') + monthly_rate_decimal) ** loan_term
-                total_amount = gross_amount * compound_factor
-                total_interest = total_amount - gross_amount
-            elif interest_type == 'compound_quarterly':
-                # Compound quarterly: A = P(1 + r/4)^(4*t) - P
-                quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
-                quarters_total = term_years * Decimal('4')
-                compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
-                total_amount = gross_amount * compound_factor
-                total_interest = total_amount - gross_amount
+        # Calculate total interest using the gross amount and standard day-count logic
+        if interest_type == 'simple':
+            if loan_term_days is not None:
+                total_interest = self.calculate_simple_interest_by_days(
+                    gross_amount, annual_rate, loan_term_days, use_360_days
+                )
+                logging.info(
+                    f"Bridge interest-only{' (net-to-gross)' if net_amount is not None else ''} simple interest: "
+                    f"gross={gross_amount}, rate={annual_rate}%, days={loan_term_days}, interest={total_interest:.2f}"
+                )
             else:
-                # Default to simple interest
-                total_interest = gross_amount * (monthly_rate / 100) * loan_term
+                days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                total_days = term_years * days_per_year
+                total_interest = self.calculate_simple_interest_by_days(
+                    gross_amount, annual_rate, int(total_days), use_360_days
+                )
+                logging.info(
+                    f"Bridge interest-only{' (net-to-gross)' if net_amount is not None else ''} simple interest: "
+                    f"gross={gross_amount}, rate={annual_rate}%, days={int(total_days)}, interest={total_interest:.2f}"
+                )
+        elif interest_type == 'compound_daily':
+            # Compound daily: A = P(1 + r/days_per_year)^(days_per_year*t) - P
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            daily_rate = annual_rate / Decimal('100') / days_per_year
+            days_total = days_per_year * term_years
+            compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
+            total_amount = gross_amount * compound_factor
+            total_interest = total_amount - gross_amount
+        elif interest_type == 'compound_monthly':
+            # Compound monthly: A = P(1 + r/12)^(12*t) - P
+            monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
+            compound_factor = (Decimal('1') + monthly_rate_decimal) ** loan_term
+            total_amount = gross_amount * compound_factor
+            total_interest = total_amount - gross_amount
+        elif interest_type == 'compound_quarterly':
+            # Compound quarterly: A = P(1 + r/4)^(4*t) - P
+            quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
+            quarters_total = term_years * Decimal('4')
+            compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
+            total_amount = gross_amount * compound_factor
+            total_interest = total_amount - gross_amount
+        else:
+            # Default to simple interest
+            total_interest = gross_amount * (monthly_rate / 100) * loan_term
 
         # For interest-only bridge loans the borrower receives the net amount after
         # any initial interest deduction. Preserve the user-provided net amount when
