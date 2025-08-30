@@ -77,7 +77,7 @@ def test_flexible_payment_interest_only_matches_interest_only():
         fees,
         loan_start_date='2024-01-01',
         loan_term_days=None,
-        use_360_days=True,
+        use_360_days=False,
     )
     res_io = calc._calculate_term_interest_only(
         gross_amount,
@@ -86,6 +86,37 @@ def test_flexible_payment_interest_only_matches_interest_only():
         fees,
         loan_start_date='2024-01-01',
         loan_term_days=None,
-        use_360_days=True,
+        use_360_days=False,
     )
     assert res_fp['interestOnlyTotal'] == pytest.approx(res_io['totalInterest'])
+
+
+def test_flexible_payment_zero_interest_matches_interest_only():
+    calc = LoanCalculator()
+    gross_amount = Decimal('100000')
+    annual_rate = Decimal('12')
+    loan_term = 12
+    fees = {'arrangementFee': Decimal('0'), 'totalLegalFees': Decimal('0')}
+    flexible_payment = Decimal('0')
+
+    res_fp = calc._calculate_term_flexible_payment(
+        gross_amount,
+        annual_rate,
+        loan_term,
+        flexible_payment,
+        'monthly',
+        fees,
+        loan_start_date='2024-01-01',
+        loan_term_days=None,
+        use_360_days=False,
+    )
+    res_io = calc._calculate_term_interest_only(
+        gross_amount,
+        annual_rate,
+        loan_term,
+        fees,
+        loan_start_date='2024-01-01',
+        loan_term_days=None,
+        use_360_days=False,
+    )
+    assert res_fp['totalInterest'] == pytest.approx(res_io['totalInterest'])
