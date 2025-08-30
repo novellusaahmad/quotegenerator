@@ -277,12 +277,14 @@ def test_service_and_capital_advance_net_deducts_interest():
     first_period_interest = (
         gross_amount * (annual_rate / Decimal('100')) * (days_per_period / days_per_year)
     )
-    expected_net = (
+    expected_before_interest = (
         gross_amount
         - fees['arrangementFee']
         - fees['totalLegalFees']
-        - first_period_interest
     )
+    expected_net = expected_before_interest - first_period_interest
+    assert float(result['netAdvanceBeforeInterest']) == pytest.approx(float(expected_before_interest), abs=0.01)
+    assert float(result['firstPeriodInterest']) == pytest.approx(float(first_period_interest), abs=0.01)
     assert float(result['netAdvance']) == pytest.approx(float(expected_net), abs=0.01)
 
 

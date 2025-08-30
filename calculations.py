@@ -2069,11 +2069,15 @@ class LoanCalculator:
         monthly_payment = capital_repayment + (gross_amount * monthly_rate / 100)
 
         if net_amount is not None:
-            net_advance = net_amount
+            # User provided net amount represents the net advance after any first period interest deduction
+            net_advance_after_first_interest = net_amount
+            net_advance_before_interest = net_amount + (first_period_interest if payment_timing == 'advance' else Decimal('0'))
         else:
-            net_advance = gross_amount - fees.get('arrangementFee', Decimal('0')) - fees.get('totalLegalFees', Decimal('0'))
+            net_advance_before_interest = gross_amount - fees.get('arrangementFee', Decimal('0')) - fees.get('totalLegalFees', Decimal('0'))
             if payment_timing == 'advance':
-                net_advance -= first_period_interest
+                net_advance_after_first_interest = net_advance_before_interest - first_period_interest
+            else:
+                net_advance_after_first_interest = net_advance_before_interest
 
         return {
             'gross_amount': float(gross_amount),
@@ -2081,7 +2085,9 @@ class LoanCalculator:
             'totalInterest': self._two_dp(total_interest),
             'total_interest': self._two_dp(total_interest),
             'totalAmount': self._two_dp(gross_amount + total_interest),
-            'netAdvance': self._two_dp(net_advance),
+            'netAdvance': self._two_dp(net_advance_after_first_interest),
+            'firstPeriodInterest': self._two_dp(first_period_interest),
+            'netAdvanceBeforeInterest': self._two_dp(net_advance_before_interest),
             'interestOnlyTotal': self._two_dp(interest_only_total),
             'interestSavings': self._two_dp(interest_savings),
             'savingsPercentage': float(savings_percentage)
