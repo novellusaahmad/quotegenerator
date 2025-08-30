@@ -35,5 +35,7 @@ def test_flexible_payment_interest_retained_and_saving():
     retained_second = Decimal(second['interest_retained'].replace('£', '').replace(',', ''))
     accrued_second = Decimal(second['interest_accrued'].replace('£', '').replace(',', ''))
     saving_second = Decimal(second['interest_saving'].replace('£', '').replace(',', ''))
+    refund_second = Decimal(second['interest_refund'].replace('£', '').replace(',', ''))
     assert retained_second == expected_second
     assert saving_second == (retained_second - accrued_second).quantize(Decimal('0.01'))
+    assert refund_second == (retained_second - accrued_second).quantize(Decimal('0.01'))
