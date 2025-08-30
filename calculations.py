@@ -3866,7 +3866,37 @@ class LoanCalculator:
         
         # Generate payment dates
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+
+        # Recompute period ranges so that each period end is based on the number
+        # of days in the month of its start date. This ensures the detailed
+        # payment schedule uses calendar‑accurate month lengths regardless of
+        # payment timing or frequency.
+        import calendar
+
+        periods = len(payment_dates)
+        period_ranges = []
+        current_start = start_date
+
+        if periods > 0:
+            base_months = loan_term // periods
+            extra_months = loan_term % periods
+
+            for i in range(periods):
+                # Distribute any leftover months across the earliest periods
+                period_months = base_months + (1 if i < extra_months else 0)
+                period_start = current_start
+                total_days = 0
+
+                for _ in range(period_months):
+                    days_in_month = calendar.monthrange(current_start.year, current_start.month)[1]
+                    total_days += days_in_month
+                    current_start += timedelta(days=days_in_month)
+
+                period_end = current_start  # exclusive end date
+                period_ranges.append(
+                    {'start': period_start, 'end': period_end, 'days_held': total_days}
+                )
+
 
         detailed_schedule = []
         remaining_balance = gross_amount
@@ -4077,7 +4107,7 @@ class LoanCalculator:
                 period = i + 1
                 pr = period_ranges[i]
                 period_start = pr['start']
-                period_end = pr['end']
+                period_end = pr['end'] - timedelta(days=1)
                 days_in_period = Decimal(str(pr['days_held']))
 
                 if payment_timing == 'advance':
@@ -4362,6 +4392,8 @@ class LoanCalculator:
             if total_retained:
                 total_retained = total_retained.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['retainedInterest'] = float(total_retained)
+                if repayment_option == 'capital_payment_only':
+                    calculation['interestOnlyTotal'] = float(total_retained)
             if total_refund:
                 total_refund = total_refund.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['interestRefund'] = float(total_refund)
