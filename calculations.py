@@ -4289,7 +4289,7 @@ class LoanCalculator:
                     'amortisation_calculation': amortisation_calc,
                     'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
                     'annual_interest_rate': f"{annual_rate:.2f}%",
-                    'interest_pa': f"{daily_rate:.6f}",
+                      'interest_pa': f"{daily_rate:.8f}",
                     'scheduled_repayment': f"{currency_symbol}{flexible_per_payment:,.2f}",
                     'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                     'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
@@ -4382,7 +4382,7 @@ class LoanCalculator:
                         'balance_change': balance_change,
                         'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
                         'annual_interest_rate': f"{annual_rate:.2f}%",
-                        'interest_pa': f"{daily_rate:.6f}",
+                          'interest_pa': f"{daily_rate:.8f}",
                         'scheduled_repayment': f"{currency_symbol}{scheduled_repayment:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
@@ -4424,7 +4424,7 @@ class LoanCalculator:
                         'balance_change': balance_change,
                         'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
                         'annual_interest_rate': f"{annual_rate:.2f}%",
-                        'interest_pa': f"{daily_rate:.6f}",
+                          'interest_pa': f"{daily_rate:.8f}",
                         'scheduled_repayment': f"{currency_symbol}{capital_per_payment:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
@@ -4461,7 +4461,7 @@ class LoanCalculator:
                         'balance_change': "Loan complete + refund",
                         'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
                         'annual_interest_rate': f"{annual_rate:.2f}%",
-                        'interest_pa': f"{daily_rate:.6f}",
+                        'interest_pa': f"{daily_rate:.8f}",
                         'scheduled_repayment': f"{currency_symbol}{final_principal:,.2f}",
                         'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
@@ -5211,7 +5211,7 @@ class LoanCalculator:
                     'amortisation_calculation': amortisation_calc,
                     'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
                     'annual_interest_rate': f"{annual_rate:.2f}%",
-                    'interest_pa': f"{daily_rate:.6f}",
+                      'interest_pa': f"{daily_rate:.8f}",
                     'scheduled_repayment': f"{currency_symbol}{flexible_per_payment:,.2f}",
                     'interest_accrued': f"{currency_symbol}{actual_interest_paid:,.2f}",
                     'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
@@ -5967,7 +5967,7 @@ class LoanCalculator:
                 interest_amount = future_value - outstanding_balance
                 
                 # Format with dynamic daily rate
-                interest_calculation = f"£{outstanding_balance:,.0f} × (1 + {daily_rate:.6f})^{days_in_period} - £{outstanding_balance:,.0f}"
+                interest_calculation = f"£{outstanding_balance:,.0f} × (1 + {daily_rate:.8f})^{days_in_period} - £{outstanding_balance:,.0f}"
             else:
                 interest_amount = Decimal('0')
                 interest_calculation = "—"
@@ -6193,7 +6193,7 @@ class LoanCalculator:
                 logging.info(f"INTEREST CALCULATION DEBUG - Month {month}:")
                 logging.info(f"  Tranche Release: £{tranche_release:,.2f}")
                 logging.info(f"  Interest Calc Base: £{interest_calculation_base:,.2f}")
-                logging.info(f"  Daily Rate: {daily_rate:.6f}")
+                logging.info(f"  Daily Rate: {daily_rate:.8f}")
                 logging.info(f"  Days in Period: {days_in_period}")
                 
                 # Use the authoritative interest_calculation_base for all calculations
@@ -6203,7 +6203,7 @@ class LoanCalculator:
                 
                 # Format interest calculation formula using the exact same value as the calculation base
                 # This ensures perfect consistency between display and actual calculation
-                interest_calculation = f"{currency_symbol}{interest_calculation_base:,.2f} × (1 + {daily_rate:.6f})^{days_in_period}"
+                interest_calculation = f"{currency_symbol}{interest_calculation_base:,.2f} × (1 + {daily_rate:.8f})^{days_in_period}"
                 
                 # CRITICAL DEBUG: Verify consistency
                 if month == 1:
@@ -6298,7 +6298,7 @@ class LoanCalculator:
             'payment_date': start_date.strftime('%d/%m/%Y'),
             'opening_balance': f"{currency_symbol}0.00",
             'tranche_release': f"{currency_symbol}{net_day1_advance:,.2f}",
-            'interest_calculation': f'£{outstanding_balance:,.2f} × (1 + {daily_rate:.6f})^30.4375',
+            'interest_calculation': f'£{outstanding_balance:,.2f} × (1 + {daily_rate:.8f})^30.4375',
             'interest_amount': f"{currency_symbol}{month1_interest:,.2f}",
             'principal_payment': f"{currency_symbol}0.00",
             'total_payment': f"{currency_symbol}0.00",  # No payment with retained interest
@@ -6330,7 +6330,7 @@ class LoanCalculator:
                 'payment_date': period_date.strftime('%d/%m/%Y'),
                 'opening_balance': f"{currency_symbol}{outstanding_balance - tranche_amount:,.2f}",
                 'tranche_release': f"{currency_symbol}{tranche_amount:,.2f}" if tranche_amount > 0 else "—",
-                'interest_calculation': f'£{outstanding_balance:,.2f} × (1 + {daily_rate:.6f})^30.4375',
+                'interest_calculation': f'£{outstanding_balance:,.2f} × (1 + {daily_rate:.8f})^30.4375',
                 'interest_amount': f"{currency_symbol}{period_interest:,.2f}",
                 'principal_payment': f"{currency_symbol}0.00",
                 'total_payment': f"{currency_symbol}0.00",  # No payment with retained interest
@@ -6727,10 +6727,10 @@ class LoanCalculator:
                     'component': 'Day 1 Advance',
                     'opening_balance': float(month_start_balance),
                     'days_in_month': days_in_month,
-                    'daily_rate': f"{float(daily_rate * 100):.6f}%",
+                    'daily_rate': f"{float(daily_rate * 100):.8f}%",
                     'monthly_interest': float(month_interest),
                     'closing_balance': float(current_balance_day1),
-                    'calculation_formula': f"£{float(month_start_balance):,.2f} × (1 + {float(daily_rate):.6f})^{days_in_month}"
+                    'calculation_formula': f"£{float(month_start_balance):,.2f} × (1 + {float(daily_rate):.8f})^{days_in_month}"
                 })
 
                 # Move to the first day of the next month
@@ -6800,10 +6800,10 @@ class LoanCalculator:
                     'opening_balance': float(month_start_balance),
                     'tranche_release': float(monthly_release_amount),
                     'days_in_month': days_in_month,
-                    'daily_rate': f"{float(daily_rate * 100):.6f}%",
+                    'daily_rate': f"{float(daily_rate * 100):.8f}%",
                     'monthly_interest': float(month_interest),
                     'closing_balance': float(cumulative_balance),
-                    'calculation_formula': f"(£{float(month_start_balance):,.2f} + £{float(monthly_release_amount):,.2f}) × (1 + {float(daily_rate):.6f})^{days_in_month}"
+                    'calculation_formula': f"(£{float(month_start_balance):,.2f} + £{float(monthly_release_amount):,.2f}) × (1 + {float(daily_rate):.8f})^{days_in_month}"
                 })
 
                 # Advance to the next month

@@ -791,7 +791,7 @@ def excel_style_breakdown():
                 'balance_after_release': balance_after_release,
                 'days_in_month': days_in_month,
                 'daily_rate': f"{daily_rate:.8f}",
-                'daily_rate_percent': f"{daily_rate * 100:.6f}%",
+                'daily_rate_percent': f"{daily_rate * 100:.8f}%",
                 'compound_factor': compound_factor if balance_after_release > 0 else 1,
                 'monthly_interest': monthly_interest,
                 'end_period_balance': end_balance,
