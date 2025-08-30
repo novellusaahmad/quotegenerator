@@ -605,7 +605,7 @@ class LoanCalculator:
             'repaymentOption': repayment_option,
             'loan_type': 'bridge',
             'interest_type': interest_type,
-            'capital_repayment': params.get('capital_repayment', 1000),
+            'capital_repayment': params.get('capital_repayment', 0),
             # Preserve the original flexible payment value, checking both naming styles
             'flexible_payment': params.get('flexible_payment', params.get('flexiblePayment', 2000)),
             'payment_timing': payment_timing,
@@ -782,7 +782,7 @@ class LoanCalculator:
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
         elif repayment_option == 'service_and_capital':
-            capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
+            capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
             net_for_calculation = net_amount if amount_input_type == 'net' else None
             calculation = self._calculate_bridge_service_capital(
                 gross_amount, monthly_rate, loan_term, capital_repayment, fees,
@@ -837,7 +837,7 @@ class LoanCalculator:
             'repaymentOption': repayment_option,
             'loan_type': 'term',
             'interest_type': params.get('interest_type', 'simple'),
-            'capital_repayment': params.get('capital_repayment', 1000),
+            'capital_repayment': params.get('capital_repayment', 0),
             'payment_timing': params.get('payment_timing', 'advance'),
             'payment_frequency': payment_frequency,
             'monthlyPayment': adjusted_payment,  # Override with frequency-adjusted amount
@@ -1696,7 +1696,7 @@ class LoanCalculator:
             # For development loans with capital+interest, we need to calculate based on amortization
 
             # Get capital repayment amount per period
-            capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
+            capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
             payment_frequency = params.get('payment_frequency', 'monthly')
 
             # Adjust capital payment based on frequency
@@ -1807,7 +1807,7 @@ class LoanCalculator:
         result['start_date'] = params.get('start_date', datetime.now().strftime('%Y-%m-%d'))
         result['payment_timing'] = params.get('payment_timing', 'advance')
         result['payment_frequency'] = params.get('payment_frequency', 'monthly')
-        result['capital_repayment'] = params.get('capital_repayment', 1000)
+        result['capital_repayment'] = params.get('capital_repayment', 0)
         result['repaymentOption'] = repayment_option  # Ensure consistent naming
         
         # Generate payment schedule
@@ -3922,7 +3922,7 @@ class LoanCalculator:
 
             payment_timing = quote_data.get('payment_timing', 'advance')
             payment_frequency = quote_data.get('payment_frequency', 'monthly')
-            capital_repayment = Decimal(str(quote_data.get('capital_repayment', 1000)))
+            capital_repayment = Decimal(str(quote_data.get('capital_repayment', 0)))
             use_360_days = quote_data.get('use_360_days', False)
 
             start_date_str = quote_data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
@@ -4246,7 +4246,7 @@ class LoanCalculator:
         
         elif repayment_option == 'service_and_capital':
             # Service + Capital payments
-            capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
+            capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
 
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
 
@@ -4436,7 +4436,7 @@ class LoanCalculator:
         
         elif repayment_option == 'capital_payment_only':
             # Capital Payment Only - interest retained at day 1 with potential refund
-            capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
+            capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
             
             # Calculate full interest retained at day 1
             if payment_frequency == 'quarterly':
@@ -4753,7 +4753,7 @@ class LoanCalculator:
                 interest_paid = self.calculate_simple_interest_by_days(
                     remaining_balance, annual_rate, days_in_period, use_360_days
                 )
-                capital_repayment = Decimal(str(quote_data.get('capital_repayment', 1000)))
+                capital_repayment = Decimal(str(quote_data.get('capital_repayment', 0)))
                 if payment_frequency == 'quarterly':
                     capital_per_payment = capital_repayment * 3  # 3 months worth
                 else:
@@ -4988,7 +4988,7 @@ class LoanCalculator:
         
         elif repayment_option == 'service_and_capital':
             # Capital + interest with reducing balance using day-level interest
-            capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
+            capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
 
             for i, payment_date in enumerate(payment_dates):
@@ -5084,7 +5084,7 @@ class LoanCalculator:
 
         elif repayment_option == 'capital_payment_only':
             # Capital Payment Only - interest charged on reducing balance with day-level interest
-            capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
+            capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
 
             # Setup for interest refund calculations

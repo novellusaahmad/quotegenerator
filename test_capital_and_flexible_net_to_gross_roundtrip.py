@@ -86,3 +86,32 @@ def test_interest_only_total_uses_gross_amount(repayment_option):
 
     assert abs(float(result['interestOnlyTotal']) - float(expected)) < 0.01
     assert Decimal(str(result['netAdvance'])) == Decimal('100000')
+
+
+def test_zero_capital_repayment_matches_interest_only():
+    calc = LoanCalculator()
+    params = {
+        'amount_input_type': 'net',
+        'net_amount': Decimal('100000'),
+        'annual_rate': Decimal('12'),
+        'loan_term': 12,
+        'repayment_option': 'service_and_capital',
+        'capital_repayment': Decimal('0'),
+        'arrangement_fee_rate': Decimal('2'),
+        'legal_fees': Decimal('1000'),
+        'site_visit_fee': Decimal('500'),
+        'title_insurance_rate': Decimal('1'),
+        'payment_frequency': 'monthly',
+        'payment_timing': 'arrears',
+    }
+
+    result = calc.calculate_bridge_loan(params)
+    gross = Decimal(str(result['grossAmount']))
+    expected = gross * Decimal('12') / Decimal('100') * Decimal('1')
+
+    # Interest-only total should be based solely on gross amount
+    assert abs(float(result['interestOnlyTotal']) - float(expected)) < 0.01
+    assert result['capital_repayment'] == 0
+    for payment in result['detailed_payment_schedule']:
+        capital_paid = payment.get('capital_payment', '£0.00').replace('£', '').replace('€', '').replace(',', '')
+        assert Decimal(capital_paid) == Decimal('0.00')
