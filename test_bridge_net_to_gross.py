@@ -137,6 +137,7 @@ def test_bridge_interest_only_net_matches_input():
     )
 
     assert res['netAdvance'] == pytest.approx(float(net_amount))
+    assert res['netAdvanceBeforeInterest'] == pytest.approx(float(net_amount))
 
 
 def test_interest_only_total_interest_matches_between_paths():

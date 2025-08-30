@@ -1975,15 +1975,23 @@ class LoanCalculator:
         # only fees are deducted up front – interest is serviced separately.
         first_period_interest = periodic_interest
         if net_amount is not None:
+            # Net amount supplied already reflects all upfront deductions.
+            net_advance_before_interest = net_amount
             net_advance_after_first_interest = net_amount
-            net_advance = net_amount + first_period_interest
         else:
-            net_advance = gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
-            net_advance_after_first_interest = net_advance  # interest is paid later
+            net_advance_before_interest = (
+                gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
+            )
+            net_advance_after_first_interest = net_advance_before_interest  # interest is paid later
 
         import logging
-        logging.info(f"Bridge interest-only: gross={gross_amount}, net_advance={net_advance} (before first interest)")
-        logging.info(f"Bridge interest-only: first_period_interest={first_period_interest}, net_advance_after_advance_payment={net_advance_after_first_interest}")
+        logging.info(
+            f"Bridge interest-only: gross={gross_amount}, net_advance_before_interest={net_advance_before_interest}"
+        )
+        logging.info(
+            f"Bridge interest-only: first_period_interest={first_period_interest}, "
+            f"net_advance_after_first_interest={net_advance_after_first_interest}"
+        )
         
         return {
             'gross_amount': float(gross_amount),
@@ -1991,9 +1999,9 @@ class LoanCalculator:
             'totalInterest': self._two_dp(total_interest),
             'total_interest': self._two_dp(total_interest),
             'totalAmount': self._two_dp(gross_amount + total_interest),
-            'netAdvance': self._two_dp(net_advance_after_first_interest),  # Use net advance after first period interest deduction
+            'netAdvance': self._two_dp(net_advance_after_first_interest),
             'firstPeriodInterest': self._two_dp(first_period_interest),
-            'netAdvanceBeforeInterest': self._two_dp(net_advance)  # Keep original for reference
+            'netAdvanceBeforeInterest': self._two_dp(net_advance_before_interest)
         }
     
     def _calculate_bridge_service_capital(self, gross_amount: Decimal, monthly_rate: Decimal,
@@ -2737,6 +2745,7 @@ class LoanCalculator:
             logging.info(f"  Actual Net: £{final_net:.2f}")
             logging.info(f"  Accuracy: {(final_net/net_amount*100):.4f}%")
 
+            gross_estimate = gross_estimate.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             return gross_estimate
             
         else:
@@ -2916,11 +2925,14 @@ class LoanCalculator:
                 # Default to service + capital formula for any other option
                 denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
                 gross_amount = (net_amount + total_legal_fees) / denominator
-                
+
                 logging.info(f"BRIDGE DEFAULT NET-TO-GROSS (Service + Capital):")
                 logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)")
                 logging.info(f"Gross = £{gross_amount:.2f}")
-            
+
+            # Round gross amount to 2 decimal places before further use
+            gross_amount = gross_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
             # Verification - calculate actual net from computed gross
             verification_fees = self._calculate_fees(
                 gross_amount, arrangement_fee_rate, legal_fees,
