@@ -3618,39 +3618,38 @@ class LoanCalculator:
         elif repayment_option == 'service_only':
             # Interest only payments with timing and frequency support
             from datetime import datetime, timedelta
-            
+
             # Get payment timing and frequency parameters
             payment_timing = quote_data.get('payment_timing', 'advance')
             payment_frequency = quote_data.get('payment_frequency', 'monthly')
-            
+            use_360_days = quote_data.get('use_360_days', False)
+
             # Get start date
             start_date_str = quote_data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
             if isinstance(start_date_str, str):
                 start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
             else:
                 start_date = start_date_str
-            
+
             # Generate payment dates based on frequency and timing
             payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-            
-            # Calculate interest per payment period using simple annual rate
-            interest_per_payment = self._calculate_periodic_interest(
-                gross_amount, annual_rate / Decimal('100'), payment_frequency
-            )
-            
+            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+
             fees_deducted_first = arrangement_fee + legal_fees
             fees_added_to_first = False
-            
+
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
                 is_final_payment = (period == len(payment_dates))
+                pr = period_ranges[i]
+                days_in_period = pr['days_held']
 
-                # Calculate payment amounts
-                interest_payment = interest_per_payment
-                principal_payment = remaining_balance if is_final_payment else 0
+                opening_balance = remaining_balance
+                interest_payment = self.calculate_simple_interest_by_days(
+                    opening_balance, annual_rate, days_in_period, use_360_days
+                )
+                principal_payment = remaining_balance if is_final_payment else Decimal('0')
                 total_payment = interest_payment + principal_payment
-
-                # Interest is charged for the full period regardless of payment timing
 
                 # Add fees to first payment
                 if not fees_added_to_first:
@@ -3659,14 +3658,13 @@ class LoanCalculator:
                     fees_added_to_first = True
                 else:
                     note = None
-                
-                if is_final_payment:
-                    remaining_balance = 0
-                
+
+                remaining_balance -= principal_payment
+
                 schedule.append({
                     'period': period,
                     'payment_date': payment_date.strftime('%Y-%m-%d'),
-                    'opening_balance': float(remaining_balance + principal_payment),
+                    'opening_balance': float(opening_balance),
                     'interest': float(interest_payment),
                     'principal': float(principal_payment),
                     'total_payment': float(total_payment),
@@ -4431,34 +4429,34 @@ class LoanCalculator:
         else:
             start_date = datetime.now()
         
-        # Generate payment dates based on frequency and timing
+        # Generate payment dates and period ranges based on frequency and timing
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-        
+        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+        use_360_days = quote_data.get('use_360_days', False)
+
         arrangement_fee = Decimal(str(quote_data.get('arrangementFee', 0)))
         legal_fees = Decimal(str(quote_data.get('totalLegalFees', 0)))
-        
+
         remaining_balance = gross_amount
         schedule = []
         fees_deducted_first = arrangement_fee + legal_fees
         fees_added_to_first = False
-        
+
         for i, payment_date in enumerate(payment_dates):
             period = i + 1
             is_final_payment = (period == len(payment_dates))
+            days_in_period = period_ranges[i]['days_held']
 
-            # Calculate interest per payment period (interest due)
-            interest_due = self._calculate_periodic_interest(
-                remaining_balance, annual_rate / Decimal('100'), payment_frequency
-            )
-
-            # Calculate principal payment based on repayment option
             if repayment_option == 'service_only':
-                # Interest only
+                interest_paid = self.calculate_simple_interest_by_days(
+                    remaining_balance, annual_rate, days_in_period, use_360_days
+                )
                 principal_payment = remaining_balance if is_final_payment else Decimal('0')
-                interest_paid = interest_due
                 total_payment = interest_paid + principal_payment
             elif repayment_option == 'service_and_capital':
-                # For term loans with capital+interest, use capital repayment amount
+                interest_due = self._calculate_periodic_interest(
+                    remaining_balance, annual_rate / Decimal('100'), payment_frequency
+                )
                 capital_repayment = Decimal(str(quote_data.get('capital_repayment', 1000)))
                 if payment_frequency == 'quarterly':
                     capital_per_payment = capital_repayment * 3  # 3 months worth
@@ -4471,6 +4469,9 @@ class LoanCalculator:
                 interest_paid = interest_due
                 total_payment = interest_paid + principal_payment
             elif repayment_option == 'flexible_payment':
+                interest_due = self._calculate_periodic_interest(
+                    remaining_balance, annual_rate / Decimal('100'), payment_frequency
+                )
                 flexible_payment_amt = Decimal(str(quote_data.get('flexible_payment', quote_data.get('flexiblePayment', 0))))
                 if payment_frequency == 'quarterly':
                     flexible_per_payment = flexible_payment_amt * 3
@@ -4483,8 +4484,10 @@ class LoanCalculator:
                     interest_paid = flexible_per_payment - principal_payment
                 total_payment = flexible_per_payment
             else:
+                interest_paid = self._calculate_periodic_interest(
+                    remaining_balance, annual_rate / Decimal('100'), payment_frequency
+                )
                 principal_payment = Decimal('0')
-                interest_paid = interest_due
                 total_payment = interest_paid
 
             # Interest is charged for the full period regardless of payment timing
