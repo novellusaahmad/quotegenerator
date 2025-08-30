@@ -4683,8 +4683,8 @@ class LoanCalculator:
                 principal_payment = remaining_balance if is_final_payment else Decimal('0')
                 total_payment = interest_paid + principal_payment
             elif repayment_option == 'service_and_capital':
-                interest_due = self._calculate_periodic_interest(
-                    remaining_balance, annual_rate / Decimal('100'), payment_frequency
+                interest_paid = self.calculate_simple_interest_by_days(
+                    remaining_balance, annual_rate, days_in_period, use_360_days
                 )
                 capital_repayment = Decimal(str(quote_data.get('capital_repayment', 1000)))
                 if payment_frequency == 'quarterly':
@@ -4695,7 +4695,6 @@ class LoanCalculator:
                 principal_payment = capital_per_payment
                 if principal_payment > remaining_balance:
                     principal_payment = remaining_balance
-                interest_paid = interest_due
                 total_payment = interest_paid + principal_payment
             elif repayment_option == 'flexible_payment':
                 interest_due = self._calculate_periodic_interest(
