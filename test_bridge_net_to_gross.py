@@ -150,7 +150,7 @@ def test_service_only_net_to_gross_roundtrip():
     title_insurance_rate = Decimal('1')
     loan_term_days = 274
 
-    # Gross to net (fees only, no interest retained)
+    # Gross to net using interest-only calculation (no interest retained)
     fees = calc._calculate_fees(
         gross_amount,
         arrangement_fee_rate,
@@ -159,7 +159,18 @@ def test_service_only_net_to_gross_roundtrip():
         title_insurance_rate,
         Decimal('0'),
     )
-    net_amount = gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
+    monthly_rate = annual_rate / Decimal('12')
+    net_result = calc._calculate_bridge_interest_only(
+        gross_amount,
+        monthly_rate,
+        loan_term,
+        fees,
+        'simple',
+        net_amount=None,
+        loan_term_days=loan_term_days,
+        use_360_days=False,
+    )
+    net_amount = Decimal(str(net_result['netAdvance']))
 
     # Net to gross should return the original gross amount
     gross_calculated = calc._calculate_gross_from_net_bridge(
@@ -176,3 +187,6 @@ def test_service_only_net_to_gross_roundtrip():
     )
 
     assert float(gross_calculated) == pytest.approx(float(gross_amount))
+    # Also ensure gross-to-net removed only fees
+    manual_net = gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
+    assert float(net_amount) == pytest.approx(float(manual_net))
