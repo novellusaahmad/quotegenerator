@@ -3840,6 +3840,7 @@ class LoanCalculator:
         gross_amount = Decimal(str(calculation.get('grossAmount', calculation.get('gross_amount', params.get('gross_amount', 0)))))
         loan_term = int(params.get('loan_term', 12))
         annual_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
+        property_value = Decimal(str(params.get('property_value', params.get('propertyValue', 0))))
         
         # Get 360-day calculation parameter for net-to-gross calculations
         use_360_days = params.get('use_360_days', False)
@@ -4120,6 +4121,9 @@ class LoanCalculator:
                     f"↓ -{currency_symbol}{principal_payment:,.2f}" if principal_payment > 0 else "↔ No Change"
                 )
 
+                capital_outstanding = remaining_balance if payment_timing == 'advance' else opening_balance
+                running_ltv = float((capital_outstanding / property_value * 100)) if property_value > 0 else 0
+
                 amortisation_calc = (
                     f"{currency_symbol}{opening_balance:,.2f} - "
                     f"{currency_symbol}{principal_payment:,.2f} = "
@@ -4140,7 +4144,15 @@ class LoanCalculator:
                     'closing_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                     'balance_change': balance_change,
                     'flexible_payment_calculation': f"{currency_symbol}{principal_payment:,.2f} + {currency_symbol}{interest_paid:,.2f} = {currency_symbol}{flexible_per_payment:,.2f}",
-                    'amortisation_calculation': amortisation_calc
+                    'amortisation_calculation': amortisation_calc,
+                    'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
+                    'annual_interest_rate': f"{annual_rate:.2f}%",
+                    'interest_pa': f"{daily_rate:.6f}",
+                    'scheduled_repayment': f"{currency_symbol}{flexible_per_payment:,.2f}",
+                    'interest_accrued': f"{currency_symbol}{interest_paid:,.2f}",
+                    'interest_retained': f"{currency_symbol}0.00",
+                    'interest_refund': f"{currency_symbol}0.00",
+                    'running_ltv': f"{running_ltv:.2f}"
                 })
 
                 if remaining_balance <= 0:
@@ -4488,6 +4500,7 @@ class LoanCalculator:
         loan_term = int(params.get('loan_term', 18))
         annual_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
         loan_term_days_param = params.get('loan_term_days')
+        property_value = Decimal(str(params.get('property_value', params.get('propertyValue', 0))))
         
         # Get fees
         arrangement_fee = Decimal(str(calculation.get('arrangementFee', 0)))
@@ -4892,12 +4905,14 @@ class LoanCalculator:
             flexible_payment_amount = Decimal(
                 str(params.get('flexible_payment', params.get('flexiblePayment', 1000)))
             )
-            
+            use_360_days = params.get('use_360_days', False)
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            daily_rate = annual_rate / Decimal('100') / days_per_year
+
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
-                
+
                 # Calculate interest on remaining balance with 360-day adjustment if needed
-                use_360_days = params.get('use_360_days', False)
                 if payment_frequency == 'quarterly':
                     if use_360_days:
                         quarterly_rate = annual_rate / 4 / 100 * Decimal('365') / Decimal('360')
@@ -4964,6 +4979,9 @@ class LoanCalculator:
                 opening_balance = remaining_balance
                 closing_balance = opening_balance - principal_payment
 
+                capital_outstanding = closing_balance if payment_timing == 'advance' else opening_balance
+                running_ltv = float((capital_outstanding / property_value * 100)) if property_value > 0 else 0
+
                 flexible_calc = (
                     f"{currency_symbol}{principal_payment:,.2f} + {currency_symbol}{actual_interest_paid:,.2f} = {currency_symbol}{flexible_per_payment:,.2f}"
                 )
@@ -4983,7 +5001,15 @@ class LoanCalculator:
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
                     'balance_change': balance_change,
                     'flexible_payment_calculation': flexible_calc,
-                    'amortisation_calculation': amortisation_calc
+                    'amortisation_calculation': amortisation_calc,
+                    'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
+                    'annual_interest_rate': f"{annual_rate:.2f}%",
+                    'interest_pa': f"{daily_rate:.6f}",
+                    'scheduled_repayment': f"{currency_symbol}{flexible_per_payment:,.2f}",
+                    'interest_accrued': f"{currency_symbol}{actual_interest_paid:,.2f}",
+                    'interest_retained': f"{currency_symbol}0.00",
+                    'interest_refund': f"{currency_symbol}0.00",
+                    'running_ltv': f"{running_ltv:.2f}"
                 })
 
                 remaining_balance = closing_balance

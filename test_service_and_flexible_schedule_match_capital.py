@@ -73,7 +73,10 @@ def test_schedule_field_sets_match_capital_format():
         'opening_balance', 'tranche_release', 'interest_calculation',
         'interest_amount', 'interest_saving', 'principal_payment',
         'total_payment', 'closing_balance', 'balance_change',
-        'flexible_payment_calculation', 'amortisation_calculation'
+        'flexible_payment_calculation', 'amortisation_calculation',
+        'capital_outstanding', 'annual_interest_rate', 'interest_pa',
+        'scheduled_repayment', 'interest_accrued', 'interest_retained',
+        'interest_refund', 'running_ltv'
     }
     assert set(flex[0].keys()) == expected_flex_fields
 
