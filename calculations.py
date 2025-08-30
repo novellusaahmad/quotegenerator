@@ -4129,8 +4129,10 @@ class LoanCalculator:
                 )
 
                 interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                interest_saving_disp = interest_saving.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 interest_paid_disp = interest_paid.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                interest_refund_current = max(interest_retained_current - interest_paid, Decimal('0'))
+                interest_refund_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                interest_saving_disp = interest_refund_disp
 
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
@@ -4154,7 +4156,7 @@ class LoanCalculator:
                     'scheduled_repayment': f"{currency_symbol}{flexible_per_payment:,.2f}",
                     'interest_accrued': f"{currency_symbol}{interest_paid_disp:,.2f}",
                     'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
-                    'interest_refund': f"{currency_symbol}0.00",
+                    'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
                     'running_ltv': f"{running_ltv:.2f}"
                 })
 
@@ -4966,9 +4968,14 @@ class LoanCalculator:
 
                 interest_only = gross_amount * baseline_rate
                 if actual_interest_paid == 0 and interest_calc == "Interest paid in previous period":
-                    interest_saving = Decimal('0')
+                    interest_retained_current = Decimal('0')
+                    interest_refund_current = Decimal('0')
                 else:
-                    interest_saving = max(interest_only - actual_interest_paid, Decimal('0'))
+                    interest_retained_current = interest_only
+                    interest_refund_current = max(interest_retained_current - actual_interest_paid, Decimal('0'))
+                interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                interest_refund_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                interest_saving = interest_refund_current
 
                 # Add fees to first payment
                 fees_added = Decimal('0')
@@ -4998,7 +5005,7 @@ class LoanCalculator:
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{actual_interest_paid:,.2f}",
-                    'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
+                    'interest_saving': f"{currency_symbol}{interest_refund_disp:,.2f}",
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and not is_final else ""),
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
@@ -5010,8 +5017,8 @@ class LoanCalculator:
                     'interest_pa': f"{daily_rate:.6f}",
                     'scheduled_repayment': f"{currency_symbol}{flexible_per_payment:,.2f}",
                     'interest_accrued': f"{currency_symbol}{actual_interest_paid:,.2f}",
-                    'interest_retained': f"{currency_symbol}0.00",
-                    'interest_refund': f"{currency_symbol}0.00",
+                    'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
+                    'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
                     'running_ltv': f"{running_ltv:.2f}"
                 })
 
