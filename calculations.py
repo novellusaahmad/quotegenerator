@@ -446,11 +446,10 @@ class LoanCalculator:
                 # For service-only loans, total interest equals the interest-only total
                 calculation['interestOnlyTotal'] = float(total_interest_from_schedule)
         elif repayment_option == 'service_and_capital':
-            # Service + Capital - pass net_amount if this is a net-to-gross conversion
-            net_for_calculation = net_amount if amount_input_type == 'net' else None
+            # Service + Capital - always calculate using the derived gross amount
             logging.info(f"Bridge service_and_capital calculation: gross={gross_amount}, capital_repayment={capital_repayment}")
             calculation = self._calculate_bridge_service_capital(
-                gross_amount, monthly_rate, loan_term, capital_repayment, fees, interest_type, net_for_calculation, loan_term_days, use_360_days, payment_frequency, payment_timing
+                gross_amount, monthly_rate, loan_term, capital_repayment, fees, interest_type, None, loan_term_days, use_360_days, payment_frequency, payment_timing
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
@@ -477,13 +476,15 @@ class LoanCalculator:
                 calculation['interestOnlyTotal'] = self._two_dp(total_interest_only_from_schedule)
                 if total_interest_only_from_schedule > 0:
                     calculation['savingsPercentage'] = float((total_savings_from_schedule / total_interest_only_from_schedule) * 100)
+            # Preserve user provided net amount for net-to-gross conversions
+            if amount_input_type == 'net':
+                calculation['netAdvance'] = self._two_dp(net_amount)
         elif repayment_option == 'flexible_payment':
-            # Flexible payments - pass net_amount if this is a net-to-gross conversion
-            net_for_calculation = net_amount if amount_input_type == 'net' else None
+            # Flexible payments - compute using gross amount, then overlay net advance
             logging.info(f"Bridge flexible_payment calculation: gross={gross_amount}, flexible_payment={flexible_payment}")
             calculation = self._calculate_bridge_flexible(
                 gross_amount, annual_rate, loan_term, flexible_payment, fees, interest_type,
-                net_for_calculation, loan_term_days, use_360_days, start_date, payment_frequency, payment_timing
+                None, loan_term_days, use_360_days, start_date, payment_frequency, payment_timing
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
@@ -499,13 +500,14 @@ class LoanCalculator:
                 total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
+            if amount_input_type == 'net':
+                calculation['netAdvance'] = self._two_dp(net_amount)
         elif repayment_option == 'capital_payment_only':
-            # Capital Payment Only - interest retained at start, payments reduce balance directly
-            net_for_calculation = net_amount if amount_input_type == 'net' else None
+            # Capital Payment Only - compute from gross and preserve provided net amount
             logging.info(f"Bridge capital_payment_only calculation: gross={gross_amount}, capital_repayment={capital_repayment}")
             calculation = self._calculate_bridge_capital_payment_only(
                 gross_amount, annual_rate, loan_term, capital_repayment, fees,
-                interest_type, net_for_calculation, loan_term_days, use_360_days,
+                interest_type, None, loan_term_days, use_360_days,
                 payment_frequency, payment_timing, start_date
             )
             # Generate detailed payment schedule
@@ -524,6 +526,8 @@ class LoanCalculator:
                 import traceback
                 logging.error(f"Bridge capital_payment_only: Traceback: {traceback.format_exc()}")
                 calculation['detailed_payment_schedule'] = []
+            if amount_input_type == 'net':
+                calculation['netAdvance'] = self._two_dp(net_amount)
         else:
             logging.warning(f"Bridge loan unrecognized repayment_option: '{repayment_option}' - using empty calculation")
             calculation = self._get_empty_calculation(params)
@@ -628,7 +632,13 @@ class LoanCalculator:
             import logging
             logging.error(f"Error generating bridge loan payment schedule: {str(e)}")
             calculation['payment_schedule'] = []
-        
+
+        # Ensure interest-only total reflects calculated gross for net-to-gross conversions
+        if amount_input_type == 'net' and repayment_option in ['service_and_capital', 'capital_payment_only', 'flexible_payment']:
+            term_years = Decimal(str(loan_term_days)) / (Decimal('360') if use_360_days else Decimal('365'))
+            interest_only_total = gross_amount * (annual_rate / Decimal('100')) * term_years
+            calculation['interestOnlyTotal'] = self._two_dp(interest_only_total)
+
         return calculation
     
     def calculate_term_loan(self, params: Dict) -> Dict:
