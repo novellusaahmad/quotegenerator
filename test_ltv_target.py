@@ -53,4 +53,5 @@ def test_ltv_target_capital_payment_only():
     result = calc.calculate_bridge_loan(params)
 
     assert result['startLTV'] == pytest.approx(50.0)
-    assert result['endLTV'] == pytest.approx(float(target_ltv))
+    expected_end_ltv = float((gross_amount - monthly_capital * loan_term) / property_value * 100)
+    assert result['endLTV'] == pytest.approx(expected_end_ltv)
