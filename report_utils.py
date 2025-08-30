@@ -88,10 +88,19 @@ def generate_report_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
                 day_count = int(row.get('days_held', 0))
 
             days = Decimal(str(day_count))
-            opening_balance = Decimal(row.get('opening_balance', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', ''))
-            interest_retained = (gross_amount * daily_rate * days).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            interest_accrued = (opening_balance * daily_rate * days).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            capital_str = row.get('capital_outstanding', row.get('opening_balance', f"{currency_symbol}0"))
+            capital_outstanding = Decimal(capital_str.replace(currency_symbol, '').replace(',', ''))
+
+            retained_raw = gross_amount * daily_rate * days
+            accrued_raw = capital_outstanding * daily_rate * days
+
+            interest_retained = retained_raw.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            interest_accrued = accrued_raw.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            interest_refund = (retained_raw - accrued_raw).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
             row['interest_retained'] = f"{currency_symbol}{interest_retained:,.2f}"
             row['interest_accrued'] = f"{currency_symbol}{interest_accrued:,.2f}"
+            row['interest_refund'] = f"{currency_symbol}{interest_refund:,.2f}"
+            row['interest_saving'] = f"{currency_symbol}{interest_refund:,.2f}"
 
     return schedule

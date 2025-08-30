@@ -53,6 +53,7 @@ def _assert_summary_matches_schedule(result):
     interest_total = sum(_currency_to_decimal(r.get('interest_accrued', r['interest_amount'])) for r in schedule)
     capital_total = sum(_currency_to_decimal(r['principal_payment']) for r in schedule)
     savings_total = sum(_currency_to_decimal(r.get('interest_saving', '£0.00')) for r in schedule)
+    refund_total = sum(_currency_to_decimal(r.get('interest_refund', '£0.00')) for r in schedule)
     interest_only_total = interest_total + savings_total
     closing_balance = _currency_to_decimal(schedule[-1]['closing_balance'])
 
@@ -65,6 +66,17 @@ def _assert_summary_matches_schedule(result):
     assert summary_interest.quantize(Decimal('0.01')) == (summary_interest_only - summary_savings).quantize(Decimal('0.01'))
     assert capital_total.quantize(Decimal('0.01')) == Decimal(str(result['gross_amount'])).quantize(Decimal('0.01'))
     assert closing_balance == Decimal('0')
+
+    for row in schedule:
+        retained = _currency_to_decimal(row['interest_retained'])
+        accrued = _currency_to_decimal(row['interest_accrued'])
+        refund = _currency_to_decimal(row['interest_refund'])
+        saving = _currency_to_decimal(row.get('interest_saving', '£0.00'))
+        assert refund == retained - accrued
+        assert saving == refund
+
+    assert refund_total.quantize(Decimal('0.01')) == savings_total.quantize(Decimal('0.01'))
+    assert refund_total.quantize(Decimal('0.01')) == Decimal(str(result['interestSavings'])).quantize(Decimal('0.01'))
 
 
 def test_service_and_capital_summary_matches_schedule_advance():
