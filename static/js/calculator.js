@@ -2939,14 +2939,18 @@ class LoanCalculator {
             return 0;
         });
 
+        // Convert interest values to a running cumulative sum
+        let cumulativeInterest = 0;
         const interestData = schedule.map(entry => {
             const interestRaw = entry.interest_amount || entry.interest || 0;
+            let interestValue = 0;
             if (typeof interestRaw === 'number') {
-                return interestRaw;
+                interestValue = interestRaw;
             } else if (typeof interestRaw === 'string') {
-                return parseFloat(interestRaw.replace(/[£€,]/g, '')) || 0;
+                interestValue = parseFloat(interestRaw.replace(/[£€,]/g, '')) || 0;
             }
-            return 0;
+            cumulativeInterest += interestValue;
+            return cumulativeInterest;
         });
 
         const data = {
