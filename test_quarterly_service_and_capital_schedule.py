@@ -40,7 +40,7 @@ def test_quarterly_service_and_capital_schedule_groups_months():
     result = calc.calculate_bridge_loan(params)
     schedule = result['detailed_payment_schedule']
 
-    assert len(schedule) == 4
+    assert len(schedule) == 5
     first = schedule[0]
     assert first['start_period'] == '01/01/2024'
     assert first['end_period'] == '01/04/2024'
