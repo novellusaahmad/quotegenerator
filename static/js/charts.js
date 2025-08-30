@@ -194,7 +194,13 @@ class ChartManager {
 
         const labels = schedule.map(payment => `Month ${payment.month}`);
         const balanceData = schedule.map(payment => payment.balance || 0);
-        const interestData = schedule.map(payment => payment.interest || payment.interest_amount || 0);
+        // Use a running sum for interest payments rather than period values
+        let cumulativeInterest = 0;
+        const interestData = schedule.map(payment => {
+            const interestValue = payment.interest || payment.interest_amount || 0;
+            cumulativeInterest += interestValue;
+            return cumulativeInterest;
+        });
 
         const config = {
             type: 'line',
