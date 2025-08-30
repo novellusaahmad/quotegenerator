@@ -505,6 +505,7 @@ class LoanCalculator:
                 use_360_days,
                 payment_frequency,
                 payment_timing,
+                start_date,
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
@@ -2018,8 +2019,21 @@ class LoanCalculator:
             'netAdvanceBeforeInterest': self._two_dp(net_advance_before_interest)
         }
     
-    def _calculate_bridge_service_capital(self, gross_amount: Decimal, monthly_rate: Decimal,
-                                        loan_term: int, capital_repayment: Decimal, fees: Dict, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False, payment_frequency: str = 'monthly', payment_timing: str = 'arrears') -> Dict:
+    def _calculate_bridge_service_capital(
+        self,
+        gross_amount: Decimal,
+        monthly_rate: Decimal,
+        loan_term: int,
+        capital_repayment: Decimal,
+        fees: Dict,
+        interest_type: str = 'simple',
+        net_amount: Decimal = None,
+        loan_term_days: int = None,
+        use_360_days: bool = False,
+        payment_frequency: str = 'monthly',
+        payment_timing: str = 'arrears',
+        start_date: Optional[datetime] = None,
+    ) -> Dict:
         """Calculate bridge loan with service + capital payments.
 
         This version supports monthly or quarterly payments and timing in advance
@@ -2043,15 +2057,38 @@ class LoanCalculator:
 
         annual_rate = monthly_rate * 12
 
-        # Pre-compute first period interest for potential advance payments
-        if loan_term_days is not None and interest_type == 'simple':
+        # Determine period day counts when using exact dates
+        day_counts: List[Decimal] = []
+        if start_date is not None and interest_type == 'simple':
+            payment_dates = self._generate_payment_dates(
+                start_date, loan_term, payment_frequency, payment_timing
+            )
+            period_ranges = self._compute_period_ranges(
+                start_date, payment_dates, loan_term, payment_timing
+            )
+
+            group_size = 3 if payment_frequency == 'quarterly' else 1
+            running = 0
+            for idx, pr in enumerate(period_ranges, 1):
+                running += pr['days_held']
+                if idx % group_size == 0 or idx == len(period_ranges):
+                    day_counts.append(Decimal(str(running)))
+                    running = 0
+
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            first_period_interest = gross_amount * (annual_rate / Decimal('100')) * (
+                day_counts[0] / days_per_year
+            )
+        elif loan_term_days is not None and interest_type == 'simple':
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
             days_per_period = Decimal(str(loan_term_days)) / Decimal(str(periods))
             first_period_interest = gross_amount * (annual_rate / Decimal('100')) * (
                 days_per_period / days_per_year
             )
+            day_counts = [Decimal(str(days_per_period)) for _ in range(periods)]
         else:
             first_period_interest = gross_amount * rate_per_period
+            day_counts = [None] * periods  # type: ignore[list-item]
 
         for i in range(periods):
             if remaining_balance <= 0:
@@ -2059,10 +2096,18 @@ class LoanCalculator:
 
             opening_balance = remaining_balance
 
-            if loan_term_days is not None and interest_type == 'simple':
+            if day_counts and day_counts[0] is not None and interest_type == 'simple':
+                days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                days_in_period = day_counts[i]
+                interest_payment = opening_balance * (annual_rate / Decimal('100')) * (
+                    days_in_period / days_per_year
+                )
+            elif loan_term_days is not None and interest_type == 'simple':
                 days_per_year = Decimal('360') if use_360_days else Decimal('365')
                 days_per_period = Decimal(str(loan_term_days)) / Decimal(str(periods))
-                interest_payment = opening_balance * (annual_rate / Decimal('100')) * (days_per_period / days_per_year)
+                interest_payment = opening_balance * (annual_rate / Decimal('100')) * (
+                    days_per_period / days_per_year
+                )
             else:
                 # Only simple interest is fully supported with frequency/timing.
                 if interest_type == 'simple':
@@ -2077,7 +2122,14 @@ class LoanCalculator:
             remaining_balance -= pay
 
         # Interest-only comparison assumes no capital repayments
-        interest_only_total = gross_amount * rate_per_period * periods
+        if day_counts and day_counts[0] is not None and interest_type == 'simple':
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            interest_only_total = sum(
+                gross_amount * (annual_rate / Decimal('100')) * (dc / days_per_year)
+                for dc in day_counts
+            )
+        else:
+            interest_only_total = gross_amount * rate_per_period * periods
         interest_savings = interest_only_total - total_interest
         savings_percentage = (interest_savings / interest_only_total * 100) if interest_only_total > 0 else 0
 

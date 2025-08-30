@@ -301,7 +301,8 @@ def test_service_only_advance_net_to_gross_roundtrip():
     assert float(gross_calculated) == pytest.approx(float(gross_amount))
 
 
-def test_service_and_capital_advance_net_deducts_interest():
+@pytest.mark.parametrize("start_date", [None, datetime.strptime("2024-01-01", "%Y-%m-%d")])
+def test_service_and_capital_advance_net_deducts_interest(start_date):
     """Service + capital gross-to-net should deduct first period interest when in advance."""
     calc = LoanCalculator()
     gross_amount = Decimal('100000')
@@ -312,7 +313,13 @@ def test_service_and_capital_advance_net_deducts_interest():
     site_visit_fee = Decimal('500')
     title_insurance_rate = Decimal('1')
     capital_repayment = Decimal('1000')
-    loan_term_days = 274
+
+    if start_date is None:
+        loan_term_days = 274
+        days_first_period = Decimal(loan_term_days) / Decimal(loan_term)
+    else:
+        loan_term_days = (calc._add_months(start_date, loan_term) - start_date).days
+        days_first_period = (calc._add_months(start_date, 1) - start_date).days
 
     fees = calc._calculate_fees(
         gross_amount,
@@ -335,11 +342,11 @@ def test_service_and_capital_advance_net_deducts_interest():
         use_360_days=False,
         payment_frequency='monthly',
         payment_timing='advance',
+        start_date=start_date,
     )
     days_per_year = Decimal('365')
-    days_per_period = Decimal(str(loan_term_days)) / Decimal(str(loan_term))
     first_period_interest = (
-        gross_amount * (annual_rate / Decimal('100')) * (days_per_period / days_per_year)
+        gross_amount * (annual_rate / Decimal('100')) * (Decimal(days_first_period) / days_per_year)
     )
     expected_before_interest = (
         gross_amount
@@ -556,6 +563,10 @@ def test_service_and_capital_net_matches_gross_schedule(payment_timing):
     assert net_result['totalInterest'] == pytest.approx(gross_result['totalInterest'])
     assert net_result['retainedInterest'] == pytest.approx(gross_result['retainedInterest'])
     assert net_result['interestRefund'] == pytest.approx(gross_result['interestRefund'])
+    assert net_result['netAdvance'] == pytest.approx(float(net_amount))
+    if payment_timing == 'advance':
+        expected_before = float(net_amount) + net_result['firstPeriodInterest']
+        assert net_result['netAdvanceBeforeInterest'] == pytest.approx(expected_before)
 
 
 @pytest.mark.parametrize(
