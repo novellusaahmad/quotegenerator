@@ -795,7 +795,38 @@ class LoanCalculator {
         const loanType = document.getElementById('loanType').value;
         const repaymentOption = document.getElementById('repaymentOption').value;
         const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
-        
+
+        // Retained interest and refund
+        const retainedInterestRow = document.getElementById('retainedInterestRow');
+        const retainedInterestEl = document.getElementById('retainedInterestResult');
+        const interestRefundRow = document.getElementById('interestRefundRow');
+        const interestRefundEl = document.getElementById('interestRefundResult');
+
+        const retainedInterestVal = parseFloat(results.retainedInterest ?? results.retained_interest ?? 0);
+        const interestRefundVal = parseFloat(results.interestRefund ?? results.interest_refund ?? 0);
+
+        if (retainedInterestRow) {
+            if (retainedInterestVal > 0) {
+                retainedInterestRow.style.display = 'table-row';
+                if (retainedInterestEl) {
+                    retainedInterestEl.textContent = retainedInterestVal.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                }
+            } else {
+                retainedInterestRow.style.display = 'none';
+            }
+        }
+
+        if (interestRefundRow) {
+            if (interestRefundVal > 0) {
+                interestRefundRow.style.display = 'table-row';
+                if (interestRefundEl) {
+                    interestRefundEl.textContent = interestRefundVal.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                }
+            } else {
+                interestRefundRow.style.display = 'none';
+            }
+        }
+
         // Show interest-only total and savings if available (for flexible payment options)
         const interestOnlyTotalRow = document.getElementById('interestOnlyTotalRow');
         const interestOnlyTotalEl = document.getElementById('interestOnlyTotalResult');
