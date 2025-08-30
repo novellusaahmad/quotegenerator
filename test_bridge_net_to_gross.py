@@ -237,6 +237,104 @@ def test_service_only_advance_net_to_gross_roundtrip():
     assert float(gross_calculated) == pytest.approx(float(gross_amount))
 
 
+def test_service_and_capital_advance_net_deducts_interest():
+    """Service + capital gross-to-net should deduct first period interest when in advance."""
+    calc = LoanCalculator()
+    gross_amount = Decimal('100000')
+    annual_rate = Decimal('12')
+    loan_term = 9
+    arrangement_fee_rate = Decimal('2')
+    legal_fees = Decimal('1000')
+    site_visit_fee = Decimal('500')
+    title_insurance_rate = Decimal('1')
+    capital_repayment = Decimal('1000')
+    loan_term_days = 274
+
+    fees = calc._calculate_fees(
+        gross_amount,
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        Decimal('0'),
+    )
+    monthly_rate = annual_rate / Decimal('12')
+    result = calc._calculate_bridge_service_capital(
+        gross_amount,
+        monthly_rate,
+        loan_term,
+        capital_repayment,
+        fees,
+        'simple',
+        net_amount=None,
+        loan_term_days=loan_term_days,
+        use_360_days=False,
+        payment_frequency='monthly',
+        payment_timing='advance',
+    )
+    days_per_year = Decimal('365')
+    days_per_period = Decimal(str(loan_term_days)) / Decimal(str(loan_term))
+    first_period_interest = (
+        gross_amount * (annual_rate / Decimal('100')) * (days_per_period / days_per_year)
+    )
+    expected_net = (
+        gross_amount
+        - fees['arrangementFee']
+        - fees['totalLegalFees']
+        - first_period_interest
+    )
+    assert float(result['netAdvance']) == pytest.approx(float(expected_net), abs=0.01)
+
+
+def test_service_and_capital_advance_net_to_gross_roundtrip():
+    """Service + capital net-to-gross should account for first-period interest when in advance."""
+    calc = LoanCalculator()
+    gross_amount = Decimal('100000')
+    annual_rate = Decimal('12')
+    loan_term = 9
+    arrangement_fee_rate = Decimal('2')
+    legal_fees = Decimal('1000')
+    site_visit_fee = Decimal('500')
+    title_insurance_rate = Decimal('1')
+    capital_repayment = Decimal('1000')
+    loan_term_days = 274
+
+    fees = calc._calculate_fees(
+        gross_amount,
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        Decimal('0'),
+    )
+    period_interest = calc._calculate_periodic_interest(
+        gross_amount, annual_rate / Decimal('100'), 'monthly'
+    )
+    net_advance = (
+        gross_amount
+        - fees['arrangementFee']
+        - fees['totalLegalFees']
+        - period_interest
+    )
+
+    gross_calculated = calc._calculate_gross_from_net_bridge(
+        net_advance,
+        annual_rate,
+        loan_term,
+        'service_and_capital',
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        loan_term_days,
+        use_360_days=False,
+        payment_frequency='monthly',
+        payment_timing='advance',
+    )
+
+    assert float(gross_calculated) == pytest.approx(float(gross_amount))
+
+
 @pytest.mark.parametrize(
     "payment_frequency,payment_timing",
     [

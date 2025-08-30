@@ -1976,6 +1976,16 @@ class LoanCalculator:
 
         annual_rate = monthly_rate * 12
 
+        # Pre-compute first period interest for potential advance payments
+        if loan_term_days is not None and interest_type == 'simple':
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            days_per_period = Decimal(str(loan_term_days)) / Decimal(str(periods))
+            first_period_interest = gross_amount * (annual_rate / Decimal('100')) * (
+                days_per_period / days_per_year
+            )
+        else:
+            first_period_interest = gross_amount * rate_per_period
+
         for i in range(periods):
             if remaining_balance <= 0:
                 break
@@ -2010,6 +2020,8 @@ class LoanCalculator:
             net_advance = net_amount
         else:
             net_advance = gross_amount - fees.get('arrangementFee', Decimal('0')) - fees.get('totalLegalFees', Decimal('0'))
+            if payment_timing == 'advance':
+                net_advance -= first_period_interest
 
         return {
             'gross_amount': float(gross_amount),
@@ -2681,7 +2693,6 @@ class LoanCalculator:
 
             original_option = repayment_option
             if repayment_option in (
-                'service_and_capital',
                 'capital_payment_only',
                 'flexible_payment',
             ):
@@ -2762,20 +2773,39 @@ class LoanCalculator:
                 )
                 
             elif repayment_option == 'service_and_capital':
-                # Bridge Service + Capital: use serviced interest factor like service_only
-                if use_360_days:
-                    # Apply 360-day rate adjustment (365/360 factor)
-                    monthly_interest_factor = annual_rate_decimal / Decimal('12') * Decimal('365') / Decimal('360')
+                # Bridge Service + Capital: deduct first period interest only when paid in advance
+                if payment_timing == 'advance':
+                    if payment_frequency == 'quarterly':
+                        period_factor = annual_rate_decimal / Decimal('4')
+                    else:
+                        period_factor = annual_rate_decimal / Decimal('12')
+                    if use_360_days:
+                        period_factor = period_factor * Decimal('365') / Decimal('360')
+                    denominator = (
+                        Decimal('1')
+                        - arrangement_fee_decimal
+                        - title_insurance_decimal
+                        - period_factor
+                    )
+                    logging.info("BRIDGE SERVICE + CAPITAL NET-TO-GROSS (advance):")
+                    logging.info(
+                        "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Period Interest - Title insurance)"
+                    )
+                    logging.info(f"Period interest factor: {period_factor:.6f}")
                 else:
-                    monthly_interest_factor = annual_rate_decimal / Decimal('12')
-                denominator = Decimal('1') - arrangement_fee_decimal - monthly_interest_factor - title_insurance_decimal
+                    denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
+                    logging.info("BRIDGE SERVICE + CAPITAL NET-TO-GROSS (arrears):")
+                    logging.info(
+                        "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)"
+                    )
+
                 gross_amount = (net_amount + total_legal_fees) / denominator
 
-                logging.info(f"BRIDGE SERVICE + CAPITAL NET-TO-GROSS:")
-                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)")
-                logging.info(f"Monthly interest factor: {annual_rate}%/12 = {monthly_interest_factor:.6f}")
-                logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {monthly_interest_factor:.6f} - {title_insurance_decimal:.6f})")
-                logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
+                logging.info(
+                    f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f}"
+                    + (f" - {period_factor:.6f}" if payment_timing == 'advance' else "")
+                    + f") = £{gross_amount:.2f}"
+                )
                 
             elif repayment_option == 'flexible_payment':
                 # Flexible Payment: borrower receives the full gross amount
