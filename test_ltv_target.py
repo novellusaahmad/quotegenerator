@@ -34,7 +34,7 @@ def test_ltv_target_capital_payment_only():
     target_ltv = Decimal('40')
 
     target_balance = property_value * target_ltv / Decimal('100')
-    months = loan_term - 2  # exclude interest retention and final balloon month
+    months = loan_term - 1
     monthly_capital = (gross_amount - target_balance) / months
 
     params = {
