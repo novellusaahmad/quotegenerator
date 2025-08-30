@@ -1916,14 +1916,15 @@ class LoanCalculator:
 
         # For interest-only bridge loans the borrower receives the net amount after
         # any initial interest deduction. Preserve the user-provided net amount when
-        # performing net-to-gross conversions.
+        # performing net-to-gross conversions. For standard gross-to-net calculations,
+        # only fees are deducted up front – interest is serviced separately.
         first_period_interest = periodic_interest
         if net_amount is not None:
             net_advance_after_first_interest = net_amount
             net_advance = net_amount + first_period_interest
         else:
-            net_advance = gross_amount
-            net_advance_after_first_interest = net_advance - first_period_interest
+            net_advance = gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
+            net_advance_after_first_interest = net_advance  # interest is paid later
 
         import logging
         logging.info(f"Bridge interest-only: gross={gross_amount}, net_advance={net_advance} (before first interest)")
