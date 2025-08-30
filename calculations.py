@@ -376,7 +376,7 @@ class LoanCalculator:
         logging.info(f"Interest rate parameters: rate_input_type={rate_input_type}, interest_rate={interest_rate}, annual_rate={annual_rate}")
 
         # Calculate loan term in days using actual calendar logic (needed for gross/net conversions)
-        from datetime import datetime
+        from datetime import datetime, timedelta
         from dateutil.relativedelta import relativedelta
 
         start_date_str = params.get('start_date', datetime.now().strftime('%Y-%m-%d'))
@@ -900,7 +900,7 @@ class LoanCalculator:
     def calculate_development2_loan(self, params: Dict) -> Dict:
         """Development 2 loan using attached Python code methodology with iterative fee calculations"""
         import logging
-        from datetime import datetime, timedelta
+        from datetime import datetime
         from dateutil.relativedelta import relativedelta
         from dateutil.relativedelta import relativedelta
         from calendar import monthrange
@@ -3695,6 +3695,11 @@ class LoanCalculator:
                 period_end = loan_end
             ranges.append({'start': current, 'end': period_end, 'days_held': (period_end - current).days})
             current = period_end
+        # If there are more payment dates than computed ranges (e.g. advance
+        # schedules that include a final principal-only payment), pad with
+        # zero-day periods so callers can safely index by payment date.
+        while len(ranges) < len(payment_dates):
+            ranges.append({'start': loan_end, 'end': loan_end, 'days_held': 0})
 
         return ranges
 
@@ -4133,37 +4138,17 @@ class LoanCalculator:
             start_date = start_date_str
         
         # Generate payment dates
-        payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
+        payment_dates = self._generate_payment_dates(
+            start_date, loan_term, payment_frequency, payment_timing
+        )
 
-        # Recompute period ranges so that each period end is based on the number
-        # of days in the month of its start date. This ensures the detailed
-        # payment schedule uses calendar‑accurate month lengths regardless of
-        # payment timing or frequency.
-        import calendar
-
-        periods = len(payment_dates)
-        period_ranges = []
-        current_start = start_date
-
-        if periods > 0:
-            base_months = loan_term // periods
-            extra_months = loan_term % periods
-
-            for i in range(periods):
-                # Distribute any leftover months across the earliest periods
-                period_months = base_months + (1 if i < extra_months else 0)
-                period_start = current_start
-                total_days = 0
-
-                for _ in range(period_months):
-                    days_in_month = calendar.monthrange(current_start.year, current_start.month)[1]
-                    total_days += days_in_month
-                    current_start += timedelta(days=days_in_month)
-
-                period_end = current_start  # exclusive end date
-                period_ranges.append(
-                    {'start': period_start, 'end': period_end, 'days_held': total_days}
-                )
+        # Compute calendar‑accurate period ranges and ensure the total days do
+        # not exceed the overall loan term. This replaces the previous manual
+        # approach that could accumulate extra days when crossing months with
+        # different lengths (e.g. February).
+        period_ranges = self._compute_period_ranges(
+            start_date, payment_dates, loan_term, payment_timing
+        )
 
 
         detailed_schedule = []
@@ -4278,10 +4263,20 @@ class LoanCalculator:
 
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
-                pr = period_ranges[i]
+                # Some schedules (e.g. advance payments) include an extra final
+                # payment date for principal repayment after interest accrual
+                # has ended. In that case ``period_ranges`` has one fewer entry
+                # than ``payment_dates``.  Fallback to a zero-day period for the
+                # final principal-only payment to avoid indexing errors and
+                # prevent stray days being added.
+                pr = period_ranges[i] if i < len(period_ranges) else {
+                    'start': payment_date,
+                    'end': payment_date,
+                    'days_held': 0,
+                }
                 days_in_period = pr['days_held']
                 period_start = pr['start']
-                period_end = pr['end'] - timedelta(days=1)
+                period_end = pr['end'] - timedelta(days=1) if days_in_period > 0 else pr['end']
 
                 if payment_frequency == 'quarterly':
                     capital_per_payment = capital_repayment * 3
