@@ -2825,23 +2825,34 @@ class LoanCalculator:
             elif repayment_option == 'service_and_capital':
                 # Bridge Service + Capital: deduct first period interest only when paid in advance
                 if payment_timing == 'advance':
-                    if payment_frequency == 'quarterly':
-                        period_factor = annual_rate_decimal / Decimal('4')
-                    else:
-                        period_factor = annual_rate_decimal / Decimal('12')
-                    if use_360_days:
-                        period_factor = period_factor * Decimal('365') / Decimal('360')
+                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
+                    periods = (
+                        Decimal('4')
+                        if payment_frequency == 'quarterly'
+                        else Decimal(str(loan_term))
+                    )
+                    days_first_period = Decimal(str(loan_term_days)) / periods
+                    period_factor = annual_rate_decimal * (
+                        days_first_period / days_per_year
+                    )
                     denominator = (
                         Decimal('1')
                         - arrangement_fee_decimal
                         - title_insurance_decimal
                         - period_factor
                     )
-                    logging.info("BRIDGE SERVICE + CAPITAL NET-TO-GROSS (advance):")
+                    logging.info(
+                        "BRIDGE SERVICE + CAPITAL NET-TO-GROSS (advance):"
+                    )
                     logging.info(
                         "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Period Interest - Title insurance)"
                     )
-                    logging.info(f"Period interest factor: {period_factor:.6f}")
+                    logging.info(
+                        f"Days in first period: {days_first_period}"
+                    )
+                    logging.info(
+                        f"Period interest factor: {annual_rate}% × {days_first_period}/{days_per_year} = {period_factor:.6f}"
+                    )
                 else:
                     denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
                     logging.info("BRIDGE SERVICE + CAPITAL NET-TO-GROSS (arrears):")
@@ -2853,7 +2864,11 @@ class LoanCalculator:
 
                 logging.info(
                     f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f}"
-                    + (f" - {period_factor:.6f}" if payment_timing == 'advance' else "")
+                    + (
+                        f" - {period_factor:.6f} ({days_first_period}/{days_per_year} of {annual_rate}%)"
+                        if payment_timing == 'advance'
+                        else ""
+                    )
                     + f") = £{gross_amount:.2f}"
                 )
                 

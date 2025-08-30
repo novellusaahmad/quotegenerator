@@ -307,8 +307,11 @@ def test_service_and_capital_advance_net_to_gross_roundtrip():
         title_insurance_rate,
         Decimal('0'),
     )
-    period_interest = calc._calculate_periodic_interest(
-        gross_amount, annual_rate / Decimal('100'), 'monthly'
+    days_per_year = Decimal('365')
+    periods = Decimal(str(loan_term))
+    days_first_period = Decimal(str(loan_term_days)) / periods
+    period_interest = gross_amount * (
+        annual_rate / Decimal('100') * (days_first_period / days_per_year)
     )
     net_advance = (
         gross_amount
