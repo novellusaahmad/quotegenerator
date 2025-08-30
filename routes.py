@@ -606,9 +606,38 @@ def api_calculate():
                         total_net_advance = user_net_amount
                         app.logger.info(f'ROUTES.PY EXCEL NET-TO-GROSS ({loan_type}, {repayment_option}): Total Net Advance = user input £{total_net_advance:.2f}')
                     else:
-                        # For Gross-to-Net calculations: Total Net Advance = Gross Amount - All Fees (no interest deduction)
-                        total_net_advance = gross_amount_value - arrangement_fee_value - legal_fees - site_visit_fee - title_insurance_value
-                        app.logger.info(f'ROUTES.PY {repayment_option.upper()} NET ADVANCE ({loan_type}): £{gross_amount_value:.2f} - £{arrangement_fee_value:.2f} - £{legal_fees:.2f} - £{site_visit_fee:.2f} - £{title_insurance_value:.2f} = £{total_net_advance:.2f}')
+                        # For Gross-to-Net calculations: deduct fees and, when paid in advance,
+                        # also deduct first-period interest for service-and-capital or flexible payments.
+                        payment_timing = calc_params.get('payment_timing', 'advance')
+                        if repayment_option in ['service_and_capital', 'flexible_payment'] and payment_timing == 'advance':
+                            first_period_interest = result.get('firstPeriodInterest', result.get('monthlyPayment', 0))
+                            total_net_advance = (
+                                gross_amount_value
+                                - first_period_interest
+                                - arrangement_fee_value
+                                - legal_fees
+                                - site_visit_fee
+                                - title_insurance_value
+                            )
+                            app.logger.info(
+                                f'ROUTES.PY {repayment_option.upper()} ADVANCE NET ADVANCE ({loan_type}): '
+                                f'£{gross_amount_value:.2f} - £{first_period_interest:.2f} (first period interest) - '
+                                f'£{arrangement_fee_value:.2f} - £{legal_fees:.2f} - £{site_visit_fee:.2f} - '
+                                f'£{title_insurance_value:.2f} = £{total_net_advance:.2f}'
+                            )
+                        else:
+                            total_net_advance = (
+                                gross_amount_value
+                                - arrangement_fee_value
+                                - legal_fees
+                                - site_visit_fee
+                                - title_insurance_value
+                            )
+                            app.logger.info(
+                                f'ROUTES.PY {repayment_option.upper()} NET ADVANCE ({loan_type}): '
+                                f'£{gross_amount_value:.2f} - £{arrangement_fee_value:.2f} - £{legal_fees:.2f} - '
+                                f'£{site_visit_fee:.2f} - £{title_insurance_value:.2f} = £{total_net_advance:.2f}'
+                            )
             
         # Store values as floats prior to rounding
         result['totalNetAdvance'] = float(total_net_advance)
