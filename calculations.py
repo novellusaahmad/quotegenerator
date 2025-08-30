@@ -407,7 +407,8 @@ class LoanCalculator:
                 net_amount, annual_rate, loan_term, repayment_option,
                 arrangement_fee_rate, legal_fees, site_visit_fee, title_insurance_rate,
                 loan_term_days, use_360_days,
-                payment_frequency, payment_timing
+                payment_frequency, payment_timing,
+                start_date=start_date
             )
             logging.info(f"Calculated gross amount: {gross_amount}")
         elif amount_input_type == 'percentage' and property_value > 0:
@@ -737,7 +738,8 @@ class LoanCalculator:
                 net_amount, annual_rate, loan_term, repayment_option,
                 arrangement_fee_rate, legal_fees, site_visit_fee, title_insurance_rate,
                 loan_term_days, use_360_days,
-                payment_frequency, payment_timing
+                payment_frequency, payment_timing,
+                start_date=start_date
             )
         elif amount_input_type == 'percentage' and property_value > 0:
             percentage = params.get('loan_percentage', 0)
@@ -2688,7 +2690,8 @@ class LoanCalculator:
                                        site_visit_fee: Decimal, title_insurance_rate: Decimal,
                                        loan_term_days: int, use_360_days: bool = False,
                                        payment_frequency: str = 'monthly',
-                                       payment_timing: str = 'arrears') -> Decimal:
+                                       payment_timing: str = 'arrears',
+                                       start_date: Optional[datetime] = None) -> Decimal:
         """Calculate gross amount from net amount for bridge loans - ENHANCED FORMULA"""
         
         # Daily interest formula for Interest Retained Net to Gross
@@ -2826,12 +2829,17 @@ class LoanCalculator:
                 # Bridge Service + Capital: deduct first period interest only when paid in advance
                 if payment_timing == 'advance':
                     days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                    periods = (
-                        Decimal('4')
-                        if payment_frequency == 'quarterly'
-                        else Decimal(str(loan_term))
-                    )
-                    days_first_period = Decimal(str(loan_term_days)) / periods
+                    if start_date is not None:
+                        payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
+                        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+                        days_first_period = Decimal(str(period_ranges[0]['days_held']))
+                    else:
+                        periods = (
+                            Decimal('4')
+                            if payment_frequency == 'quarterly'
+                            else Decimal(str(loan_term))
+                        )
+                        days_first_period = Decimal(str(loan_term_days)) / periods
                     period_factor = annual_rate_decimal * (
                         days_first_period / days_per_year
                     )
