@@ -4401,6 +4401,32 @@ class LoanCalculator:
         # Recalculate period dates using calendar month lengths
         self._apply_period_dates(detailed_schedule, start_date, loan_term)
 
+        # Ensure interest calculations reflect the final day counts for service-only loans
+        if repayment_option == 'service_only':
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            for idx, entry in enumerate(detailed_schedule):
+                days = entry.get('days_held')
+                if days is None:
+                    continue
+                try:
+                    opening_balance = Decimal(entry['opening_balance'].replace(currency_symbol, '').replace(',', ''))
+                except Exception:
+                    continue
+                interest_amount = self.calculate_simple_interest_by_days(
+                    opening_balance, annual_rate, days, use_360_days
+                )
+                entry['interest_amount'] = f"{currency_symbol}{interest_amount:,.2f}"
+                entry['interest_calculation'] = (
+                    f"{currency_symbol}{opening_balance:,.2f} × {annual_rate:.3f}% × {days}/{days_per_year} days"
+                )
+                principal_payment_str = entry.get('principal_payment', f"{currency_symbol}0.00")
+                principal_payment = Decimal(principal_payment_str.replace(currency_symbol, '').replace(',', ''))
+                total_payment = interest_amount + principal_payment
+                if idx == 0:
+                    total_payment += arrangement_fee + legal_fees
+                    entry['interest_calculation'] += " + fees"
+                entry['total_payment'] = f"{currency_symbol}{total_payment:,.2f}"
+
         if 'cumulative_refund' in locals():
             calculation['interestRefund'] = float(cumulative_refund.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
         return detailed_schedule
