@@ -4143,10 +4143,12 @@ class LoanCalculator:
 
                 remaining_balance -= principal_payment
 
-                total_payment = interest_amount + principal_payment
+                interest_amount_disp = interest_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                interest_only_disp = interest_only.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                interest_refund_disp = max(interest_only_disp - interest_amount_disp, Decimal('0.00'))
+                interest_saving_disp = interest_refund_disp
 
-                interest_refund = max(interest_only - interest_amount, Decimal('0'))
-                interest_saving = interest_refund
+                total_payment = interest_amount_disp + principal_payment
 
                 is_final = remaining_balance == 0
                 interest_calc = interest_calc_base
@@ -4169,11 +4171,11 @@ class LoanCalculator:
                     'opening_balance': f"{currency_symbol}{opening_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
-                    'interest_amount': f"{currency_symbol}{interest_amount:,.2f}",
-                    'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
-                    'interest_accrued': f"{currency_symbol}{interest_amount:,.2f}",
-                    'interest_retained': f"{currency_symbol}{interest_only:,.2f}",
-                    'interest_refund': f"{currency_symbol}{interest_refund:,.2f}",
+                    'interest_amount': f"{currency_symbol}{interest_amount_disp:,.2f}",
+                    'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
+                    'interest_accrued': f"{currency_symbol}{interest_amount_disp:,.2f}",
+                    'interest_retained': f"{currency_symbol}{interest_only_disp:,.2f}",
+                    'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
