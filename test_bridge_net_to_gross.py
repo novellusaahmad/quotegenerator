@@ -392,6 +392,55 @@ def test_flexible_payment_net_to_gross_matches_service_only(payment_frequency, p
     assert float(gross_calculated) == pytest.approx(float(gross_service))
 
 
+@pytest.mark.parametrize("payment_timing", ["advance", "arrears"])
+def test_service_and_capital_net_matches_gross_schedule(payment_timing):
+    calc = LoanCalculator()
+    base = {
+        'annual_rate': Decimal('12'),
+        'loan_term': 12,
+        'repayment_option': 'service_and_capital',
+        'arrangement_fee_rate': Decimal('2'),
+        'legal_fees': Decimal('1000'),
+        'site_visit_fee': Decimal('500'),
+        'title_insurance_rate': Decimal('1'),
+        'capital_repayment': Decimal('1000'),
+        'payment_frequency': 'monthly',
+        'payment_timing': payment_timing,
+        'start_date': '2024-01-01',
+    }
+
+    start_dt = datetime.strptime(base['start_date'], '%Y-%m-%d')
+    loan_term_days = (calc._add_months(start_dt, base['loan_term']) - start_dt).days
+
+    net_amount = Decimal('95000')
+    gross_amount = calc._calculate_gross_from_net_bridge(
+        net_amount,
+        base['annual_rate'],
+        base['loan_term'],
+        base['repayment_option'],
+        base['arrangement_fee_rate'],
+        base['legal_fees'],
+        base['site_visit_fee'],
+        base['title_insurance_rate'],
+        loan_term_days,
+        use_360_days=False,
+        payment_frequency=base['payment_frequency'],
+        payment_timing=payment_timing,
+        start_date=start_dt,
+    )
+
+    gross_params = dict(base, amount_input_type='gross', gross_amount=gross_amount)
+    gross_result = calc.calculate_bridge_loan(gross_params)
+
+    net_params = dict(base, amount_input_type='net', net_amount=net_amount)
+    net_result = calc.calculate_bridge_loan(net_params)
+
+    assert gross_result['detailed_payment_schedule'] == net_result['detailed_payment_schedule']
+    assert net_result['totalInterest'] == pytest.approx(gross_result['totalInterest'])
+    assert net_result['retainedInterest'] == pytest.approx(gross_result['retainedInterest'])
+    assert net_result['interestRefund'] == pytest.approx(gross_result['interestRefund'])
+
+
 @pytest.mark.parametrize(
     "payment_frequency,payment_timing",
     [
