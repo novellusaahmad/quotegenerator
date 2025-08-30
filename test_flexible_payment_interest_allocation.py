@@ -71,7 +71,7 @@ def test_flexible_payment_zero_does_not_reduce_principal():
     }
     schedule = calc.generate_payment_schedule(quote_data)
     first = schedule[0]
-    expected_interest = 100000 * 0.12 * 31 / 365
-    assert math.isclose(first['interest'], expected_interest, rel_tol=1e-9)
+    # With zero payment, no interest is paid and balance remains unchanged
+    assert math.isclose(first['interest'], 0, rel_tol=1e-9)
     assert math.isclose(first['principal'], 0, rel_tol=1e-9)
     assert math.isclose(first['closing_balance'], 100000, rel_tol=1e-9)
