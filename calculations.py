@@ -452,6 +452,29 @@ class LoanCalculator:
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
             calculation['detailed_payment_schedule'] = self._generate_detailed_bridge_schedule(calculation, params, currency_symbol)
+            # Align summary totals with detailed schedule
+            detailed_schedule = calculation.get('detailed_payment_schedule', [])
+            if detailed_schedule:
+                total_interest_from_schedule = Decimal('0')
+                total_savings_from_schedule = Decimal('0')
+                total_interest_only_from_schedule = Decimal('0')
+                for payment in detailed_schedule:
+                    interest_str = payment.get('interest_amount', '£0.00')
+                    saving_str = payment.get('interest_saving', '£0.00')
+                    interest_numeric = interest_str.replace('£', '').replace('€', '').replace(',', '')
+                    saving_numeric = saving_str.replace('£', '').replace('€', '').replace(',', '')
+                    interest_val = Decimal(interest_numeric) if interest_numeric else Decimal('0')
+                    saving_val = Decimal(saving_numeric) if saving_numeric else Decimal('0')
+                    total_interest_from_schedule += interest_val
+                    total_savings_from_schedule += saving_val
+                    total_interest_only_from_schedule += interest_val + saving_val
+
+                calculation['totalInterest'] = self._two_dp(total_interest_from_schedule)
+                calculation['total_interest'] = calculation['totalInterest']
+                calculation['interestSavings'] = self._two_dp(total_savings_from_schedule)
+                calculation['interestOnlyTotal'] = self._two_dp(total_interest_only_from_schedule)
+                if total_interest_only_from_schedule > 0:
+                    calculation['savingsPercentage'] = float((total_savings_from_schedule / total_interest_only_from_schedule) * 100)
         elif repayment_option == 'flexible_payment':
             # Flexible payments - pass net_amount if this is a net-to-gross conversion
             net_for_calculation = net_amount if amount_input_type == 'net' else None

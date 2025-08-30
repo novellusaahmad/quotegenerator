@@ -48,9 +48,13 @@ def test_service_and_capital_summary_matches_schedule():
 
     interest_total = sum(_currency_to_decimal(r.get('interest_accrued', r['interest_amount'])) for r in schedule)
     capital_total = sum(_currency_to_decimal(r['principal_payment']) for r in schedule)
+    savings_total = sum(_currency_to_decimal(r.get('interest_saving', '£0.00')) for r in schedule)
+    interest_only_total = interest_total + savings_total
     closing_balance = _currency_to_decimal(schedule[-1]['closing_balance'])
 
     # Summary comparisons
     assert interest_total.quantize(Decimal('0.01')) == Decimal(str(result['totalInterest'])).quantize(Decimal('0.01'))
+    assert savings_total.quantize(Decimal('0.01')) == Decimal(str(result['interestSavings'])).quantize(Decimal('0.01'))
+    assert interest_only_total.quantize(Decimal('0.01')) == Decimal(str(result['interestOnlyTotal'])).quantize(Decimal('0.01'))
     assert capital_total.quantize(Decimal('0.01')) == Decimal(str(result['gross_amount'])).quantize(Decimal('0.01'))
     assert closing_balance == Decimal('0')
