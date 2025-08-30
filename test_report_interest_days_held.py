@@ -18,7 +18,7 @@ def test_interest_fields_use_days_held():
         'payment_timing': 'arrears',
         'start_date': '2024-01-01',
     }
-    schedule = generate_report_schedule(params)
+    schedule, summary = generate_report_schedule(params)
     first = schedule[0]
     gross = Decimal('100000')
     annual_rate = Decimal('12')
@@ -30,3 +30,16 @@ def test_interest_fields_use_days_held():
     accrued = currency_to_decimal(first['interest_accrued'])
     assert retained == expected_retained
     assert accrued == expected_accrued
+
+    total_retained = sum(currency_to_decimal(r['interest_retained']) for r in schedule)
+    total_refund = sum(currency_to_decimal(r['interest_refund']) for r in schedule)
+    total_accrued = sum(currency_to_decimal(r['interest_accrued']) for r in schedule)
+    total_saving = sum(currency_to_decimal(r['interest_saving']) for r in schedule)
+
+    rounding = Decimal('0.01')
+    expected_total_interest = (total_retained - total_refund).quantize(rounding)
+    assert summary['totalInterest'] == float(expected_total_interest)
+    assert summary['retainedInterest'] == float(total_retained.quantize(rounding))
+    assert summary['interestRefund'] == float(total_refund.quantize(rounding))
+    assert summary['total_interest_accrued'] == float(total_accrued.quantize(rounding))
+    assert summary['interestSavings'] == float(total_saving.quantize(rounding))

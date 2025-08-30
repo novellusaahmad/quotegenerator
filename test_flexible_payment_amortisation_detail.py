@@ -15,7 +15,7 @@ def test_flexible_payment_schedule_shows_amortisation_details():
         'arrangementFee': 0,
         'totalLegalFees': 0,
     }
-    schedule = generate_report_schedule(params)
+    schedule, _ = generate_report_schedule(params)
     first = schedule[0]
     assert 'amortisation_calculation' in first
     expected = f"{first['opening_balance']} - {first['principal_payment']} = {first['closing_balance']}"

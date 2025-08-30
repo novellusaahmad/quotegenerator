@@ -23,7 +23,7 @@ def _run_schedule(payment_timing: str):
 
 def test_report_schedule_interest_fields_match_formulas():
     for timing in ['arrears', 'advance']:
-        schedule = _run_schedule(timing)
+        schedule, _ = _run_schedule(timing)
         first = schedule[0]
         gross = Decimal('100000')
         daily_rate = Decimal('12') / Decimal('100') / Decimal('365')

@@ -1,6 +1,6 @@
 """Utility helpers for payment schedule generation used in reports."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
@@ -49,7 +49,64 @@ else:  # pragma: no cover
     relativedelta = _relativedelta
 
 
-def generate_report_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _to_decimal(value: Any, currency_symbol: str) -> Decimal:
+    """Convert a currency string or numeric value to ``Decimal``."""
+    if isinstance(value, Decimal):
+        return value
+    if isinstance(value, (int, float)):
+        return Decimal(str(value))
+    if isinstance(value, str):
+        return Decimal(value.replace(currency_symbol, '').replace(',', ''))
+    return Decimal(str(value))
+
+
+def recalculate_summary(schedule: List[Dict[str, Any]]) -> Dict[str, float]:
+    """Aggregate interest values from a detailed schedule."""
+    if not schedule:
+        return {}
+
+    currency_symbol = schedule[0].get('opening_balance', '£')[0]
+    total_interest_amt = Decimal('0')
+    total_savings = Decimal('0')
+    total_retained = Decimal('0')
+    total_refund = Decimal('0')
+    total_accrued = Decimal('0')
+
+    for entry in schedule:
+        total_interest_amt += _to_decimal(entry.get('interest_amount', 0), currency_symbol)
+        total_savings += _to_decimal(entry.get('interest_saving', 0), currency_symbol)
+        total_retained += _to_decimal(entry.get('interest_retained', 0), currency_symbol)
+        total_refund += _to_decimal(entry.get('interest_refund', 0), currency_symbol)
+        total_accrued += _to_decimal(entry.get('interest_accrued', 0), currency_symbol)
+
+    rounding = Decimal('0.01')
+
+    if total_retained > 0:
+        total_interest = (total_retained - total_refund).quantize(rounding, rounding=ROUND_HALF_UP)
+    else:
+        total_interest = total_interest_amt.quantize(rounding, rounding=ROUND_HALF_UP)
+
+    total_savings = total_savings.quantize(rounding, rounding=ROUND_HALF_UP)
+    interest_only_total = (total_interest + total_savings).quantize(rounding, rounding=ROUND_HALF_UP)
+
+    summary: Dict[str, float] = {
+        'totalInterest': float(total_interest),
+        'total_interest': float(total_interest),
+        'interestSavings': float(total_savings),
+        'interestOnlyTotal': float(interest_only_total),
+    }
+
+    if total_retained:
+        summary['retainedInterest'] = float(total_retained.quantize(rounding, rounding=ROUND_HALF_UP))
+    if total_refund:
+        summary['interestRefund'] = float(total_refund.quantize(rounding, rounding=ROUND_HALF_UP))
+    if total_accrued:
+        summary['total_interest_accrued'] = float(total_accrued.quantize(rounding, rounding=ROUND_HALF_UP))
+
+    return summary
+
+
+def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], Dict[str, float]]:
     """Generate a detailed payment schedule for report output.
 
 
@@ -69,6 +126,8 @@ def generate_report_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
         schedule = calc.calculate_bridge_loan(cap_params).get('detailed_payment_schedule', [])
     else:
         schedule = calc.calculate_bridge_loan(params).get('detailed_payment_schedule', [])
+
+    summary: Dict[str, float] = {}
 
     # Recalculate interest fields using days_held to ensure consistency in reports
     if schedule:
@@ -104,4 +163,6 @@ def generate_report_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
             row['interest_refund'] = f"{currency_symbol}{interest_refund:,.2f}"
             row['interest_saving'] = f"{currency_symbol}{interest_saving:,.2f}"
 
-    return schedule
+        summary = recalculate_summary(schedule)
+
+    return schedule, summary

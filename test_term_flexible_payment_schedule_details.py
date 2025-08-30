@@ -15,7 +15,7 @@ def test_term_flexible_payment_schedule_includes_detail_fields():
         'arrangementFee': 0,
         'totalLegalFees': 0,
     }
-    schedule = generate_report_schedule(params)
+    schedule, _ = generate_report_schedule(params)
     first = schedule[0]
     assert 'flexible_payment_calculation' in first
     assert 'amortisation_calculation' in first

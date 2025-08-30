@@ -465,7 +465,9 @@ def api_calculate():
         # Ensure detailed schedule structure for serviced + capital and flexible payments
         if loan_type == 'bridge' and repayment_option in ('service_and_capital', 'flexible_payment'):
             try:
-                result['detailed_payment_schedule'] = generate_report_schedule(calc_params)
+                schedule, summary = generate_report_schedule(calc_params)
+                result['detailed_payment_schedule'] = schedule
+                result.update(summary)
             except Exception as e:
                 app.logger.warning(f"Report schedule generation failed: {str(e)}")
 
