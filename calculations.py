@@ -4433,14 +4433,24 @@ class LoanCalculator:
             rounding = Decimal('0.01')
 
             # The detailed schedule stores interest paid in ``interest_amount``
-            # and any discount or refund in ``interest_saving``.  The loan
-            # summary should therefore reflect the actual interest paid rather
-            # than the gross accrued amount.  Previously the presence of an
-            # ``interest_accrued`` field caused the summary to use that value,
-            # overstating total interest compared to the schedule.  We now
-            # always base ``totalInterest`` on the summed ``interest_amount``
-            # so the summary matches the payment schedule exactly.
-            total_interest = total_interest_amt.quantize(rounding, rounding=ROUND_HALF_UP)
+            # and any discount or refund in ``interest_saving``.  For loans
+            # where interest is retained up front (e.g. capital payment only),
+            # the schedule's ``interest_amount`` reflects the full retained
+            # interest and does not subtract subsequent refunds.  In these
+            # cases we compute the net interest as ``retainedInterest -
+            # interestRefund``.  For all other loan types we continue to use
+            # the summed ``interest_amount`` so the summary mirrors the
+            # payments shown in the schedule.
+
+            if total_retained > 0:
+                total_interest = (total_retained - total_refund).quantize(
+                    rounding, rounding=ROUND_HALF_UP
+                )
+            else:
+                total_interest = total_interest_amt.quantize(
+                    rounding, rounding=ROUND_HALF_UP
+                )
+
             calculation['totalInterest'] = float(total_interest)
             calculation['total_interest'] = float(total_interest)
 
