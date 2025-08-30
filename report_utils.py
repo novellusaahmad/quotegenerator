@@ -96,11 +96,12 @@ def generate_report_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
 
             interest_retained = retained_raw.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             interest_accrued = accrued_raw.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            interest_refund = (retained_raw - accrued_raw).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            interest_refund = (interest_retained - interest_accrued).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            interest_saving = interest_refund
 
             row['interest_retained'] = f"{currency_symbol}{interest_retained:,.2f}"
             row['interest_accrued'] = f"{currency_symbol}{interest_accrued:,.2f}"
             row['interest_refund'] = f"{currency_symbol}{interest_refund:,.2f}"
-            row['interest_saving'] = f"{currency_symbol}{interest_refund:,.2f}"
+            row['interest_saving'] = f"{currency_symbol}{interest_saving:,.2f}"
 
     return schedule
