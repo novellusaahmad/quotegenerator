@@ -485,14 +485,14 @@ class LoanCalculator:
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
             calculation['detailed_payment_schedule'] = self._generate_detailed_bridge_schedule(calculation, params, currency_symbol)
-            # Update total interest to match detailed schedule
+            # Update total interest to match detailed schedule (using accrued interest)
             detailed_schedule = calculation.get('detailed_payment_schedule', [])
             if detailed_schedule:
-                total_interest_from_schedule = 0
+                total_interest_from_schedule = Decimal('0')
                 for payment in detailed_schedule:
-                    interest_str = payment.get('interest_amount', '£0.00')
+                    interest_str = payment.get('interest_accrued', '£0.00')
                     interest_numeric = interest_str.replace('£', '').replace('€', '').replace(',', '')
-                    total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
+                    total_interest_from_schedule += Decimal(interest_numeric) if interest_numeric else Decimal('0')
                 total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
@@ -2088,7 +2088,7 @@ class LoanCalculator:
                         interest_paid = flexible_payment - principal_payment
                     remaining_balance = remaining_balance - principal_payment
 
-                total_interest += interest_paid
+                total_interest += interest_due
 
                 if remaining_balance <= 0:
                     break
@@ -4155,7 +4155,8 @@ class LoanCalculator:
                 )
 
                 interest_retained_current = gross_amount * daily_rate * days_in_period
-                interest_saving = max(interest_retained_current - interest_paid, Decimal('0'))
+                interest_accrued = interest_due
+                interest_refund_current = max(interest_retained_current - interest_accrued, Decimal('0'))
 
                 fees_added = Decimal('0')
                 if period == 1:
@@ -4179,7 +4180,7 @@ class LoanCalculator:
 
                 interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 interest_paid_disp = interest_paid.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                interest_refund_current = max(interest_retained_current - interest_paid, Decimal('0'))
+                interest_accrued_disp = interest_accrued.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 interest_refund_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 interest_saving_disp = interest_refund_disp
 
@@ -4203,7 +4204,7 @@ class LoanCalculator:
                     'annual_interest_rate': f"{annual_rate:.2f}%",
                     'interest_pa': f"{daily_rate:.6f}",
                     'scheduled_repayment': f"{currency_symbol}{flexible_per_payment:,.2f}",
-                    'interest_accrued': f"{currency_symbol}{interest_paid_disp:,.2f}",
+                    'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                     'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
                     'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
                     'running_ltv': f"{running_ltv:.2f}"
