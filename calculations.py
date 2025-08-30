@@ -4119,6 +4119,12 @@ class LoanCalculator:
                 balance_change = (
                     f"↓ -{currency_symbol}{principal_payment:,.2f}" if principal_payment > 0 else "↔ No Change"
                 )
+
+                amortisation_calc = (
+                    f"{currency_symbol}{opening_balance:,.2f} - "
+                    f"{currency_symbol}{principal_payment:,.2f} = "
+                    f"{currency_symbol}{remaining_balance:,.2f}"
+                )
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
                     'start_period': period_start.strftime('%d/%m/%Y'),
@@ -4133,7 +4139,8 @@ class LoanCalculator:
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and interest_paid > 0 else ""),
                     'closing_balance': f"{currency_symbol}{remaining_balance:,.2f}",
                     'balance_change': balance_change,
-                    'flexible_payment_calculation': f"{currency_symbol}{principal_payment:,.2f} + {currency_symbol}{interest_paid:,.2f} = {currency_symbol}{flexible_per_payment:,.2f}"
+                    'flexible_payment_calculation': f"{currency_symbol}{principal_payment:,.2f} + {currency_symbol}{interest_paid:,.2f} = {currency_symbol}{flexible_per_payment:,.2f}",
+                    'amortisation_calculation': amortisation_calc
                 })
 
                 if remaining_balance <= 0:
