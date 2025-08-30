@@ -4961,11 +4961,19 @@ class LoanCalculator:
                     total_payment += fees_added
 
                 balance_change = f"↓ -{currency_symbol}{principal_payment:,.2f}" if principal_payment > 0 else "↔ No Change"
-                closing_balance = remaining_balance - principal_payment
+                opening_balance = remaining_balance
+                closing_balance = opening_balance - principal_payment
+
+                flexible_calc = (
+                    f"{currency_symbol}{principal_payment:,.2f} + {currency_symbol}{actual_interest_paid:,.2f} = {currency_symbol}{flexible_per_payment:,.2f}"
+                )
+                amortisation_calc = (
+                    f"{currency_symbol}{opening_balance:,.2f} - {currency_symbol}{principal_payment:,.2f} = {currency_symbol}{closing_balance:,.2f}"
+                )
 
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
-                    'opening_balance': f"{currency_symbol}{remaining_balance:,.2f}",
+                    'opening_balance': f"{currency_symbol}{opening_balance:,.2f}",
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{actual_interest_paid:,.2f}",
@@ -4973,9 +4981,11 @@ class LoanCalculator:
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and not is_final else ""),
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
-                    'balance_change': balance_change
+                    'balance_change': balance_change,
+                    'flexible_payment_calculation': flexible_calc,
+                    'amortisation_calculation': amortisation_calc
                 })
-                
+
                 remaining_balance = closing_balance
                 
                 if remaining_balance <= 0:
