@@ -487,10 +487,9 @@ class LoanCalculator:
                 # For service-only loans, total interest equals the interest-only total
                 calculation['interestOnlyTotal'] = float(total_interest_from_schedule)
         elif repayment_option == 'service_and_capital':
-            # Service + Capital - gross amount has already been derived for
-            # net inputs.  Run the standard gross-to-net calculation so that
-            # both directions (net→gross and gross→net) produce identical
-            # results.
+            # Service + Capital - use the derived gross amount and, for net inputs,
+            # run the gross-to-net calculation with the original net advance.
+            net_for_calculation = net_amount if amount_input_type == 'net' else None
             logging.info(
                 f"Bridge service_and_capital calculation: gross={gross_amount}, capital_repayment={capital_repayment}"
             )
@@ -501,10 +500,9 @@ class LoanCalculator:
                 capital_repayment,
                 fees,
                 interest_type,
-                None,  # force gross-to-net calculation path
+                net_for_calculation,
                 loan_term_days,
                 use_360_days,
-                start_date,
                 payment_frequency,
                 payment_timing,
             )
@@ -804,7 +802,6 @@ class LoanCalculator:
                 gross_amount, monthly_rate, loan_term, capital_repayment, fees,
                 params.get('interest_type', 'simple'), net_for_calculation,
                 loan_term_days, use_360_days,
-                start_date,
                 params.get('payment_frequency', 'monthly'),
                 params.get('payment_timing', 'advance')
             )
@@ -2022,7 +2019,7 @@ class LoanCalculator:
         }
     
     def _calculate_bridge_service_capital(self, gross_amount: Decimal, monthly_rate: Decimal,
-                                        loan_term: int, capital_repayment: Decimal, fees: Dict, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False, start_date: datetime = None, payment_frequency: str = 'monthly', payment_timing: str = 'arrears') -> Dict:
+                                        loan_term: int, capital_repayment: Decimal, fees: Dict, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False, payment_frequency: str = 'monthly', payment_timing: str = 'arrears') -> Dict:
         """Calculate bridge loan with service + capital payments.
 
         This version supports monthly or quarterly payments and timing in advance
@@ -2046,17 +2043,8 @@ class LoanCalculator:
 
         annual_rate = monthly_rate * 12
 
-        # Pre-compute first period interest using actual days when available
-        if start_date is not None:
-            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            if period_ranges:
-                days_first_period = Decimal(str(period_ranges[0]['days_held']))
-                first_period_interest = gross_amount * (annual_rate / Decimal('100')) * (days_first_period / days_per_year)
-            else:
-                first_period_interest = gross_amount * rate_per_period
-        elif loan_term_days is not None and interest_type == 'simple':
+        # Pre-compute first period interest for potential advance payments
+        if loan_term_days is not None and interest_type == 'simple':
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
             days_per_period = Decimal(str(loan_term_days)) / Decimal(str(periods))
             first_period_interest = gross_amount * (annual_rate / Decimal('100')) * (
