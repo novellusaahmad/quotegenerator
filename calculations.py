@@ -366,7 +366,8 @@ class LoanCalculator:
             gross_amount = self._calculate_gross_from_net_bridge(
                 net_amount, annual_rate, loan_term, repayment_option,
                 arrangement_fee_rate, legal_fees, site_visit_fee, title_insurance_rate,
-                loan_term_days, use_360_days
+                loan_term_days, use_360_days,
+                payment_frequency, payment_timing
             )
             logging.info(f"Calculated gross amount: {gross_amount}")
         elif amount_input_type == 'percentage' and property_value > 0:
@@ -677,7 +678,8 @@ class LoanCalculator:
             gross_amount = self._calculate_gross_from_net_bridge(
                 net_amount, annual_rate, loan_term, repayment_option,
                 arrangement_fee_rate, legal_fees, site_visit_fee, title_insurance_rate,
-                loan_term_days, use_360_days
+                loan_term_days, use_360_days,
+                payment_frequency, payment_timing
             )
         elif amount_input_type == 'percentage' and property_value > 0:
             percentage = params.get('loan_percentage', 0)
@@ -2614,7 +2616,9 @@ class LoanCalculator:
                                        loan_term: int, repayment_option: str,
                                        arrangement_fee_rate: Decimal, legal_fees: Decimal,
                                        site_visit_fee: Decimal, title_insurance_rate: Decimal,
-                                       loan_term_days: int, use_360_days: bool = False) -> Decimal:
+                                       loan_term_days: int, use_360_days: bool = False,
+                                       payment_frequency: str = 'monthly',
+                                       payment_timing: str = 'arrears') -> Decimal:
         """Calculate gross amount from net amount for bridge loans - ENHANCED FORMULA"""
         
         # Daily interest formula for Interest Retained Net to Gross
@@ -2699,16 +2703,43 @@ class LoanCalculator:
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'service_only':
-                # Bridge Serviced: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)
-                denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
+                # Bridge Serviced: adjust formula based on payment timing
+                if payment_timing == 'advance':
+                    if payment_frequency == 'quarterly':
+                        period_factor = annual_rate_decimal / Decimal('4')
+                    else:
+                        period_factor = annual_rate_decimal / Decimal('12')
+                    if use_360_days:
+                        period_factor = period_factor * Decimal('365') / Decimal('360')
+                    denominator = (
+                        Decimal('1')
+                        - arrangement_fee_decimal
+                        - title_insurance_decimal
+                        - period_factor
+                    )
+                    logging.info(
+                        "BRIDGE SERVICED NET-TO-GROSS (advance):"
+                    )
+                    logging.info(
+                        "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Period Interest - Title insurance)"
+                    )
+                    logging.info(
+                        f"Period interest factor: {period_factor:.6f}"
+                    )
+                else:
+                    denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
+                    logging.info("BRIDGE SERVICED NET-TO-GROSS (arrears):")
+                    logging.info(
+                        "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)"
+                    )
+
                 gross_amount = (net_amount + total_legal_fees) / denominator
 
-                logging.info(f"BRIDGE SERVICED NET-TO-GROSS:")
-                logging.info(f"Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)")
                 logging.info(
-                    f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f})"
+                    f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f}"
+                    + (f" - {period_factor:.6f}" if payment_timing == 'advance' else "")
+                    + f") = £{gross_amount:.2f}"
                 )
-                logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
             elif repayment_option == 'service_and_capital':
                 # Bridge Service + Capital: use serviced interest factor like service_only

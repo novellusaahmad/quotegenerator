@@ -190,3 +190,47 @@ def test_service_only_net_to_gross_roundtrip():
     # Also ensure gross-to-net removed only fees
     manual_net = gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
     assert float(net_amount) == pytest.approx(float(manual_net))
+
+
+def test_service_only_advance_net_to_gross_roundtrip():
+    """Service-only net to gross should account for first-period interest when paid in advance."""
+    calc = LoanCalculator()
+    gross_amount = Decimal('100000')
+    annual_rate = Decimal('12')
+    loan_term = 9
+    arrangement_fee_rate = Decimal('2')
+    legal_fees = Decimal('1000')
+    site_visit_fee = Decimal('500')
+    title_insurance_rate = Decimal('1')
+    loan_term_days = 274
+
+    # Gross to net with first period interest deducted up front
+    fees = calc._calculate_fees(
+        gross_amount,
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        Decimal('0'),
+    )
+    period_interest = calc._calculate_periodic_interest(
+        gross_amount, annual_rate / Decimal('100'), 'monthly'
+    )
+    net_advance = gross_amount - fees['arrangementFee'] - fees['totalLegalFees'] - period_interest
+
+    gross_calculated = calc._calculate_gross_from_net_bridge(
+        net_advance,
+        annual_rate,
+        loan_term,
+        'service_only',
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        loan_term_days,
+        use_360_days=False,
+        payment_frequency='monthly',
+        payment_timing='advance',
+    )
+
+    assert float(gross_calculated) == pytest.approx(float(gross_amount))
