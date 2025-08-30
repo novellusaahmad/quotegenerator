@@ -2840,9 +2840,10 @@ class LoanCalculator:
                             else Decimal(str(loan_term))
                         )
                         days_first_period = Decimal(str(loan_term_days)) / periods
-                    period_factor = annual_rate_decimal * (
-                        days_first_period / days_per_year
-                    )
+
+                    daily_rate = annual_rate_decimal / days_per_year
+                    period_factor = daily_rate * days_first_period
+
                     denominator = (
                         Decimal('1')
                         - arrangement_fee_decimal
@@ -2859,7 +2860,10 @@ class LoanCalculator:
                         f"Days in first period: {days_first_period}"
                     )
                     logging.info(
-                        f"Period interest factor: {annual_rate}% × {days_first_period}/{days_per_year} = {period_factor:.6f}"
+                        f"Daily rate: {annual_rate}% / {days_per_year} = {daily_rate:.6f}"
+                    )
+                    logging.info(
+                        f"Period interest factor: {days_first_period} × {daily_rate:.6f} = {period_factor:.6f}"
                     )
                 else:
                     denominator = Decimal('1') - arrangement_fee_decimal - title_insurance_decimal
@@ -2873,7 +2877,7 @@ class LoanCalculator:
                 logging.info(
                     f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f}"
                     + (
-                        f" - {period_factor:.6f} ({days_first_period}/{days_per_year} of {annual_rate}%)"
+                        f" - {period_factor:.6f} ({days_first_period}×{daily_rate:.6f})"
                         if payment_timing == 'advance'
                         else ""
                     )
