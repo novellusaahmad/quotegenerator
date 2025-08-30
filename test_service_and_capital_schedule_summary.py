@@ -56,5 +56,10 @@ def test_service_and_capital_summary_matches_schedule():
     assert interest_total.quantize(Decimal('0.01')) == Decimal(str(result['totalInterest'])).quantize(Decimal('0.01'))
     assert savings_total.quantize(Decimal('0.01')) == Decimal(str(result['interestSavings'])).quantize(Decimal('0.01'))
     assert interest_only_total.quantize(Decimal('0.01')) == Decimal(str(result['interestOnlyTotal'])).quantize(Decimal('0.01'))
+    # Derived summary check
+    summary_interest_only = Decimal(str(result['interestOnlyTotal']))
+    summary_savings = Decimal(str(result['interestSavings']))
+    summary_interest = Decimal(str(result['totalInterest']))
+    assert summary_interest.quantize(Decimal('0.01')) == (summary_interest_only - summary_savings).quantize(Decimal('0.01'))
     assert capital_total.quantize(Decimal('0.01')) == Decimal(str(result['gross_amount'])).quantize(Decimal('0.01'))
     assert closing_balance == Decimal('0')

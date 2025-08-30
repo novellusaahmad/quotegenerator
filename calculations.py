@@ -455,7 +455,6 @@ class LoanCalculator:
             # Align summary totals with detailed schedule
             detailed_schedule = calculation.get('detailed_payment_schedule', [])
             if detailed_schedule:
-                total_interest_from_schedule = Decimal('0')
                 total_savings_from_schedule = Decimal('0')
                 total_interest_only_from_schedule = Decimal('0')
                 for payment in detailed_schedule:
@@ -465,10 +464,10 @@ class LoanCalculator:
                     saving_numeric = saving_str.replace('£', '').replace('€', '').replace(',', '')
                     interest_val = Decimal(interest_numeric) if interest_numeric else Decimal('0')
                     saving_val = Decimal(saving_numeric) if saving_numeric else Decimal('0')
-                    total_interest_from_schedule += interest_val
                     total_savings_from_schedule += saving_val
                     total_interest_only_from_schedule += interest_val + saving_val
 
+                total_interest_from_schedule = total_interest_only_from_schedule - total_savings_from_schedule
                 calculation['totalInterest'] = self._two_dp(total_interest_from_schedule)
                 calculation['total_interest'] = calculation['totalInterest']
                 calculation['interestSavings'] = self._two_dp(total_savings_from_schedule)
