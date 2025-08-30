@@ -3497,23 +3497,45 @@ class LoanCalculator:
     def _apply_period_dates(self, schedule: List[Dict], start_date: datetime, loan_term: int) -> None:
         """Apply start/end period dates to a schedule based on calendar months.
 
-        This mutates each entry in ``schedule`` by inserting ``start_period``,
-        ``end_period`` and ``days_held`` keys calculated from the provided
-        ``start_date`` and ``loan_term``.
+        Unlike the previous implementation which assumed one schedule entry per
+        month, this version dynamically distributes the total ``loan_term``
+        across however many periods are present in ``schedule``.  This allows
+        quarterly schedules (four rows) to receive three months of dates per
+        period rather than having every row represent only a single month.
+
+        Each entry in ``schedule`` is mutated in‑place to include
+        ``start_period``, ``end_period`` (inclusive) and ``days_held`` fields
+        that span the correct number of calendar days for that period.
         """
+
         loan_end = self._add_months(self._normalize_date(start_date), loan_term)
         current = self._normalize_date(start_date)
-        for entry in schedule:
+
+        periods = len(schedule)
+        if periods == 0:
+            return
+
+        base_months = loan_term // periods
+        extra_months = loan_term % periods
+
+        for i, entry in enumerate(schedule):
             if current >= loan_end:
                 break
-            days_in_month = calendar.monthrange(current.year, current.month)[1]
-            period_end = current + timedelta(days=days_in_month)
-            if period_end > loan_end:
-                period_end = loan_end
-            entry['start_period'] = current.strftime('%d/%m/%Y')
+
+            period_months = base_months + (1 if i < extra_months else 0)
+            period_start = current
+            total_days = 0
+
+            for _ in range(period_months):
+                days_in_month = calendar.monthrange(current.year, current.month)[1]
+                total_days += days_in_month
+                current += timedelta(days=days_in_month)
+
+            period_end = min(current, loan_end)
+            entry['start_period'] = period_start.strftime('%d/%m/%Y')
             entry['end_period'] = period_end.strftime('%d/%m/%Y')
-            entry['days_held'] = (period_end - current).days
-            current = period_end
+            entry['days_held'] = (period_end - period_start).days
+
 
     def generate_payment_schedule(self, quote_data: Dict, currency_symbol: str = '£') -> List[Dict]:
         """Generate detailed payment schedule for a loan"""
