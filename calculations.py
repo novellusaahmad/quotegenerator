@@ -4181,7 +4181,6 @@ class LoanCalculator:
             # Service + Capital payments
             capital_repayment = Decimal(str(params.get('capital_repayment', 1000)))
 
-            loan_term_days_param = params.get('loan_term_days')
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
 
             for i, payment_date in enumerate(payment_dates):
@@ -4206,31 +4205,24 @@ class LoanCalculator:
                 if principal_payment > remaining_balance:
                     principal_payment = remaining_balance
 
-                if loan_term_days_param is not None:
-                    interest_amount = self.calculate_simple_interest_by_days(
-                        opening_balance, annual_rate, days_in_period, use_360_days)
-                    interest_only = self.calculate_simple_interest_by_days(
-                        gross_amount, annual_rate, days_in_period, use_360_days)
-                    interest_calc_base = (
-                        f"{currency_symbol}{opening_balance:,.2f} × {annual_rate:.3f}% "
-                        f"× {days_in_period}/{days_per_year} days")
-                else:
-                    if payment_frequency == 'quarterly':
-                        period_rate = annual_rate / Decimal('100') / Decimal('4')
-                        rate_display = annual_rate / Decimal('4')
-                    else:
-                        period_rate = annual_rate / Decimal('100') / Decimal('12')
-                        rate_display = annual_rate / Decimal('12')
-                    interest_amount = opening_balance * period_rate
-                    interest_only = gross_amount * period_rate
-                    interest_calc_base = (
-                        f"{currency_symbol}{opening_balance:,.2f} × {rate_display:.3f}%")
+                # Use daily interest for both accrued and retained amounts
+                days_in_period_dec = Decimal(str(days_in_period))
+                daily_rate = (annual_rate / Decimal('100')) / days_per_year
+                interest_amount = opening_balance * daily_rate * days_in_period_dec
+                interest_only = gross_amount * daily_rate * days_in_period_dec
+                interest_calc_base = (
+                    f"{currency_symbol}{opening_balance:,.2f} × {annual_rate:.3f}% "
+                    f"× {days_in_period}/{days_per_year} days")
 
                 remaining_balance -= principal_payment
 
                 interest_amount_disp = interest_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 interest_only_disp = interest_only.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                interest_refund_disp = max(interest_only_disp - interest_amount_disp, Decimal('0.00'))
+                interest_refund_disp = (interest_only_disp - interest_amount_disp).quantize(
+                    Decimal('0.01'), rounding=ROUND_HALF_UP
+                )
+                if interest_refund_disp < 0:
+                    interest_refund_disp = Decimal('0.00')
                 interest_saving_disp = interest_refund_disp
 
                 total_payment = interest_amount_disp + principal_payment
