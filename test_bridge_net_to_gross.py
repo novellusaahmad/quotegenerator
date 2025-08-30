@@ -392,6 +392,54 @@ def test_flexible_payment_net_to_gross_matches_service_only(payment_frequency, p
     assert float(gross_calculated) == pytest.approx(float(gross_service))
 
 
+def test_service_and_capital_net_to_gross_uses_day_interest():
+    """Interest retained for service + capital uses Gross × Days × Daily Rate."""
+    calc = LoanCalculator()
+    params = {
+        'annual_rate': Decimal('12'),
+        'loan_term': 12,
+        'repayment_option': 'service_and_capital',
+        'arrangement_fee_rate': Decimal('2'),
+        'legal_fees': Decimal('1000'),
+        'site_visit_fee': Decimal('500'),
+        'title_insurance_rate': Decimal('1'),
+        'capital_repayment': Decimal('1000'),
+        'payment_frequency': 'monthly',
+        'payment_timing': 'advance',
+        'start_date': '2024-01-01',
+    }
+
+    start_dt = datetime.strptime(params['start_date'], '%Y-%m-%d')
+    loan_term_days = (calc._add_months(start_dt, params['loan_term']) - start_dt).days
+
+    net_amount = Decimal('95000')
+    gross = calc._calculate_gross_from_net_bridge(
+        net_amount,
+        params['annual_rate'],
+        params['loan_term'],
+        params['repayment_option'],
+        params['arrangement_fee_rate'],
+        params['legal_fees'],
+        params['site_visit_fee'],
+        params['title_insurance_rate'],
+        loan_term_days,
+        use_360_days=False,
+        payment_frequency=params['payment_frequency'],
+        payment_timing=params['payment_timing'],
+        start_date=start_dt,
+    )
+
+    result = calc.calculate_bridge_loan(dict(params, amount_input_type='net', net_amount=net_amount))
+
+    first = result['detailed_payment_schedule'][0]
+    interest_first = Decimal(first['interest_amount'].replace('£', '').replace(',', ''))
+    days_first = Decimal(str(first['days_held']))
+    daily_rate = (params['annual_rate'] / Decimal('100')) / Decimal('365')
+    expected = (gross * daily_rate * days_first).quantize(Decimal('0.01'))
+
+    assert interest_first == expected
+
+
 @pytest.mark.parametrize("payment_timing", ["advance", "arrears"])
 def test_service_and_capital_net_matches_gross_schedule(payment_timing):
     calc = LoanCalculator()
@@ -493,3 +541,51 @@ def test_capital_payment_only_net_to_gross_matches_service_only(payment_frequenc
     )
 
     assert float(gross_calculated) == pytest.approx(float(gross_service))
+
+
+def test_service_and_capital_net_to_gross_uses_day_interest():
+    """Interest retained for service + capital uses Gross × Days × Daily Rate."""
+    calc = LoanCalculator()
+    params = {
+        'annual_rate': Decimal('12'),
+        'loan_term': 12,
+        'repayment_option': 'service_and_capital',
+        'arrangement_fee_rate': Decimal('2'),
+        'legal_fees': Decimal('1000'),
+        'site_visit_fee': Decimal('500'),
+        'title_insurance_rate': Decimal('1'),
+        'capital_repayment': Decimal('1000'),
+        'payment_frequency': 'monthly',
+        'payment_timing': 'advance',
+        'start_date': '2024-01-01',
+    }
+
+    start_dt = datetime.strptime(params['start_date'], '%Y-%m-%d')
+    loan_term_days = (calc._add_months(start_dt, params['loan_term']) - start_dt).days
+
+    net_amount = Decimal('95000')
+    gross = calc._calculate_gross_from_net_bridge(
+        net_amount,
+        params['annual_rate'],
+        params['loan_term'],
+        params['repayment_option'],
+        params['arrangement_fee_rate'],
+        params['legal_fees'],
+        params['site_visit_fee'],
+        params['title_insurance_rate'],
+        loan_term_days,
+        use_360_days=False,
+        payment_frequency=params['payment_frequency'],
+        payment_timing=params['payment_timing'],
+        start_date=start_dt,
+    )
+
+    result = calc.calculate_bridge_loan(dict(params, amount_input_type='net', net_amount=net_amount))
+
+    first = result['detailed_payment_schedule'][0]
+    interest_first = Decimal(first['interest_amount'].replace('£', '').replace(',', ''))
+    days_first = Decimal(str(first['days_held']))
+    daily_rate = (params['annual_rate'] / Decimal('100')) / Decimal('365')
+    expected = (gross * daily_rate * days_first).quantize(Decimal('0.01'))
+
+    assert interest_first == expected
