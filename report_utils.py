@@ -3,6 +3,7 @@
 from typing import Any, Dict, List
 
 from decimal import Decimal, ROUND_HALF_UP
+from datetime import datetime
 
 from calculations import LoanCalculator
 
@@ -78,7 +79,15 @@ def generate_report_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
         daily_rate = annual_rate / Decimal('100') / days_per_year
 
         for row in schedule:
-            days = Decimal(str(row.get('days_held', 0)))
+            start = row.get('start_period')
+            end = row.get('end_period')
+            if start and end:
+                day_count = (datetime.strptime(end, '%d/%m/%Y') - datetime.strptime(start, '%d/%m/%Y')).days
+                row['days_held'] = day_count
+            else:
+                day_count = int(row.get('days_held', 0))
+
+            days = Decimal(str(day_count))
             opening_balance = Decimal(row.get('opening_balance', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', ''))
             interest_retained = (gross_amount * daily_rate * days).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             interest_accrued = (opening_balance * daily_rate * days).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)

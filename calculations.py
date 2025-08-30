@@ -3485,12 +3485,8 @@ class LoanCalculator:
         current = start_date
 
         while current < loan_end:
-            # Determine the end of the period by adding one calendar month
-            # rather than a fixed number of days.  This ensures that periods
-            # respect varying month lengths (e.g. February) and prevents
-            # rollover into the following month when the starting day does not
-            # exist in the next month.
-            period_end = self._add_months(current, 1)
+            days_in_month = calendar.monthrange(current.year, current.month)[1]
+            period_end = current + timedelta(days=days_in_month)
             if period_end > loan_end:
                 period_end = loan_end
             ranges.append({'start': current, 'end': period_end, 'days_held': (period_end - current).days})
@@ -3510,12 +3506,8 @@ class LoanCalculator:
         for entry in schedule:
             if current >= loan_end:
                 break
-            # Use calendar month arithmetic to find the next period end rather
-            # than adding the nominal number of days in the current month.  The
-            # latter can skip over shorter months and yield 31‑day periods for
-            # February.  Using ``_add_months`` keeps the dates aligned with the
-            # calendar and produces the correct day counts.
-            period_end = self._add_months(current, 1)
+            days_in_month = calendar.monthrange(current.year, current.month)[1]
+            period_end = current + timedelta(days=days_in_month)
             if period_end > loan_end:
                 period_end = loan_end
             entry['start_period'] = current.strftime('%d/%m/%Y')
@@ -3874,10 +3866,11 @@ class LoanCalculator:
         # Generate payment dates
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
 
-        # Recompute period ranges so that each period end is based on adding
-        # whole calendar months.  This keeps the schedule aligned with actual
-        # month lengths and avoids carrying extra days from shorter months like
-        # February into the following period.
+        # Recompute period ranges so that each period end is based on the number
+        # of days in the month of its start date. This ensures the detailed
+        # payment schedule uses calendar‑accurate month lengths regardless of
+        # payment timing or frequency.
+        import calendar
 
         periods = len(payment_dates)
         period_ranges = []
@@ -3894,9 +3887,9 @@ class LoanCalculator:
                 total_days = 0
 
                 for _ in range(period_months):
-                    next_start = self._add_months(current_start, 1)
-                    total_days += (next_start - current_start).days
-                    current_start = next_start
+                    days_in_month = calendar.monthrange(current_start.year, current_start.month)[1]
+                    total_days += days_in_month
+                    current_start += timedelta(days=days_in_month)
 
                 period_end = current_start  # exclusive end date
                 period_ranges.append(
