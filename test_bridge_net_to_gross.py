@@ -136,3 +136,43 @@ def test_bridge_interest_only_net_matches_input():
     )
 
     assert res['netAdvance'] == pytest.approx(float(net_amount))
+
+
+def test_service_only_net_to_gross_roundtrip():
+    """Service-only net to gross should invert gross to net when no interest is deducted."""
+    calc = LoanCalculator()
+    gross_amount = Decimal('100000')
+    annual_rate = Decimal('12')
+    loan_term = 9
+    arrangement_fee_rate = Decimal('2')
+    legal_fees = Decimal('1000')
+    site_visit_fee = Decimal('500')
+    title_insurance_rate = Decimal('1')
+    loan_term_days = 274
+
+    # Gross to net (fees only, no interest retained)
+    fees = calc._calculate_fees(
+        gross_amount,
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        Decimal('0'),
+    )
+    net_amount = gross_amount - fees['arrangementFee'] - fees['totalLegalFees']
+
+    # Net to gross should return the original gross amount
+    gross_calculated = calc._calculate_gross_from_net_bridge(
+        net_amount,
+        annual_rate,
+        loan_term,
+        'service_only',
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        loan_term_days,
+        use_360_days=False,
+    )
+
+    assert float(gross_calculated) == pytest.approx(float(gross_amount))
