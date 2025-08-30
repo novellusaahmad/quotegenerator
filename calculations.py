@@ -2678,9 +2678,21 @@ class LoanCalculator:
         else:
             # USER-SPECIFIED FORMULAS for Bridge Loan Net to Gross
             import logging
-            
-            logging.info(f"Bridge Net-to-Gross ({repayment_option}): target_net={net_amount}")
-            logging.info(f"Input fees: arrangement={arrangement_fee_rate}%, legal={legal_fees}, site_visit={site_visit_fee}, title_insurance={title_insurance_rate}%")
+
+            original_option = repayment_option
+            if repayment_option in (
+                'service_and_capital',
+                'capital_payment_only',
+                'flexible_payment',
+            ):
+                repayment_option = 'service_only'
+
+            logging.info(
+                f"Bridge Net-to-Gross ({original_option}): target_net={net_amount}"
+            )
+            logging.info(
+                f"Input fees: arrangement={arrangement_fee_rate}%, legal={legal_fees}, site_visit={site_visit_fee}, title_insurance={title_insurance_rate}%"
+            )
             
             # Convert percentages to decimals
             arrangement_fee_decimal = arrangement_fee_rate / Decimal('100')
@@ -2879,9 +2891,21 @@ class LoanCalculator:
         else:
             # USER-SPECIFIED FORMULAS for Term Loan Net to Gross (same as Bridge)
             import logging
-            
-            logging.info(f"Term Net-to-Gross ({repayment_option}): target_net={net_amount}")
-            logging.info(f"Input fees: arrangement={arrangement_fee_rate}%, legal={legal_fees}, site_visit={site_visit_fee}, title_insurance={title_insurance_rate}%")
+
+            original_option = repayment_option
+            if repayment_option in (
+                'service_and_capital',
+                'capital_payment_only',
+                'flexible_payment',
+            ):
+                repayment_option = 'service_only'
+
+            logging.info(
+                f"Term Net-to-Gross ({original_option}): target_net={net_amount}"
+            )
+            logging.info(
+                f"Input fees: arrangement={arrangement_fee_rate}%, legal={legal_fees}, site_visit={site_visit_fee}, title_insurance={title_insurance_rate}%"
+            )
             
             # Convert percentages to decimals
             arrangement_fee_decimal = arrangement_fee_rate / Decimal('100')

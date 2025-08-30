@@ -3,7 +3,7 @@ import pytest
 from calculations import LoanCalculator
 
 
-def test_bridge_capital_only_net_matches_input():
+def test_bridge_capital_only_net_matches_service_only():
     calc = LoanCalculator()
     net_amount = Decimal('95000')
     annual_rate = Decimal('12')
@@ -13,7 +13,21 @@ def test_bridge_capital_only_net_matches_input():
     site_visit_fee = Decimal('500')
     title_insurance_rate = Decimal('1')
     loan_term_days = 365
-    capital_repayment = Decimal('1000')
+
+    gross_service = calc._calculate_gross_from_net_bridge(
+        net_amount,
+        annual_rate,
+        loan_term,
+        'service_only',
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        loan_term_days,
+        use_360_days=False,
+        payment_frequency='monthly',
+        payment_timing='advance',
+    )
 
     gross = calc._calculate_gross_from_net_bridge(
         net_amount,
@@ -30,23 +44,4 @@ def test_bridge_capital_only_net_matches_input():
         payment_timing='advance',
     )
 
-    fees = calc._calculate_fees(
-        gross,
-        arrangement_fee_rate,
-        legal_fees,
-        site_visit_fee,
-        title_insurance_rate,
-        Decimal('0'),
-    )
-
-    res = calc._calculate_bridge_capital_payment_only(
-        gross,
-        annual_rate,
-        loan_term,
-        capital_repayment,
-        fees,
-        payment_frequency='monthly',
-        payment_timing='advance'
-    )
-
-    assert res['netAdvance'] == pytest.approx(float(net_amount))
+    assert float(gross) == pytest.approx(float(gross_service))

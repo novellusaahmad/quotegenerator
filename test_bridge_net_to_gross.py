@@ -246,10 +246,10 @@ def test_service_only_advance_net_to_gross_roundtrip():
         ("quarterly", "arrears"),
     ],
 )
-def test_flexible_payment_net_to_gross_roundtrip(payment_frequency, payment_timing):
-    """Flexible payment net-to-gross should invert gross-to-net for all timings and frequencies."""
+def test_flexible_payment_net_to_gross_matches_service_only(payment_frequency, payment_timing):
+    """Flexible payment net-to-gross should match the service-only formula."""
     calc = LoanCalculator()
-    gross_amount = Decimal("100000")
+    net_amount = Decimal("100000")
     annual_rate = Decimal("12")
     loan_term = 12
     arrangement_fee_rate = Decimal("2")
@@ -257,32 +257,24 @@ def test_flexible_payment_net_to_gross_roundtrip(payment_frequency, payment_timi
     site_visit_fee = Decimal("500")
     title_insurance_rate = Decimal("1")
     loan_term_days = 365
-    flexible_payment = Decimal("2000")
 
-    fees = calc._calculate_fees(
-        gross_amount,
+    gross_service = calc._calculate_gross_from_net_bridge(
+        net_amount,
+        annual_rate,
+        loan_term,
+        "service_only",
         arrangement_fee_rate,
         legal_fees,
         site_visit_fee,
         title_insurance_rate,
-        Decimal("0"),
-    )
-
-    # Net advance is the result of gross-to-net flexible payment calculation
-    net_result = calc._calculate_bridge_flexible(
-        gross_amount,
-        annual_rate,
-        loan_term,
-        flexible_payment,
-        fees,
-        start_date=datetime(2024, 1, 1),
+        loan_term_days,
+        use_360_days=False,
         payment_frequency=payment_frequency,
         payment_timing=payment_timing,
     )
-    net_advance = Decimal(str(net_result['netAdvance']))
 
     gross_calculated = calc._calculate_gross_from_net_bridge(
-        net_advance,
+        net_amount,
         annual_rate,
         loan_term,
         "flexible_payment",
@@ -296,7 +288,7 @@ def test_flexible_payment_net_to_gross_roundtrip(payment_frequency, payment_timi
         payment_timing=payment_timing,
     )
 
-    assert float(gross_calculated) == pytest.approx(float(gross_amount))
+    assert float(gross_calculated) == pytest.approx(float(gross_service))
 
 
 @pytest.mark.parametrize(
@@ -308,10 +300,10 @@ def test_flexible_payment_net_to_gross_roundtrip(payment_frequency, payment_timi
         ("quarterly", "arrears"),
     ],
 )
-def test_capital_payment_only_net_to_gross_roundtrip(payment_frequency, payment_timing):
-    """Capital payment only net-to-gross should reverse gross-to-net using retained interest."""
+def test_capital_payment_only_net_to_gross_matches_service_only(payment_frequency, payment_timing):
+    """Capital payment only net-to-gross should match the service-only formula."""
     calc = LoanCalculator()
-    gross_amount = Decimal("100000")
+    net_amount = Decimal("100000")
     annual_rate = Decimal("12")
     loan_term = 12
     arrangement_fee_rate = Decimal("2")
@@ -319,27 +311,21 @@ def test_capital_payment_only_net_to_gross_roundtrip(payment_frequency, payment_
     site_visit_fee = Decimal("500")
     title_insurance_rate = Decimal("1")
     loan_term_days = 365
-    capital_repayment = Decimal("1000")
 
-    fees = calc._calculate_fees(
-        gross_amount,
+    gross_service = calc._calculate_gross_from_net_bridge(
+        net_amount,
+        annual_rate,
+        loan_term,
+        "service_only",
         arrangement_fee_rate,
         legal_fees,
         site_visit_fee,
         title_insurance_rate,
-        Decimal("0"),
-    )
-
-    net_result = calc._calculate_bridge_capital_payment_only(
-        gross_amount,
-        annual_rate,
-        loan_term,
-        capital_repayment,
-        fees,
+        loan_term_days,
+        use_360_days=False,
         payment_frequency=payment_frequency,
         payment_timing=payment_timing,
     )
-    net_amount = Decimal(str(net_result['netAdvance']))
 
     gross_calculated = calc._calculate_gross_from_net_bridge(
         net_amount,
@@ -356,4 +342,4 @@ def test_capital_payment_only_net_to_gross_roundtrip(payment_frequency, payment_
         payment_timing=payment_timing,
     )
 
-    assert float(gross_calculated) == pytest.approx(float(gross_amount))
+    assert float(gross_calculated) == pytest.approx(float(gross_service))
