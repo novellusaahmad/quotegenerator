@@ -571,18 +571,26 @@ class LoanCalculator:
             **{k: float(v) for k, v in fees.items()}
         })
 
-        # Calculate periodic interest based on payment frequency
-        if repayment_option in ['service_only', 'service_and_capital']:
+        # Calculate periodic interest based on payment frequency. Previously this
+        # was only shown for service and service+capital loans, but capital only
+        # loans also need a reference monthly interest figure for the summary.
+        if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only']:
             periodic_interest = self._calculate_periodic_interest(
                 gross_amount, annual_rate / Decimal('100'), payment_frequency
             )
             calculation['periodicInterest'] = float(periodic_interest)
-            if payment_frequency == 'quarterly':
-                calculation['quarterlyPayment'] = float(periodic_interest)
-                calculation['monthlyPayment'] = 0
-            else:
-                calculation['monthlyPayment'] = float(periodic_interest)
-                calculation['quarterlyPayment'] = 0
+
+            # For service and service+capital loans the periodic interest is the
+            # actual payment amount, so update the monthly/quarterly payment
+            # fields. Capital payment only loans keep their capital repayment as
+            # the payment amount, so we don't override those fields.
+            if repayment_option in ['service_only', 'service_and_capital']:
+                if payment_frequency == 'quarterly':
+                    calculation['quarterlyPayment'] = float(periodic_interest)
+                    calculation['monthlyPayment'] = 0
+                else:
+                    calculation['monthlyPayment'] = float(periodic_interest)
+                    calculation['quarterlyPayment'] = 0
 
         # Generate payment schedule
         try:
