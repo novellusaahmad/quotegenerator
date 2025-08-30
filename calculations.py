@@ -3567,6 +3567,47 @@ class LoanCalculator:
             entry['days_held'] = (period_end - period_start).days
 
 
+    def _validate_schedule_vs_summary(
+        self,
+        schedule: List[Dict],
+        summary: Dict,
+        currency_symbol: str = '£',
+    ) -> None:
+        """Validate that aggregated schedule totals match the summary values."""
+
+        if not schedule:
+            return
+
+        interest_total = Decimal('0')
+        savings_total = Decimal('0')
+        for entry in schedule:
+            interest_total += self._to_decimal(
+                entry.get('interest_accrued', entry.get('interest_amount', 0)),
+                currency_symbol,
+            )
+            savings_total += self._to_decimal(
+                entry.get('interest_saving', 0), currency_symbol
+            )
+
+        interest_only_total = interest_total + savings_total
+        summary_interest = Decimal(str(summary.get('totalInterest', 0)))
+        summary_savings = Decimal(str(summary.get('interestSavings', 0)))
+        summary_interest_only = Decimal(str(summary.get('interestOnlyTotal', 0)))
+
+        rounding = Decimal('0.01')
+        if (
+            interest_total.quantize(rounding, rounding=ROUND_HALF_UP)
+            != summary_interest.quantize(rounding, rounding=ROUND_HALF_UP)
+            or savings_total.quantize(rounding, rounding=ROUND_HALF_UP)
+            != summary_savings.quantize(rounding, rounding=ROUND_HALF_UP)
+            or interest_only_total.quantize(rounding, rounding=ROUND_HALF_UP)
+            != summary_interest_only.quantize(rounding, rounding=ROUND_HALF_UP)
+        ):
+            logging.warning(
+                "Mismatch between loan summary and detailed payment schedule"
+            )
+
+
     def generate_payment_schedule(self, quote_data: Dict, currency_symbol: str = '£') -> List[Dict]:
         """Generate detailed payment schedule for a loan"""
         
@@ -4104,7 +4145,8 @@ class LoanCalculator:
 
                 total_payment = interest_amount + principal_payment
 
-                interest_saving = max(interest_only - interest_amount, Decimal('0'))
+                interest_refund = max(interest_only - interest_amount, Decimal('0'))
+                interest_saving = interest_refund
 
                 is_final = remaining_balance == 0
                 interest_calc = interest_calc_base
@@ -4129,6 +4171,9 @@ class LoanCalculator:
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{interest_amount:,.2f}",
                     'interest_saving': f"{currency_symbol}{interest_saving:,.2f}",
+                    'interest_accrued': f"{currency_symbol}{interest_amount:,.2f}",
+                    'interest_retained': f"{currency_symbol}{interest_only:,.2f}",
+                    'interest_refund': f"{currency_symbol}{interest_refund:,.2f}",
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
@@ -4500,8 +4545,14 @@ class LoanCalculator:
                     entry['interest_calculation'] += " + fees"
                 entry['total_payment'] = f"{currency_symbol}{total_payment:,.2f}"
 
+        if repayment_option == 'service_and_capital':
+            self._validate_schedule_vs_summary(
+                detailed_schedule, calculation, currency_symbol
+            )
         if 'cumulative_refund' in locals():
-            calculation['interestRefund'] = float(cumulative_refund.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            calculation['interestRefund'] = float(
+                cumulative_refund.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            )
         return detailed_schedule
     
     def _generate_term_schedule(self, quote_data: Dict, currency_symbol: str = '£') -> List[Dict]:
