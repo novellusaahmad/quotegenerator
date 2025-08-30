@@ -4431,19 +4431,29 @@ class LoanCalculator:
                 total_accrued += self._to_decimal(entry.get('interest_accrued', 0), currency_symbol)
 
             rounding = Decimal('0.01')
-            total_interest = total_accrued if total_accrued else total_interest_amt
-            if total_interest > 0:
-                total_interest = total_interest.quantize(rounding, rounding=ROUND_HALF_UP)
-                calculation['totalInterest'] = float(total_interest)
-                calculation['total_interest'] = float(total_interest)
 
+            # The detailed schedule stores interest paid in ``interest_amount``
+            # and any discount or refund in ``interest_saving``.  The loan
+            # summary should therefore reflect the actual interest paid rather
+            # than the gross accrued amount.  Previously the presence of an
+            # ``interest_accrued`` field caused the summary to use that value,
+            # overstating total interest compared to the schedule.  We now
+            # always base ``totalInterest`` on the summed ``interest_amount``
+            # so the summary matches the payment schedule exactly.
+            total_interest = total_interest_amt.quantize(rounding, rounding=ROUND_HALF_UP)
+            calculation['totalInterest'] = float(total_interest)
+            calculation['total_interest'] = float(total_interest)
+
+            # Interest savings are aggregated separately and the interest-only
+            # total is the combination of net interest plus the savings.
             total_savings = total_savings.quantize(rounding, rounding=ROUND_HALF_UP)
             calculation['interestSavings'] = float(total_savings)
+            interest_only_total = (total_interest + total_savings).quantize(rounding, rounding=ROUND_HALF_UP)
+            calculation['interestOnlyTotal'] = float(interest_only_total)
+
             if total_retained:
                 total_retained = total_retained.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['retainedInterest'] = float(total_retained)
-                if repayment_option == 'capital_payment_only':
-                    calculation['interestOnlyTotal'] = float(total_retained)
             if total_refund:
                 total_refund = total_refund.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['interestRefund'] = float(total_refund)
