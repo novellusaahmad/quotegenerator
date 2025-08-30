@@ -26,6 +26,8 @@ def test_bridge_capital_only_net_matches_input():
         title_insurance_rate,
         loan_term_days,
         use_360_days=False,
+        payment_frequency='monthly',
+        payment_timing='advance',
     )
 
     fees = calc._calculate_fees(
