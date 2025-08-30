@@ -2748,6 +2748,7 @@ class LoanCalculator:
             if repayment_option in (
                 'capital_payment_only',
                 'flexible_payment',
+                'service_and_capital',
             ):
                 repayment_option = 'service_only'
 
