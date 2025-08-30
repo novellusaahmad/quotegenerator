@@ -433,15 +433,17 @@ class LoanCalculator:
             # Update total interest to match detailed schedule
             detailed_schedule = calculation.get('detailed_payment_schedule', [])
             if detailed_schedule:
-                total_interest_from_schedule = 0
+                total_interest_from_schedule = Decimal('0')
                 for payment in detailed_schedule:
-                    interest_str = payment.get('interest_amount', '£0.00')
-                    interest_numeric = interest_str.replace("£", "").replace("€", "").replace(",", "")
-                    total_interest_from_schedule += float(interest_numeric) if interest_numeric else 0
+                    interest_str = payment.get('interest_accrued', payment.get('interest_amount', '£0.00'))
+                    interest_numeric = interest_str.replace('£', '').replace('€', '').replace(',', '')
+                    total_interest_from_schedule += Decimal(interest_numeric) if interest_numeric else Decimal('0')
 
                 total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
-                calculation['totalInterest'] = total_interest_from_schedule
-                calculation['total_interest'] = total_interest_from_schedule
+                calculation['totalInterest'] = float(total_interest_from_schedule)
+                calculation['total_interest'] = float(total_interest_from_schedule)
+                # For service-only loans, total interest equals the interest-only total
+                calculation['interestOnlyTotal'] = float(total_interest_from_schedule)
         elif repayment_option == 'service_and_capital':
             # Service + Capital - pass net_amount if this is a net-to-gross conversion
             net_for_calculation = net_amount if amount_input_type == 'net' else None
