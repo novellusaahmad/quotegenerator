@@ -2,6 +2,8 @@
 
 from typing import Any, Dict, List
 
+from decimal import Decimal, ROUND_HALF_UP
+
 from calculations import LoanCalculator
 
 
@@ -63,5 +65,24 @@ def generate_report_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     if repayment_option == 'service_and_capital':
         cap_params = params.copy()
         cap_params['repayment_option'] = 'capital_payment_only'
-        return calc.calculate_bridge_loan(cap_params).get('detailed_payment_schedule', [])
-    return calc.calculate_bridge_loan(params).get('detailed_payment_schedule', [])
+        schedule = calc.calculate_bridge_loan(cap_params).get('detailed_payment_schedule', [])
+    else:
+        schedule = calc.calculate_bridge_loan(params).get('detailed_payment_schedule', [])
+
+    # Recalculate interest fields using days_held to ensure consistency in reports
+    if schedule:
+        currency_symbol = schedule[0].get('opening_balance', '£')[0]
+        gross_amount = Decimal(str(params.get('gross_amount', params.get('grossAmount', 0))))
+        annual_rate = Decimal(str(params.get('annual_rate', params.get('annualRate', 0))))
+        days_per_year = Decimal('360') if params.get('use_360_days') else Decimal('365')
+        daily_rate = annual_rate / Decimal('100') / days_per_year
+
+        for row in schedule:
+            days = Decimal(str(row.get('days_held', 0)))
+            opening_balance = Decimal(row.get('opening_balance', f"{currency_symbol}0").replace(currency_symbol, '').replace(',', ''))
+            interest_retained = (gross_amount * daily_rate * days).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            interest_accrued = (opening_balance * daily_rate * days).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            row['interest_retained'] = f"{currency_symbol}{interest_retained:,.2f}"
+            row['interest_accrued'] = f"{currency_symbol}{interest_accrued:,.2f}"
+
+    return schedule
