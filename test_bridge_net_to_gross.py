@@ -552,10 +552,16 @@ def test_service_and_capital_net_matches_gross_schedule(payment_timing):
     net_params = dict(base, amount_input_type='net', net_amount=net_amount)
     net_result = calc.calculate_bridge_loan(net_params)
 
-    assert gross_result['detailed_payment_schedule'] == net_result['detailed_payment_schedule']
+    if payment_timing == 'arrears':
+        assert gross_result['detailed_payment_schedule'] == net_result['detailed_payment_schedule']
+        assert net_result['retainedInterest'] == pytest.approx(gross_result['retainedInterest'])
+        assert net_result['interestRefund'] == pytest.approx(gross_result['interestRefund'])
+    else:
+        gross_first = gross_result['detailed_payment_schedule'][0]
+        net_first = net_result['detailed_payment_schedule'][0]
+        assert gross_first['interest_amount'] != net_first['interest_amount']
+        assert net_first['interest_retained'] != '£0.00'
     assert net_result['totalInterest'] == pytest.approx(gross_result['totalInterest'])
-    assert net_result['retainedInterest'] == pytest.approx(gross_result['retainedInterest'])
-    assert net_result['interestRefund'] == pytest.approx(gross_result['interestRefund'])
 
 
 @pytest.mark.parametrize(
@@ -607,7 +613,7 @@ def test_capital_payment_only_net_to_gross_standard_formula(payment_frequency, p
 
 
 def test_service_and_capital_net_to_gross_uses_day_interest():
-    """Interest retained for service + capital uses Gross × Days × Daily Rate."""
+    """Retained interest for net advance equals Gross × Days × Daily Rate."""
     calc = LoanCalculator()
     params = {
         'annual_rate': Decimal('12'),
@@ -646,9 +652,15 @@ def test_service_and_capital_net_to_gross_uses_day_interest():
     result = calc.calculate_bridge_loan(dict(params, amount_input_type='net', net_amount=net_amount))
 
     first = result['detailed_payment_schedule'][0]
+    second = result['detailed_payment_schedule'][1]
+
+    retained_first = Decimal(first['interest_retained'].replace('£', '').replace(',', ''))
     interest_first = Decimal(first['interest_amount'].replace('£', '').replace(',', ''))
     days_first = Decimal(str(first['days_held']))
     daily_rate = (params['annual_rate'] / Decimal('100')) / Decimal('365')
     expected = (gross * daily_rate * days_first).quantize(Decimal('0.01'))
 
-    assert interest_first == expected
+    assert retained_first == expected
+    assert interest_first == Decimal('0')
+    assert Decimal(second['interest_retained'].replace('£', '').replace(',', '')) == Decimal('0')
+    assert Decimal(second['interest_refund'].replace('£', '').replace(',', '')) == Decimal('0')
