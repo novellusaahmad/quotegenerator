@@ -2,6 +2,30 @@ from decimal import Decimal
 import pytest
 from calculations import LoanCalculator
 
+
+def test_interest_only_total_uses_day_formula():
+    calc = LoanCalculator()
+    gross_amount = Decimal('100000')
+    annual_rate = Decimal('12')
+    loan_term = 12
+    fees = {'arrangementFee': Decimal('0'), 'totalLegalFees': Decimal('0')}
+    capital_repayment = Decimal('1000')
+    loan_term_days = 365
+
+    res = calc._calculate_term_service_capital(
+        gross_amount,
+        annual_rate,
+        loan_term,
+        capital_repayment,
+        fees,
+        loan_term_days=loan_term_days,
+        use_360_days=False,
+    )
+    expected = calc.calculate_simple_interest_by_days(
+        gross_amount, annual_rate, loan_term_days, use_360_days=False
+    )
+    assert res['interestOnlyTotal'] == pytest.approx(expected)
+
 def test_service_capital_interest_only_matches_service_only():
     calc = LoanCalculator()
     gross_amount = Decimal('100000')
