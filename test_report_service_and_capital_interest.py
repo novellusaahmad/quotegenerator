@@ -1,5 +1,6 @@
 from decimal import Decimal
 from report_utils import generate_report_schedule
+from calculations import LoanCalculator
 
 
 def currency_to_decimal(val: str) -> Decimal:
@@ -57,3 +58,14 @@ def test_report_schedule_net_input_has_no_retained_interest():
         assert row['interest_refund'] == '£0.00'
     assert 'retainedInterest' not in summary
     assert 'interestRefund' not in summary
+
+    calc = LoanCalculator()
+    calc_result = calc.calculate_bridge_loan(params)
+    gross = Decimal(str(calc_result.get('gross_amount', calc_result.get('grossAmount'))))
+    term_days = calc_result.get('loanTermDays')
+    rate = Decimal(str(calc_result.get('interestRate', params.get('annual_rate'))))
+    expected_io = calc.calculate_simple_interest_by_days(gross, rate, term_days, False)
+    total_interest = Decimal(str(summary['totalInterest']))
+    expected_savings = expected_io - total_interest
+    assert Decimal(str(summary['interestOnlyTotal'])).quantize(Decimal('0.01')) == expected_io.quantize(Decimal('0.01'))
+    assert Decimal(str(summary['interestSavings'])).quantize(Decimal('0.01')) == expected_savings.quantize(Decimal('0.01'))
