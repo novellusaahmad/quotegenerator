@@ -515,8 +515,8 @@ def test_service_and_capital_net_matches_gross_schedule(payment_timing):
     else:
         gross_first = gross_result['detailed_payment_schedule'][0]
         net_first = net_result['detailed_payment_schedule'][0]
-        assert gross_first['interest_amount'] == net_first['interest_amount']
-        assert net_first['interest_retained'] != '£0.00'
+        assert net_first['interest_retained'] == '£0.00'
+        assert net_first['interest_amount'] == gross_first['interest_retained']
     assert net_result['totalInterest'] == pytest.approx(gross_result['totalInterest'])
 
 
@@ -616,7 +616,7 @@ def test_service_and_capital_net_to_gross_uses_day_interest():
     daily_rate = (params['annual_rate'] / Decimal('100')) / Decimal('365')
     expected = (gross * daily_rate * days_first).quantize(Decimal('0.01'))
 
-    assert retained_first == expected
-    assert interest_first == Decimal('0')
+    assert retained_first == Decimal('0')
+    assert interest_first == expected
     assert Decimal(second['interest_retained'].replace('£', '').replace(',', '')) == Decimal('0')
     assert Decimal(second['interest_refund'].replace('£', '').replace(',', '')) == Decimal('0')
