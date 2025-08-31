@@ -639,16 +639,22 @@ class LoanCalculator:
             )
             calculation['periodicInterest'] = float(periodic_interest)
 
-            # For service and service+capital loans the periodic interest is the
-            # actual payment amount, so update the monthly/quarterly payment
-            # fields. Capital payment only loans keep their capital repayment as
-            # the payment amount, so we don't override those fields.
-            if repayment_option in ['service_only', 'service_and_capital']:
+            # Service-only loans pay interest only each period. Service + capital
+            # loans pay the interest plus the agreed capital repayment amount.
+            # Capital-payment-only loans retain their provided payment values.
+            if repayment_option == 'service_only':
                 if payment_frequency == 'quarterly':
                     calculation['quarterlyPayment'] = float(periodic_interest)
                     calculation['monthlyPayment'] = 0
                 else:
                     calculation['monthlyPayment'] = float(periodic_interest)
+                    calculation['quarterlyPayment'] = 0
+            elif repayment_option == 'service_and_capital':
+                if payment_frequency == 'quarterly':
+                    calculation['quarterlyPayment'] = float(periodic_interest + (capital_repayment * 3))
+                    calculation['monthlyPayment'] = 0
+                else:
+                    calculation['monthlyPayment'] = float(periodic_interest + capital_repayment)
                     calculation['quarterlyPayment'] = 0
 
         # Generate payment schedule
@@ -686,7 +692,7 @@ class LoanCalculator:
 
             # Override periodic interest using actual days held for the first period
             detailed_schedule = calculation.get('detailed_payment_schedule') or payment_schedule
-            if detailed_schedule:
+            if detailed_schedule and repayment_option != 'service_and_capital':
                 first_entry = detailed_schedule[0]
                 interest_str = (
                     first_entry.get('interest_accrued')
@@ -699,7 +705,7 @@ class LoanCalculator:
                     interest_val = Decimal(str(interest_str).replace('£', '').replace('€', '').replace(',', ''))
                     interest_val = self._two_dp(interest_val)
                     calculation['periodicInterest'] = float(interest_val)
-                    if repayment_option in ['service_only', 'service_and_capital']:
+                    if repayment_option == 'service_only':
                         if payment_frequency == 'quarterly':
                             calculation['quarterlyPayment'] = float(interest_val)
                             calculation['monthlyPayment'] = 0
