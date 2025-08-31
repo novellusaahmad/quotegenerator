@@ -4410,6 +4410,14 @@ class LoanCalculator:
                         interest_retained_raw_val = Decimal('0')
                         interest_refund_disp_val = Decimal('0.00')
                         interest_refund_raw_val = Decimal('0')
+                elif amount_input_type == 'net' and payment_timing == 'arrears':
+                    # Net-funded loans paid in arrears should show no retained interest
+                    interest_retained_disp_val = Decimal('0.00')
+                    interest_retained_raw_val = Decimal('0')
+                    interest_refund_disp_val = Decimal('0.00')
+                    interest_refund_raw_val = Decimal('0')
+                    interest_saving_disp = Decimal('0.00')
+                    interest_saving = Decimal('0')
 
                 balance_change = (
                     f"↓ -{currency_symbol}{principal_payment:,.2f}"

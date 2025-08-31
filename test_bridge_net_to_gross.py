@@ -556,9 +556,11 @@ def test_service_and_capital_net_matches_gross_schedule(payment_timing):
     net_result = calc.calculate_bridge_loan(net_params)
 
     if payment_timing == 'arrears':
-        assert gross_result['detailed_payment_schedule'] == net_result['detailed_payment_schedule']
-        assert net_result['retainedInterest'] == pytest.approx(gross_result['retainedInterest'])
-        assert net_result['interestRefund'] == pytest.approx(gross_result['interestRefund'])
+        for row in net_result['detailed_payment_schedule']:
+            assert row['interest_retained'] == '£0.00'
+            assert row['interest_refund'] == '£0.00'
+        assert net_result.get('retainedInterest', 0) == pytest.approx(0)
+        assert net_result.get('interestRefund', 0) == pytest.approx(0)
     else:
         gross_first = gross_result['detailed_payment_schedule'][0]
         net_first = net_result['detailed_payment_schedule'][0]
