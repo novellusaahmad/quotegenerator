@@ -645,32 +645,36 @@ class LoanCalculator:
             **{k: float(v) for k, v in fees.items()}
         })
 
-        # Calculate periodic interest based on payment frequency. Previously this
-        # was only shown for service and service+capital loans, but capital only
-        # loans also need a reference monthly interest figure for the summary.
-        if repayment_option in ['service_only', 'service_and_capital', 'capital_payment_only', 'sc_only']:
-            periodic_interest = self._calculate_periodic_interest(
-                gross_amount, annual_rate / Decimal('100'), payment_frequency
-            )
-            calculation['periodicInterest'] = float(periodic_interest)
+        # Always provide reference monthly and quarterly interest payments
+        monthly_interest = self._calculate_periodic_interest(
+            gross_amount, annual_rate / Decimal('100'), 'monthly'
+        )
+        quarterly_interest = self._calculate_periodic_interest(
+            gross_amount, annual_rate / Decimal('100'), 'quarterly'
+        )
+        calculation['monthlyInterestPayment'] = float(monthly_interest)
+        calculation['quarterlyInterestPayment'] = float(quarterly_interest)
 
-            # Service-only loans pay interest only each period. Service + capital
-            # loans pay the interest plus the agreed capital repayment amount.
-            # Capital-payment-only loans retain their provided payment values.
-            if repayment_option == 'service_only':
-                if payment_frequency == 'quarterly':
-                    calculation['quarterlyPayment'] = float(periodic_interest)
-                    calculation['monthlyPayment'] = 0
-                else:
-                    calculation['monthlyPayment'] = float(periodic_interest)
-                    calculation['quarterlyPayment'] = 0
-            elif repayment_option in ['service_and_capital', 'sc_only']:
-                if payment_frequency == 'quarterly':
-                    calculation['quarterlyPayment'] = float(periodic_interest + (capital_repayment * 3))
-                    calculation['monthlyPayment'] = 0
-                else:
-                    calculation['monthlyPayment'] = float(periodic_interest + capital_repayment)
-                    calculation['quarterlyPayment'] = 0
+        periodic_interest = monthly_interest if payment_frequency == 'monthly' else quarterly_interest
+        calculation['periodicInterest'] = float(periodic_interest)
+
+        # Service-only loans pay interest only each period. Service + capital
+        # loans pay the interest plus the agreed capital repayment amount.
+        # Capital-payment-only loans retain their provided payment values.
+        if repayment_option == 'service_only':
+            if payment_frequency == 'quarterly':
+                calculation['quarterlyPayment'] = float(periodic_interest)
+                calculation['monthlyPayment'] = 0
+            else:
+                calculation['monthlyPayment'] = float(periodic_interest)
+                calculation['quarterlyPayment'] = 0
+        elif repayment_option in ['service_and_capital', 'sc_only']:
+            if payment_frequency == 'quarterly':
+                calculation['quarterlyPayment'] = float(periodic_interest + (capital_repayment * 3))
+                calculation['monthlyPayment'] = 0
+            else:
+                calculation['monthlyPayment'] = float(periodic_interest + capital_repayment)
+                calculation['quarterlyPayment'] = 0
 
         # Generate payment schedule
         try:
@@ -767,6 +771,8 @@ class LoanCalculator:
         rate_input_type = params.get('rate_input_type', 'annual')
         loan_start_date = params.get('start_date', params.get('loan_start_date', datetime.now().strftime('%Y-%m-%d')))
         use_360_days = params.get('use_360_days', False)  # Add 360-day calculation parameter
+        payment_frequency = params.get('payment_frequency', 'monthly')
+        payment_timing = params.get('payment_timing', 'advance')
         
         # Fee parameters
         arrangement_fee_rate = Decimal(str(params.get('arrangement_fee_rate', 0)))
@@ -883,8 +889,7 @@ class LoanCalculator:
             calculation = self._get_empty_calculation(params)
         
         # Add common calculations
-        payment_frequency = params.get('payment_frequency', 'monthly')
-        
+
         # Adjust monthlyPayment based on payment frequency
         original_monthly_payment = calculation.get('monthlyPayment', 0)
         if payment_frequency == 'quarterly':
@@ -911,7 +916,7 @@ class LoanCalculator:
             'loan_type': 'term',
             'interest_type': params.get('interest_type', 'simple'),
             'capital_repayment': params.get('capital_repayment', 0),
-            'payment_timing': params.get('payment_timing', 'advance'),
+            'payment_timing': payment_timing,
             'payment_frequency': payment_frequency,
             'monthlyPayment': adjusted_payment,  # Override with frequency-adjusted amount
             'start_date': loan_start_date,
@@ -919,17 +924,32 @@ class LoanCalculator:
             **{k: float(v) for k, v in fees.items()}
         })
 
-        # Calculate periodic interest based on payment frequency
-        if repayment_option in ['service_only', 'service_and_capital', 'sc_only']:
-            periodic_interest = self._calculate_periodic_interest(
-                gross_amount, annual_rate / Decimal('100'), payment_frequency
-            )
-            calculation['periodicInterest'] = float(periodic_interest)
+        # Always provide reference monthly and quarterly interest payments
+        monthly_interest = self._calculate_periodic_interest(
+            gross_amount, annual_rate / Decimal('100'), 'monthly'
+        )
+        quarterly_interest = self._calculate_periodic_interest(
+            gross_amount, annual_rate / Decimal('100'), 'quarterly'
+        )
+        calculation['monthlyInterestPayment'] = float(monthly_interest)
+        calculation['quarterlyInterestPayment'] = float(quarterly_interest)
+
+        periodic_interest = monthly_interest if payment_frequency == 'monthly' else quarterly_interest
+        calculation['periodicInterest'] = float(periodic_interest)
+
+        if repayment_option == 'service_only':
             if payment_frequency == 'quarterly':
                 calculation['quarterlyPayment'] = float(periodic_interest)
                 calculation['monthlyPayment'] = 0
             else:
                 calculation['monthlyPayment'] = float(periodic_interest)
+                calculation['quarterlyPayment'] = 0
+        elif repayment_option in ['service_and_capital', 'sc_only']:
+            if payment_frequency == 'quarterly':
+                calculation['quarterlyPayment'] = float(periodic_interest + (Decimal(str(params.get('capital_repayment', 0))) * 3))
+                calculation['monthlyPayment'] = 0
+            else:
+                calculation['monthlyPayment'] = float(periodic_interest + Decimal(str(params.get('capital_repayment', 0))))
                 calculation['quarterlyPayment'] = 0
 
         # Generate payment schedule
