@@ -512,7 +512,7 @@ class LoanCalculator:
             if detailed_schedule:
                 total_savings_from_schedule = Decimal('0')
                 total_interest_only_from_schedule = Decimal('0')
-                include_retained = amount_input_type == 'net' and payment_timing == 'advance'
+                include_retained = payment_timing == 'advance'
                 for payment in detailed_schedule:
                     interest_val = Decimal(str(payment.get('interest_amount_raw', 0)))
                     saving_val = Decimal(str(payment.get('interest_saving_raw', 0)))
@@ -4388,8 +4388,8 @@ class LoanCalculator:
                     total_payment += arrangement_fee + legal_fees
                     interest_calc += " + fees"
 
-                # Handle net advance with advance timing: retain first-period interest
-                if amount_input_type == 'net' and payment_timing == 'advance':
+                # Handle advance timing: retain first-period interest regardless of input type
+                if payment_timing == 'advance':
                     if period == 1:
                         # Move interest into retained fields and zero out accrued/paid amounts
                         interest_retained_disp_val = interest_amount_disp
@@ -4810,9 +4810,18 @@ class LoanCalculator:
             # payments shown in the schedule.
 
             if total_retained > 0:
-                total_interest = (total_retained - total_refund).quantize(
-                    rounding, rounding=ROUND_HALF_UP
-                )
+                if repayment_option == 'capital_payment_only':
+                    total_interest = (total_retained - total_refund).quantize(
+                        rounding, rounding=ROUND_HALF_UP
+                    )
+                elif repayment_option == 'service_and_capital':
+                    total_interest = (total_interest_amt + total_retained - total_refund).quantize(
+                        rounding, rounding=ROUND_HALF_UP
+                    )
+                else:
+                    total_interest = (total_retained - total_refund).quantize(
+                        rounding, rounding=ROUND_HALF_UP
+                    )
             else:
                 total_interest = total_interest_amt.quantize(
                     rounding, rounding=ROUND_HALF_UP
