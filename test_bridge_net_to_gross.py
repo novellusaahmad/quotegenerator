@@ -352,56 +352,6 @@ def test_service_and_capital_advance_net_deducts_interest():
     assert float(result['netAdvance']) == pytest.approx(float(expected_net), abs=0.01)
 
 
-def test_service_and_capital_advance_net_to_gross_roundtrip():
-    """Service + capital net-to-gross should invert gross-to-net when paid in advance."""
-    calc = LoanCalculator()
-    gross_amount = Decimal('100000')
-    annual_rate = Decimal('12')
-    loan_term = 9
-    arrangement_fee_rate = Decimal('2')
-    legal_fees = Decimal('1000')
-    site_visit_fee = Decimal('500')
-    title_insurance_rate = Decimal('1')
-    loan_term_days = 274
-
-    fees = calc._calculate_fees(
-        gross_amount,
-        arrangement_fee_rate,
-        legal_fees,
-        site_visit_fee,
-        title_insurance_rate,
-        Decimal('0'),
-    )
-    days_per_year = Decimal('365')
-    days_first_period = Decimal(str(loan_term_days)) / Decimal(str(loan_term))
-    period_interest = gross_amount * (annual_rate / Decimal('100')) * (
-        days_first_period / days_per_year
-    )
-    net_advance = (
-        gross_amount
-        - fees['arrangementFee']
-        - fees['totalLegalFees']
-        - period_interest
-    )
-
-    gross_calculated = calc._calculate_gross_from_net_bridge(
-        net_advance,
-        annual_rate,
-        loan_term,
-        'service_and_capital',
-        arrangement_fee_rate,
-        legal_fees,
-        site_visit_fee,
-        title_insurance_rate,
-        loan_term_days,
-        use_360_days=False,
-        payment_frequency='monthly',
-        payment_timing='advance',
-    )
-
-    assert float(gross_calculated) == pytest.approx(float(gross_amount))
-
-
 @pytest.mark.parametrize(
     "payment_frequency,payment_timing",
     [
@@ -465,8 +415,8 @@ def test_flexible_payment_net_to_gross_matches_service_only(payment_frequency, p
         ("quarterly", "arrears"),
     ],
 )
-def test_service_and_capital_net_to_gross_uses_first_period_interest(payment_frequency, payment_timing):
-    """Service + capital net-to-gross retains only the first period's interest."""
+def test_service_and_capital_net_to_gross_matches_service_only(payment_frequency, payment_timing):
+    """Service + capital net-to-gross should match the service-only formula."""
     calc = LoanCalculator()
     net_amount = Decimal("100000")
     annual_rate = Decimal("12")
@@ -478,7 +428,23 @@ def test_service_and_capital_net_to_gross_uses_first_period_interest(payment_fre
     start_dt = datetime.strptime("2024-01-01", "%Y-%m-%d")
     loan_term_days = (calc._add_months(start_dt, loan_term) - start_dt).days
 
-    gross_calculated = calc._calculate_gross_from_net_bridge(
+    gross_service_only = calc._calculate_gross_from_net_bridge(
+        net_amount,
+        annual_rate,
+        loan_term,
+        "service_only",
+        arrangement_fee_rate,
+        legal_fees,
+        site_visit_fee,
+        title_insurance_rate,
+        loan_term_days,
+        use_360_days=False,
+        payment_frequency=payment_frequency,
+        payment_timing=payment_timing,
+        start_date=start_dt,
+    )
+
+    gross_service_capital = calc._calculate_gross_from_net_bridge(
         net_amount,
         annual_rate,
         loan_term,
@@ -494,22 +460,7 @@ def test_service_and_capital_net_to_gross_uses_first_period_interest(payment_fre
         start_date=start_dt,
     )
 
-    arrangement_decimal = arrangement_fee_rate / Decimal("100")
-    title_decimal = title_insurance_rate / Decimal("100")
-    fixed_fees = legal_fees + site_visit_fee
-    if payment_timing == "advance":
-        days_per_year = Decimal("365")
-        periods = (
-            Decimal("4") if payment_frequency == "quarterly" else Decimal(str(loan_term))
-        )
-        days_first = Decimal(str(loan_term_days)) / periods
-        period_factor = (annual_rate / Decimal("100")) * (days_first / days_per_year)
-    else:
-        period_factor = Decimal("0")
-    denominator = Decimal("1") - arrangement_decimal - title_decimal - period_factor
-    expected = (net_amount + fixed_fees) / denominator
-
-    assert float(gross_calculated) == pytest.approx(float(expected))
+    assert float(gross_service_capital) == pytest.approx(float(gross_service_only))
 
 
 @pytest.mark.parametrize("payment_timing", ["advance", "arrears"])

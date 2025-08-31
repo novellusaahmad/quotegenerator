@@ -2852,8 +2852,8 @@ class LoanCalculator:
                 logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {interest_factor:.6f} - {title_insurance_decimal:.6f})")
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
-            elif repayment_option == 'service_only':
-                # Bridge Serviced: adjust formula based on payment timing
+            elif repayment_option in ('service_only', 'service_and_capital'):
+                # Bridge Serviced or Service + Capital: adjust formula based on payment timing
                 if payment_timing == 'advance':
                     if payment_frequency == 'quarterly':
                         period_factor = annual_rate_decimal / Decimal('4')
@@ -2890,26 +2890,7 @@ class LoanCalculator:
                     + (f" - {period_factor:.6f}" if payment_timing == 'advance' else "")
                     + f") = £{gross_amount:.2f}"
                 )
-                
-            elif repayment_option == 'service_and_capital':
-                # Bridge Service + Capital net-to-gross uses explicit formula
-                arrangement_decimal = arrangement_fee_rate / Decimal('100')
-                title_decimal = title_insurance_rate / Decimal('100')
-                fixed_fees = legal_fees + site_visit_fee
 
-                period_factor = Decimal('0')
-                if payment_timing == 'advance':
-                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                    periods = (
-                        Decimal('4') if payment_frequency == 'quarterly' else Decimal(str(loan_term))
-                    )
-                    days_first_period = Decimal(str(loan_term_days)) / periods
-                    daily_rate = (annual_rate / Decimal('100')) / days_per_year
-                    period_factor = daily_rate * days_first_period
-
-                denominator = Decimal('1') - arrangement_decimal - title_decimal - period_factor
-                gross_amount = (net_amount + fixed_fees) / denominator
-                
             elif repayment_option == 'flexible_payment':
                 # Flexible Payment: borrower receives the full gross amount
                 gross_amount = net_amount
