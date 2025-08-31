@@ -36,3 +36,24 @@ def test_report_schedule_interest_fields_match_formulas():
         assert currency_to_decimal(first['interest_accrued']) == expected_accrued
         assert currency_to_decimal(first['interest_refund']) == expected_refund
         assert currency_to_decimal(first['interest_saving']) == expected_refund
+
+
+def test_report_schedule_net_input_has_no_retained_interest():
+    params = {
+        'loan_type': 'bridge',
+        'repayment_option': 'service_and_capital',
+        'amount_input_type': 'net',
+        'net_amount': 1000000,
+        'annual_rate': 12,
+        'loan_term': 12,
+        'capital_repayment': 5000,
+        'payment_frequency': 'monthly',
+        'payment_timing': 'arrears',
+        'start_date': '2024-01-01',
+    }
+    schedule, summary = generate_report_schedule(params)
+    for row in schedule:
+        assert row['interest_retained'] == '£0.00'
+        assert row['interest_refund'] == '£0.00'
+    assert 'retainedInterest' not in summary
+    assert 'interestRefund' not in summary

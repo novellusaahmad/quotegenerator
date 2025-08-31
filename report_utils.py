@@ -120,7 +120,13 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
     """
     calc = LoanCalculator()
     repayment_option = params.get('repayment_option')
-    if repayment_option == 'service_and_capital':
+    amount_input_type = params.get('amount_input_type')
+
+    is_service_and_capital = repayment_option == 'service_and_capital'
+    is_net_input = amount_input_type == 'net'
+    is_service_and_capital_net = is_service_and_capital and is_net_input
+
+    if is_service_and_capital and not is_net_input:
         cap_params = params.copy()
         cap_params['repayment_option'] = 'capital_payment_only'
         calculation = calc.calculate_bridge_loan(cap_params)
@@ -137,7 +143,7 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
                 del entry[key]
 
     # Recalculate interest fields using days_held to ensure consistency in reports
-    if schedule:
+    if schedule and not is_service_and_capital_net:
         currency_symbol = schedule[0].get('opening_balance', '£')[0]
         gross_amount = Decimal(
             str(
@@ -190,6 +196,6 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
             row['interest_refund'] = f"{currency_symbol}{interest_refund:,.2f}"
             row['interest_saving'] = f"{currency_symbol}{interest_saving:,.2f}"
 
-        summary = recalculate_summary(schedule)
+    summary = recalculate_summary(schedule)
 
     return schedule, summary
