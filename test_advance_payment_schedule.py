@@ -31,8 +31,8 @@ def test_service_and_capital_advance_has_final_interest():
         'totalInterest': 0
     }
     schedule = calc._generate_detailed_bridge_schedule(data, params, '£')
-    assert _parse_interest(schedule[-2]) > 0
-    assert _parse_interest(schedule[-1]) == pytest.approx(0, abs=0.01)
+    assert len(schedule) == params['loan_term']
+    assert _parse_interest(schedule[-1]) > 0
 
 def test_capital_payment_only_advance_has_zero_final_interest():
     calc = LoanCalculator()
@@ -52,6 +52,7 @@ def test_capital_payment_only_advance_has_zero_final_interest():
         'totalLegalFees': 0
     }
     schedule = calc._generate_detailed_term_schedule(data, params, '£')
+    assert len(schedule) == params['loan_term']
     assert _parse_interest(schedule[-1]) == pytest.approx(0, abs=0.01)
 
 

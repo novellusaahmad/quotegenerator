@@ -3630,11 +3630,8 @@ class LoanCalculator:
                 if payment_date <= loan_end_date:
                     payment_dates.append(payment_date)
 
-            if timing == 'advance':
-                # Append maturity date for principal repayment
-                payment_dates.append(loan_end_date)
-            elif payment_dates and payment_dates[-1] < loan_end_date:
-                # Ensure arrears timing ends exactly on loan end date
+            if payment_dates and payment_dates[-1] < loan_end_date:
+                # Ensure schedule ends exactly on loan end date for arrears timing
                 payment_dates[-1] = loan_end_date
         else:
             # Monthly payments
@@ -3654,11 +3651,8 @@ class LoanCalculator:
                 if payment_date <= loan_end_date:
                     payment_dates.append(payment_date)
 
-            if timing == 'advance':
-                # Append maturity date for principal repayment
-                payment_dates.append(loan_end_date)
-            elif payment_dates and payment_dates[-1] < loan_end_date:
-                # Ensure arrears timing ends exactly on loan end date
+            if payment_dates and payment_dates[-1] < loan_end_date:
+                # Ensure schedule ends exactly on loan end date for arrears timing
                 payment_dates[-1] = loan_end_date
 
         return payment_dates
@@ -5279,14 +5273,16 @@ class LoanCalculator:
                 else:
                     capital_per_payment = capital_repayment
 
+                # Ensure the final period clears the remaining balance
+                if period == len(payment_dates):
+                    capital_per_payment = remaining_balance
+                elif capital_per_payment > remaining_balance:
+                    capital_per_payment = remaining_balance
+
                 # Interest charged on current balance
                 interest_amount = self.calculate_simple_interest_by_days(
                     remaining_balance, annual_rate, days_in_period, use_360_days
                 )
-
-                # Ensure we don't pay more capital than remaining
-                if capital_per_payment > remaining_balance:
-                    capital_per_payment = remaining_balance
 
                 interest_only = self.calculate_simple_interest_by_days(
                     gross_amount, annual_rate, days_in_period, use_360_days
