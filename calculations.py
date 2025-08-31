@@ -4377,9 +4377,11 @@ class LoanCalculator:
                     interest_refund_disp = Decimal('0.00')
                 interest_saving_disp = interest_refund_disp
 
-                total_payment = interest_amount_disp + principal_payment
+                scheduled_repayment = (interest_amount_disp + principal_payment).quantize(
+                    Decimal('0.01'), rounding=ROUND_HALF_UP
+                )
+                total_payment = scheduled_repayment
 
-                is_final = remaining_balance == 0
                 interest_calc = interest_calc_base
 
                 if period == 1:
@@ -4391,6 +4393,11 @@ class LoanCalculator:
                     if principal_payment > 0 else "↔ No Change"
                 )
                 closing_balance = remaining_balance
+                capital_outstanding = closing_balance if payment_timing == 'advance' else opening_balance
+                running_ltv = (
+                    float((capital_outstanding / property_value * 100))
+                    if property_value > 0 else 0
+                )
 
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
@@ -4413,7 +4420,12 @@ class LoanCalculator:
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
-                    'balance_change': balance_change
+                    'balance_change': balance_change,
+                    'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
+                    'annual_interest_rate': f"{annual_rate:.2f}%",
+                    'interest_pa': f"{daily_rate:.8f}",
+                    'scheduled_repayment': f"{currency_symbol}{scheduled_repayment:,.2f}",
+                    'running_ltv': f"{running_ltv:.2f}"
                 })
 
                 if remaining_balance <= 0:
