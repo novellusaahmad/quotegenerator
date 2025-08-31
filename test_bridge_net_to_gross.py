@@ -564,7 +564,7 @@ def test_service_and_capital_net_matches_gross_schedule(payment_timing):
     else:
         gross_first = gross_result['detailed_payment_schedule'][0]
         net_first = net_result['detailed_payment_schedule'][0]
-        assert gross_first['interest_amount'] != net_first['interest_amount']
+        assert gross_first['interest_amount'] == net_first['interest_amount']
         assert net_first['interest_retained'] != '£0.00'
     assert net_result['totalInterest'] == pytest.approx(gross_result['totalInterest'])
 

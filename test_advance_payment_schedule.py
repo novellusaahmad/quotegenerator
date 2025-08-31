@@ -98,7 +98,9 @@ def test_service_and_capital_interest_same_by_timing():
     params_arr = dict(base_params, payment_timing='arrears')
     schedule_adv = calc._generate_detailed_bridge_schedule(data, params_adv, '£')
     schedule_arr = calc._generate_detailed_bridge_schedule(data, params_arr, '£')
-    assert _parse_interest(schedule_arr[0]) == pytest.approx(_parse_interest(schedule_adv[0]), abs=0.01)
+    arr_interest = _parse_interest(schedule_arr[0])
+    adv_retained = _parse_currency(schedule_adv[0]['interest_retained'])
+    assert arr_interest == pytest.approx(adv_retained, abs=0.01)
 
 
 def test_capital_payment_only_arrears_has_zero_final_interest():
@@ -166,9 +168,10 @@ def test_service_and_capital_advance_first_period_values():
     first = schedule[0]
     assert _parse_currency(first['opening_balance']) == pytest.approx(100000, abs=0.1)
     expected_interest = 100000 * 0.12 * 31 / 365
-    assert _parse_currency(first['interest_amount']) == pytest.approx(expected_interest, abs=0.1)
+    assert _parse_currency(first['interest_amount']) == pytest.approx(0, abs=0.1)
+    assert _parse_currency(first['interest_retained']) == pytest.approx(expected_interest, abs=0.1)
     assert _parse_currency(first['principal_payment']) == pytest.approx(1000, abs=0.1)
-    assert _parse_currency(first['total_payment']) == pytest.approx(expected_interest + 1000, abs=0.1)
+    assert _parse_currency(first['total_payment']) == pytest.approx(1000, abs=0.1)
 
 
 def test_flexible_payment_advance_first_period_values():
