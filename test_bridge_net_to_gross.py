@@ -567,8 +567,8 @@ def test_service_and_capital_net_matches_gross_schedule(payment_timing):
         ("quarterly", "arrears"),
     ],
 )
-def test_capital_payment_only_net_to_gross_matches_service_only(payment_frequency, payment_timing):
-    """Capital payment only net-to-gross should match the service-only formula."""
+def test_capital_payment_only_net_to_gross_standard_formula(payment_frequency, payment_timing):
+    """Capital payment only net-to-gross uses standard retained-interest formula."""
     calc = LoanCalculator()
     net_amount = Decimal("100000")
     annual_rate = Decimal("12")
@@ -578,21 +578,6 @@ def test_capital_payment_only_net_to_gross_matches_service_only(payment_frequenc
     site_visit_fee = Decimal("500")
     title_insurance_rate = Decimal("1")
     loan_term_days = 365
-
-    gross_service = calc._calculate_gross_from_net_bridge(
-        net_amount,
-        annual_rate,
-        loan_term,
-        "service_only",
-        arrangement_fee_rate,
-        legal_fees,
-        site_visit_fee,
-        title_insurance_rate,
-        loan_term_days,
-        use_360_days=False,
-        payment_frequency=payment_frequency,
-        payment_timing=payment_timing,
-    )
 
     gross_calculated = calc._calculate_gross_from_net_bridge(
         net_amount,
@@ -609,7 +594,16 @@ def test_capital_payment_only_net_to_gross_matches_service_only(payment_frequenc
         payment_timing=payment_timing,
     )
 
-    assert float(gross_calculated) == pytest.approx(float(gross_service))
+    arrangement_fee_decimal = arrangement_fee_rate / Decimal("100")
+    title_insurance_decimal = title_insurance_rate / Decimal("100")
+    annual_rate_decimal = annual_rate / Decimal("100")
+    term_years = Decimal(str(loan_term_days)) / Decimal("365")
+    interest_factor = annual_rate_decimal * term_years
+    expected = (net_amount + legal_fees + site_visit_fee) / (
+        Decimal("1") - arrangement_fee_decimal - title_insurance_decimal - interest_factor
+    )
+
+    assert float(gross_calculated) == pytest.approx(float(expected))
 
 
 def test_service_and_capital_net_to_gross_uses_day_interest():

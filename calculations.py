@@ -2817,7 +2817,6 @@ class LoanCalculator:
 
             original_option = repayment_option
             if repayment_option in (
-                'capital_payment_only',
                 'flexible_payment',
                 'service_and_capital',
             ):
@@ -2964,24 +2963,25 @@ class LoanCalculator:
                 )
 
             elif repayment_option == 'capital_payment_only':
-                # Capital Payment Only: interest for entire term retained upfront
+                # Capital Payment Only: retain full term interest upfront using standard net-to-gross formula
                 interest_factor = annual_rate_decimal * term_years
-                fixed_fees = (legal_fees + site_visit_fee) * Decimal('2')
                 denominator = (
                     Decimal('1')
                     - arrangement_fee_decimal
-                    - (title_insurance_decimal * Decimal('2'))
+                    - title_insurance_decimal
                     - interest_factor
                 )
-                gross_amount = (net_amount + fixed_fees) / denominator
+                gross_amount = (
+                    net_amount + legal_fees + site_visit_fee
+                ) / denominator
 
                 logging.info("BRIDGE CAPITAL PAYMENT ONLY NET-TO-GROSS:")
                 logging.info(
-                    "Formula: Gross = (Net + 2×(Legals + Site)) / (1 - Arrangement Fee - 2×Title - Term Interest)"
+                    "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance - Term Interest)"
                 )
                 logging.info(f"Term interest factor: {interest_factor:.6f}")
                 logging.info(
-                    f"Gross = (£{net_amount} + £{fixed_fees}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal*Decimal('2'):.6f} - {interest_factor:.6f})"
+                    f"Gross = (£{net_amount} + £{legal_fees + site_visit_fee}) / (1 - {arrangement_fee_decimal:.6f} - {title_insurance_decimal:.6f} - {interest_factor:.6f})"
                 )
                 
             else:
