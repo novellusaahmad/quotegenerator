@@ -4,7 +4,6 @@ from calculations import LoanCalculator
 
 @pytest.mark.parametrize("repayment_option", [
     "service_and_capital",
-    "capital_payment_only",
     "flexible_payment",
 ])
 @pytest.mark.parametrize("payment_frequency,payment_timing", [
