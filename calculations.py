@@ -559,11 +559,24 @@ class LoanCalculator:
                 calculation['netAdvance'] = self._two_dp(net_amount)
         elif repayment_option == 'capital_payment_only':
             # Capital Payment Only - compute from gross and preserve provided net amount
-            logging.info(f"Bridge capital_payment_only calculation: gross={gross_amount}, capital_repayment={capital_repayment}")
+            logging.info(
+                f"Bridge capital_payment_only calculation: gross={gross_amount}, capital_repayment={capital_repayment}"
+            )
+            # Pass net amount when performing a net-to-gross conversion
+            net_for_calculation = net_amount if amount_input_type == 'net' else None
             calculation = self._calculate_bridge_capital_payment_only(
-                gross_amount, annual_rate, loan_term, capital_repayment, fees,
-                interest_type, None, loan_term_days, use_360_days,
-                payment_frequency, payment_timing, start_date
+                gross_amount,
+                annual_rate,
+                loan_term,
+                capital_repayment,
+                fees,
+                interest_type,
+                net_for_calculation,
+                loan_term_days,
+                use_360_days,
+                payment_frequency,
+                payment_timing,
+                start_date,
             )
             # Generate detailed payment schedule
             currency_symbol = params.get('currencySymbol', params.get('currency_symbol', '£'))
