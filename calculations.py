@@ -512,11 +512,13 @@ class LoanCalculator:
             if detailed_schedule:
                 total_savings_from_schedule = Decimal('0')
                 total_interest_only_from_schedule = Decimal('0')
+                include_retained = amount_input_type == 'net' and payment_timing == 'advance'
                 for payment in detailed_schedule:
                     interest_val = Decimal(str(payment.get('interest_amount_raw', 0)))
                     saving_val = Decimal(str(payment.get('interest_saving_raw', 0)))
+                    retained_val = Decimal(str(payment.get('interest_retained_raw', 0))) if include_retained else Decimal('0')
                     total_savings_from_schedule += saving_val
-                    total_interest_only_from_schedule += interest_val + saving_val
+                    total_interest_only_from_schedule += interest_val + saving_val + retained_val
 
                 total_interest_from_schedule = total_interest_only_from_schedule - total_savings_from_schedule
                 total_interest_from_schedule = total_interest_from_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
@@ -4377,16 +4379,46 @@ class LoanCalculator:
                     interest_refund_disp = Decimal('0.00')
                 interest_saving_disp = interest_refund_disp
 
+                # Default retained and refund amounts mirror gross-to-net savings
+                interest_retained_disp_val = interest_only_disp
+                interest_retained_raw_val = interest_only
+                interest_refund_disp_val = interest_refund_disp
+                interest_refund_raw_val = interest_saving
+
                 scheduled_repayment = (interest_amount_disp + principal_payment).quantize(
                     Decimal('0.01'), rounding=ROUND_HALF_UP
                 )
                 total_payment = scheduled_repayment
 
                 interest_calc = interest_calc_base
+                note = None
 
                 if period == 1:
                     total_payment += arrangement_fee + legal_fees
                     interest_calc += " + fees"
+
+                # Handle net advance with advance timing: retain first-period interest
+                if amount_input_type == 'net' and payment_timing == 'advance':
+                    if period == 1:
+                        # Move interest into retained fields and zero out accrued/paid amounts
+                        interest_retained_disp_val = interest_amount_disp
+                        interest_retained_raw_val = interest_amount
+                        interest_amount_disp = Decimal('0.00')
+                        interest_amount = Decimal('0')
+                        interest_saving_disp = Decimal('0.00')
+                        interest_saving = Decimal('0')
+                        interest_refund_disp_val = Decimal('0.00')
+                        interest_refund_raw_val = Decimal('0')
+                        scheduled_repayment = principal_payment.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                        total_payment = scheduled_repayment + arrangement_fee + legal_fees
+                        interest_calc = interest_calc_base + " + fees (first-period interest retained)"
+                        note = "Fees and first-period interest retained."
+                    else:
+                        # Later periods show only actual interest payments
+                        interest_retained_disp_val = Decimal('0.00')
+                        interest_retained_raw_val = Decimal('0')
+                        interest_refund_disp_val = Decimal('0.00')
+                        interest_refund_raw_val = Decimal('0')
 
                 balance_change = (
                     f"↓ -{currency_symbol}{principal_payment:,.2f}"
@@ -4399,7 +4431,7 @@ class LoanCalculator:
                     if property_value > 0 else 0
                 )
 
-                detailed_schedule.append({
+                entry = {
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
                     'start_period': period_start.strftime('%d/%m/%Y'),
                     'end_period': period_end.strftime('%d/%m/%Y'),
@@ -4410,12 +4442,12 @@ class LoanCalculator:
                     'interest_amount': f"{currency_symbol}{interest_amount_disp:,.2f}",
                     'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
                     'interest_accrued': f"{currency_symbol}{interest_amount_disp:,.2f}",
-                    'interest_retained': f"{currency_symbol}{interest_only_disp:,.2f}",
-                    'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
+                    'interest_retained': f"{currency_symbol}{interest_retained_disp_val:,.2f}",
+                    'interest_refund': f"{currency_symbol}{interest_refund_disp_val:,.2f}",
                     'interest_amount_raw': interest_amount,
                     'interest_saving_raw': interest_saving,
-                    'interest_retained_raw': interest_only,
-                    'interest_refund_raw': interest_saving,
+                    'interest_retained_raw': interest_retained_raw_val,
+                    'interest_refund_raw': interest_refund_raw_val,
                     'interest_accrued_raw': interest_amount,
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
@@ -4426,7 +4458,10 @@ class LoanCalculator:
                     'interest_pa': f"{daily_rate:.8f}",
                     'scheduled_repayment': f"{currency_symbol}{scheduled_repayment:,.2f}",
                     'running_ltv': f"{running_ltv:.2f}"
-                })
+                }
+                if note:
+                    entry['note'] = note
+                detailed_schedule.append(entry)
 
                 if remaining_balance <= 0:
                     break
