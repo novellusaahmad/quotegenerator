@@ -1044,7 +1044,13 @@ class LoanCalculator {
                     start_period: row.start_period,
                     end_period: row.end_period,
                     days_held: row.days_held,
-                    capital_outstanding: String(row.capital_outstanding || '').replace(/[£€]/g, currentSymbol),
+                    // Use the per-period capital balance from the schedule without
+                    // falling back to any summary total values. This ensures the
+                    // first period reflects the "capital_outstanding" calculated
+                    // by _generate_detailed_bridge_schedule.
+                    capital_outstanding: row.capital_outstanding !== undefined
+                        ? String(row.capital_outstanding).replace(/[£€]/g, currentSymbol)
+                        : '',
                     annual_interest_rate: row.annual_interest_rate,
                     interest_pa: row.interest_pa,
                     scheduled_repayment: String(row.scheduled_repayment || '').replace(/[£€]/g, currentSymbol),
