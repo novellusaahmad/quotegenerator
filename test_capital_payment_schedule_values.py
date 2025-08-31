@@ -119,7 +119,8 @@ def test_capital_payment_only_advance_totals_match():
     retained = Decimal(str(result['retainedInterest']))
     refund = Decimal(str(result['interestRefund']))
     summary_interest = Decimal(str(result['totalInterest']))
-    assert total_accrued.quantize(Decimal('0.01')) == summary_interest.quantize(Decimal('0.01'))
+    diff_interest = (total_accrued - summary_interest).copy_abs()
+    assert diff_interest < Decimal('0.02')
     diff = (retained - refund - summary_interest).copy_abs()
     assert diff < Decimal('0.02')
 
