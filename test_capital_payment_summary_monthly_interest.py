@@ -37,9 +37,11 @@ def test_capital_only_summary_includes_monthly_interest():
         'site_visit_fee': 0,
         'title_insurance_rate': 0,
         'property_value': 3000000,
+        'start_date': '2024-01-01',
     }
     result = calc.calculate_bridge_loan(params)
 
-    expected_monthly_interest = 2000000 * 0.12 / 12
+    days_first_month = 31  # January has 31 days
+    expected_monthly_interest = 2000000 * 0.12 / 365 * days_first_month
     assert result['periodicInterest'] == pytest.approx(expected_monthly_interest, abs=0.01)
     assert result['monthlyPayment'] == pytest.approx(10000, abs=0.01)

@@ -35,7 +35,8 @@ def test_gross_to_net_and_back_fields():
     assert gross_result['titleInsurance'] == pytest.approx(3360.0)
     assert gross_result['totalInterest'] == pytest.approx(233447.68)
     assert gross_result['interestOnlyTotal'] == pytest.approx(240000.0)
-    assert gross_result['periodicInterest'] == pytest.approx(20000.0)
+    expected_first_interest = 2000000 * 0.12 / 365 * 31
+    assert gross_result['periodicInterest'] == pytest.approx(expected_first_interest, abs=0.01)
 
     net_params = dict(params, amount_input_type='net', net_amount=Decimal('1934640'))
     net_result = calc.calculate_bridge_loan(net_params)
@@ -52,4 +53,4 @@ def test_gross_to_net_and_back_fields():
     assert net_result['titleInsurance'] == pytest.approx(3360.0)
     assert net_result['totalInterest'] == pytest.approx(233447.68)
     assert net_result['interestOnlyTotal'] == pytest.approx(240000.0)
-    assert net_result['periodicInterest'] == pytest.approx(20000.0)
+    assert net_result['periodicInterest'] == pytest.approx(expected_first_interest, abs=0.01)
