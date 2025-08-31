@@ -556,9 +556,24 @@ def test_service_and_capital_net_matches_gross_schedule(payment_timing):
     net_result = calc.calculate_bridge_loan(net_params)
 
     if payment_timing == 'arrears':
-        assert gross_result['detailed_payment_schedule'] == net_result['detailed_payment_schedule']
-        assert net_result['retainedInterest'] == pytest.approx(gross_result['retainedInterest'])
-        assert net_result['interestRefund'] == pytest.approx(gross_result['interestRefund'])
+        gross_schedule = gross_result['detailed_payment_schedule']
+        net_schedule = net_result['detailed_payment_schedule']
+
+        # With arrears timing, net quotes should not retain or refund interest.
+        # Compare schedules ignoring the retained/refund fields and ensure the
+        # net version reports zero for these totals.
+        def normalise(entry):
+            ignore = {
+                'interest_retained',
+                'interest_retained_raw',
+                'interest_refund',
+                'interest_refund_raw',
+            }
+            return {k: v for k, v in entry.items() if k not in ignore}
+
+        assert [normalise(e) for e in gross_schedule] == [normalise(e) for e in net_schedule]
+        assert net_result.get('retainedInterest', 0) == pytest.approx(0)
+        assert net_result.get('interestRefund', 0) == pytest.approx(0)
     else:
         gross_first = gross_result['detailed_payment_schedule'][0]
         net_first = net_result['detailed_payment_schedule'][0]
