@@ -2814,10 +2814,7 @@ class LoanCalculator:
             import logging
 
             original_option = repayment_option
-            if repayment_option in (
-                'flexible_payment',
-                'service_and_capital',
-            ):
+            if repayment_option == 'flexible_payment':
                 repayment_option = 'service_only'
 
             logging.info(
@@ -2898,18 +2895,12 @@ class LoanCalculator:
                 # Bridge Service + Capital: deduct first period interest only when paid in advance
                 if payment_timing == 'advance':
                     days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                    if start_date is not None:
-                        payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-                        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
-                        days_first_period = Decimal(str(period_ranges[0]['days_held']))
-                    else:
-                        periods = (
-                            Decimal('4')
-                            if payment_frequency == 'quarterly'
-                            else Decimal(str(loan_term))
-                        )
-                        days_first_period = Decimal(str(loan_term_days)) / periods
-
+                    periods = (
+                        Decimal('4')
+                        if payment_frequency == 'quarterly'
+                        else Decimal(str(loan_term))
+                    )
+                    days_first_period = Decimal(str(loan_term_days)) / periods
                     daily_rate = annual_rate_decimal / days_per_year
                     period_factor = daily_rate * days_first_period
 
@@ -2926,7 +2917,7 @@ class LoanCalculator:
                         "Formula: Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Period Interest - Title insurance)"
                     )
                     logging.info(
-                        f"Days in first period: {days_first_period}"
+                        f"Days in first period (avg): {days_first_period}"
                     )
                     logging.info(
                         f"Daily rate: {annual_rate}% / {days_per_year} = {daily_rate:.6f}"

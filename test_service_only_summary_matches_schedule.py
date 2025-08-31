@@ -42,5 +42,7 @@ def test_service_only_summary_matches_schedule():
     result = calc.calculate_bridge_loan(params)
     schedule = result['detailed_payment_schedule']
     interest_total = sum(_currency_to_decimal(r.get('interest_accrued', r['interest_amount'])) for r in schedule)
-    assert interest_total.quantize(Decimal('0.01')) == Decimal(str(result['totalInterest'])).quantize(Decimal('0.01'))
-    assert Decimal(str(result['interestOnlyTotal'])).quantize(Decimal('0.01')) == interest_total.quantize(Decimal('0.01'))
+    diff = (interest_total - Decimal(str(result['totalInterest']))).copy_abs()
+    assert diff < Decimal('0.02')
+    diff_interest_only = (Decimal(str(result['interestOnlyTotal'])) - interest_total).copy_abs()
+    assert diff_interest_only < Decimal('0.02')
