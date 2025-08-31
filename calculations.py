@@ -4622,16 +4622,17 @@ class LoanCalculator:
                 else:
                     final_principal = remaining_balance
                     interest_accrued = opening_balance * daily_rate * days_in_period
-                    interest_refund_current = interest_retained_current - interest_accrued
                     interest_accrued_disp = interest_accrued.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_retained_disp = interest_retained_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    interest_refund_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    interest_amount = -interest_refund_current
-                    interest_amount_disp = interest_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    total_final_payment = final_principal + interest_amount
+                    # Derive refund from the difference to avoid rounding drift
+                    interest_refund_disp = (interest_retained_disp - interest_accrued_disp).quantize(
+                        Decimal('0.01'), rounding=ROUND_HALF_UP
+                    )
+                    interest_amount_disp = -interest_refund_disp
+                    total_final_payment = final_principal + interest_amount_disp
                     total_final_payment_disp = total_final_payment.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                     interest_display = f"-{currency_symbol}{interest_refund_disp:,.2f}"
-                    cumulative_refund += interest_refund_current
+                    cumulative_refund += interest_refund_disp
                     capital_outstanding = Decimal('0') if payment_timing == 'advance' else opening_balance
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),

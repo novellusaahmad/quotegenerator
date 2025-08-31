@@ -123,17 +123,38 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
     if repayment_option == 'service_and_capital':
         cap_params = params.copy()
         cap_params['repayment_option'] = 'capital_payment_only'
-        schedule = calc.calculate_bridge_loan(cap_params).get('detailed_payment_schedule', [])
+        calculation = calc.calculate_bridge_loan(cap_params)
     else:
-        schedule = calc.calculate_bridge_loan(params).get('detailed_payment_schedule', [])
+        calculation = calc.calculate_bridge_loan(params)
+    schedule = calculation.get('detailed_payment_schedule', [])
 
     summary: Dict[str, float] = {}
 
     # Recalculate interest fields using days_held to ensure consistency in reports
     if schedule:
         currency_symbol = schedule[0].get('opening_balance', '£')[0]
-        gross_amount = Decimal(str(params.get('gross_amount', params.get('grossAmount', 0))))
-        annual_rate = Decimal(str(params.get('annual_rate', params.get('annualRate', 0))))
+        gross_amount = Decimal(
+            str(
+                calculation.get(
+                    'grossAmount',
+                    calculation.get(
+                        'gross_amount',
+                        params.get('gross_amount', params.get('grossAmount', 0)),
+                    ),
+                )
+            )
+        )
+        annual_rate = Decimal(
+            str(
+                params.get(
+                    'annual_rate',
+                    params.get(
+                        'annualRate',
+                        calculation.get('interestRate', calculation.get('annual_rate', 0)),
+                    ),
+                )
+            )
+        )
         days_per_year = Decimal('360') if params.get('use_360_days') else Decimal('365')
         daily_rate = annual_rate / Decimal('100') / days_per_year
 
