@@ -680,9 +680,34 @@ class LoanCalculator:
                     except Exception:
                         closing_balance = Decimal('0')
 
-                updated_end_ltv = float((closing_balance / property_value * 100)) if property_value > 0 else 0
-                calculation['endLTV'] = updated_end_ltv
-                calculation['endLtv'] = updated_end_ltv
+            updated_end_ltv = float((closing_balance / property_value * 100)) if property_value > 0 else 0
+            calculation['endLTV'] = updated_end_ltv
+            calculation['endLtv'] = updated_end_ltv
+
+            # Override periodic interest using actual days held for the first period
+            detailed_schedule = calculation.get('detailed_payment_schedule') or payment_schedule
+            if detailed_schedule:
+                first_entry = detailed_schedule[0]
+                interest_str = (
+                    first_entry.get('interest_accrued')
+                    or first_entry.get('interest_amount')
+                    or first_entry.get('interest_paid')
+                    or first_entry.get('interest')
+                    or '0'
+                )
+                try:
+                    interest_val = Decimal(str(interest_str).replace('£', '').replace('€', '').replace(',', ''))
+                    interest_val = self._two_dp(interest_val)
+                    calculation['periodicInterest'] = float(interest_val)
+                    if repayment_option in ['service_only', 'service_and_capital']:
+                        if payment_frequency == 'quarterly':
+                            calculation['quarterlyPayment'] = float(interest_val)
+                            calculation['monthlyPayment'] = 0
+                        else:
+                            calculation['monthlyPayment'] = float(interest_val)
+                            calculation['quarterlyPayment'] = 0
+                except Exception:
+                    pass
         except Exception as e:
             import logging
             logging.error(f"Error generating bridge loan payment schedule: {str(e)}")
@@ -690,8 +715,9 @@ class LoanCalculator:
 
         # Ensure interest-only total reflects calculated gross for net-to-gross conversions
         if amount_input_type == 'net' and repayment_option in ['service_and_capital', 'capital_payment_only', 'flexible_payment']:
-            term_years = Decimal(str(loan_term_days)) / (Decimal('360') if use_360_days else Decimal('365'))
-            interest_only_total = gross_amount * (annual_rate / Decimal('100')) * term_years
+            interest_only_total = self.calculate_simple_interest_by_days(
+                gross_amount, annual_rate, loan_term_days, use_360_days
+            )
             calculation['interestOnlyTotal'] = self._two_dp(interest_only_total)
 
         return calculation
@@ -2077,7 +2103,11 @@ class LoanCalculator:
             remaining_balance -= pay
 
         # Interest-only comparison assumes no capital repayments
-        interest_only_total = gross_amount * rate_per_period * periods
+        if loan_term_days is not None:
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            interest_only_total = gross_amount * (annual_rate / Decimal('100')) * (Decimal(str(loan_term_days)) / days_per_year)
+        else:
+            interest_only_total = gross_amount * rate_per_period * periods
         interest_savings = interest_only_total - total_interest
         savings_percentage = (interest_savings / interest_only_total * 100) if interest_only_total > 0 else 0
 
