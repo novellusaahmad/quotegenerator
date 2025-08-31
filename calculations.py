@@ -741,6 +741,14 @@ class LoanCalculator:
             )
             calculation['interestOnlyTotal'] = self._two_dp(interest_only_total)
 
+            # Recalculate savings except for service+capital in arrears, where no savings are shown
+            if not (repayment_option == 'service_and_capital' and payment_timing == 'arrears'):
+                total_interest = Decimal(str(calculation.get('totalInterest', 0)))
+                interest_savings = interest_only_total - total_interest
+                calculation['interestSavings'] = self._two_dp(interest_savings)
+                if interest_only_total > 0:
+                    calculation['savingsPercentage'] = float((interest_savings / interest_only_total) * 100)
+
         return calculation
     
     def calculate_term_loan(self, params: Dict) -> Dict:

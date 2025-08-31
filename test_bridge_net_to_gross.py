@@ -620,3 +620,34 @@ def test_service_and_capital_net_to_gross_uses_day_interest():
     assert interest_first == expected
     assert Decimal(second['interest_retained'].replace('£', '').replace(',', '')) == Decimal('0')
     assert Decimal(second['interest_refund'].replace('£', '').replace(',', '')) == Decimal('0')
+
+
+def test_service_and_capital_net_to_gross_interest_only_total():
+    """Interest-only total in loan summary uses daily interest formula."""
+    calc = LoanCalculator()
+    params = {
+        'annual_rate': Decimal('12'),
+        'loan_term': 12,
+        'repayment_option': 'service_and_capital',
+        'arrangement_fee_rate': Decimal('2'),
+        'legal_fees': Decimal('1000'),
+        'site_visit_fee': Decimal('500'),
+        'title_insurance_rate': Decimal('1'),
+        'capital_repayment': Decimal('1000'),
+        'payment_frequency': 'monthly',
+        'payment_timing': 'advance',
+        'start_date': '2024-01-01',
+    }
+
+    start_dt = datetime.strptime(params['start_date'], '%Y-%m-%d')
+    loan_term_days = (calc._add_months(start_dt, params['loan_term']) - start_dt).days
+
+    net_amount = Decimal('95000')
+    result = calc.calculate_bridge_loan(dict(params, amount_input_type='net', net_amount=net_amount))
+
+    gross = Decimal(str(result['gross_amount']))
+    expected_io = calc.calculate_simple_interest_by_days(gross, params['annual_rate'], loan_term_days, False)
+    assert Decimal(str(result['interestOnlyTotal'])).quantize(Decimal('0.0001')) == expected_io.quantize(Decimal('0.0001'))
+
+    expected_savings = expected_io - Decimal(str(result['totalInterest']))
+    assert Decimal(str(result['interestSavings'])).quantize(Decimal('0.0001')) == expected_savings.quantize(Decimal('0.0001'))
