@@ -136,6 +136,19 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
 
     summary: Dict[str, float] = {}
 
+    if is_service_and_capital_net and schedule:
+        currency_symbol = schedule[0].get('opening_balance', '£')[0]
+        capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
+        for row in schedule:
+            interest_amt = _to_decimal(row.get('interest_amount', 0), currency_symbol)
+            row['principal_payment'] = f"{currency_symbol}{capital_repayment:,.2f}"
+            scheduled = (interest_amt + capital_repayment).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            row['total_payment'] = f"{currency_symbol}{scheduled:,.2f}"
+            row['scheduled_repayment'] = f"{currency_symbol}{scheduled:,.2f}"
+            row['interest_retained'] = f"{currency_symbol}0.00"
+            row['interest_refund'] = f"{currency_symbol}0.00"
+            row['interest_saving'] = f"{currency_symbol}0.00"
+
     # Remove any internal unrounded fields to keep report output stable
     for entry in schedule:
         for key in list(entry.keys()):

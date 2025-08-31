@@ -4295,9 +4295,19 @@ class LoanCalculator:
                 else:
                     capital_per_payment = capital_repayment
 
-                if period == len(payment_dates) and capital_per_payment < remaining_balance:
+                # For net-funded loans keep the capital repayment constant and do
+                # not force the final period to clear the remaining balance.
+                # Only cap the payment if the outstanding balance is smaller
+                # than the scheduled repayment.  Gross-funded loans retain the
+                # previous behaviour of clearing the balance in the final
+                # period.
+                if capital_per_payment > remaining_balance:
                     capital_per_payment = remaining_balance
-                elif capital_per_payment > remaining_balance:
+                elif (
+                    amount_input_type != 'net'
+                    and period == len(payment_dates)
+                    and capital_per_payment < remaining_balance
+                ):
                     capital_per_payment = remaining_balance
 
                 opening_balance = remaining_balance
@@ -4352,8 +4362,17 @@ class LoanCalculator:
                     total_payment += arrangement_fee + legal_fees
                     interest_calc += " + fees"
 
-                # Handle advance timing: retain first-period interest regardless of input type
-                if payment_timing == 'advance':
+                if amount_input_type == 'net':
+                    # Net-funded loans should not treat any interest as
+                    # retained. All interest is shown in the payment for the
+                    # period and savings/refunds are zeroed out.
+                    interest_retained_disp_val = Decimal('0.00')
+                    interest_retained_raw_val = Decimal('0')
+                    interest_refund_disp_val = Decimal('0.00')
+                    interest_refund_raw_val = Decimal('0')
+                    interest_saving_disp = Decimal('0.00')
+                    interest_saving = Decimal('0')
+                elif payment_timing == 'advance':
                     if period == 1:
                         # Move interest into retained fields and zero out accrued/paid amounts
                         interest_retained_disp_val = interest_amount_disp
@@ -4374,14 +4393,6 @@ class LoanCalculator:
                         interest_retained_raw_val = Decimal('0')
                         interest_refund_disp_val = Decimal('0.00')
                         interest_refund_raw_val = Decimal('0')
-                elif amount_input_type == 'net' and payment_timing == 'arrears':
-                    # Net-funded loans paid in arrears should show no retained interest
-                    interest_retained_disp_val = Decimal('0.00')
-                    interest_retained_raw_val = Decimal('0')
-                    interest_refund_disp_val = Decimal('0.00')
-                    interest_refund_raw_val = Decimal('0')
-                    interest_saving_disp = Decimal('0.00')
-                    interest_saving = Decimal('0')
 
                 balance_change = (
                     f"↓ -{currency_symbol}{principal_payment:,.2f}"

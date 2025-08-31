@@ -56,13 +56,16 @@ def test_net_arrears_has_no_retained_interest():
     for row in schedule:
         assert row['interest_retained'] == '£0.00'
         assert row['interest_refund'] == '£0.00'
+        assert row['principal_payment'] == '£5,000.00'
 
     total_interest = sum(_currency_to_decimal(r['interest_accrued']) for r in schedule)
     total_capital = sum(_currency_to_decimal(r['principal_payment']) for r in schedule)
 
     assert total_interest.quantize(Decimal('0.01')) == Decimal(str(result['totalInterest'])).quantize(Decimal('0.01'))
+    assert total_capital == Decimal('5000') * loan_term
     gross = Decimal(str(result.get('gross_amount', result.get('grossAmount'))))
-    assert total_capital.quantize(Decimal('0.01')) == gross.quantize(Decimal('0.01'))
+    expected_closing = gross - total_capital
+    assert _currency_to_decimal(schedule[-1]['closing_balance']) == expected_closing
     assert Decimal(str(result.get('retainedInterest', 0))) == Decimal('0')
     assert Decimal(str(result.get('interestRefund', 0))) == Decimal('0')
     assert Decimal(str(result['interestSavings'])) == Decimal('0')
