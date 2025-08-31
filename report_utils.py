@@ -211,4 +211,34 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
 
     summary = recalculate_summary(schedule)
 
+    if is_service_and_capital_net and summary:
+        gross_amount = Decimal(
+            str(
+                calculation.get(
+                    'gross_amount',
+                    calculation.get('grossAmount', 0),
+                )
+            )
+        )
+        annual_rate = Decimal(
+            str(
+                calculation.get(
+                    'interestRate',
+                    calculation.get('annual_rate', params.get('annual_rate', 0)),
+                )
+            )
+        )
+        term_days = int(calculation.get('loanTermDays', 0))
+        days_per_year = Decimal('360') if params.get('use_360_days') else Decimal('365')
+        daily_rate = annual_rate / Decimal('100') / days_per_year
+        interest_only_total = (gross_amount * daily_rate * Decimal(str(term_days))).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
+        total_interest = Decimal(str(summary['totalInterest']))
+        interest_savings = (interest_only_total - total_interest).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
+        summary['interestOnlyTotal'] = float(interest_only_total)
+        summary['interestSavings'] = float(interest_savings)
+
     return schedule, summary
