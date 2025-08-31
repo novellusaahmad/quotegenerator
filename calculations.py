@@ -2333,47 +2333,43 @@ class LoanCalculator:
         else:
             start_date = datetime.strptime(loan_start_date, '%Y-%m-%d')
         
-        # Use actual loan term days if provided, otherwise fall back to months
+        # Determine term days for interest calculations
         import logging
         if loan_term_days is not None:
-            # Support 360-day calculation for net-to-gross conversions
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(str(loan_term_days)) / days_per_year
-            logging.info(f"Term loan interest calculation using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}")
+            term_days = int(loan_term_days)
         else:
-            term_years = Decimal(str(loan_term)) / Decimal('12')
-            logging.info(f"Term loan interest calculation using loan_term={loan_term} months, term_years={term_years:.4f}")
-        
+            if use_360_days:
+                term_days = loan_term * 30
+            else:
+                term_days = self._calculate_term_days(start_date, loan_term)
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
+
         # Initialize variables to ensure they're always defined
         monthly_payment = Decimal('0')
         total_interest = Decimal('0')
-        
+
         if interest_type == 'simple':
-            # For interest-only payments, use the same total interest calculation as retained interest
-            # term_years already calculated above with loan_term_days if available
-            interest_rate = (annual_rate / Decimal('100')) * term_years
+            # Simple interest based on explicit day count
+            interest_rate = (annual_rate / Decimal('100')) * (Decimal(term_days) / days_per_year)
 
             if net_amount is not None:
                 total_interest = net_amount * interest_rate / (Decimal('1') - interest_rate)
                 monthly_payment = total_interest / Decimal(str(loan_term))
-                logging.info(f"Term loan (net-to-gross) using retained interest formula: net={net_amount:.2f}, total_interest={total_interest:.2f}")
+                logging.info(
+                    f"Term loan (net-to-gross) using retained interest formula: net={net_amount:.2f}, total_interest={total_interest:.2f}"
+                )
             else:
-                if loan_term_days is not None:
-                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate, loan_term_days, use_360_days)
-                else:
-                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                    total_days = term_years * days_per_year
-                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate, int(total_days), use_360_days)
+                total_interest = self.calculate_simple_interest_by_days(
+                    gross_amount, annual_rate, term_days, use_360_days
+                )
                 monthly_payment = total_interest / Decimal(str(loan_term))
-                logging.info(f"Term loan (gross-to-net) simple interest: gross={gross_amount:.2f}, term_years={term_years:.4f}, use_360_days={use_360_days}, total_interest={total_interest:.2f}")
+                logging.info(
+                    f"Term loan (gross-to-net) simple interest: gross={gross_amount:.2f}, term_days={term_days}, use_360_days={use_360_days}, total_interest={total_interest:.2f}"
+                )
         elif interest_type == 'compound_daily':
             # Compound daily: A = P(1 + r/365)^(365*t) - P
             daily_rate = annual_rate / Decimal('100') / Decimal('365')
-            # Use actual loan_term_days if available
-            if loan_term_days is not None:
-                days_total = Decimal(str(loan_term_days))
-            else:
-                days_total = Decimal('365') * term_years
+            days_total = Decimal(str(term_days))
             compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
             total_amount = gross_amount * compound_factor
             total_interest = total_amount - gross_amount
@@ -2390,7 +2386,7 @@ class LoanCalculator:
         elif interest_type == 'compound_quarterly':
             # Compound quarterly: A = P(1 + r/4)^(4*t) - P
             quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
-            quarters_total = term_years * Decimal('4')
+            quarters_total = Decimal(term_days) / Decimal('365') * Decimal('4')
             compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
             total_amount = gross_amount * compound_factor
             total_interest = total_amount - gross_amount
@@ -2398,7 +2394,7 @@ class LoanCalculator:
             logging.info(f"Term loan compound quarterly: total_interest={total_interest:.2f}")
         else:
             # Default to simple interest
-            total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
+            total_interest = gross_amount * (annual_rate / Decimal('100')) * (Decimal(term_days) / days_per_year)
             monthly_payment = total_interest / Decimal(str(loan_term))
             logging.info(f"Term loan default simple interest: total_interest={total_interest:.2f}")
         
@@ -2587,13 +2583,15 @@ class LoanCalculator:
                 remaining_balance = Decimal('0')
                 break
         
-        # Calculate interest savings compared to interest-only payments
+        # Calculate interest savings compared to pure interest-only payments
         if loan_term_days is not None:
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(loan_term_days) / days_per_year
+            term_days = int(loan_term_days)
         else:
-            term_years = Decimal(loan_term) / Decimal('12')
-        interest_only_total = gross_amount * (annual_rate / Decimal('100')) * term_years
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            term_days = int(round((Decimal(loan_term) / Decimal('12')) * days_per_year))
+        interest_only_total = self.calculate_simple_interest_by_days(
+            gross_amount, annual_rate, term_days, use_360_days
+        )
         interest_savings = interest_only_total - total_interest
         savings_percentage = (interest_savings / interest_only_total) * Decimal('100') if interest_only_total > 0 else Decimal('0')
         
@@ -2707,18 +2705,18 @@ class LoanCalculator:
                 # Add final payment to cover remaining balance
                 logging.info(f"Final balance payment required: {remaining_balance:.2f}")
         
-        # Calculate interest savings compared to interest-only payments
-        # Interest-only scenario using same day-count conventions as interest-only calculations
+        # Calculate interest savings compared to interest-only payments using day counts
         if loan_term_days is not None:
-            interest_only_total = self.calculate_simple_interest_by_days(
-                gross_amount, annual_rate, loan_term_days, use_360_days
-            )
+            term_days = int(loan_term_days)
         else:
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            total_days = (Decimal(loan_term) / Decimal('12')) * days_per_year
-            interest_only_total = self.calculate_simple_interest_by_days(
-                gross_amount, annual_rate, int(total_days), use_360_days
-            )
+            if use_360_days:
+                term_days = loan_term * 30
+            else:
+                start_dt = loan_start_date if isinstance(loan_start_date, datetime) else datetime.strptime(loan_start_date, '%Y-%m-%d')
+                term_days = self._calculate_term_days(start_dt, loan_term)
+        interest_only_total = self.calculate_simple_interest_by_days(
+            gross_amount, annual_rate, term_days, use_360_days
+        )
         interest_savings = interest_only_total - total_interest
         savings_percentage = (interest_savings / interest_only_total) * Decimal('100') if interest_only_total > 0 else Decimal('0')
         
@@ -7316,24 +7314,18 @@ class LoanCalculator:
         """Calculate term loan with capital payment only - interest retained at day 1 with potential refund"""
         
         if loan_term_days is not None:
-            # Support 360-day calculation for net-to-gross conversions
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(loan_term_days) / days_per_year
+            term_days = int(loan_term_days)
         else:
-            term_years = Decimal(loan_term) / Decimal('12')
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
+            term_days = int(round((Decimal(loan_term) / Decimal('12')) * days_per_year))
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
+        term_years = Decimal(term_days) / days_per_year
         
         # Calculate full interest for the entire loan term (retained at day 1)
         # Use the same method as interest-only calculations for consistency
-        if loan_term_days is not None:
-            total_retained_interest = self.calculate_simple_interest_by_days(
-                gross_amount, annual_rate, loan_term_days, use_360_days
-            )
-        else:
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            total_days = (Decimal(loan_term) / Decimal('12')) * days_per_year
-            total_retained_interest = self.calculate_simple_interest_by_days(
-                gross_amount, annual_rate, int(total_days), use_360_days
-            )
+        total_retained_interest = self.calculate_simple_interest_by_days(
+            gross_amount, annual_rate, term_days, use_360_days
+        )
         
         # Calculate how much capital will be repaid over the loan term
         total_capital_payments = capital_repayment * loan_term
@@ -7364,7 +7356,7 @@ class LoanCalculator:
             # Gross = (Net + Fees) / (1 - rate * term)
             interest_rate = (annual_rate / Decimal('100')) * term_years
             gross_amount = (net_amount + total_fees) / (Decimal('1') - interest_rate)
-            
+
             # Recalculate interest with new gross amount
             total_retained_interest = gross_amount * interest_rate
             total_capital_payments = capital_repayment * loan_term
@@ -7383,7 +7375,9 @@ class LoanCalculator:
         net_advance = gross_amount - total_retained_interest - sum(Decimal(str(v)) for v in fees.values())
         
         # Interest comparison for frontend display
-        interest_only_total = total_retained_interest  # Full interest if no capital payments made
+        interest_only_total = self.calculate_simple_interest_by_days(
+            gross_amount, annual_rate, term_days, use_360_days
+        )  # Full interest if no capital payments made
         interest_savings = interest_refund  # Savings from capital payments
         savings_percentage = float((interest_refund / total_retained_interest * 100)) if total_retained_interest > 0 else 0
         
