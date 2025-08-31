@@ -130,6 +130,12 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
 
     summary: Dict[str, float] = {}
 
+    # Remove any internal unrounded fields to keep report output stable
+    for entry in schedule:
+        for key in list(entry.keys()):
+            if key.endswith('_raw'):
+                del entry[key]
+
     # Recalculate interest fields using days_held to ensure consistency in reports
     if schedule:
         currency_symbol = schedule[0].get('opening_balance', '£')[0]

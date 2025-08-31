@@ -477,14 +477,12 @@ class LoanCalculator:
             if detailed_schedule:
                 total_interest_from_schedule = Decimal('0')
                 for payment in detailed_schedule:
-                    interest_str = payment.get('interest_accrued', payment.get('interest_amount', '£0.00'))
-                    interest_numeric = interest_str.replace('£', '').replace('€', '').replace(',', '')
-                    total_interest_from_schedule += Decimal(interest_numeric) if interest_numeric else Decimal('0')
+                    interest_val = payment.get('interest_accrued_raw', payment.get('interest_amount_raw', Decimal('0')))
+                    total_interest_from_schedule += Decimal(str(interest_val))
 
-                total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
+                total_interest_from_schedule = total_interest_from_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 calculation['totalInterest'] = float(total_interest_from_schedule)
                 calculation['total_interest'] = float(total_interest_from_schedule)
-                # For service-only loans, total interest equals the interest-only total
                 calculation['interestOnlyTotal'] = float(total_interest_from_schedule)
         elif repayment_option == 'service_and_capital':
             # Service + Capital - use the derived gross amount and, for net inputs,
@@ -515,20 +513,19 @@ class LoanCalculator:
                 total_savings_from_schedule = Decimal('0')
                 total_interest_only_from_schedule = Decimal('0')
                 for payment in detailed_schedule:
-                    interest_str = payment.get('interest_amount', '£0.00')
-                    saving_str = payment.get('interest_saving', '£0.00')
-                    interest_numeric = interest_str.replace('£', '').replace('€', '').replace(',', '')
-                    saving_numeric = saving_str.replace('£', '').replace('€', '').replace(',', '')
-                    interest_val = Decimal(interest_numeric) if interest_numeric else Decimal('0')
-                    saving_val = Decimal(saving_numeric) if saving_numeric else Decimal('0')
+                    interest_val = Decimal(str(payment.get('interest_amount_raw', 0)))
+                    saving_val = Decimal(str(payment.get('interest_saving_raw', 0)))
                     total_savings_from_schedule += saving_val
                     total_interest_only_from_schedule += interest_val + saving_val
 
                 total_interest_from_schedule = total_interest_only_from_schedule - total_savings_from_schedule
-                calculation['totalInterest'] = self._two_dp(total_interest_from_schedule)
-                calculation['total_interest'] = calculation['totalInterest']
-                calculation['interestSavings'] = self._two_dp(total_savings_from_schedule)
-                calculation['interestOnlyTotal'] = self._two_dp(total_interest_only_from_schedule)
+                total_interest_from_schedule = total_interest_from_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                total_savings_from_schedule = total_savings_from_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                total_interest_only_from_schedule = total_interest_only_from_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                calculation['totalInterest'] = float(total_interest_from_schedule)
+                calculation['total_interest'] = float(total_interest_from_schedule)
+                calculation['interestSavings'] = float(total_savings_from_schedule)
+                calculation['interestOnlyTotal'] = float(total_interest_only_from_schedule)
                 if total_interest_only_from_schedule > 0:
                     calculation['savingsPercentage'] = float((total_savings_from_schedule / total_interest_only_from_schedule) * 100)
             # Preserve user provided net amount for net-to-gross conversions
@@ -549,12 +546,11 @@ class LoanCalculator:
             if detailed_schedule:
                 total_interest_from_schedule = Decimal('0')
                 for payment in detailed_schedule:
-                    interest_str = payment.get('interest_accrued', '£0.00')
-                    interest_numeric = interest_str.replace('£', '').replace('€', '').replace(',', '')
-                    total_interest_from_schedule += Decimal(interest_numeric) if interest_numeric else Decimal('0')
-                total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
-                calculation['totalInterest'] = total_interest_from_schedule
-                calculation['total_interest'] = total_interest_from_schedule
+                    interest_val = Decimal(str(payment.get('interest_accrued_raw', 0)))
+                    total_interest_from_schedule += interest_val
+                total_interest_from_schedule = total_interest_from_schedule.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                calculation['totalInterest'] = float(total_interest_from_schedule)
+                calculation['total_interest'] = float(total_interest_from_schedule)
             if amount_input_type == 'net':
                 calculation['netAdvance'] = self._two_dp(net_amount)
         elif repayment_option == 'capital_payment_only':
@@ -2212,7 +2208,7 @@ class LoanCalculator:
             daily_rate = annual_rate / Decimal('100') / days_per_year
 
             payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
             for pr in period_ranges:
                 days_in_period = Decimal(str(pr['days_held']))
@@ -2902,7 +2898,7 @@ class LoanCalculator:
                     days_per_year = Decimal('360') if use_360_days else Decimal('365')
                     if start_date is not None:
                         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-                        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+                        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
                         days_first_period = Decimal(str(period_ranges[0]['days_held']))
                     else:
                         periods = (
@@ -3724,13 +3720,17 @@ class LoanCalculator:
         payment_dates: List[datetime],
         loan_term: int,
         timing: str = 'advance',
+        loan_term_days: int | None = None,
     ) -> List[Dict[str, object]]:
         """Return list of period start/end dates and day counts.
 
         The end of each period is calculated as the start of the period plus the
         number of days in that calendar month.  The end date is capped at the
         overall loan end date so that periods never extend beyond the life of
-        the loan.
+        the loan.  When ``loan_term_days`` is provided the final period is
+        adjusted so that the sum of ``days_held`` exactly matches this value –
+        protecting against off‑by‑one errors when the start date falls on the
+        end of a month (e.g. 31 August).
         """
         ranges: List[Dict[str, object]] = []
         start_date = self._normalize_date(start_date)
@@ -3744,6 +3744,14 @@ class LoanCalculator:
                 period_end = loan_end
             ranges.append({'start': current, 'end': period_end, 'days_held': (period_end - current).days})
             current = period_end
+
+        if loan_term_days is not None and ranges:
+            total_days = sum(r['days_held'] for r in ranges)
+            diff = loan_term_days - total_days
+            if diff != 0:
+                ranges[-1]['end'] = ranges[-1]['end'] + timedelta(days=diff)
+                ranges[-1]['days_held'] += diff
+
         # If there are more payment dates than computed ranges (e.g. advance
         # schedules that include a final principal-only payment), pad with
         # zero-day periods so callers can safely index by payment date.
@@ -3957,7 +3965,8 @@ class LoanCalculator:
 
             # Generate payment dates based on frequency and timing
             payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+            loan_term_days = quote_data.get('loan_term_days')
+            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
             fees_deducted_first = arrangement_fee + legal_fees
             fees_added_to_first = False
@@ -4012,7 +4021,8 @@ class LoanCalculator:
                 start_date = start_date_str
 
             payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+            loan_term_days = quote_data.get('loan_term_days')
+            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
             if payment_frequency == 'quarterly':
                 capital_per_payment = capital_repayment * 3
@@ -4096,7 +4106,8 @@ class LoanCalculator:
                 start_date = start_date_str
 
             payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+            loan_term_days = quote_data.get('loan_term_days')
+            period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
             daily_rate = annual_rate / Decimal('100') / days_per_year
 
             fees_deducted_first = arrangement_fee + legal_fees
@@ -4185,7 +4196,9 @@ class LoanCalculator:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
         else:
             start_date = start_date_str
-        
+
+        loan_term_days = params.get('loan_term_days')
+
         # Generate payment dates
         payment_dates = self._generate_payment_dates(
             start_date, loan_term, payment_frequency, payment_timing
@@ -4196,7 +4209,7 @@ class LoanCalculator:
         # approach that could accumulate extra days when crossing months with
         # different lengths (e.g. February).
         period_ranges = self._compute_period_ranges(
-            start_date, payment_dates, loan_term, payment_timing
+            start_date, payment_dates, loan_term, payment_timing, loan_term_days
         )
 
 
@@ -4296,6 +4309,7 @@ class LoanCalculator:
                     'tranche_release': f"{currency_symbol}0.00",
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{interest_amount:,.2f}",
+                    'interest_amount_raw': interest_amount,
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
@@ -4347,6 +4361,7 @@ class LoanCalculator:
                 daily_rate = (annual_rate / Decimal('100')) / days_per_year
                 interest_amount = opening_balance * daily_rate * days_in_period_dec
                 interest_only = gross_amount * daily_rate * days_in_period_dec
+                interest_saving = interest_only - interest_amount
                 interest_calc_base = (
                     f"{currency_symbol}{opening_balance:,.2f} × {annual_rate:.3f}% "
                     f"× {days_in_period}/{days_per_year} days")
@@ -4390,6 +4405,11 @@ class LoanCalculator:
                     'interest_accrued': f"{currency_symbol}{interest_amount_disp:,.2f}",
                     'interest_retained': f"{currency_symbol}{interest_only_disp:,.2f}",
                     'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
+                    'interest_amount_raw': interest_amount,
+                    'interest_saving_raw': interest_saving,
+                    'interest_retained_raw': interest_only,
+                    'interest_refund_raw': interest_saving,
+                    'interest_accrued_raw': interest_amount,
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
@@ -4485,6 +4505,11 @@ class LoanCalculator:
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{interest_paid_disp:,.2f}",
                     'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
+                    'interest_amount_raw': interest_paid,
+                    'interest_saving_raw': interest_refund_current,
+                    'interest_retained_raw': interest_retained_current,
+                    'interest_accrued_raw': interest_accrued,
+                    'interest_refund_raw': interest_refund_current,
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}" + (f" + {currency_symbol}{fees_added:,.2f} fees" if period == 1 and fees_added > 0 and interest_paid > 0 else ""),
                     'closing_balance': f"{currency_symbol}{remaining_balance:,.2f}",
@@ -4580,6 +4605,11 @@ class LoanCalculator:
                         'interest_calculation': interest_calc + " + fees",
                         'interest_amount': interest_display,
                         'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
+                        'interest_amount_raw': interest_amount,
+                        'interest_saving_raw': interest_refund_current,
+                        'interest_retained_raw': interest_retained_current,
+                        'interest_accrued_raw': interest_retained_current - interest_refund_current,
+                        'interest_refund_raw': interest_refund_current,
                         'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                         'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                         'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
@@ -4622,6 +4652,11 @@ class LoanCalculator:
                         'interest_calculation': "Capital payment only",
                         'interest_amount': f"{currency_symbol}{interest_amount:,.2f}",
                         'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
+                        'interest_amount_raw': interest_amount,
+                        'interest_saving_raw': interest_refund_current,
+                        'interest_retained_raw': interest_retained_current,
+                        'interest_accrued_raw': interest_accrued,
+                        'interest_refund_raw': interest_refund_current,
                         'principal_payment': f"{currency_symbol}{capital_per_payment:,.2f}",
                         'total_payment': f"{currency_symbol}{(capital_per_payment - interest_refund_current):,.2f}",
                         'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
@@ -4660,6 +4695,11 @@ class LoanCalculator:
                         'interest_calculation': f"Final payment with interest refund: {currency_symbol}{interest_refund_disp:,.2f}",
                         'interest_amount': interest_display,
                         'interest_saving': f"{currency_symbol}{interest_refund_disp:,.2f}",
+                        'interest_amount_raw': -interest_refund_disp,
+                        'interest_saving_raw': interest_refund_disp,
+                        'interest_retained_raw': interest_retained_current,
+                        'interest_accrued_raw': interest_accrued,
+                        'interest_refund_raw': interest_refund_disp,
                         'principal_payment': f"{currency_symbol}{final_principal:,.2f}",
                         'total_payment': f"{currency_symbol}{total_final_payment_disp:,.2f}",
                         'closing_balance': f"{currency_symbol}0.00",
@@ -4686,11 +4726,30 @@ class LoanCalculator:
             total_refund = Decimal('0')
             total_accrued = Decimal('0')
             for entry in detailed_schedule:
-                total_interest_amt += self._to_decimal(entry.get('interest_amount', 0), currency_symbol)
-                total_savings += self._to_decimal(entry.get('interest_saving', 0), currency_symbol)
-                total_retained += self._to_decimal(entry.get('interest_retained', 0), currency_symbol)
-                total_refund += self._to_decimal(entry.get('interest_refund', 0), currency_symbol)
-                total_accrued += self._to_decimal(entry.get('interest_accrued', 0), currency_symbol)
+                interest_val = entry.get('interest_amount_raw')
+                if interest_val is None:
+                    interest_val = self._to_decimal(entry.get('interest_amount', 0), currency_symbol)
+                total_interest_amt += Decimal(str(interest_val))
+
+                saving_val = entry.get('interest_saving_raw')
+                if saving_val is None:
+                    saving_val = self._to_decimal(entry.get('interest_saving', 0), currency_symbol)
+                total_savings += Decimal(str(saving_val))
+
+                retained_val = entry.get('interest_retained_raw')
+                if retained_val is None:
+                    retained_val = self._to_decimal(entry.get('interest_retained', 0), currency_symbol)
+                total_retained += Decimal(str(retained_val))
+
+                refund_val = entry.get('interest_refund_raw')
+                if refund_val is None:
+                    refund_val = self._to_decimal(entry.get('interest_refund', 0), currency_symbol)
+                total_refund += Decimal(str(refund_val))
+
+                accrued_val = entry.get('interest_accrued_raw')
+                if accrued_val is None:
+                    accrued_val = self._to_decimal(entry.get('interest_accrued', 0), currency_symbol)
+                total_accrued += Decimal(str(accrued_val))
 
             rounding = Decimal('0.01')
 
@@ -4798,7 +4857,8 @@ class LoanCalculator:
         
         # Generate payment dates and period ranges based on frequency and timing
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+        loan_term_days = quote_data.get('loan_term_days')
+        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
         use_360_days = quote_data.get('use_360_days', False)
 
         arrangement_fee = Decimal(str(quote_data.get('arrangementFee', 0)))
@@ -4919,7 +4979,8 @@ class LoanCalculator:
         
         # Generate payment dates
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+        loan_term_days = params.get('loan_term_days')
+        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
         detailed_schedule = []
         remaining_balance = gross_amount
@@ -6296,7 +6357,7 @@ class LoanCalculator:
             loan_end_date = start_date + relativedelta(months=total_months) - timedelta(days=1)
 
         payment_dates = [start_date + relativedelta(months=m-1) for m in range(1, total_months + 1)]
-        period_ranges = self._compute_period_ranges(start_date, payment_dates, total_months, 'advance')
+        period_ranges = self._compute_period_ranges(start_date, payment_dates, total_months, 'advance', loan_term_days)
 
         # Generate monthly schedule based on total_months
         for month in range(1, total_months + 1):
@@ -6578,7 +6639,8 @@ class LoanCalculator:
         payment_timing = quote_data.get('payment_timing', 'advance')
         payment_frequency = quote_data.get('payment_frequency', 'monthly')
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing)
+        loan_term_days = quote_data.get('loan_term_days')
+        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
         schedule = []
         
