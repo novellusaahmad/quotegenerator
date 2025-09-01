@@ -588,24 +588,30 @@
 <option value="compound_quarterly">Compound Quarterly</option>
 </select>
 </div>
-<!-- Loan Term -->
-<div class="">
-<label class="form-label" for="loanTerm">Loan Term</label>
-<div class="input-group">
-<input class="form-control" id="loanTerm" max="600" min="3" name="loan_term" required="" step="0.01" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
-<span class="input-group-text">months</span>
-</div>
-</div>
 <!-- Start Date -->
 <div class="">
 <label class="form-label" for="startDate">Start Date</label>
 <input class="form-control" id="startDate" name="start_date" required="" style="min-height: 38px; font-size: 1rem;" type="date"/>
 </div>
-<!-- End Date -->
+<!-- Loan End Selection -->
 <div class="">
-<label class="form-label" for="endDate">End Date</label>
+<label class="form-label">Loan End</label>
+<div class="btn-group w-100" role="group">
+<input class="btn-check" id="loanTermOption" name="loan_end_type" type="radio" value="term" checked>
+<label class="btn btn-outline-secondary btn-sm" for="loanTermOption">Term (months)</label>
+<input class="btn-check" id="loanEndDateOption" name="loan_end_type" type="radio" value="date">
+<label class="btn btn-outline-secondary btn-sm" for="loanEndDateOption">End Date</label>
+</div>
+<div id="loanTermContainer" class="mt-2">
+<div class="input-group">
+<input class="form-control" id="loanTerm" max="600" min="3" name="loan_term" required="" step="0.01" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
+<span class="input-group-text">months</span>
+</div>
+</div>
+<div id="endDateContainer" class="mt-2" style="display:none;">
 <input class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;" type="date"/>
 <small class="form-text text-muted">Select start and end dates to calculate the loan term in days.</small>
+</div>
 </div>
 <!-- Fees Section -->
 <div class="">
@@ -1135,36 +1141,49 @@
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
 <script>
-// End date calculation functionality with automatic recalculation
+// End date/term synchronization with automatic recalculation
 function calculateEndDate() {
+    const mode = document.querySelector('input[name="loan_end_type"]:checked').value;
     const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
+    const loanTermEl = document.getElementById('loanTerm');
+    const endDateEl = document.getElementById('endDate');
 
-    if (startDate && endDate) {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
-        // Calculate actual days difference
-        const timeDiff = end.getTime() - start.getTime();
-        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        console.log(`Date range: ${daysDiff} days between ${startDate} and ${endDate}`);
-
-        // Update displayed day count if loan summary exists
-        const loanTermDaysEl = document.getElementById('loanTermDaysResult');
-        if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
-
-        // Determine loan term in months based on dates
-        let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 +
-                         (end.getMonth() - start.getMonth());
-        if (end.getDate() < start.getDate()) {
-            monthsDiff -= 1;
+    if (mode === 'term') {
+        const loanTerm = parseInt(loanTermEl.value);
+        if (startDate && loanTerm) {
+            const start = new Date(startDate);
+            const end = new Date(start);
+            end.setMonth(end.getMonth() + loanTerm);
+            end.setDate(end.getDate() - 1);
+            endDateEl.value = end.toISOString().split('T')[0];
+            triggerCalculationUpdate();
         }
-        const loanTerm = Math.max(1, monthsDiff);
-        document.getElementById('loanTerm').value = loanTerm;
+    } else {
+        const endDate = endDateEl.value;
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const timeDiff = end.getTime() - start.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            const loanTermDaysEl = document.getElementById('loanTermDaysResult');
+            if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
 
-        // Trigger calculation update if calculator instance exists and form has data
-        triggerCalculationUpdate();
+            let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 +
+                             (end.getMonth() - start.getMonth());
+            if (end.getDate() < start.getDate()) {
+                monthsDiff -= 1;
+            }
+            const loanTerm = Math.max(1, monthsDiff);
+            loanTermEl.value = loanTerm;
+            triggerCalculationUpdate();
+        }
     }
+}
+
+function toggleLoanEndInputs() {
+    const mode = document.querySelector('input[name="loan_end_type"]:checked').value;
+    document.getElementById('loanTermContainer').style.display = mode === 'term' ? '' : 'none';
+    document.getElementById('endDateContainer').style.display = mode === 'term' ? 'none' : '';
 }
 
 // Helper function to trigger calculation update when dates change
@@ -1211,21 +1230,27 @@ document.addEventListener('DOMContentLoaded', function() {
             startDateElement.value = today;
         }
         
-        // Calculate initial end date
+        // Ensure correct field visibility and initial calculation
+        toggleLoanEndInputs();
         if (typeof calculateEndDate === 'function') {
             calculateEndDate();
         }
-        
+
         // Add event listeners with error handling
         const startDate = document.getElementById('startDate');
         const endDate = document.getElementById('endDate');
+        const loanTerm = document.getElementById('loanTerm');
+        const loanEndRadios = document.querySelectorAll('input[name="loan_end_type"]');
 
-        if (startDate) {
-            startDate.addEventListener('change', calculateEndDate);
-        }
-        if (endDate) {
-            endDate.addEventListener('change', calculateEndDate);
-        }
+        if (startDate) startDate.addEventListener('change', calculateEndDate);
+        if (endDate) endDate.addEventListener('change', calculateEndDate);
+        if (loanTerm) loanTerm.addEventListener('input', calculateEndDate);
+        loanEndRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                toggleLoanEndInputs();
+                calculateEndDate();
+            });
+        });
         
         // Initialize the main loan calculator and store global reference
         try {
