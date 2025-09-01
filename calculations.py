@@ -646,9 +646,17 @@ class LoanCalculator:
         })
 
         # Always provide reference monthly and quarterly interest payments
+        # based purely on the gross amount and nominal annual rate.  These
+        # values are rounded to two decimals so they align with the loan
+        # summary report and PDF output.
         annual_rate_decimal = annual_rate / Decimal('100')
-        monthly_interest = gross_amount * annual_rate_decimal / Decimal('12')
-        quarterly_interest = gross_amount * annual_rate_decimal / Decimal('4')
+        rounding = Decimal('0.01')
+        monthly_interest = (
+            gross_amount * annual_rate_decimal / Decimal('12')
+        ).quantize(rounding, rounding=ROUND_HALF_UP)
+        quarterly_interest = (
+            gross_amount * annual_rate_decimal / Decimal('4')
+        ).quantize(rounding, rounding=ROUND_HALF_UP)
         calculation['monthlyInterestPayment'] = float(monthly_interest)
         calculation['quarterlyInterestPayment'] = float(quarterly_interest)
 

@@ -235,8 +235,17 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
         )
     )
     annual_rate_decimal = annual_rate / Decimal("100")
-    monthly_interest = gross_amount * annual_rate_decimal / Decimal("12")
-    quarterly_interest = gross_amount * annual_rate_decimal / Decimal("4")
+    # Reference interest payments are always based on the gross loan
+    # amount and the nominal annual rate.  Round these values to two
+    # decimal places so the summary matches the visible loan summary
+    # table and PDF reports exactly.
+    rounding = Decimal("0.01")
+    monthly_interest = (
+        gross_amount * annual_rate_decimal / Decimal("12")
+    ).quantize(rounding, rounding=ROUND_HALF_UP)
+    quarterly_interest = (
+        gross_amount * annual_rate_decimal / Decimal("4")
+    ).quantize(rounding, rounding=ROUND_HALF_UP)
     summary["monthlyInterestPayment"] = float(monthly_interest)
     summary["quarterlyInterestPayment"] = float(quarterly_interest)
 
