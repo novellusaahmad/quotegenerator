@@ -686,6 +686,7 @@ class LoanCalculator {
         const titleInsuranceEl = document.getElementById('titleInsuranceResult');
         const totalInterestEl = document.getElementById('totalInterestResult');
         const netDay1AdvanceEl = document.getElementById('netDay1AdvanceResult');
+        const netDay1AdvanceRow = netDay1AdvanceEl ? netDay1AdvanceEl.closest('tr') : null;
         const ltvRatioEl = document.getElementById('ltvRatioResult');
         const totalNetAdvanceEl = document.getElementById('totalNetAdvanceResult');
         const valuationEl = document.getElementById('propertyValueResult');
@@ -705,6 +706,11 @@ class LoanCalculator {
         const totalInterest = results.totalInterest || 0;
         const day1Advance = results.day1Advance || results.netDay1Advance || 0;
         
+        // Determine loan type and repayment option early for conditional displays
+        const loanType = document.getElementById('loanType').value;
+        const repaymentOption = document.getElementById('repaymentOption').value;
+        const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
+
         // Update the display elements
         const moneyFormat = {minimumFractionDigits: 2, maximumFractionDigits: 2};
         if (valuationEl) valuationEl.textContent = propertyValue.toLocaleString('en-GB', moneyFormat);
@@ -718,17 +724,19 @@ class LoanCalculator {
         if (siteVisitFeeEl) siteVisitFeeEl.textContent = siteVisitFee.toLocaleString('en-GB', moneyFormat);
         if (titleInsuranceEl) titleInsuranceEl.textContent = titleInsurance.toLocaleString('en-GB', moneyFormat);
         if (totalInterestEl) totalInterestEl.textContent = totalInterest.toLocaleString('en-GB', moneyFormat);
-        
+
         // For development loans, show user input Day 1 advance for display purposes
-        if (netDay1AdvanceEl) {
-            // Priority: Use userInputDay1Advance from backend, then user form input, then calculated
-            const userInputFromBackend = results.userInputDay1Advance;
-            const day1AdvanceInput = document.querySelector('input[name="day1_advance"]');
-            const userInputFromForm = day1AdvanceInput ? parseFloat(day1AdvanceInput.value) || 0 : 0;
-            
-            // Use user input value for display, fallback to calculated if no user input
-            const displayDay1Advance = userInputFromBackend || userInputFromForm || results.day1NetAdvance || results.day1Advance || day1Advance || 0;
-            netDay1AdvanceEl.textContent = displayDay1Advance.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        if (netDay1AdvanceRow) {
+            if (repaymentOption === 'service_and_capital') {
+                netDay1AdvanceRow.style.display = 'none';
+            } else {
+                netDay1AdvanceRow.style.display = '';
+                const userInputFromBackend = results.userInputDay1Advance;
+                const day1AdvanceInput = document.querySelector('input[name="day1_advance"]');
+                const userInputFromForm = day1AdvanceInput ? parseFloat(day1AdvanceInput.value) || 0 : 0;
+                const displayDay1Advance = userInputFromBackend || userInputFromForm || results.day1NetAdvance || results.day1Advance || day1Advance || 0;
+                netDay1AdvanceEl.textContent = displayDay1Advance.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
         }
         
         // Calculate and display LTV ratio (use backend values if available)
@@ -745,51 +753,48 @@ class LoanCalculator {
             
             // Try to get the closing balance from the last month of the payment schedule for final remaining balance
             if (results.detailed_payment_schedule && results.detailed_payment_schedule.length > 0) {
-                const lastScheduleEntry = results.detailed_payment_schedule[results.detailed_payment_schedule.length - 1];
-                const closingBalanceRaw = lastScheduleEntry.closing_balance;
+                const schedule = results.detailed_payment_schedule;
+                const lastScheduleEntry = schedule[schedule.length - 1];
+                let closingBalanceRaw = lastScheduleEntry.closing_balance;
 
                 // Handle both string and numeric closing balance values
                 let closingBalanceValue = 0;
-                console.log('End LTV closing balance debug:', {
-                    type: typeof closingBalanceRaw,
-                    value: closingBalanceRaw
-                });
-
                 if (typeof closingBalanceRaw === 'number') {
                     closingBalanceValue = closingBalanceRaw;
                 } else if (typeof closingBalanceRaw === 'string') {
-                    // Extract numeric value from closing balance string (remove currency symbols and commas)
-                    const closingBalanceMatch = closingBalanceRaw.match(/[\d,]+\.?\d*/);
-                    if (closingBalanceMatch) {
-                        closingBalanceValue = parseFloat(closingBalanceMatch[0].replace(/,/g, ''));
+                    const match = closingBalanceRaw.match(/[\d,]+\.?\d*/);
+                    if (match) closingBalanceValue = parseFloat(match[0].replace(/,/g, ''));
+                }
+
+                if (closingBalanceValue <= 0 && schedule.length > 1) {
+                    const secondLast = schedule[schedule.length - 2];
+                    const secondRaw = secondLast.closing_balance || secondLast.capital_outstanding;
+                    if (typeof secondRaw === 'number') {
+                        closingBalanceValue = secondRaw;
+                    } else if (typeof secondRaw === 'string') {
+                        const match = secondRaw.match(/[\d,]+\.?\d*/);
+                        if (match) closingBalanceValue = parseFloat(match[0].replace(/,/g, ''));
                     }
-                } else {
-                    console.warn('End LTV: Unexpected closing balance type:', typeof closingBalanceRaw, closingBalanceRaw);
+                }
+
+                if (closingBalanceValue <= 0 && (results.repayment_option === 'capital_payment_only' || results.repaymentOption === 'capital_payment_only') && lastScheduleEntry.opening_balance) {
+                    const openingRaw = lastScheduleEntry.opening_balance;
+                    if (typeof openingRaw === 'number') {
+                        closingBalanceValue = openingRaw;
+                    } else if (typeof openingRaw === 'string') {
+                        const match = openingRaw.match(/[\d,]+\.?\d*/);
+                        if (match) closingBalanceValue = parseFloat(match[0].replace(/,/g, ''));
+                    }
                 }
 
                 if (closingBalanceValue > 0) {
                     endLTV = (closingBalanceValue / propertyValue) * 100;
-                    console.log(`End LTV calculation: Final balance £${closingBalanceValue.toLocaleString()} / Property value £${propertyValue.toLocaleString()} = ${endLTV.toFixed(2)}%`);
-                } else if ((results.repayment_option === 'capital_payment_only' || results.repaymentOption === 'capital_payment_only') && lastScheduleEntry.opening_balance) {
-                    // For capital repayment only, the final schedule entry has closing balance 0.
-                    // Use the opening balance before the final payment to determine end LTV.
-                    const openingRaw = lastScheduleEntry.opening_balance;
-                    let openingValue = 0;
-                    if (typeof openingRaw === 'number') {
-                        openingValue = openingRaw;
-                    } else if (typeof openingRaw === 'string') {
-                        const openingMatch = openingRaw.match(/[\d,]+\.?\d*/);
-                        if (openingMatch) {
-                            openingValue = parseFloat(openingMatch[0].replace(/,/g, ''));
-                        }
-                    }
-                    if (openingValue > 0) {
-                        endLTV = (openingValue / propertyValue) * 100;
-                        console.log(`End LTV calculation (opening balance) £${openingValue.toLocaleString()} / Property value £${propertyValue.toLocaleString()} = ${endLTV.toFixed(2)}%`);
-                    }
+                    console.log(`End LTV calculation: balance £${closingBalanceValue.toLocaleString()} / Property value £${propertyValue.toLocaleString()} = ${endLTV.toFixed(2)}%`);
                 }
-            } else {
-                // Fallback to gross amount if no payment schedule available
+            }
+
+            if (!endLTV) {
+                // Fallback to gross amount if no payment schedule available or balance couldn't be determined
                 endLTV = (grossAmount / propertyValue) * 100;
                 console.log(`End LTV fallback: Gross amount £${grossAmount.toLocaleString()} / Property value £${propertyValue.toLocaleString()} = ${endLTV.toFixed(2)}%`);
             }
@@ -806,11 +811,6 @@ class LoanCalculator {
             totalNetAdvanceEl.textContent = totalNetAdvance.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         
-        // Get loan type and repayment option for multiple uses
-        const loanType = document.getElementById('loanType').value;
-        const repaymentOption = document.getElementById('repaymentOption').value;
-        const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
-
         // Retained interest and refund
         const retainedInterestRow = document.getElementById('retainedInterestRow');
         const retainedInterestEl = document.getElementById('retainedInterestResult');
@@ -819,9 +819,12 @@ class LoanCalculator {
 
         const retainedInterestVal = parseFloat(results.retainedInterest ?? results.retained_interest ?? 0);
         const interestRefundVal = parseFloat(results.interestRefund ?? results.interest_refund ?? 0);
+        const isServiceAndCapital = repaymentOption === 'service_and_capital';
 
         if (retainedInterestRow) {
-            if (retainedInterestVal > 0) {
+            if (isServiceAndCapital) {
+                retainedInterestRow.style.display = 'none';
+            } else if (retainedInterestVal > 0) {
                 retainedInterestRow.style.display = 'table-row';
                 if (retainedInterestEl) {
                     retainedInterestEl.textContent = retainedInterestVal.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -832,7 +835,9 @@ class LoanCalculator {
         }
 
         if (interestRefundRow) {
-            if (interestRefundVal > 0) {
+            if (isServiceAndCapital) {
+                interestRefundRow.style.display = 'none';
+            } else if (interestRefundVal > 0) {
                 interestRefundRow.style.display = 'table-row';
                 if (interestRefundEl) {
                     interestRefundEl.textContent = interestRefundVal.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -945,7 +950,7 @@ class LoanCalculator {
             const loanType = loanTypeEl ? loanTypeEl.value : (results.loan_type || '');
             const repayment = repaymentEl ? repaymentEl.value : (results.repayment_option || '');
             const scheduleContainerEl = document.getElementById('detailedPaymentScheduleCard');
-            if ((loanType === 'term' || loanType === 'bridge') && repayment === 'none') {
+            if (loanType === 'development' || ((loanType === 'term' || loanType === 'bridge') && repayment === 'none')) {
                 if (scheduleContainerEl) scheduleContainerEl.style.display = 'none';
                 return; // don't render
             }
@@ -1197,17 +1202,23 @@ class LoanCalculator {
         const hideAll = loanType === 'bridge' && repaymentOption === 'none';
         const isServicedOnly = repaymentOption === 'service_only';
 
-        const selectors = [
-            '[data-bs-target="#paymentScheduleModal"]',
-            '[data-bs-target="#balanceModal"]'
-        ];
+        const paymentScheduleBtn = document.querySelector('[data-bs-target="#paymentScheduleModal"]');
+        const balanceBtn = document.querySelector('[data-bs-target="#balanceModal"]');
 
-        selectors.forEach(sel => {
-            const btn = document.querySelector(sel);
-            if (btn) {
-                btn.style.display = hideAll ? 'none' : '';
-            }
-        });
+        if (paymentScheduleBtn) {
+            paymentScheduleBtn.style.display = (hideAll || loanType === 'development') ? 'none' : '';
+        }
+        if (balanceBtn) {
+            balanceBtn.style.display = hideAll ? 'none' : '';
+        }
+
+        if (loanType === 'development') {
+            const modal = document.getElementById('paymentScheduleModal');
+            if (modal) modal.style.display = 'none';
+        } else {
+            const modal = document.getElementById('paymentScheduleModal');
+            if (modal) modal.style.display = '';
+        }
 
         if (isServicedOnly) {
             const hideSelectors = [
