@@ -111,3 +111,28 @@ def test_flexible_payment_zero_end_ltv_increases():
     assert result['endLTV'] == pytest.approx(expected_end_ltv)
     # With zero flexible payments, principal remains unchanged so LTV is constant
     assert result['endLTV'] == pytest.approx(result['startLTV'])
+
+
+def test_service_and_capital_end_ltv_uses_penultimate_balance():
+    calc = LoanCalculator()
+    params = {
+        'loan_type': 'bridge',
+        'repayment_option': 'service_and_capital',
+        'gross_amount': 500000,
+        'property_value': 750000,
+        'loan_term': 12,
+        'annual_rate': 12,
+        'capital_repayment': 50000,
+        'arrangement_fee_rate': 0,
+        'legal_fees': 0,
+        'site_visit_fee': 0,
+        'title_insurance_rate': 0,
+        'start_date': '2025-01-01',
+    }
+    result = calc.calculate_bridge_loan(params)
+    assert result['detailed_payment_schedule'] and len(result['detailed_payment_schedule']) >= 2
+    second_last = result['detailed_payment_schedule'][-2]
+    closing_balance = parse_currency(second_last.get('closing_balance') or second_last.get('capital_outstanding'))
+    expected = float((closing_balance / Decimal('750000')) * 100)
+    assert result['endLTV'] == pytest.approx(expected)
+    assert result['endLtv'] == pytest.approx(expected)
