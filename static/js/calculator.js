@@ -2115,6 +2115,8 @@ class LoanCalculator {
         const currency = document.getElementById('currency').value;
         const symbol = this.getCurrencySymbol(currency);
 
+        const propertyValue = parseFloat(results.propertyValue || 0);
+
         const formatMoney = (val) => {
             const num = typeof val === 'string' ? parseFloat(val) : val;
             if (isNaN(num)) return val ?? '';
@@ -2126,17 +2128,22 @@ class LoanCalculator {
             tr.style.border = '1px solid #000';
             tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
 
+            const closingVal = typeof row.closing_balance === 'string' ? parseFloat(row.closing_balance.replace(/[^0-9.-]/g, '')) : row.closing_balance;
+            const runningLTV = propertyValue > 0 && !isNaN(closingVal) ? `${((closingVal / propertyValue) * 100).toFixed(2)}%` : '';
+
             tr.innerHTML = `
                 <td class="py-1 px-2 text-center" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${row.period}</td>
                 <td class="py-1 px-2 text-center" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${row.start_period || ''}</td>
                 <td class="py-1 px-2 text-center" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${row.end_period || ''}</td>
                 <td class="py-1 px-2 text-center" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${row.days_held ?? ''}</td>
                 <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.opening_balance)}</td>
+                <td class="py-1 px-2 text-center" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${row.interest_calculation || ''}</td>
                 <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.tranche_release)}</td>
                 <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.interest)}</td>
                 <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.principal)}</td>
                 <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.total_payment)}</td>
-                <td class="py-1 px-2 text-end" style="color:#000; font-size:0.875rem;">${formatMoney(row.closing_balance)}</td>
+                <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.closing_balance)}</td>
+                <td class="py-1 px-2 text-center" style="color:#000; font-size:0.875rem;">${runningLTV}</td>
             `;
             body.appendChild(tr);
         });
