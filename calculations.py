@@ -2258,7 +2258,7 @@ class LoanCalculator:
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
             daily_rate = annual_rate / Decimal('100') / days_per_year
 
-            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
+            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
             period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
             for pr in period_ranges:
@@ -3650,13 +3650,31 @@ class LoanCalculator:
         
         return result
     
-    def _generate_payment_dates(self, start_date: datetime, loan_term: int, frequency: str = 'monthly', timing: str = 'advance') -> List[datetime]:
-        """Generate payment dates based on frequency and timing within loan period"""
+    def _generate_payment_dates(
+        self,
+        start_date: datetime,
+        loan_term: int,
+        frequency: str = 'monthly',
+        timing: str = 'advance',
+        loan_term_days: int | None = None,
+    ) -> List[datetime]:
+        """Generate payment dates within the loan period.
+
+        When ``loan_term_days`` is supplied the overall loan end date is
+        calculated using this exact day count rather than simply adding the
+        number of months in ``loan_term``.  If this computed end date extends
+        beyond the dates produced from ``loan_term`` an additional payment date
+        is appended so the schedule fully covers the loan's lifetime.
+        """
         from datetime import timedelta
 
         start_date = self._normalize_date(start_date)
         payment_dates: List[datetime] = []
-        loan_end_date = self._add_months(start_date, loan_term) - timedelta(days=1)
+        loan_end_from_term = self._add_months(start_date, loan_term) - timedelta(days=1)
+        if loan_term_days is not None:
+            loan_end_date = start_date + timedelta(days=loan_term_days - 1)
+        else:
+            loan_end_date = loan_end_from_term
 
         if frequency == 'quarterly':
             # Quarterly payments (every 3 months)
@@ -3673,7 +3691,13 @@ class LoanCalculator:
                 if payment_date <= loan_end_date:
                     payment_dates.append(payment_date)
 
-            if payment_dates and payment_dates[-1] < loan_end_date:
+            if loan_term_days is not None:
+                if loan_end_date > loan_end_from_term:
+                    if payment_dates and payment_dates[-1] < loan_end_date:
+                        payment_dates.append(loan_end_date)
+                elif payment_dates:
+                    payment_dates[-1] = loan_end_date
+            elif payment_dates and payment_dates[-1] < loan_end_date:
                 # Ensure schedule ends exactly on loan end date for arrears timing
                 payment_dates[-1] = loan_end_date
         else:
@@ -3694,7 +3718,13 @@ class LoanCalculator:
                 if payment_date <= loan_end_date:
                     payment_dates.append(payment_date)
 
-            if payment_dates and payment_dates[-1] < loan_end_date:
+            if loan_term_days is not None:
+                if loan_end_date > loan_end_from_term:
+                    if payment_dates and payment_dates[-1] < loan_end_date:
+                        payment_dates.append(loan_end_date)
+                elif payment_dates:
+                    payment_dates[-1] = loan_end_date
+            elif payment_dates and payment_dates[-1] < loan_end_date:
                 # Ensure schedule ends exactly on loan end date for arrears timing
                 payment_dates[-1] = loan_end_date
 
@@ -3893,8 +3923,9 @@ class LoanCalculator:
             else:
                 start_date = start_date_str
             
+            loan_term_days = quote_data.get('loan_term_days')
             # Generate payment dates based on frequency and timing
-            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
+            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
             
             for i, payment_date in enumerate(payment_dates):
                 period = i + 1
@@ -3949,9 +3980,9 @@ class LoanCalculator:
             else:
                 start_date = start_date_str
 
-            # Generate payment dates based on frequency and timing
-            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
             loan_term_days = quote_data.get('loan_term_days')
+            # Generate payment dates based on frequency and timing
+            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
             period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
             fees_deducted_first = arrangement_fee + legal_fees
@@ -4006,8 +4037,8 @@ class LoanCalculator:
             else:
                 start_date = start_date_str
 
-            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
             loan_term_days = quote_data.get('loan_term_days')
+            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
             period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
             if payment_frequency == 'quarterly':
@@ -4091,8 +4122,8 @@ class LoanCalculator:
             else:
                 start_date = start_date_str
 
-            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
             loan_term_days = quote_data.get('loan_term_days')
+            payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
             period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
             daily_rate = annual_rate / Decimal('100') / days_per_year
 
@@ -4187,7 +4218,7 @@ class LoanCalculator:
 
         # Generate payment dates
         payment_dates = self._generate_payment_dates(
-            start_date, loan_term, payment_frequency, payment_timing
+            start_date, loan_term, payment_frequency, payment_timing, loan_term_days
         )
 
         # Compute calendar‑accurate period ranges and ensure the total days do
@@ -4941,7 +4972,7 @@ class LoanCalculator:
             loan_term_days = quote_data.get('loan_term_days')
 
         # Generate payment dates and period ranges based on frequency and timing
-        payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
+        payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
         period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
         use_360_days = quote_data.get('use_360_days', False)
 
@@ -5061,9 +5092,9 @@ class LoanCalculator:
         else:
             start_date = start_date_str
         
-        # Generate payment dates
-        payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
         loan_term_days = params.get('loan_term_days')
+        # Generate payment dates
+        payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
         period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
         detailed_schedule = []
@@ -6724,8 +6755,8 @@ class LoanCalculator:
 
         payment_timing = quote_data.get('payment_timing', 'advance')
         payment_frequency = quote_data.get('payment_frequency', 'monthly')
-        payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
         loan_term_days = quote_data.get('loan_term_days')
+        payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
         period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
         schedule = []
