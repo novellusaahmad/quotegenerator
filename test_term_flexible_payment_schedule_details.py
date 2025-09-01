@@ -15,7 +15,7 @@ def test_term_flexible_payment_schedule_includes_detail_fields():
         'arrangementFee': 0,
         'totalLegalFees': 0,
     }
-    schedule, _ = generate_report_schedule(params)
+    schedule, summary = generate_report_schedule(params)
     first = schedule[0]
     assert 'flexible_payment_calculation' in first
     assert 'amortisation_calculation' in first
@@ -24,3 +24,5 @@ def test_term_flexible_payment_schedule_includes_detail_fields():
     expected_flex = f"{first['principal_payment']} + {first['interest_amount']} = {first['total_payment']}"
     assert first['flexible_payment_calculation'] == expected_flex
     assert first['days_held'] > 0
+    assert summary['monthlyInterestPayment'] == 1000.0
+    assert summary['quarterlyInterestPayment'] == 3000.0
