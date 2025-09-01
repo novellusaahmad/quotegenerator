@@ -880,7 +880,16 @@ class LoanCalculator {
 
         const interestRepaymentTypes = ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment', 'sc_only'];
         if ((loanType === 'term' || loanType === 'bridge') && interestRepaymentTypes.includes(repaymentOption)) {
-            let periodicInterest = results.periodicInterest || results.periodic_interest || 0;
+            let periodicInterest = results.periodicInterest || results.periodic_interest;
+            if (!periodicInterest) {
+                const gross = parseFloat(results.grossAmount ?? 0);
+                const rate = parseFloat(results.interestRate ?? results.annualRate ?? 0);
+                if (gross && rate) {
+                    periodicInterest = gross * (rate / 100) / (paymentFrequency === 'quarterly' ? 4 : 12);
+                } else {
+                    periodicInterest = 0;
+                }
+            }
 
             if (periodicInterestRow) periodicInterestRow.style.display = 'table-row';
             if (periodicInterestEl) {
