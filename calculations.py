@@ -5045,7 +5045,14 @@ class LoanCalculator:
         payment_frequency = quote_data.get('payment_frequency', 'monthly')
         
         from datetime import datetime, timedelta
-        
+        from dateutil.relativedelta import relativedelta as _relativedelta
+
+        rd_fn = _relativedelta
+        try:  # Fallback to module-level implementation if two-arg init unsupported
+            _relativedelta(datetime.now(), datetime.now())
+        except TypeError:
+            rd_fn = globals().get('relativedelta', _relativedelta)
+
         # Try to get start date from various possible fields
         start_date_str = quote_data.get('start_date', quote_data.get('loan_start_date', datetime.now().strftime('%Y-%m-%d')))
         if isinstance(start_date_str, datetime):
@@ -5064,7 +5071,10 @@ class LoanCalculator:
             end_date = self._normalize_date(end_date)
             start_date_norm = self._normalize_date(start_date)
             actual_days = (end_date - start_date_norm).days + 1
-            loan_term = max(1, round(actual_days / 30.4375))
+            rd = rd_fn(end_date + timedelta(days=1), start_date_norm)
+            loan_term = rd.years * 12 + rd.months
+            if (start_date_norm + rd_fn(months=loan_term)) < (end_date + timedelta(days=1)):
+                loan_term += 1
             loan_term_days = actual_days
         else:
             loan_term_days = quote_data.get('loan_term_days')
@@ -6854,7 +6864,14 @@ class LoanCalculator:
         tranches = quote_data.get('tranches', [])
         
         from datetime import datetime, timedelta
-        
+        from dateutil.relativedelta import relativedelta as _relativedelta
+
+        rd_fn = _relativedelta
+        try:  # Fallback to module-level implementation if two-arg init unsupported
+            _relativedelta(datetime.now(), datetime.now())
+        except TypeError:
+            rd_fn = globals().get('relativedelta', _relativedelta)
+
         # Try to get start date from various possible fields
         start_date_str = quote_data.get('start_date', quote_data.get('loan_start_date', datetime.now().strftime('%Y-%m-%d')))
         if isinstance(start_date_str, datetime):
@@ -6876,7 +6893,10 @@ class LoanCalculator:
             end_date = self._normalize_date(end_date)
             start_date_norm = self._normalize_date(start_date)
             actual_days = (end_date - start_date_norm).days + 1
-            loan_term = max(1, round(actual_days / 30.4375))
+            rd = rd_fn(end_date + timedelta(days=1), start_date_norm)
+            loan_term = rd.years * 12 + rd.months
+            if (start_date_norm + rd_fn(months=loan_term)) < (end_date + timedelta(days=1)):
+                loan_term += 1
             loan_term_days = actual_days
         else:
             loan_term_days = quote_data.get('loanTermDays') or quote_data.get('loan_term_days')
