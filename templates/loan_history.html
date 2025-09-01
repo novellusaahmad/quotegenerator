@@ -679,13 +679,13 @@ class LoanHistoryManager {
                                 <tr style="border: 1px solid #000;">
                                     <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Quarterly Interest Payment</td>
                                     <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.quarterlyPayment || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.quarterlyInterestPayment || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                 </tr>
                                 ` : `
                                 <tr style="border: 1px solid #000;">
                                     <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Monthly Interest Payment</td>
                                     <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.monthlyPayment || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.monthlyInterestPayment || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                 </tr>
                                 `}
                                 <tr style="border: 1px solid #000;">
