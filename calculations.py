@@ -3743,8 +3743,8 @@ class LoanCalculator:
         The end of each period is calculated as the start of the period plus the
         number of days in that calendar month.  The end date is capped at the
         overall loan end date so that periods never extend beyond the life of
-        the loan.  When ``loan_term_days`` is provided the final period is
-        adjusted so that the sum of ``days_held`` exactly matches this value –
+        the loan.  When ``loan_term_days`` is provided the periods are extended
+        or reduced so that the sum of ``days_held`` exactly matches this value –
         protecting against off‑by‑one errors when the start date falls on the
         end of a month (e.g. 31 August).
         """
@@ -3764,9 +3764,22 @@ class LoanCalculator:
         if loan_term_days is not None and ranges:
             total_days = sum(r['days_held'] for r in ranges)
             diff = loan_term_days - total_days
-            if diff != 0:
+            if diff > 0:
+                last_end = ranges[-1]['end']
+                while diff > 0:
+                    days = min(diff, 31)
+                    new_start = last_end
+                    new_end = new_start + timedelta(days=days)
+                    ranges.append({'start': new_start, 'end': new_end, 'days_held': days})
+                    last_end = new_end
+                    diff -= days
+                loan_end = ranges[-1]['end']
+            elif diff < 0:
                 ranges[-1]['end'] = ranges[-1]['end'] + timedelta(days=diff)
                 ranges[-1]['days_held'] += diff
+                loan_end = ranges[-1]['end']
+            else:
+                loan_end = ranges[-1]['end']
 
         # If there are more payment dates than computed ranges (e.g. advance
         # schedules that include a final principal-only payment), pad with
