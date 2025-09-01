@@ -388,7 +388,7 @@ class LoanCalculator:
 
         if end_date_str:
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
-            actual_days = (end_date - start_date).days
+            actual_days = (end_date - start_date).days + 1
             loan_term = max(1, round(actual_days / float(avg_days_per_month)))
             loan_term_days = actual_days
             logging.info(
@@ -786,7 +786,7 @@ class LoanCalculator:
 
         if end_date_str:
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
-            actual_days = (end_date - start_date).days
+            actual_days = (end_date - start_date).days + 1
             loan_term = max(1, round(actual_days / float(avg_days_per_month)))
             loan_term_days = actual_days
             logging.info(f"Term loan: Using end_date {end_date_str}, actual_days={actual_days}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months")
@@ -1007,7 +1007,7 @@ class LoanCalculator:
             # Priority 1: User provided end date - calculate loan term from actual dates
             try:
                 end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-                actual_days = (end_date - start_date).days
+                actual_days = (end_date - start_date).days + 1
                 # Recalculate loan term based on actual days
                 avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
                 total_term_months = max(1, round(actual_days / float(avg_days_per_month)))
@@ -1472,7 +1472,7 @@ class LoanCalculator:
                 # Priority 1: If both start and end dates are provided, use actual date range for loan term AND calculations
                 if end_date_str:
                     end_date = dt.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
-                    actual_days = (end_date - start_date).days
+                    actual_days = (end_date - start_date).days + 1
                     # Recalculate loan term in months based on actual days
                     avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
                     loan_term = max(1, round(actual_days / float(avg_days_per_month)))
@@ -1483,7 +1483,7 @@ class LoanCalculator:
                     end_date = start_date + relativedelta(months=loan_term)
                     end_date = end_date - timedelta(days=1)  # Excel subtracts 1 day for loan term end dates
                     # Calculate actual days between calculated dates
-                    actual_days = (end_date - start_date).days
+                    actual_days = (end_date - start_date).days + 1
                     # Use actual calendar days for date-sensitive calculations
                     loan_term_days = actual_days  # Use real calendar days for precise calculations
                     end_date_str = end_date.strftime('%Y-%m-%d')
@@ -1681,7 +1681,7 @@ class LoanCalculator:
         # Priority 1: If both start and end dates are provided, use actual date range
         if end_date_str:
             loan_end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
-            loan_term_days = (loan_end_date - start_date).days
+            loan_term_days = (loan_end_date - start_date).days + 1
             # Recalculate loan term in months based on actual days
             avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
             loan_term = max(1, round(loan_term_days / float(avg_days_per_month)))
@@ -3584,7 +3584,7 @@ class LoanCalculator:
         
         # Calculate loan term days dynamically if parameters are provided
         if params:
-            from datetime import datetime
+            from datetime import datetime, timedelta
             from dateutil.relativedelta import relativedelta
             
             loan_term = int(params.get('loan_term', 0))
@@ -3599,14 +3599,14 @@ class LoanCalculator:
                     if end_date_str:
                         end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
                         # Calculate loan term days based on actual dates
-                        loan_term_days = (end_date - start_date).days
+                        loan_term_days = (end_date - start_date).days + 1
                         # Recalculate loan term in months based on actual days
                         avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
                         loan_term = max(1, round(loan_term_days / float(avg_days_per_month)))
                     # Priority 2: If only start date and loan term, calculate end date
                     elif loan_term > 0:
-                        end_date = start_date + relativedelta(months=loan_term)
-                        loan_term_days = (end_date - start_date).days
+                        end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
+                        loan_term_days = (end_date - start_date).days + 1
                         end_date_str = end_date.strftime('%Y-%m-%d')
                     else:
                         # Default to 0 if no valid term or end date
@@ -5875,7 +5875,7 @@ class LoanCalculator:
 
             if end_date_str:
                 end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
-                loan_term_days = (end_date - start_date).days
+                loan_term_days = (end_date - start_date).days + 1
                 avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
                 loan_term = max(1, round(loan_term_days / float(avg_days_per_month)))
             else:
