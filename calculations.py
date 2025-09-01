@@ -3776,21 +3776,80 @@ class LoanCalculator:
 
         return ranges
 
-    def _apply_period_dates(self, schedule: List[Dict], start_date: datetime, loan_term: int) -> None:
-        """Apply start/end period dates to a schedule based on calendar months.
+    def _group_period_ranges(
+        self, monthly_ranges: List[Dict[str, object]], periods: int, loan_term: int
+    ) -> List[Dict[str, object]]:
+        """Aggregate monthly ranges into ``periods`` payment periods."""
 
-        Unlike the previous implementation which assumed one schedule entry per
-        month, this version dynamically distributes the total ``loan_term``
-        across however many periods are present in ``schedule``.  This allows
-        quarterly schedules (four rows) to receive three months of dates per
-        period rather than having every row represent only a single month.
+        if periods <= 0:
+            return []
+        if len(monthly_ranges) == periods:
+            return monthly_ranges
 
-        Each entry in ``schedule`` is mutated in‑place to include
-        ``start_period``, ``end_period`` (inclusive) and ``days_held`` fields
-        that span the correct number of calendar days for that period.
+        grouped: List[Dict[str, object]] = []
+        idx = 0
+        loan_end = monthly_ranges[-1]['end'] if monthly_ranges else None
+        base = loan_term // periods
+        extra = loan_term % periods
+
+        for p in range(periods):
+            months = base + (1 if p < extra else 0)
+            if months <= 0 or not monthly_ranges:
+                grouped.append({'start': loan_end, 'end': loan_end, 'days_held': 0})
+                continue
+            start = monthly_ranges[idx]['start']
+            end = monthly_ranges[idx + months - 1]['end']
+            days = sum(r['days_held'] for r in monthly_ranges[idx: idx + months])
+            grouped.append({'start': start, 'end': end, 'days_held': days})
+            idx += months
+
+        return grouped
+
+    def _apply_period_dates(
+        self,
+        schedule: List[Dict],
+        start_date: datetime,
+        loan_term: int,
+        loan_term_days: int | None = None,
+        period_ranges: List[Dict[str, object]] | None = None,
+    ) -> None:
+        """Apply start/end period dates to a schedule.
+
+        The method supports two modes:
+
+        * When ``period_ranges`` are provided the ranges are copied directly
+          onto ``schedule`` entries without recomputation.
+        * Otherwise period dates are calculated by distributing ``loan_term``
+          (in months) across the number of schedule entries.  If
+          ``loan_term_days`` is supplied, the overall end date is derived from
+          the exact day count rather than using calendar month arithmetic.
+
+        Each entry receives ``start_period``, ``end_period`` and ``days_held``
+        fields. ``end_period`` is the first day **after** the period to mirror
+        the behaviour of the legacy implementation.
         """
 
-        loan_end = self._add_months(self._normalize_date(start_date), loan_term)
+        # Fast path – use supplied period ranges
+        if period_ranges is not None:
+            for i, entry in enumerate(schedule):
+                if i < len(period_ranges):
+                    pr = period_ranges[i]
+                    entry['start_period'] = pr['start'].strftime('%d/%m/%Y')
+                    entry['end_period'] = pr['end'].strftime('%d/%m/%Y')
+                    entry['days_held'] = pr.get('days_held', 0)
+                else:
+                    # Fallback for extra schedule entries
+                    end = period_ranges[-1]['end'] if period_ranges else self._normalize_date(start_date)
+                    entry['start_period'] = end.strftime('%d/%m/%Y')
+                    entry['end_period'] = end.strftime('%d/%m/%Y')
+                    entry['days_held'] = 0
+            return
+
+        loan_end = self._normalize_date(start_date)
+        if loan_term_days is not None:
+            loan_end = loan_end + timedelta(days=loan_term_days)
+        else:
+            loan_end = self._add_months(loan_end, loan_term)
         current = self._normalize_date(start_date)
 
         periods = len(schedule)
@@ -4221,13 +4280,11 @@ class LoanCalculator:
             start_date, loan_term, payment_frequency, payment_timing, loan_term_days
         )
 
-        # Compute calendar‑accurate period ranges and ensure the total days do
-        # not exceed the overall loan term. This replaces the previous manual
-        # approach that could accumulate extra days when crossing months with
-        # different lengths (e.g. February).
-        period_ranges = self._compute_period_ranges(
+        # Compute calendar‑accurate period ranges for each payment period.
+        monthly_ranges = self._compute_period_ranges(
             start_date, payment_dates, loan_term, payment_timing, loan_term_days
         )
+        period_ranges = self._group_period_ranges(monthly_ranges, len(payment_dates), loan_term)
 
 
         detailed_schedule = []
@@ -4293,7 +4350,7 @@ class LoanCalculator:
                 pr = period_ranges[i]
 
                 period_start = pr['start']
-                period_end = pr['end'] - timedelta(days=1)
+                period_end = pr['end']
                 days_in_period = pr['days_held']
                 days_held = days_in_period
 
@@ -4356,7 +4413,7 @@ class LoanCalculator:
                 }
                 days_in_period = pr['days_held']
                 period_start = pr['start']
-                period_end = pr['end'] - timedelta(days=1) if days_in_period > 0 else pr['end']
+                period_end = pr['end']
 
                 if payment_frequency == 'quarterly':
                     capital_per_payment = capital_repayment * 3
@@ -4526,7 +4583,7 @@ class LoanCalculator:
                 period = i + 1
                 pr = period_ranges[i]
                 period_start = pr['start']
-                period_end = pr['end'] - timedelta(days=1)
+                period_end = pr['end']
                 days_in_period = Decimal(str(pr['days_held']))
 
                 if payment_timing == 'advance':
@@ -4894,8 +4951,15 @@ class LoanCalculator:
                 total_accrued = total_accrued.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['total_interest_accrued'] = float(total_accrued)
 
-        # Recalculate period dates using calendar month lengths
-        self._apply_period_dates(detailed_schedule, start_date, loan_term)
+        # Recalculate period dates using precomputed ranges when needed
+        if detailed_schedule and 'start_period' not in detailed_schedule[0]:
+            self._apply_period_dates(
+                detailed_schedule,
+                start_date,
+                loan_term,
+                loan_term_days,
+                period_ranges,
+            )
 
         # Ensure interest calculations reflect the final day counts for service-only loans
         if repayment_option == 'service_only':
@@ -4973,7 +5037,8 @@ class LoanCalculator:
 
         # Generate payment dates and period ranges based on frequency and timing
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
-        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
+        monthly_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
+        period_ranges = self._group_period_ranges(monthly_ranges, len(payment_dates), loan_term)
         use_360_days = quote_data.get('use_360_days', False)
 
         arrangement_fee = Decimal(str(quote_data.get('arrangementFee', 0)))
@@ -5094,8 +5159,13 @@ class LoanCalculator:
         
         loan_term_days = params.get('loan_term_days')
         # Generate payment dates
-        payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
-        period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
+        payment_dates = self._generate_payment_dates(
+            start_date, loan_term, payment_frequency, payment_timing, loan_term_days
+        )
+        monthly_ranges = self._compute_period_ranges(
+            start_date, payment_dates, loan_term, payment_timing, loan_term_days
+        )
+        period_ranges = self._group_period_ranges(monthly_ranges, len(payment_dates), loan_term)
 
         detailed_schedule = []
         remaining_balance = gross_amount
@@ -5244,7 +5314,7 @@ class LoanCalculator:
                 if pr:
                     days_in_period = pr['days_held']
                     period_start = pr['start']
-                    period_end = pr['end'] - timedelta(days=1)
+                    period_end = pr['end']
                 else:
                     days_in_period = 0
                     period_start = payment_date
@@ -5348,7 +5418,7 @@ class LoanCalculator:
                 if pr:
                     days_in_period = pr['days_held']
                     period_start = pr['start']
-                    period_end = pr['end'] - timedelta(days=1)
+                    period_end = pr['end']
                 else:
                     days_in_period = 0
                     period_start = payment_date
@@ -5633,8 +5703,15 @@ class LoanCalculator:
                 total_refund = total_refund.quantize(rounding, rounding=ROUND_HALF_UP)
                 calculation['interestRefund'] = float(total_refund)
 
-        # Recalculate period dates using calendar month lengths
-        self._apply_period_dates(detailed_schedule, start_date, loan_term)
+        # Recalculate period dates using precomputed ranges when needed
+        if detailed_schedule and 'start_period' not in detailed_schedule[0]:
+            self._apply_period_dates(
+                detailed_schedule,
+                start_date,
+                loan_term,
+                loan_term_days,
+                period_ranges,
+            )
 
         return detailed_schedule
     
