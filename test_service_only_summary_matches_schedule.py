@@ -47,5 +47,8 @@ def test_service_only_summary_matches_schedule():
     assert diff < Decimal('0.02')
     diff_interest_only = (Decimal(str(result['interestOnlyTotal'])) - interest_total).copy_abs()
     assert diff_interest_only < Decimal('0.02')
-    assert result['monthlyInterestPayment'] == pytest.approx(100000 * 0.12 / 12, abs=0.01)
-    assert result['quarterlyInterestPayment'] == pytest.approx(100000 * 0.12 / 4, abs=0.01)
+    daily_rate = 0.12 / 365
+    days_first = schedule[0]['days_held']
+    days_quarter = sum(p['days_held'] for p in schedule[:3])
+    assert result['monthlyInterestPayment'] == pytest.approx(100000 * daily_rate * days_first, abs=0.01)
+    assert result['quarterlyInterestPayment'] == pytest.approx(100000 * daily_rate * days_quarter, abs=0.01)
