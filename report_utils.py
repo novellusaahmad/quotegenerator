@@ -280,3 +280,43 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
         summary['interestSavings'] = float(interest_savings)
 
     return schedule, summary
+
+
+def generate_tranche_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Return the detailed tranche schedule for development loans.
+
+    The standard :class:`LoanCalculator` already knows how to build a
+    per-period schedule for development products.  This helper simply
+    reuses that logic so report generation and API responses can obtain
+    the same breakdown without duplicating the implementation.
+
+    Only development style loans (``loan_type`` of ``development`` or
+    ``development2``) produce a schedule; for all other loan types an
+    empty list is returned.
+    """
+
+    loan_type = params.get("loan_type")
+    if loan_type not in {"development", "development2"}:
+        return []
+
+    calculator = LoanCalculator()
+    # Run the core calculation to obtain all intermediate fields the
+    # schedule generator expects.  ``calculate_loan`` dispatches to the
+    # appropriate development calculation based on ``loan_type``.
+    calculation = calculator.calculate_loan(params)
+    calculation["loan_type"] = loan_type
+    calculation["repayment_option"] = params.get(
+        "repayment_option", calculation.get("repaymentOption", "none")
+    )
+
+    currency_symbol = "€" if params.get("currency") == "EUR" else "£"
+    schedule = calculator.generate_payment_schedule(calculation, currency_symbol)
+
+    # Strip any internal helper fields (e.g. *_raw) so the output matches
+    # the existing development schedule format exactly.
+    for entry in schedule:
+        for key in list(entry.keys()):
+            if key.endswith("_raw"):
+                del entry[key]
+
+    return schedule

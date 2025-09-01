@@ -23,7 +23,7 @@ from utils import (
     validate_quote_data, generate_payment_schedule_csv, format_currency,
     parse_currency_amount, generate_application_reference, validate_email
 )
-from report_utils import generate_report_schedule
+from report_utils import generate_report_schedule, generate_tranche_schedule
 from snowflake_utils import (
     set_snowflake_config,
     get_snowflake_config,
@@ -474,6 +474,12 @@ def api_calculate():
                 result.update(summary)
             except Exception as e:
                 app.logger.warning(f"Report schedule generation failed: {str(e)}")
+
+        if loan_type in ('development', 'development2'):
+            try:
+                result['detailed_tranche_schedule'] = generate_tranche_schedule(calc_params)
+            except Exception as e:
+                app.logger.warning(f"Tranche schedule generation failed: {str(e)}")
 
         # Generate payment schedule
         try:
