@@ -420,6 +420,7 @@ class LoanCalculator:
                 f"Bridge loan: Calculated end_date {end_date_str}, loan_term_days={loan_term_days} (calendar), loan_term={loan_term} months"
             )
 
+        params['loan_term'] = loan_term
         params['loan_term_days'] = loan_term_days
 
         # Determine gross amount based on input type
@@ -4152,11 +4153,11 @@ class LoanCalculator:
     
     def _generate_detailed_bridge_schedule(self, calculation: Dict, params: Dict, currency_symbol: str = '£') -> List[Dict]:
         """Generate detailed payment schedule for bridge loans with proper formatting"""
-        
+
         repayment_option = params.get('repayment_option', 'none')
         # Try multiple field names for gross_amount
         gross_amount = Decimal(str(calculation.get('grossAmount', calculation.get('gross_amount', params.get('gross_amount', 0)))))
-        loan_term = int(params.get('loan_term', 12))
+        loan_term = int(calculation.get('loanTerm', calculation.get('loan_term', params.get('loan_term', 12))))
         annual_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
         property_value = Decimal(str(params.get('property_value', params.get('propertyValue', 0))))
         
