@@ -24,14 +24,31 @@ except Exception:  # pragma: no cover
     class relativedelta:  # type: ignore
         """Minimal subset of ``dateutil.relativedelta`` used in tests.
 
-        Only the ``months`` argument and addition with a ``datetime`` object
-        are required.  This mirrors the small helper implemented in the unit
-        tests and is sufficient for calendar month increments without pulling
-        in the external dependency.
+        Supports two use cases:
+        1. Initialising with ``months`` for adding months to a ``datetime``.
+        2. Initialising with two ``datetime`` objects to obtain the calendar
+           difference in months and years.
         """
 
-        def __init__(self, months: int = 0):
-            self.months = months
+        def __init__(self, dt1=None, dt2=None, months: int = 0):
+            if dt1 is not None and dt2 is not None:
+                # Calculate difference between two dates
+                sign = 1
+                if dt1 < dt2:
+                    dt1, dt2 = dt2, dt1
+                    sign = -1
+                years = dt1.year - dt2.year
+                months_diff = dt1.month - dt2.month
+                days = dt1.day - dt2.day
+                if days < 0:
+                    months_diff -= 1
+                    prev_month_days = (dt1.replace(day=1) - timedelta(days=1)).day
+                    days += prev_month_days
+                self.years = sign * years
+                self.months = sign * months_diff
+            else:
+                self.years = 0
+                self.months = months
 
         def __radd__(self, other):
             month = other.month - 1 + self.months
@@ -383,16 +400,17 @@ class LoanCalculator:
         end_date_str = params.get('end_date', '')
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if isinstance(start_date_str, str) else start_date_str
 
-        # Average days per month for recalculating term months when needed
-        avg_days_per_month = Decimal('365.25') / Decimal('12')
-
         if end_date_str:
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
-            actual_days = (end_date - start_date).days + 1
-            loan_term = max(1, round(actual_days / float(avg_days_per_month)))
-            loan_term_days = actual_days
+            loan_term_days = (end_date - start_date).days + 1
+            try:
+                rd = relativedelta(end_date + timedelta(days=1), start_date)
+                loan_term = max(1, rd.years * 12 + rd.months)
+            except TypeError:
+                temp_end = end_date + timedelta(days=1)
+                loan_term = max(1, (temp_end.year - start_date.year) * 12 + (temp_end.month - start_date.month))
             logging.info(
-                f"Bridge loan: Using end_date {end_date_str}, actual_days={actual_days}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months"
+                f"Bridge loan: Using end_date {end_date_str}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months"
             )
         else:
             end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
@@ -782,14 +800,17 @@ class LoanCalculator:
         from dateutil.relativedelta import relativedelta
         start_date = datetime.strptime(loan_start_date, '%Y-%m-%d') if isinstance(loan_start_date, str) else loan_start_date
         end_date_str = params.get('end_date', '')
-        avg_days_per_month = Decimal('365.25') / Decimal('12')
 
         if end_date_str:
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
-            actual_days = (end_date - start_date).days + 1
-            loan_term = max(1, round(actual_days / float(avg_days_per_month)))
-            loan_term_days = actual_days
-            logging.info(f"Term loan: Using end_date {end_date_str}, actual_days={actual_days}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months")
+            loan_term_days = (end_date - start_date).days + 1
+            try:
+                rd = relativedelta(end_date + timedelta(days=1), start_date)
+                loan_term = max(1, rd.years * 12 + rd.months)
+            except TypeError:
+                temp_end = end_date + timedelta(days=1)
+                loan_term = max(1, (temp_end.year - start_date.year) * 12 + (temp_end.month - start_date.month))
+            logging.info(f"Term loan: Using end_date {end_date_str}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months")
         else:
             end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
             loan_term_days = (end_date - start_date).days + 1
@@ -3600,9 +3621,13 @@ class LoanCalculator:
                         end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
                         # Calculate loan term days based on actual dates
                         loan_term_days = (end_date - start_date).days + 1
-                        # Recalculate loan term in months based on actual days
-                        avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
-                        loan_term = max(1, round(loan_term_days / float(avg_days_per_month)))
+                        # Recalculate loan term in months using calendar months
+                        try:
+                            rd = relativedelta(end_date + timedelta(days=1), start_date)
+                            loan_term = max(1, rd.years * 12 + rd.months)
+                        except TypeError:
+                            temp_end = end_date + timedelta(days=1)
+                            loan_term = max(1, (temp_end.year - start_date.year) * 12 + (temp_end.month - start_date.month))
                     # Priority 2: If only start date and loan term, calculate end date
                     elif loan_term > 0:
                         end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
