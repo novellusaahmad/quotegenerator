@@ -211,6 +211,38 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
 
     summary = recalculate_summary(schedule)
 
+    # Always include reference monthly and quarterly interest payments
+    gross_amount = Decimal(
+        str(
+            calculation.get(
+                "grossAmount",
+                calculation.get(
+                    "gross_amount",
+                    params.get("gross_amount", params.get("grossAmount", 0)),
+                ),
+            )
+        )
+    )
+    annual_rate = Decimal(
+        str(
+            calculation.get(
+                "interestRate",
+                calculation.get(
+                    "annual_rate",
+                    params.get("annual_rate", params.get("annualRate", 0)),
+                ),
+            )
+        )
+    )
+    monthly_interest = calc._calculate_periodic_interest(
+        gross_amount, annual_rate / Decimal("100"), "monthly"
+    )
+    quarterly_interest = calc._calculate_periodic_interest(
+        gross_amount, annual_rate / Decimal("100"), "quarterly"
+    )
+    summary["monthlyInterestPayment"] = float(monthly_interest)
+    summary["quarterlyInterestPayment"] = float(quarterly_interest)
+
     if is_service_and_capital_net and summary:
         gross_amount = Decimal(
             str(
