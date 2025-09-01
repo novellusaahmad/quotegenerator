@@ -6866,16 +6866,24 @@ class LoanCalculator:
 
         payment_timing = quote_data.get('payment_timing', 'advance')
         payment_frequency = quote_data.get('payment_frequency', 'monthly')
-        loan_term_days = quote_data.get('loan_term_days')
+        loan_term_days = quote_data.get('loanTermDays') or quote_data.get('loan_term_days')
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
         period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
         schedule = []
         
         if repayment_option == 'none' or repayment_option == 'retained':
-            # Retained interest - show detailed monthly compound daily interest breakdown  
-            loan_term_days = quote_data.get('loanTermDays', loan_term * 30)
-            return self._generate_detailed_payment_schedule(quote_data, start_date_str, loan_term, annual_rate, tranches, currency_symbol, loan_term_days)
+            # Retained interest - show detailed monthly compound daily interest breakdown
+            loan_term_days = loan_term_days or loan_term * 30
+            return self._generate_detailed_payment_schedule(
+                quote_data,
+                start_date_str,
+                loan_term,
+                annual_rate,
+                tranches,
+                currency_symbol,
+                loan_term_days,
+            )
         
         elif repayment_option == 'service_only':
             # Interest-only payments with balloon principal at end
