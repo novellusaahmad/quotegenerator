@@ -254,13 +254,28 @@ class LoanCalculator {
             day1AdvanceField.addEventListener('input', () => this.updateAutoTotalAmount());
         }
 
-        // Start or end date changes - update loan term and day count
+        // Start/end date or term changes - update loan end synchronization
         document.getElementById('startDate').addEventListener('change', () => {
-            calculateEndDate(); // Global function defined in calculator.html
+            calculateEndDate();
         });
-        document.getElementById('endDate').addEventListener('change', () => {
-            calculateEndDate(); // Global function defined in calculator.html
-        });
+        const endDateField = document.getElementById('endDate');
+        if (endDateField) {
+            endDateField.addEventListener('change', () => {
+                calculateEndDate();
+            });
+        }
+        const loanTermField = document.getElementById('loanTerm');
+        if (loanTermField) {
+            loanTermField.addEventListener('input', () => {
+                calculateEndDate();
+            });
+        }
+        const loanEndRadios = document.querySelectorAll('input[name="loan_end_type"]');
+        if (loanEndRadios.length > 0) {
+            loanEndRadios.forEach(radio => radio.addEventListener('change', () => {
+                calculateEndDate();
+            }));
+        }
 
         // 360-day checkbox changes - trigger automatic recalculation
         const use360DaysCheckbox = document.getElementById('use360Days');
