@@ -4924,10 +4924,23 @@ class LoanCalculator:
             start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
         else:
             start_date = datetime.now()
-        
+        # If an explicit end date is provided, override loan term to match
+        end_date_val = quote_data.get('end_date')
+        if end_date_val:
+            if isinstance(end_date_val, datetime):
+                end_date = end_date_val
+            else:
+                end_date = datetime.strptime(end_date_val, '%Y-%m-%d')
+            end_date = self._normalize_date(end_date)
+            start_date_norm = self._normalize_date(start_date)
+            actual_days = (end_date - start_date_norm).days + 1
+            loan_term = max(1, round(actual_days / 30.4375))
+            loan_term_days = actual_days
+        else:
+            loan_term_days = quote_data.get('loan_term_days')
+
         # Generate payment dates and period ranges based on frequency and timing
         payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing)
-        loan_term_days = quote_data.get('loan_term_days')
         period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
         use_360_days = quote_data.get('use_360_days', False)
 
