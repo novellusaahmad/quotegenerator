@@ -1060,8 +1060,7 @@ class LoanCalculator:
     def calculate_development2_loan(self, params: Dict) -> Dict:
         """Development 2 loan using attached Python code methodology with iterative fee calculations"""
         import logging
-        from datetime import datetime
-        from dateutil.relativedelta import relativedelta
+        from datetime import datetime, timedelta
         from dateutil.relativedelta import relativedelta
         from calendar import monthrange
         import numpy as np
@@ -1083,34 +1082,25 @@ class LoanCalculator:
         from dateutil.relativedelta import relativedelta
         
         start_date_str = params.get('start_date', '2025-07-24')
-        end_date_str = params.get('end_date', '')
+        end_date_str = params.get('end_date')
         loan_term = int(params.get('loan_term', 18))
-        
+
         # Parse start date
-        if isinstance(start_date_str, str):
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if isinstance(start_date_str, str) else start_date_str
+
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            actual_days = (end_date - start_date).days + 1
+            rd = relativedelta(end_date + timedelta(days=1), start_date)
+            total_term_months = rd.years * 12 + rd.months + (1 if rd.days > 0 else 0)
         else:
-            start_date = start_date_str
-        
-        # CRITICAL: Implement same date logic as other loan types for consistency
-        if end_date_str and end_date_str.strip():
-            # Priority 1: User provided end date - calculate loan term from actual dates
-            try:
-                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-                actual_days = (end_date - start_date).days + 1
-                # Recalculate loan term based on actual days
-                avg_days_per_month = Decimal('365.25') / Decimal('12')  # 30.4375 days per month
-                total_term_months = max(1, round(actual_days / float(avg_days_per_month)))
-                logging.info(f"Development 2: Using end_date {end_date_str}, actual_days={actual_days}, total_term_months={total_term_months}")
-            except ValueError:
-                logging.warning(f"Invalid end_date '{end_date_str}', using loan_term instead")
-                total_term_months = loan_term
-                end_date = start_date + relativedelta(months=total_term_months)
-        else:
-            # Priority 2: Use loan term to calculate end date
+            end_date = start_date + relativedelta(months=loan_term)
+            actual_days = (end_date - start_date).days + 1
             total_term_months = loan_term
-            end_date = start_date + relativedelta(months=total_term_months)
-            logging.info(f"Development 2: Using loan_term {total_term_months} months, calculated end_date {end_date.strftime('%Y-%m-%d')}")
+
+        params["loan_term"] = total_term_months
+        params["loan_term_days"] = actual_days
+        params["end_date"] = end_date.strftime("%Y-%m-%d")
         
         # Handle tranches
         user_tranches = params.get('tranches', [])
@@ -1151,7 +1141,7 @@ class LoanCalculator:
         logging.info(f"  Term: {total_term_months} months")
         logging.info(f"  Additional Drawn: {additional_drawn[:5]}... (first 5)")
 
-        def compute_total_interest(gross_amount):
+        def compute_total_interest(gross_amount, end_date):
             """Calculate total interest using calendar-accurate dates"""
             arrangement_fee = gross_amount * arrangement_fee_percent
             title_insurance = gross_amount * title_insurance_rate
@@ -1160,20 +1150,22 @@ class LoanCalculator:
             current_date = start_date
             
             for period in range(total_term_months):
-                # Calculate next month using calendar accuracy
-                next_month = current_date.month + 1
-                next_year = current_date.year
-                if next_month > 12:
-                    next_month = 1
-                    next_year += 1
-                
-                _, last_day = monthrange(next_year, next_month)
-                day = min(current_date.day - 1, last_day)
-                if day < 1:
-                    day = 1
-                end_date = datetime(next_year, next_month, day)
-                
-                days_in_period = (end_date - current_date).days + 1
+                if period == total_term_months - 1:
+                    period_end = end_date
+                else:
+                    next_month = current_date.month + 1
+                    next_year = current_date.year
+                    if next_month > 12:
+                        next_month = 1
+                        next_year += 1
+
+                    _, last_day = monthrange(next_year, next_month)
+                    day = min(current_date.day - 1, last_day)
+                    if day < 1:
+                        day = 1
+                    period_end = datetime(next_year, next_month, day)
+
+                days_in_period = (period_end - current_date).days + 1
                 
                 # Add tranche first
                 tranche = additional_drawn[period]
@@ -1184,13 +1176,13 @@ class LoanCalculator:
                 total_interest += interest
                 
                 outstanding = pre_interest_balance + interest
-                current_date = end_date + timedelta(days=1)
+                current_date = period_end + timedelta(days=1)
             
             return total_interest
 
         def f(gross_amount):
             """Objective function - should equal zero when gross amount is correct"""
-            total_interest_val = compute_total_interest(gross_amount)
+            total_interest_val = compute_total_interest(gross_amount, end_date)
             arrangement_fee = gross_amount * arrangement_fee_percent
             title_insurance = gross_amount * title_insurance_rate
             
@@ -1282,7 +1274,7 @@ class LoanCalculator:
             # Calculate final values
             arrangement_fee = gross_amount_solution * arrangement_fee_percent
             title_insurance = gross_amount_solution * title_insurance_rate
-            total_interest_val = compute_total_interest(gross_amount_solution)
+            total_interest_val = compute_total_interest(gross_amount_solution, end_date)
             check_value = f(gross_amount_solution)
             
             logging.info(f"✅ DEVELOPMENT 2 RESULT:")
@@ -1351,11 +1343,18 @@ class LoanCalculator:
         # Calculate other values for frontend
         property_value = float(params.get('property_value', 2000000))
         loan_term = int(params.get('loan_term', 18))
+        loan_term_days = int(params.get("loan_term_days", 0))
         ltv = (gross_amount_solution / property_value * 100) if property_value > 0 else 0
-        
-        # Calculate end date properly
-        end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
-        end_date_str = end_date.strftime('%Y-%m-%d')
+
+        end_date_str = params.get("end_date")
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+        elif loan_term_days:
+            end_date = start_date + timedelta(days=loan_term_days - 1)
+            end_date_str = end_date.strftime("%Y-%m-%d")
+        else:
+            end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
+            end_date_str = end_date.strftime("%Y-%m-%d")
         
         # Return result in expected format with 3 decimal place rounding
         return {
@@ -1368,7 +1367,8 @@ class LoanCalculator:
             'ltv': self._round(ltv, 3),
             'currency': params.get('currency', 'GBP'),
             'loanTerm': loan_term,
-            'loanTermDays': int(loan_term * float(Decimal('365.25') / Decimal('12'))),
+            'loanTermDays': loan_term_days,
+            'loan_term_days': loan_term_days,
             'interestRate': float(params.get('annual_rate', 12.0)),
             'totalInterest': self._two_dp(total_interest_val),
             'repaymentOption': 'none',
@@ -1402,6 +1402,14 @@ class LoanCalculator:
         start_date_str = params.get('start_date', '2025-07-24')
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
         total_term_months = int(params.get('loan_term', 18))
+        loan_term_days = int(params.get("loan_term_days", 0))
+        end_date_str = params.get("end_date")
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+        elif loan_term_days:
+            end_date = start_date + timedelta(days=loan_term_days - 1)
+        else:
+            end_date = start_date + relativedelta(months=total_term_months) - timedelta(days=1)
         
         # Handle tranches
         user_tranches = params.get('tranches', [])
@@ -1425,9 +1433,6 @@ class LoanCalculator:
                 tranche_amount = remaining_advance / tranche_count  # Dynamic amount
                 for i in range(1, tranche_end_month + 1):
                     additional_drawn[i] = tranche_amount
-        
-        # Calculate end date for the loan
-        end_date = start_date + relativedelta(months=total_term_months) - timedelta(days=1)
         
         # DYNAMIC DAILY RATE: Calculate from user's annual rate - NO HARDCODED VALUES
         daily_interest_rate = annual_interest_rate / 365.0
