@@ -2,6 +2,7 @@ import os
 import json
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
+from dateutil.relativedelta import relativedelta
 from flask import render_template, request, redirect, url_for, flash, jsonify, session, send_file, make_response, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_cors import cross_origin
@@ -368,21 +369,23 @@ def api_calculate():
         loan_term = safe_int(data.get('loan_term'), 12)
         start_date_str = data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-        
-        # Handle end date - if provided, pass it to calculation engine
+
+        # Handle end date and compute loan term inclusively
         end_date_str = data.get('end_date')
+        loan_term_days = 0
         if end_date_str and end_date_str.strip():
             try:
                 end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-                # Calculate loan term based on actual dates for parameter passing
-                months_diff = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
-                if months_diff > 0:
-                    loan_term = months_diff
+                rd = relativedelta(end_date + timedelta(days=1), start_date)
+                loan_term = max(1, rd.years * 12 + rd.months)
+                loan_term_days = (end_date + timedelta(days=1) - start_date).days
             except ValueError:
                 app.logger.warning(f"Could not parse end date '{end_date_str}', ignoring")
                 end_date_str = None
         else:
-            end_date_str = None
+            end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
+            end_date_str = end_date.strftime('%Y-%m-%d')
+            loan_term_days = (end_date + timedelta(days=1) - start_date).days
         
         # Fees - using safe conversion
         arrangement_fee_rate = safe_float(data.get('arrangement_fee_percentage'), 0) # Frontend sends 'arrangement_fee_percentage'
@@ -437,6 +440,7 @@ def api_calculate():
             'annual_rate': annual_rate,
             'monthly_rate': monthly_rate,
             'loan_term': loan_term,
+            'loan_term_days': loan_term_days,
             'start_date': start_date_str,  # Pass as string, not datetime object
             'end_date': end_date_str,  # Add end date parameter
             'arrangement_fee_rate': arrangement_fee_rate,
