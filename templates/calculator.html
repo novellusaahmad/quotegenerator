@@ -968,6 +968,9 @@
     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#paymentScheduleModal">
         <i class="fas fa-calendar-alt me-1"></i>Detailed Payment Schedule
     </button>
+    <button class="btn btn-outline-primary" id="trancheScheduleBtn" data-bs-toggle="modal" data-bs-target="#trancheScheduleModal" style="display: none;">
+        <i class="fas fa-layer-group me-1"></i>Tranche Schedule
+    </button>
     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loanBreakdownModal">
         <i class="fas fa-chart-pie me-1"></i>Loan Breakdown
     </button>
@@ -1018,6 +1021,43 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="modal fade" id="trancheScheduleModal" tabindex="-1" aria-labelledby="trancheScheduleLabel" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="trancheScheduleLabel">Tranche Schedule</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-sm" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+              <tr style="background: #f8f9fa; border: 1px solid #000;">
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Tranche Release</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
+                <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
+              </tr>
+            </thead>
+            <tbody id="trancheScheduleBody">
+              <!-- Tranche schedule rows will be populated by JavaScript -->
+            </tbody>
+          </table>
         </div>
       </div>
       <div class="modal-footer">

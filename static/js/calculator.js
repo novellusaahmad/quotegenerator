@@ -924,12 +924,15 @@ class LoanCalculator {
         
         // Display detailed payment schedule if available (for all loan types)
         this.displayDetailedPaymentSchedule(results);
-        
+
         // Display tranche breakdown for development loans
         if (results.tranche_breakdown && results.tranche_breakdown.length > 0) {
             this.displayTrancheBreakdown(results.tranche_breakdown, currency);
         }
-        
+
+        // Display tranche schedule report in modal if available
+        this.displayTrancheSchedule(results);
+
         // Update percentage displays with actual user input values
         this.updatePercentageDisplays();
     }
@@ -2092,6 +2095,51 @@ class LoanCalculator {
         } catch (error) {
             console.log('Error in clearExistingCharts:', error);
         }
+    }
+
+    displayTrancheSchedule(results) {
+        const btn = document.getElementById('trancheScheduleBtn');
+        const body = document.getElementById('trancheScheduleBody');
+        if (!btn || !body) return;
+
+        const schedule = results.detailed_tranche_schedule;
+        if (!Array.isArray(schedule) || schedule.length === 0) {
+            btn.style.display = 'none';
+            body.innerHTML = '';
+            return;
+        }
+
+        btn.style.display = 'inline-block';
+        body.innerHTML = '';
+
+        const currency = document.getElementById('currency').value;
+        const symbol = this.getCurrencySymbol(currency);
+
+        const formatMoney = (val) => {
+            const num = typeof val === 'string' ? parseFloat(val) : val;
+            if (isNaN(num)) return val ?? '';
+            return symbol + num.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        };
+
+        schedule.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            tr.style.border = '1px solid #000';
+            tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
+
+            tr.innerHTML = `
+                <td class="py-1 px-2 text-center" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${row.period}</td>
+                <td class="py-1 px-2 text-center" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${row.start_period || ''}</td>
+                <td class="py-1 px-2 text-center" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${row.end_period || ''}</td>
+                <td class="py-1 px-2 text-center" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${row.days_held ?? ''}</td>
+                <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.opening_balance)}</td>
+                <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.tranche_release)}</td>
+                <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.interest)}</td>
+                <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.principal)}</td>
+                <td class="py-1 px-2 text-end" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(row.total_payment)}</td>
+                <td class="py-1 px-2 text-end" style="color:#000; font-size:0.875rem;">${formatMoney(row.closing_balance)}</td>
+            `;
+            body.appendChild(tr);
+        });
     }
 
     displayTrancheBreakdown(trancheData, currency) {
