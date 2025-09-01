@@ -43,5 +43,6 @@ def test_quarterly_service_and_capital_schedule_groups_months():
     assert len(schedule) == 4
     first = schedule[0]
     assert first['start_period'] == '01/01/2024'
-    assert first['end_period'] == '01/04/2024'
+    # ``end_period`` now reports the final day within the quarter
+    assert first['end_period'] == '31/03/2024'
     assert first['days_held'] == 91
