@@ -680,6 +680,12 @@ class LoanCalculator:
             else:
                 calculation['monthlyPayment'] = float(periodic_interest + capital_repayment)
                 calculation['quarterlyPayment'] = 0
+        elif repayment_option in ['capital_payment_only', 'flexible_payment']:
+            if payment_frequency == 'quarterly':
+                calculation['quarterlyPayment'] = float(calculation.get('monthlyPayment', 0))
+                calculation['monthlyPayment'] = 0
+            else:
+                calculation['quarterlyPayment'] = 0
 
         # Generate payment schedule
         try:
@@ -716,7 +722,7 @@ class LoanCalculator:
 
             # Override periodic interest using actual days held for the first period
             detailed_schedule = calculation.get('detailed_payment_schedule') or payment_schedule
-            if detailed_schedule and repayment_option not in ['service_and_capital', 'sc_only']:
+            if detailed_schedule and repayment_option == 'service_only':
                 first_entry = detailed_schedule[0]
                 interest_str = (
                     first_entry.get('interest_accrued')
@@ -729,13 +735,12 @@ class LoanCalculator:
                     interest_val = Decimal(str(interest_str).replace('£', '').replace('€', '').replace(',', ''))
                     interest_val = self._two_dp(interest_val)
                     calculation['periodicInterest'] = float(interest_val)
-                    if repayment_option == 'service_only':
-                        if payment_frequency == 'quarterly':
-                            calculation['quarterlyPayment'] = float(interest_val)
-                            calculation['monthlyPayment'] = 0
-                        else:
-                            calculation['monthlyPayment'] = float(interest_val)
-                            calculation['quarterlyPayment'] = 0
+                    if payment_frequency == 'quarterly':
+                        calculation['quarterlyPayment'] = float(interest_val)
+                        calculation['monthlyPayment'] = 0
+                    else:
+                        calculation['monthlyPayment'] = float(interest_val)
+                        calculation['quarterlyPayment'] = 0
                 except Exception:
                     pass
         except Exception as e:
