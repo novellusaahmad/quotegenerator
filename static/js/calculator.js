@@ -2476,6 +2476,35 @@ class LoanCalculator {
         const netFormula = `Net = Gross – Arrangement Fee – Legal Fees – Site Visit Fee – Title Insurance${interestDeducted ? ' – Retained Interest' : ''}`;
         const retainedInterestFormula = interestDeducted ? `(Interest Rate × Loan Term) × Gross` : '';
 
+        // Special breakdown for bridge retained interest when user inputs gross amount
+        if (loanType === 'bridge' && interestDeducted && amountInputType === 'gross') {
+            modalBody.innerHTML = `
+                <h6>Gross to Net Calculation</h6>
+                <p>The formula for a Gross to Net bridge loan with retained interest is as follows:</p>
+                <ul>
+                    <li><strong>Gross</strong> = Defined by User</li>
+                    <li><strong>Net</strong> = Gross – Arrangement Fee – Legal Fees – Site Visit Fee – Title Insurance – Total Interest</li>
+                    <li><strong>Total Interest</strong> = Interest Rate × Loan Term × Gross</li>
+                </ul>
+                <h6>Net Loan Calculation Step by Step</h6>
+                <table class="table table-sm table-bordered mb-3">
+                    <tbody>
+                        <tr><th scope="row">Gross</th><td>${gross}</td></tr>
+                        <tr><th scope="row">Arrangement Fee = ${arrangementPctText} × Gross</th><td>${arrangement}</td></tr>
+                        <tr><th scope="row">Legal Fees</th><td>${legal}</td></tr>
+                        <tr><th scope="row">Site Visit Fee</th><td>${site}</td></tr>
+                        <tr><th scope="row">Title Insurance = ${titlePctText} × Gross</th><td>${title}</td></tr>
+                        <tr><th scope="row">Total Interest = ${rateText} × ${loanTerm} months ÷ 12 × Gross</th><td>${interest}</td></tr>
+                        <tr class="table-active fw-bold"><th scope="row">Net</th><td>${net}</td></tr>
+                    </tbody>
+                </table>
+                <p><strong>Term:</strong> ${loanTerm} Months</p>
+                <p><strong>Days in Year:</strong> ${daysPerYear}</p>
+                <p>Retained interest means total interest is deducted at the start and repaid when the loan redeems.</p>
+            `;
+            return;
+        }
+
         modalBody.innerHTML = `
             <p><strong>Calculation Engine:</strong> The calculator uses ${calcDescription}.</p>
             <p><strong>Repayment Method:</strong> ${repaymentDescription}</p>
