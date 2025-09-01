@@ -148,19 +148,51 @@ class LoanCalculator:
         return daily_interest * Decimal(str(days))
 
     def _calculate_periodic_interest(
-        self, gross_amount: Decimal, annual_rate: Decimal, payment_frequency: str
+        self,
+        gross_amount: Decimal,
+        annual_rate: Decimal,
+        payment_frequency: str,
+        start_date: datetime | None = None,
+        loan_term: int | None = None,
+        payment_timing: str = 'advance',
+        loan_term_days: int | None = None,
+        use_360_days: bool = False,
     ) -> Decimal:
-        """Calculate interest due each period based on payment frequency.
+        """Calculate interest due each period based on day counts.
+
+        When ``start_date`` and ``loan_term`` are supplied the calculation uses
+        actual calendar days for the first payment period.  Otherwise a simple
+        ``12``/``4`` divisor is used which assumes 30.4375 days per month.
 
         Args:
             gross_amount: The loan principal on which interest is charged.
-            annual_rate: Annual interest rate expressed as a decimal
-                fraction (e.g. ``0.12`` for 12%).
+            annual_rate: Annual interest rate expressed as a decimal fraction
+                (e.g. ``0.12`` for 12%).
             payment_frequency: Either ``'monthly'`` or ``'quarterly'``.
+            start_date: Loan start date for determining exact period lengths.
+            loan_term: Loan term in months.
+            payment_timing: ``'advance'`` or ``'arrears'``.
+            loan_term_days: Exact term length in days if supplied.
+            use_360_days: Whether to use a 360 day count basis instead of 365.
 
         Returns:
             Decimal: The interest amount payable each period.
         """
+
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
+
+        if start_date is not None and loan_term is not None:
+            payment_dates = self._generate_payment_dates(
+                start_date, loan_term, payment_frequency, payment_timing, loan_term_days
+            )
+            period_ranges = self._compute_period_ranges(
+                start_date, payment_dates, loan_term, payment_timing, loan_term_days
+            )
+            if payment_frequency == 'quarterly':
+                period_ranges = self._group_period_ranges(period_ranges, len(payment_dates), loan_term)
+            if period_ranges:
+                days = Decimal(str(period_ranges[0]['days_held']))
+                return gross_amount * annual_rate * days / days_per_year
 
         divisor = Decimal('12') if payment_frequency == 'monthly' else Decimal('4')
         return gross_amount * annual_rate / divisor
@@ -669,16 +701,30 @@ class LoanCalculator:
         })
 
         # Always provide reference monthly and quarterly interest payments
-        # based purely on the gross amount and nominal annual rate.  These
-        # values are rounded to two decimals so they align with the loan
-        # summary report and PDF output.
+        # using exact day counts for the first period. This ensures that
+        # summaries align with detailed schedules, especially when the loan
+        # term includes additional days beyond whole months.
         annual_rate_decimal = annual_rate / Decimal('100')
         rounding = Decimal('0.01')
-        monthly_interest = (
-            gross_amount * annual_rate_decimal / Decimal('12')
+        monthly_interest = self._calculate_periodic_interest(
+            gross_amount,
+            annual_rate_decimal,
+            'monthly',
+            start_date,
+            loan_term,
+            payment_timing,
+            loan_term_days,
+            use_360_days,
         ).quantize(rounding, rounding=ROUND_HALF_UP)
-        quarterly_interest = (
-            gross_amount * annual_rate_decimal / Decimal('4')
+        quarterly_interest = self._calculate_periodic_interest(
+            gross_amount,
+            annual_rate_decimal,
+            'quarterly',
+            start_date,
+            loan_term,
+            payment_timing,
+            loan_term_days,
+            use_360_days,
         ).quantize(rounding, rounding=ROUND_HALF_UP)
         calculation['monthlyInterestPayment'] = float(monthly_interest)
         calculation['quarterlyInterestPayment'] = float(quarterly_interest)
@@ -944,12 +990,28 @@ class LoanCalculator:
         })
 
         # Always provide reference monthly and quarterly interest payments
+        # using exact day counts for the first period when dates are supplied.
+        rounding = Decimal('0.01')
         monthly_interest = self._calculate_periodic_interest(
-            gross_amount, annual_rate / Decimal('100'), 'monthly'
-        )
+            gross_amount,
+            annual_rate / Decimal('100'),
+            'monthly',
+            start_date,
+            loan_term,
+            payment_timing,
+            loan_term_days,
+            use_360_days,
+        ).quantize(rounding, rounding=ROUND_HALF_UP)
         quarterly_interest = self._calculate_periodic_interest(
-            gross_amount, annual_rate / Decimal('100'), 'quarterly'
-        )
+            gross_amount,
+            annual_rate / Decimal('100'),
+            'quarterly',
+            start_date,
+            loan_term,
+            payment_timing,
+            loan_term_days,
+            use_360_days,
+        ).quantize(rounding, rounding=ROUND_HALF_UP)
         calculation['monthlyInterestPayment'] = float(monthly_interest)
         calculation['quarterlyInterestPayment'] = float(quarterly_interest)
 
@@ -3679,8 +3741,10 @@ class LoanCalculator:
         loan_end_from_term = self._add_months(start_date, loan_term) - timedelta(days=1)
         if loan_term_days is not None:
             loan_end_date = start_date + timedelta(days=loan_term_days - 1)
+            extra_period = loan_end_date > loan_end_from_term
         else:
             loan_end_date = loan_end_from_term
+            extra_period = False
 
         if frequency == 'quarterly':
             # Quarterly payments (every 3 months)
@@ -3698,9 +3762,8 @@ class LoanCalculator:
                     payment_dates.append(payment_date)
 
             if loan_term_days is not None:
-                if loan_end_date > loan_end_from_term:
-                    if payment_dates and payment_dates[-1] < loan_end_date:
-                        payment_dates.append(loan_end_date)
+                if extra_period and payment_dates and payment_dates[-1] < loan_end_date:
+                    payment_dates.append(loan_end_date)
                 elif payment_dates:
                     payment_dates[-1] = loan_end_date
             elif payment_dates and payment_dates[-1] < loan_end_date:
@@ -3725,9 +3788,8 @@ class LoanCalculator:
                     payment_dates.append(payment_date)
 
             if loan_term_days is not None:
-                if loan_end_date > loan_end_from_term:
-                    if payment_dates and payment_dates[-1] < loan_end_date:
-                        payment_dates.append(loan_end_date)
+                if extra_period and payment_dates and payment_dates[-1] < loan_end_date:
+                    payment_dates.append(loan_end_date)
                 elif payment_dates:
                     payment_dates[-1] = loan_end_date
             elif payment_dates and payment_dates[-1] < loan_end_date:
@@ -3757,9 +3819,12 @@ class LoanCalculator:
         ranges: List[Dict[str, object]] = []
         start_date = self._normalize_date(start_date)
         # ``loan_end`` should represent the final day of the term, not the day
-        # after.  Subtract one day from the month-based calculation to make the
-        # range inclusive.
-        loan_end = self._add_months(start_date, loan_term) - timedelta(days=1)
+        # after.  Use the supplied ``loan_term_days`` when available so the
+        # ranges precisely match the real loan duration.
+        if loan_term_days is not None:
+            loan_end = start_date + timedelta(days=loan_term_days - 1)
+        else:
+            loan_end = self._add_months(start_date, loan_term) - timedelta(days=1)
         current = start_date
 
         while current <= loan_end:
@@ -3769,26 +3834,6 @@ class LoanCalculator:
                 period_end = loan_end
             ranges.append({'start': current, 'end': period_end, 'days_held': (period_end - current).days + 1})
             current = period_end + timedelta(days=1)
-
-        if loan_term_days is not None and ranges:
-            total_days = sum(r['days_held'] for r in ranges)
-            diff = loan_term_days - total_days
-            if diff > 0:
-                last_end = ranges[-1]['end']
-                while diff > 0:
-                    days = min(diff, 31)
-                    new_start = last_end + timedelta(days=1)
-                    new_end = new_start + timedelta(days=days - 1)
-                    ranges.append({'start': new_start, 'end': new_end, 'days_held': days})
-                    last_end = new_end
-                    diff -= days
-                loan_end = ranges[-1]['end']
-            elif diff < 0:
-                ranges[-1]['end'] = ranges[-1]['end'] + timedelta(days=diff)
-                ranges[-1]['days_held'] += diff
-                loan_end = ranges[-1]['end']
-            else:
-                loan_end = ranges[-1]['end']
 
         # If there are more payment dates than computed ranges (e.g. advance
         # schedules that include a final principal-only payment), pad with

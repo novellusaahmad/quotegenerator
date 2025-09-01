@@ -48,10 +48,12 @@ def test_periodic_interest_visible_and_correct(repayment_option, payment_frequen
         params['flexible_payment'] = 10000
 
     result = calc.calculate_bridge_loan(params)
-    divisor = 12 if payment_frequency == 'monthly' else 4
-    expected = 600000 * 0.12 / divisor
+    daily_rate = 0.12 / 365
+    days_month = 31
+    days_quarter = 91
+    expected = 600000 * daily_rate * (days_month if payment_frequency == 'monthly' else days_quarter)
 
     assert result['periodicInterest'] == pytest.approx(expected, abs=0.01)
-    assert result['monthlyInterestPayment'] == pytest.approx(600000 * 0.12 / 12, abs=0.01)
-    assert result['quarterlyInterestPayment'] == pytest.approx(600000 * 0.12 / 4, abs=0.01)
+    assert result['monthlyInterestPayment'] == pytest.approx(600000 * daily_rate * days_month, abs=0.01)
+    assert result['quarterlyInterestPayment'] == pytest.approx(600000 * daily_rate * days_quarter, abs=0.01)
     assert result['periodicInterest'] > 0
