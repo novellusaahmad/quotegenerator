@@ -1346,6 +1346,12 @@ class LoanCalculator:
         loan_term_days = int(params.get("loan_term_days", 0))
         ltv = (gross_amount_solution / property_value * 100) if property_value > 0 else 0
 
+        opening_balance = net_advance_day1 + legals + arrangement_fee + title_insurance + site_visit_fee
+        start_ltv = (
+            opening_balance * (1 + (annual_interest_rate / 365) * loan_term_days)
+            / property_value * 100
+        ) if property_value > 0 else 0
+
         end_date_str = params.get("end_date")
         if end_date_str:
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
@@ -1365,6 +1371,8 @@ class LoanCalculator:
             'day1Advance': self._round(net_advance_day1, 3),
             'propertyValue': self._round(property_value, 3),
             'ltv': self._round(ltv, 3),
+            'startLTV': self._round(start_ltv, 3),
+            'startLtv': self._round(start_ltv, 3),
             'currency': params.get('currency', 'GBP'),
             'loanTerm': loan_term,
             'loanTermDays': loan_term_days,

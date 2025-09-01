@@ -60,6 +60,8 @@ class WorkingReportGenerator:
                 ['Net Advance', f"£{float(loan.net_advance or 0):,.2f}"],
                 ['Total Interest', f"£{float(loan.total_interest or 0):,.2f}"],
                 ['Property Value', f"£{float(loan.property_value or 0):,.2f}"],
+                ['Start LTV', f"{float(loan.start_ltv or 0):.2f}%"],
+                ['End LTV', f"{float(loan.end_ltv or 0):.2f}%"],
                 ['Loan Term (Months)', str(getattr(loan, 'loan_term_months', getattr(loan, 'loan_term', 'N/A')))],
                 ['Interest Rate', f"{float(loan.interest_rate or 0):.2f}%"],
                 ['Created Date', loan.created_at.strftime('%Y-%m-%d %H:%M') if loan.created_at else 'N/A']
@@ -139,6 +141,8 @@ class WorkingReportGenerator:
                 ('Net Advance', float(loan.net_advance or 0), currency_format),
                 ('Total Interest', float(loan.total_interest or 0), currency_format),
                 ('Property Value', float(loan.property_value or 0), currency_format),
+                ('Start LTV', f"{float(loan.start_ltv or 0):.2f}%", data_format),
+                ('End LTV', f"{float(loan.end_ltv or 0):.2f}%", data_format),
                 ('Loan Term (Months)', getattr(loan, 'loan_term_months', getattr(loan, 'loan_term', 'N/A')), data_format),
                 ('Interest Rate', f"{float(loan.interest_rate or 0):.2f}%", data_format),
                 ('Created Date', loan.created_at.strftime('%Y-%m-%d %H:%M') if loan.created_at else 'N/A', data_format)

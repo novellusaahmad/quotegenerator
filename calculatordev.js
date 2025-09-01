@@ -624,7 +624,7 @@ class LoanCalculator {
         const titleInsuranceEl = document.getElementById('titleInsuranceResult');
         const totalInterestEl = document.getElementById('totalInterestResult');
         const netDay1AdvanceEl = document.getElementById('netDay1AdvanceResult');
-        const ltvRatioEl = document.getElementById('ltvRatioResult');
+        const startLTVEl = document.getElementById('startLTVResult');
         const totalNetAdvanceEl = document.getElementById('totalNetAdvanceResult');
         const valuationEl = document.getElementById('propertyValueResult');
         const endLTVEl = document.getElementById('endLTVResult');
@@ -668,12 +668,10 @@ class LoanCalculator {
             netDay1AdvanceEl.textContent = displayDay1Advance.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         
-        // Calculate and display LTV ratio (use backend values if available)
-        if (ltvRatioEl && propertyValue > 0) {
-            const ltvRatio = results.ltv || (grossAmount / propertyValue * 100);
-            ltvRatioEl.textContent = ltvRatio.toFixed(2) + '%';
-        } else if (ltvRatioEl) {
-            ltvRatioEl.textContent = '0.00%';
+        // Display Start LTV from backend results
+        if (startLTVEl) {
+            const startLTV = results.startLTV || results.startLtv || 0;
+            startLTVEl.textContent = startLTV.toFixed(2) + '%';
         }
         
         // Display End LTV based on closing balance of last month from payment schedule
