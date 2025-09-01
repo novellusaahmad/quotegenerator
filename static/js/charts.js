@@ -194,12 +194,26 @@ class ChartManager {
 
         const labels = schedule.map(payment => `Month ${payment.month}`);
         const balanceData = schedule.map(payment => payment.balance || 0);
-        // Use a running sum for interest payments rather than period values
-        let cumulativeInterest = 0;
-        const interestData = schedule.map(payment => {
-            const interestValue = payment.interest || payment.interest_amount || 0;
-            cumulativeInterest += interestValue;
-            return cumulativeInterest;
+        // Helper to parse currency strings or numbers
+        const parseValue = (val) => {
+            if (typeof val === 'string') {
+                const cleaned = val.replace(/[^0-9.-]/g, '');
+                return parseFloat(cleaned) || 0;
+            }
+            return val || 0;
+        };
+        // Build running sums for interest accrued and retained
+        let cumulativeAccrued = 0;
+        let cumulativeRetained = 0;
+        const interestAccruedData = schedule.map(payment => {
+            const val = parseValue(payment.interest_accrued_raw ?? payment.interest_accrued);
+            cumulativeAccrued += val;
+            return cumulativeAccrued;
+        });
+        const interestRetainedData = schedule.map(payment => {
+            const val = parseValue(payment.interest_retained_raw ?? payment.interest_retained);
+            cumulativeRetained += val;
+            return cumulativeRetained;
         });
 
         const config = {
@@ -213,7 +227,7 @@ class ChartManager {
                         backgroundColor: this.addTransparency(this.defaultColors.primary, 0.1),
                         borderColor: this.defaultColors.primary,
                         borderWidth: 3,
-                        fill: true,
+                        fill: false,
                         tension: 0.4,
                         pointBackgroundColor: this.defaultColors.primary,
                         pointBorderColor: '#fff',
@@ -221,14 +235,28 @@ class ChartManager {
                         pointRadius: 4
                     },
                     {
-                        label: 'Interest Payment',
-                        data: interestData,
+                        label: 'Interest Accrued',
+                        data: interestAccruedData,
                         backgroundColor: this.addTransparency(this.defaultColors.secondary, 0.1),
                         borderColor: this.defaultColors.secondary,
                         borderWidth: 3,
                         fill: false,
                         tension: 0.4,
                         pointBackgroundColor: this.defaultColors.secondary,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        label: 'Interest Retained',
+                        data: interestRetainedData,
+                        backgroundColor: this.addTransparency(this.defaultColors.warning, 0.1),
+                        borderColor: this.defaultColors.warning,
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4,
+                        pointBackgroundColor: this.defaultColors.warning,
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2,
                         pointRadius: 4,
@@ -283,7 +311,7 @@ class ChartManager {
                     y1: {
                         title: {
                             display: true,
-                            text: 'Interest Payment'
+                            text: 'Interest'
                         },
                         position: 'right',
                         grid: {
