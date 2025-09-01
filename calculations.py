@@ -646,12 +646,9 @@ class LoanCalculator:
         })
 
         # Always provide reference monthly and quarterly interest payments
-        monthly_interest = self._calculate_periodic_interest(
-            gross_amount, annual_rate / Decimal('100'), 'monthly'
-        )
-        quarterly_interest = self._calculate_periodic_interest(
-            gross_amount, annual_rate / Decimal('100'), 'quarterly'
-        )
+        annual_rate_decimal = annual_rate / Decimal('100')
+        monthly_interest = gross_amount * annual_rate_decimal / Decimal('12')
+        quarterly_interest = gross_amount * annual_rate_decimal / Decimal('4')
         calculation['monthlyInterestPayment'] = float(monthly_interest)
         calculation['quarterlyInterestPayment'] = float(quarterly_interest)
 
