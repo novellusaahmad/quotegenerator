@@ -312,9 +312,26 @@ def generate_tranche_schedule(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     currency_symbol = "€" if params.get("currency") == "EUR" else "£"
     schedule = calculator.generate_payment_schedule(calculation, currency_symbol)
 
-    # Strip any internal helper fields (e.g. *_raw) so the output matches
-    # the existing development schedule format exactly.
-    for entry in schedule:
+    # Populate period metadata when missing so the frontend has complete fields
+    try:
+        from datetime import datetime
+
+        start_str = params.get("start_date")
+        if start_str:
+            start_dt = datetime.strptime(start_str, "%Y-%m-%d")
+            loan_term = int(params.get("loan_term", len(schedule)))
+            loan_term_days = params.get("loan_term_days")
+            calculator._apply_period_dates(schedule, start_dt, loan_term, loan_term_days)
+    except Exception:
+        pass
+
+    # Ensure each entry has standard field names expected by the UI
+    for idx, entry in enumerate(schedule, start=1):
+        entry.setdefault("period", idx)
+        if "interest_amount" in entry and "interest" not in entry:
+            entry["interest"] = entry.get("interest_amount")
+        if "principal_payment" in entry and "principal" not in entry:
+            entry["principal"] = entry.get("principal_payment")
         for key in list(entry.keys()):
             if key.endswith("_raw"):
                 del entry[key]
