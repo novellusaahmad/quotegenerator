@@ -1,4 +1,5 @@
 from calculations import LoanCalculator
+import pytest
 
 def test_flexible_payment_schedule_fields_present():
     calc = LoanCalculator()
@@ -29,3 +30,5 @@ def test_flexible_payment_schedule_fields_present():
     for idx, entry in enumerate(schedule, start=1):
         for field in required_fields:
             assert field in entry, f"Missing field {field} in period {idx}"
+    assert result['monthlyInterestPayment'] == pytest.approx(100000 * 0.12 / 12, abs=0.01)
+    assert result['quarterlyInterestPayment'] == pytest.approx(100000 * 0.12 / 4, abs=0.01)

@@ -1,5 +1,6 @@
 import sys, types
 from decimal import Decimal
+import pytest
 
 # Provide minimal stub for dateutil.relativedelta to avoid external dependency
 relativedelta_module = types.ModuleType('relativedelta')
@@ -46,3 +47,5 @@ def test_service_only_summary_matches_schedule():
     assert diff < Decimal('0.02')
     diff_interest_only = (Decimal(str(result['interestOnlyTotal'])) - interest_total).copy_abs()
     assert diff_interest_only < Decimal('0.02')
+    assert result['monthlyInterestPayment'] == pytest.approx(100000 * 0.12 / 12, abs=0.01)
+    assert result['quarterlyInterestPayment'] == pytest.approx(100000 * 0.12 / 4, abs=0.01)

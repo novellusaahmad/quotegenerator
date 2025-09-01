@@ -43,3 +43,5 @@ def test_interest_fields_use_days_held():
     assert summary['interestRefund'] == float(total_refund.quantize(rounding))
     assert summary['total_interest_accrued'] == float(total_accrued.quantize(rounding))
     assert summary['interestSavings'] == float(total_saving.quantize(rounding))
+    assert summary['monthlyInterestPayment'] == 1000.0
+    assert summary['quarterlyInterestPayment'] == 3000.0
