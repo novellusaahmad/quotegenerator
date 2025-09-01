@@ -2016,6 +2016,22 @@ def get_saved_loans():
                 'trancheMode': 'manual',  # Default value
                 'tranches': []
             }
+
+            # Derive reference monthly and quarterly interest payments
+            try:
+                gross_decimal = Decimal(str(loan_data['gross_amount']))
+                rate_decimal = Decimal(str(loan_data['interest_rate'])) / Decimal('100')
+                monthly_int = (gross_decimal * rate_decimal / Decimal('12')).quantize(
+                    Decimal('0.01'), rounding=ROUND_HALF_UP
+                )
+                quarterly_int = (gross_decimal * rate_decimal / Decimal('4')).quantize(
+                    Decimal('0.01'), rounding=ROUND_HALF_UP
+                )
+            except Exception:
+                monthly_int = Decimal('0')
+                quarterly_int = Decimal('0')
+            loan_data['monthlyInterestPayment'] = float(monthly_int)
+            loan_data['quarterlyInterestPayment'] = float(quarterly_int)
             
             # Extract tranches data for development loans
             try:
@@ -2113,7 +2129,7 @@ def get_loan_details(loan_id):
             # Tranche information for development loans
             'tranche_mode': 'manual',  # Default value
             'tranches': [],  # Will be populated from loan metadata if available
-            
+
             # Calculated results for display (camelCase for JavaScript compatibility)
             'grossAmount': float(loan.gross_amount) if loan.gross_amount else 0,
             'netAmount': float(loan.net_amount) if loan.net_amount else 0,
@@ -2136,7 +2152,7 @@ def get_loan_details(loan_id):
             'endDate': loan.end_date.strftime('%Y-%m-%d') if loan.end_date else '',
             'loanTerm': loan.loan_term if loan.loan_term else 0,
             'loanTermDays': loan.loan_term_days if loan.loan_term_days else 0,
-            
+
             # User interface fields (camelCase)
             'amountInputType': loan.amount_input_type if loan.amount_input_type else 'gross',
             'interestRate': float(loan.interest_rate) if loan.interest_rate else 0,
@@ -2151,14 +2167,30 @@ def get_loan_details(loan_id):
                 (float(loan.title_insurance) / float(loan.gross_amount) * 100)
                 if loan.title_insurance and loan.gross_amount else 0.0
             ),
-            
+
             # Development loan specific fields
             'day1Advance': float(loan.day_1_advance) if loan.day_1_advance else 0,
             'userInputDay1Advance': float(loan.user_input_day_1_advance) if loan.user_input_day_1_advance else 0,
-            
+
             # Payment schedule
             'detailed_payment_schedule': schedule_data
         }
+
+        # Derive reference monthly and quarterly interest payments
+        try:
+            gross_decimal = Decimal(str(loan_data['grossAmount']))
+            rate_decimal = Decimal(str(loan_data['interestRate'])) / Decimal('100')
+            monthly_int = (gross_decimal * rate_decimal / Decimal('12')).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP
+            )
+            quarterly_int = (gross_decimal * rate_decimal / Decimal('4')).quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP
+            )
+        except Exception:
+            monthly_int = Decimal('0')
+            quarterly_int = Decimal('0')
+        loan_data['monthlyInterestPayment'] = float(monthly_int)
+        loan_data['quarterlyInterestPayment'] = float(quarterly_int)
         
         # Try to extract tranche information from stored tranches_data 
         try:
