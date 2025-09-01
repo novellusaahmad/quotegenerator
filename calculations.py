@@ -119,8 +119,8 @@ class LoanCalculator:
     def _calculate_term_days(self, start_date: datetime, term_months: int) -> int:
         """Calculate exact number of days for a term based on calendar months."""
         start_date = self._normalize_date(start_date)
-        end_date = self._add_months(start_date, term_months)
-        return (end_date - start_date).days
+        end_date = self._add_months(start_date, term_months) - timedelta(days=1)
+        return (end_date - start_date).days + 1
 
     def calculate_simple_interest_by_days(self, principal: Decimal, annual_rate: Decimal,
                                           days: int, use_360_days: bool = False) -> Decimal:
@@ -391,12 +391,16 @@ class LoanCalculator:
             actual_days = (end_date - start_date).days
             loan_term = max(1, round(actual_days / float(avg_days_per_month)))
             loan_term_days = actual_days
-            logging.info(f"Bridge loan: Using end_date {end_date_str}, actual_days={actual_days}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months")
+            logging.info(
+                f"Bridge loan: Using end_date {end_date_str}, actual_days={actual_days}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months"
+            )
         else:
-            end_date = start_date + relativedelta(months=loan_term)
-            loan_term_days = (end_date - start_date).days
+            end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
+            loan_term_days = (end_date - start_date).days + 1
             end_date_str = end_date.strftime('%Y-%m-%d')
-            logging.info(f"Bridge loan: Calculated end_date {end_date_str}, loan_term_days={loan_term_days} (calendar), loan_term={loan_term} months")
+            logging.info(
+                f"Bridge loan: Calculated end_date {end_date_str}, loan_term_days={loan_term_days} (calendar), loan_term={loan_term} months"
+            )
 
         params['loan_term_days'] = loan_term_days
 
@@ -787,8 +791,8 @@ class LoanCalculator:
             loan_term_days = actual_days
             logging.info(f"Term loan: Using end_date {end_date_str}, actual_days={actual_days}, loan_term_days={loan_term_days} (actual), loan_term={loan_term} months")
         else:
-            end_date = start_date + relativedelta(months=loan_term)
-            loan_term_days = (end_date - start_date).days
+            end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
+            loan_term_days = (end_date - start_date).days + 1
             end_date_str = end_date.strftime('%Y-%m-%d')
             logging.info(f"Term loan: Calculated end_date {end_date_str}, loan_term_days={loan_term_days} (calendar), loan_term={loan_term} months")
 
@@ -1684,8 +1688,8 @@ class LoanCalculator:
         else:
             # Priority 2: Calculate end date from start date + loan term
             from dateutil.relativedelta import relativedelta
-            loan_end_date = start_date + relativedelta(months=loan_term)
-            loan_term_days = (loan_end_date - start_date).days
+            loan_end_date = start_date + relativedelta(months=loan_term) - timedelta(days=1)
+            loan_term_days = (loan_end_date - start_date).days + 1
             end_date_str = loan_end_date.strftime('%Y-%m-%d')
         
         for tranche in tranches:
@@ -1852,7 +1856,7 @@ class LoanCalculator:
             day1_net_advance = Decimal('0')
         
         # Calculate loan term in days (using actual calendar days)
-        loan_term_days = (loan_end_date - start_date).days
+        loan_term_days = (loan_end_date - start_date).days + 1
         
         result = {
             'grossAmount': float(total_gross_amount),
@@ -3626,7 +3630,7 @@ class LoanCalculator:
 
         start_date = self._normalize_date(start_date)
         payment_dates: List[datetime] = []
-        loan_end_date = self._add_months(start_date, loan_term)
+        loan_end_date = self._add_months(start_date, loan_term) - timedelta(days=1)
 
         if frequency == 'quarterly':
             # Quarterly payments (every 3 months)

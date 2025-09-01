@@ -26,7 +26,7 @@ def test_gross_to_net_and_back_fields():
     assert gross_result['grossAmount'] == pytest.approx(2000000.0)
     assert gross_result['netAdvance'] == pytest.approx(1934640.0)
     assert gross_result['start_date'] == '2025-08-30'
-    assert gross_result['end_date'] == '2026-08-30'
+    assert gross_result['end_date'] == '2026-08-29'
     assert gross_result['loanTerm'] == 12
     assert gross_result['loanTermDays'] == 365
     assert gross_result['arrangementFee'] == pytest.approx(40000.0)
@@ -44,7 +44,7 @@ def test_gross_to_net_and_back_fields():
     assert net_result['grossAmount'] == pytest.approx(2000000.0)
     assert net_result['netAdvance'] == pytest.approx(1934640.0)
     assert net_result['start_date'] == '2025-08-30'
-    assert net_result['end_date'] == '2026-08-30'
+    assert net_result['end_date'] == '2026-08-29'
     assert net_result['loanTerm'] == 12
     assert net_result['loanTermDays'] == 365
     assert net_result['arrangementFee'] == pytest.approx(40000.0)
