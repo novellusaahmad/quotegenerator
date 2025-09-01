@@ -63,3 +63,15 @@ def test_payment_schedule_handles_short_month_rollover():
     schedule = result['detailed_payment_schedule']
     assert schedule[0]['days_held'] == 31
     assert schedule[0]['end_period'] == '01/03/2026'
+
+
+def test_monthly_periods_never_exceed_31_days_with_extra_term_days():
+    from datetime import datetime
+
+    calc = LoanCalculator()
+    start = datetime(2024, 1, 30)
+    loan_term = 1
+    loan_term_days = 61
+    payment_dates = calc._generate_payment_dates(start, loan_term, 'monthly', 'arrears', loan_term_days)
+    ranges = calc._compute_period_ranges(start, payment_dates, loan_term, 'arrears', loan_term_days)
+    assert all(r['days_held'] <= 31 for r in ranges)
