@@ -549,7 +549,9 @@ def api_calculate():
                         # Apply day-count-aware Excel interest calculation using loan_term_days
                         annual_rate = calc_params.get('annual_rate', 0)
                         loan_term = calc_params.get('loan_term', 12)
-                        loan_term_days = result.get('loan_term_days', calc_params.get('loan_term_days', 0))
+                        loan_term_days = result.get('loanTermDays', calc_params.get('loan_term_days', 0))
+                        result['loanTermDays'] = loan_term_days
+                        result['loan_term_days'] = loan_term_days
                         use_360_days = calc_params.get('use_360_days', False)
                         days_per_year = 360 if use_360_days else 365
 

@@ -698,7 +698,7 @@ class LoanCalculator {
         const startDate = results.start_date || results.startDate || '';
         const endDate = results.end_date || results.endDate || '';
         const loanTerm = results.loanTerm || results.loan_term || 0;
-        const loanTermDays = results.loanTermDays || results.loan_term_days || 0;
+        const loanTermDays = results.loanTermDays || 0; // normalized by backend
         const arrangementFee = results.arrangementFee || 0;
         const legalCosts = results.legalCosts || results.legalFees || 0;
         const siteVisitFee = results.siteVisitFee || 0;
