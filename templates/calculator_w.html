@@ -1014,45 +1014,18 @@
 function calculateEndDate() {
     const startDate = document.getElementById('startDate').value;
     const loanTerm = parseInt(document.getElementById('loanTerm').value);
-    
+
     if (startDate && loanTerm && loanTerm > 0) {
         const start = new Date(startDate);
-        
-        // Calculate exact days for consistent loan terms
-        let daysToAdd;
-        switch (loanTerm) {
-            case 6:
-                daysToAdd = 181; // 6 months = 181 days (approximately)
-                break;
-            case 12:
-                daysToAdd = 365; // 12 months = exactly 365 days
-                break;
-            case 18:
-                daysToAdd = 548; // 18 months = 548 days (365 + 183)
-                break;
-            case 24:
-                daysToAdd = 730; // 24 months = exactly 730 days (2 years)
-                break;
-            default:
-                // For other terms, use month-based calculation
-                const end = new Date(start);
-                end.setMonth(end.getMonth() + loanTerm);
-                end.setDate(end.getDate() - 1);
-                const endDateInput = document.getElementById('endDate');
-                endDateInput.value = end.toISOString().split('T')[0];
-                triggerCalculationUpdate();
-                return;
-        }
-        
-        // Add the exact number of days
         const end = new Date(start);
-        end.setDate(end.getDate() + daysToAdd);
-        
+        end.setMonth(end.getMonth() + loanTerm);
+        end.setDate(end.getDate() - 1);
+
         const endDateInput = document.getElementById('endDate');
         endDateInput.value = end.toISOString().split('T')[0];
-        
-        console.log(`Calculated end date for ${loanTerm}-month loan: ${daysToAdd} days from ${startDate} = ${end.toISOString().split('T')[0]}`);
-        
+
+        console.log(`Calculated end date for ${loanTerm}-month loan: ${startDate} to ${end.toISOString().split('T')[0]}`);
+
         // Trigger calculation update if calculator instance exists and form has data
         triggerCalculationUpdate();
     }
@@ -1069,39 +1042,25 @@ function makeEndDateEditable() {
 function recalculateLoanTerm() {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    
+
     if (startDate && endDate) {
         const start = new Date(startDate);
         const end = new Date(endDate);
-        
-        // Calculate actual days difference
-        const timeDiff = end.getTime() - start.getTime();
-        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        
+        const daysDiff = Math.floor((end - start) / 86400000) + 1;
         console.log(`Manual date change: ${daysDiff} days between ${startDate} and ${endDate}`);
-        
-        // Determine loan term based on actual days
-        let loanTerm;
-        if (daysDiff >= 350 && daysDiff <= 380) {
-            loanTerm = 12; // 12-month loan (around 365 days)
-        } else if (daysDiff >= 170 && daysDiff <= 190) {
-            loanTerm = 6; // 6-month loan (around 181 days)
-        } else if (daysDiff >= 530 && daysDiff <= 560) {
-            loanTerm = 18; // 18-month loan (around 548 days)
-        } else if (daysDiff >= 720 && daysDiff <= 740) {
-            loanTerm = 24; // 24-month loan (around 730 days)
-        } else {
-            // For other day ranges, approximate to months
-            loanTerm = Math.round(daysDiff / 30.44); // Average days per month
+
+        let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 +
+                         (end.getMonth() - start.getMonth());
+        if (end.getDate() < start.getDate()) {
+            monthsDiff -= 1;
         }
-        
-        if (loanTerm > 0) {
-            document.getElementById('loanTerm').value = loanTerm;
-            console.log(`Set loan term to ${loanTerm} months based on ${daysDiff} days`);
-            
-            // Trigger calculation update if calculator instance exists and form has data
-            triggerCalculationUpdate();
-        }
+        const loanTerm = Math.max(1, monthsDiff);
+
+        document.getElementById('loanTerm').value = loanTerm;
+        console.log(`Set loan term to ${loanTerm} months based on ${daysDiff} days`);
+
+        // Trigger calculation update if calculator instance exists and form has data
+        triggerCalculationUpdate();
     }
 }
 

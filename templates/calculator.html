@@ -1205,8 +1205,7 @@ function calculateEndDate() {
         if (startDate && endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
-            const timeDiff = end.getTime() - start.getTime();
-            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            const daysDiff = Math.floor((end - start) / 86400000) + 1;
             const loanTermDaysEl = document.getElementById('loanTermDaysResult');
             if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
 
