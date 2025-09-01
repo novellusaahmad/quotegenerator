@@ -466,6 +466,10 @@ def api_calculate():
         # Use the unified calculation method
         result = calculator.calculate_loan(calc_params)
 
+        # Development 2 reports should not include detailed payment schedules
+        if loan_type == 'development2':
+            result.pop('detailed_payment_schedule', None)
+
         # Ensure detailed schedule structure for serviced + capital and flexible payments
         if loan_type == 'bridge' and repayment_option in ('service_and_capital', 'flexible_payment'):
             try:
@@ -481,14 +485,17 @@ def api_calculate():
             except Exception as e:
                 app.logger.warning(f"Tranche schedule generation failed: {str(e)}")
 
-        # Generate payment schedule
+        # Generate payment schedule unless explicitly removed
         try:
-            # Add the original parameters to the result for payment schedule generation
-            result['loan_type'] = loan_type
-            result['repayment_option'] = repayment_option
-            currency_symbol = '€' if currency == 'EUR' else '£'
-            payment_schedule = calculator.generate_payment_schedule(result, currency_symbol)
-            result['payment_schedule'] = payment_schedule
+            if loan_type != 'development2':
+                # Add the original parameters to the result for payment schedule generation
+                result['loan_type'] = loan_type
+                result['repayment_option'] = repayment_option
+                currency_symbol = '€' if currency == 'EUR' else '£'
+                payment_schedule = calculator.generate_payment_schedule(result, currency_symbol)
+                result['payment_schedule'] = payment_schedule
+            else:
+                result['payment_schedule'] = []
         except Exception as e:
             app.logger.warning(f"Payment schedule generation failed: {str(e)}")
             result['payment_schedule'] = []
