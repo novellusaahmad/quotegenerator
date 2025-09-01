@@ -62,7 +62,9 @@ def test_payment_schedule_handles_short_month_rollover():
     result = calc.calculate_bridge_loan(params)
     schedule = result['detailed_payment_schedule']
     assert schedule[0]['days_held'] == 31
-    assert schedule[0]['end_period'] == '01/03/2026'
+    # The end period now reflects the final day within the range rather than the
+    # first day following it.
+    assert schedule[0]['end_period'] == '28/02/2026'
 
 
 def test_monthly_periods_never_exceed_31_days_with_extra_term_days():

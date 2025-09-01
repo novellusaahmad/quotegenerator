@@ -3756,16 +3756,19 @@ class LoanCalculator:
         """
         ranges: List[Dict[str, object]] = []
         start_date = self._normalize_date(start_date)
-        loan_end = self._add_months(start_date, loan_term)
+        # ``loan_end`` should represent the final day of the term, not the day
+        # after.  Subtract one day from the month-based calculation to make the
+        # range inclusive.
+        loan_end = self._add_months(start_date, loan_term) - timedelta(days=1)
         current = start_date
 
-        while current < loan_end:
+        while current <= loan_end:
             days_in_month = calendar.monthrange(current.year, current.month)[1]
-            period_end = current + timedelta(days=days_in_month)
+            period_end = current + timedelta(days=days_in_month - 1)
             if period_end > loan_end:
                 period_end = loan_end
-            ranges.append({'start': current, 'end': period_end, 'days_held': (period_end - current).days})
-            current = period_end
+            ranges.append({'start': current, 'end': period_end, 'days_held': (period_end - current).days + 1})
+            current = period_end + timedelta(days=1)
 
         if loan_term_days is not None and ranges:
             total_days = sum(r['days_held'] for r in ranges)
@@ -3774,8 +3777,8 @@ class LoanCalculator:
                 last_end = ranges[-1]['end']
                 while diff > 0:
                     days = min(diff, 31)
-                    new_start = last_end
-                    new_end = new_start + timedelta(days=days)
+                    new_start = last_end + timedelta(days=1)
+                    new_end = new_start + timedelta(days=days - 1)
                     ranges.append({'start': new_start, 'end': new_end, 'days_held': days})
                     last_end = new_end
                     diff -= days
@@ -3844,8 +3847,9 @@ class LoanCalculator:
           the exact day count rather than using calendar month arithmetic.
 
         Each entry receives ``start_period``, ``end_period`` and ``days_held``
-        fields. ``end_period`` is the first day **after** the period to mirror
-        the behaviour of the legacy implementation.
+        fields. ``end_period`` now reflects the final day **within** the period
+        rather than the first day following it, aligning the calculation with
+        typical inclusive date ranges.
         """
 
         # Fast path – use supplied period ranges
@@ -3866,9 +3870,14 @@ class LoanCalculator:
 
         loan_end = self._normalize_date(start_date)
         if loan_term_days is not None:
-            loan_end = loan_end + timedelta(days=loan_term_days)
+            # ``loan_term_days`` represents the total number of days the loan is
+            # outstanding including the start day.  Subtract one so ``loan_end``
+            # is the actual final day rather than the day after.
+            loan_end = loan_end + timedelta(days=loan_term_days - 1)
         else:
-            loan_end = self._add_months(loan_end, loan_term)
+            # When calculating from whole months, derive the inclusive final day
+            # of the loan term upfront.
+            loan_end = self._add_months(loan_end, loan_term) - timedelta(days=1)
         current = self._normalize_date(start_date)
 
         periods = len(schedule)
@@ -3879,7 +3888,10 @@ class LoanCalculator:
         extra_months = loan_term % periods
 
         for i, entry in enumerate(schedule):
-            if current >= loan_end:
+            # ``current`` points to the first day of the period.  When it moves
+            # beyond ``loan_end`` there are no more active periods so any
+            # remaining schedule entries represent zero days held.
+            if current > loan_end:
                 entry['start_period'] = loan_end.strftime('%d/%m/%Y')
                 entry['end_period'] = loan_end.strftime('%d/%m/%Y')
                 entry['days_held'] = 0
@@ -3894,10 +3906,13 @@ class LoanCalculator:
                 total_days += days_in_month
                 current += timedelta(days=days_in_month)
 
-            period_end = min(current, loan_end)
+            # ``current`` is now the first day after the calculated period.  For
+            # inclusive ranges we subtract one day to obtain the final day within
+            # the period and clamp to ``loan_end``.
+            period_end = min(current - timedelta(days=1), loan_end)
             entry['start_period'] = period_start.strftime('%d/%m/%Y')
             entry['end_period'] = period_end.strftime('%d/%m/%Y')
-            entry['days_held'] = (period_end - period_start).days
+            entry['days_held'] = (period_end - period_start).days + 1
 
 
     def _validate_schedule_vs_summary(
