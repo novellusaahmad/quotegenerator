@@ -720,29 +720,6 @@ class LoanCalculator:
             calculation['endLTV'] = updated_end_ltv
             calculation['endLtv'] = updated_end_ltv
 
-            # Override periodic interest using actual days held for the first period
-            detailed_schedule = calculation.get('detailed_payment_schedule') or payment_schedule
-            if detailed_schedule and repayment_option == 'service_only':
-                first_entry = detailed_schedule[0]
-                interest_str = (
-                    first_entry.get('interest_accrued')
-                    or first_entry.get('interest_amount')
-                    or first_entry.get('interest_paid')
-                    or first_entry.get('interest')
-                    or '0'
-                )
-                try:
-                    interest_val = Decimal(str(interest_str).replace('£', '').replace('€', '').replace(',', ''))
-                    interest_val = self._two_dp(interest_val)
-                    calculation['periodicInterest'] = float(interest_val)
-                    if payment_frequency == 'quarterly':
-                        calculation['quarterlyPayment'] = float(interest_val)
-                        calculation['monthlyPayment'] = 0
-                    else:
-                        calculation['monthlyPayment'] = float(interest_val)
-                        calculation['quarterlyPayment'] = 0
-                except Exception:
-                    pass
         except Exception as e:
             import logging
             logging.error(f"Error generating bridge loan payment schedule: {str(e)}")
