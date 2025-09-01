@@ -71,6 +71,7 @@ def recalculate_summary(schedule: List[Dict[str, Any]]) -> Dict[str, float]:
     total_retained = Decimal('0')
     total_refund = Decimal('0')
     total_accrued = Decimal('0')
+    total_days = 0
 
     for entry in schedule:
         total_interest_amt += _to_decimal(entry.get('interest_amount', 0), currency_symbol)
@@ -78,6 +79,10 @@ def recalculate_summary(schedule: List[Dict[str, Any]]) -> Dict[str, float]:
         total_retained += _to_decimal(entry.get('interest_retained', 0), currency_symbol)
         total_refund += _to_decimal(entry.get('interest_refund', 0), currency_symbol)
         total_accrued += _to_decimal(entry.get('interest_accrued', 0), currency_symbol)
+        try:
+            total_days += int(entry.get('days_held', 0))
+        except Exception:
+            pass
 
     rounding = Decimal('0.01')
 
@@ -102,6 +107,8 @@ def recalculate_summary(schedule: List[Dict[str, Any]]) -> Dict[str, float]:
         summary['interestRefund'] = float(total_refund.quantize(rounding, rounding=ROUND_HALF_UP))
     if total_accrued:
         summary['total_interest_accrued'] = float(total_accrued.quantize(rounding, rounding=ROUND_HALF_UP))
+    if total_days:
+        summary['total_days_held'] = total_days
 
     return summary
 

@@ -1014,6 +1014,7 @@ class LoanCalculator {
 
         if (isServicedOnly) {
             let totalInterest = 0;
+            let totalDays = 0;
             results.detailed_payment_schedule.forEach((row, index) => {
                 const tr = document.createElement('tr');
                 tr.style.border = '1px solid #000';
@@ -1030,6 +1031,7 @@ class LoanCalculator {
 
                 const interestNumeric = parseFloat(fixedRow.interest_amount.replace(/[^0-9.-]/g, '')) || 0;
                 totalInterest += interestNumeric;
+                totalDays += parseFloat(fixedRow.days_held) || 0;
 
                 tr.innerHTML = `
                     <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.start_period}</td>
@@ -1047,7 +1049,10 @@ class LoanCalculator {
             totalRow.style.border = '1px solid #000';
             totalRow.style.background = '#f8f9fa';
             totalRow.innerHTML = `
-                <td colspan="5" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">Total</td>
+                <td colspan="2" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">Total</td>
+                <td class="py-1 px-2 text-center fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${totalDays}</td>
+                <td class="py-1 px-2" style="border-right: 1px solid #000;"></td>
+                <td class="py-1 px-2" style="border-right: 1px solid #000;"></td>
                 <td class="py-1 px-2 text-end fw-bold" style="color: #000; font-size: 0.875rem;">${currentSymbol}${totalInterest.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
             `;
             scheduleBody.appendChild(totalRow);
@@ -1061,6 +1066,7 @@ class LoanCalculator {
             let totalAccrued = 0;
             let totalRetained = 0;
             let totalRefund = 0;
+            let totalDays = 0;
 
             results.detailed_payment_schedule.forEach((row, index) => {
                 const tr = document.createElement('tr');
@@ -1096,6 +1102,7 @@ class LoanCalculator {
                 totalAccrued += accruedNumeric;
                 totalRetained += retainedNumeric;
                 totalRefund += refundNumeric;
+                totalDays += parseFloat(fixedRow.days_held) || 0;
 
                 tr.innerHTML = `
                     <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${index + 1}</td>
@@ -1119,7 +1126,9 @@ class LoanCalculator {
             totalRow.style.border = '1px solid #000';
             totalRow.style.background = '#f8f9fa';
             totalRow.innerHTML = `
-                <td colspan="7" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">Total</td>
+                <td colspan="3" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">Total</td>
+                <td class="py-1 px-2 text-center fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">${totalDays}</td>
+                <td colspan="3" class="py-1 px-2" style="border-right: 1px solid #000;"></td>
                 <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalScheduled.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                 <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalAccrued.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
                 <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalRetained.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
@@ -2123,6 +2132,10 @@ class LoanCalculator {
             return symbol + num.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         };
 
+        let totalDays = 0;
+        let totalTranche = 0;
+        let totalInterest = 0;
+
         schedule.forEach((row, index) => {
             const tr = document.createElement('tr');
             tr.style.border = '1px solid #000';
@@ -2130,6 +2143,10 @@ class LoanCalculator {
 
             const closingVal = typeof row.closing_balance === 'string' ? parseFloat(row.closing_balance.replace(/[^0-9.-]/g, '')) : row.closing_balance;
             const runningLTV = propertyValue > 0 && !isNaN(closingVal) ? `${((closingVal / propertyValue) * 100).toFixed(2)}%` : '';
+
+            totalDays += parseFloat(row.days_held) || 0;
+            totalTranche += parseFloat(String(row.tranche_release).replace(/[^0-9.-]/g, '')) || 0;
+            totalInterest += parseFloat(String(row.interest).replace(/[^0-9.-]/g, '')) || 0;
 
             tr.innerHTML = `
                 <td class="py-1 px-2 text-center" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${row.period}</td>
@@ -2147,6 +2164,20 @@ class LoanCalculator {
             `;
             body.appendChild(tr);
         });
+
+        const totalRow = document.createElement('tr');
+        totalRow.style.border = '1px solid #000';
+        totalRow.style.background = '#f8f9fa';
+        totalRow.innerHTML = `
+            <td colspan="3" class="py-1 px-2 text-end fw-bold" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">Total</td>
+            <td class="py-1 px-2 text-center fw-bold" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${totalDays}</td>
+            <td class="py-1 px-2" style="border-right:1px solid #000;"></td>
+            <td class="py-1 px-2" style="border-right:1px solid #000;"></td>
+            <td class="py-1 px-2 text-end fw-bold" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(totalTranche)}</td>
+            <td class="py-1 px-2 text-end fw-bold" style="border-right:1px solid #000; color:#000; font-size:0.875rem;">${formatMoney(totalInterest)}</td>
+            <td colspan="3" class="py-1 px-2"></td>
+        `;
+        body.appendChild(totalRow);
     }
 
     displayTrancheBreakdown(trancheData, currency) {
