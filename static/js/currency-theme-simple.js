@@ -3,8 +3,6 @@
  * Minimal, fast currency switching for button colors and logos
  */
 
-// Default currency will be applied once the DOM is ready
-
 class SimpleCurrencyTheme {
     constructor() {
         this.currentCurrency = 'GBP';
@@ -122,7 +120,5 @@ class SimpleCurrencyTheme {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    document.documentElement.setAttribute('data-currency', 'GBP');
-    document.body.setAttribute('data-currency', 'GBP');
     window.currencyTheme = new SimpleCurrencyTheme();
 });

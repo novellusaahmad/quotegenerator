@@ -539,7 +539,7 @@ class LoanCalculator:
                 calculation['totalInterest'] = float(total_interest_from_schedule)
                 calculation['total_interest'] = float(total_interest_from_schedule)
                 calculation['interestOnlyTotal'] = float(total_interest_from_schedule)
-        elif repayment_option == 'service_and_capital':
+        elif repayment_option in ['service_and_capital', 'sc_only']:
             # Service + Capital variants - use the derived gross amount and, for net inputs,
             # run the gross-to-net calculation with the original net advance.
             net_for_calculation = net_amount if amount_input_type == 'net' else None
@@ -585,6 +585,10 @@ class LoanCalculator:
                 calculation['interestOnlyTotal'] = float(total_interest_only_from_schedule)
                 if total_interest_only_from_schedule > 0:
                     calculation['savingsPercentage'] = float((total_savings_from_schedule / total_interest_only_from_schedule) * 100)
+            if repayment_option == 'sc_only':
+                calculation['interestSavings'] = 0.0
+                calculation['interestOnlyTotal'] = 0.0
+                calculation['savingsPercentage'] = 0.0
             # Preserve user provided net amount for net-to-gross conversions
             if amount_input_type == 'net':
                 calculation['netAdvance'] = self._two_dp(net_amount)
@@ -726,7 +730,7 @@ class LoanCalculator:
             else:
                 calculation['monthlyPayment'] = float(periodic_interest)
                 calculation['quarterlyPayment'] = 0
-        elif repayment_option == 'service_and_capital':
+        elif repayment_option in ['service_and_capital', 'sc_only']:
             if payment_frequency == 'quarterly':
                 calculation['quarterlyPayment'] = float(periodic_interest + (capital_repayment * 3))
                 calculation['monthlyPayment'] = 0
@@ -910,7 +914,7 @@ class LoanCalculator:
                     gross_amount, annual_rate, loan_term_days, use_360_days
                 )
                 calculation['interestOnlyTotal'] = self._two_dp(interest_only_total)
-        elif repayment_option == 'service_and_capital':
+        elif repayment_option in ['service_and_capital', 'sc_only']:
             capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
             net_for_calculation = net_amount if amount_input_type == 'net' else None
             calculation = self._calculate_bridge_service_capital(
@@ -946,6 +950,13 @@ class LoanCalculator:
                     calculation['savingsPercentage'] = float(
                         (interest_savings / interest_only_total) * 100
                     )
+            if repayment_option == 'sc_only':
+                calculation['interestSavings'] = 0.0
+                calculation['interestOnlyTotal'] = 0.0
+                calculation['savingsPercentage'] = 0.0
+        else:
+            logging.warning(f"Term loan unrecognized repayment_option: '{repayment_option}' - using empty calculation")
+            calculation = self._get_empty_calculation(params)
         
         # Add common calculations
 
@@ -1010,7 +1021,7 @@ class LoanCalculator:
             else:
                 calculation['monthlyPayment'] = float(periodic_interest)
                 calculation['quarterlyPayment'] = 0
-        elif repayment_option == 'service_and_capital':
+        elif repayment_option in ['service_and_capital', 'sc_only']:
             if payment_frequency == 'quarterly':
                 calculation['quarterlyPayment'] = float(periodic_interest + (Decimal(str(params.get('capital_repayment', 0))) * 3))
                 calculation['monthlyPayment'] = 0
@@ -2872,7 +2883,7 @@ class LoanCalculator:
                 logging.info(f"Gross = (£{net_amount} + £{total_legal_fees}) / (1 - {arrangement_fee_decimal:.6f} - {interest_factor:.6f} - {title_insurance_decimal:.6f})")
                 logging.info(f"Gross = £{net_amount + total_legal_fees} / {denominator:.6f} = £{gross_amount:.2f}")
                 
-            elif repayment_option in ('service_only', 'service_and_capital'):
+            elif repayment_option in ('service_only', 'service_and_capital', 'sc_only'):
                 # Bridge Serviced or Service + Capital: adjust formula based on payment timing
                 if payment_timing == 'advance':
                     if payment_frequency == 'quarterly':
@@ -3035,6 +3046,7 @@ class LoanCalculator:
                 'service_and_capital',
                 'capital_payment_only',
                 'flexible_payment',
+                'sc_only',
             ):
                 repayment_option = 'service_only'
 
@@ -4064,7 +4076,7 @@ class LoanCalculator:
                     'note': note if note else None
                 })
         
-        elif repayment_option == 'service_and_capital':
+        elif repayment_option in ['service_and_capital', 'sc_only']:
             # Service + Capital payments with declining balance and timing/frequency support
             from datetime import datetime, timedelta
 
@@ -4375,7 +4387,7 @@ class LoanCalculator:
 
                 remaining_balance = closing_balance
         
-        elif repayment_option == 'service_and_capital':
+        elif repayment_option in ('service_and_capital', 'sc_only'):
             # Service + Capital payments (with optional savings comparison)
             capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
 
@@ -4442,13 +4454,21 @@ class LoanCalculator:
                 )
                 if interest_refund_disp < 0:
                     interest_refund_disp = Decimal('0.00')
-                interest_saving_disp = interest_refund_disp
+                if repayment_option == 'sc_only':
+                    interest_saving_disp = Decimal('0.00')
+                    interest_saving = Decimal('0')
+                else:
+                    interest_saving_disp = interest_refund_disp
 
                 # Default retained and refund amounts mirror gross-to-net savings
                 interest_retained_disp_val = interest_only_disp
                 interest_retained_raw_val = interest_only
-                interest_refund_disp_val = interest_refund_disp
-                interest_refund_raw_val = interest_saving
+                if repayment_option == 'sc_only':
+                    interest_refund_disp_val = Decimal('0.00')
+                    interest_refund_raw_val = Decimal('0')
+                else:
+                    interest_refund_disp_val = interest_refund_disp
+                    interest_refund_raw_val = interest_saving
 
                 scheduled_repayment = (interest_amount_disp + principal_payment).quantize(
                     Decimal('0.01'), rounding=ROUND_HALF_UP
@@ -4889,7 +4909,7 @@ class LoanCalculator:
                     total_interest = (total_retained - total_refund).quantize(
                         rounding, rounding=ROUND_HALF_UP
                     )
-                elif repayment_option == 'service_and_capital':
+                elif repayment_option in ('service_and_capital', 'sc_only'):
                     total_interest = (total_interest_amt + total_retained - total_refund).quantize(
                         rounding, rounding=ROUND_HALF_UP
                     )
@@ -4908,9 +4928,13 @@ class LoanCalculator:
             # Interest savings are aggregated separately and the interest-only
             # total is the combination of net interest plus the savings.
             total_savings = total_savings.quantize(rounding, rounding=ROUND_HALF_UP)
-            calculation['interestSavings'] = float(total_savings)
-            interest_only_total = (total_interest + total_savings).quantize(rounding, rounding=ROUND_HALF_UP)
-            calculation['interestOnlyTotal'] = float(interest_only_total)
+            if repayment_option == 'sc_only':
+                calculation['interestSavings'] = 0.0
+                calculation['interestOnlyTotal'] = 0.0
+            else:
+                calculation['interestSavings'] = float(total_savings)
+                interest_only_total = (total_interest + total_savings).quantize(rounding, rounding=ROUND_HALF_UP)
+                calculation['interestOnlyTotal'] = float(interest_only_total)
 
             if total_retained:
                 total_retained = total_retained.quantize(rounding, rounding=ROUND_HALF_UP)
@@ -5041,7 +5065,7 @@ class LoanCalculator:
                 )
                 principal_payment = remaining_balance if is_final_payment else Decimal('0')
                 total_payment = interest_paid + principal_payment
-            elif repayment_option == 'service_and_capital':
+            elif repayment_option in ['service_and_capital', 'sc_only']:
                 interest_paid = self.calculate_simple_interest_by_days(
                     remaining_balance, annual_rate, days_in_period, use_360_days
                 )

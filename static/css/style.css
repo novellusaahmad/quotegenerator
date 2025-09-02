@@ -39,7 +39,7 @@ body {
 
 /* Navigation - Novellus Theme */
 .navbar {
-    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%) !important;
+    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--dark-color) 100%) !important;
 }
 
 .navbar-brand {

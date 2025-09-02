@@ -463,8 +463,8 @@
     });
     refreshSummary();
 
-    document.getElementById('quickCalc').addEventListener('click', () => window.notifications.show('Run calculation here.'), 'info');
-    document.getElementById('calculate').addEventListener('click', () => window.notifications.show('Run full calculation & schedule.'), 'error');
+    document.getElementById('quickCalc').addEventListener('click', () => alert('Run calculation here.'));
+    document.getElementById('calculate').addEventListener('click', () => alert('Run full calculation & schedule.'));
 
     document.getElementById('autoGen').addEventListener('click', ()=>{
       const n = Math.max(1, Number(document.getElementById('numTranches').value||1));
@@ -479,7 +479,7 @@
         body.appendChild(tr);
       }
     });
-    document.getElementById('importCsv').addEventListener('click', ()=>window.notifications.show('Attach your CSV import logic.'), 'info');
-    document.getElementById('exportCsv').addEventListener('click', ()=>window.notifications.show('Attach your CSV export logic.'), 'info');
+    document.getElementById('importCsv').addEventListener('click', ()=>alert('Attach your CSV import logic.'));
+    document.getElementById('exportCsv').addEventListener('click', ()=>alert('Attach your CSV export logic.'));
   </script>
 {% endblock %}
