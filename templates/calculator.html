@@ -1606,18 +1606,17 @@ let isLoanSaved = false;
 async function loadPowerBIReports() {
     try {
         const response = await fetch('/api/powerbi/reports');
-        const data = await response.json();
-        if (response.ok && data.reports) {
-            powerBIReports = data.reports;
-        } else {
-            powerBIReports = {
-                'main': {
-                    name: 'Loan Summary Report',
-                    baseUrl: 'https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/3bcd8dd2-4773-4372-9a19-1174c108aee5?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21',
-                    icon: 'fas fa-chart-bar'
-                }
-            };
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
+        const data = await response.json();
+        powerBIReports = data.reports || {
+            'main': {
+                name: 'Loan Summary Report',
+                baseUrl: 'https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/3bcd8dd2-4773-4372-9a19-1174c108aee5?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21',
+                icon: 'fas fa-chart-bar'
+            }
+        };
     } catch (error) {
         console.error('Error loading Power BI reports:', error);
         powerBIReports = {
@@ -1733,21 +1732,22 @@ function updateReportsButton(loan) {
 
 // Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', async function() {
-    await loadPowerBIReports();
-    // Initialize edit mode
-    initializeEditMode();
-    isLoanSaved = !!(window.editMode && window.editMode.loanId);
-    if (isLoanSaved) {
-        updateReportsButton(getLoanForReport());
-    } else {
-        updateReportsButton(null);
-    }
-    
-    // Initialize save loan functionality
-    const saveLoanBtn = document.getElementById('saveLoanBtn');
-    
-    // Save loan button click handler
-    saveLoanBtn.addEventListener('click', async function() {
+    try {
+        await loadPowerBIReports();
+        // Initialize edit mode
+        initializeEditMode();
+        isLoanSaved = !!(window.editMode && window.editMode.loanId);
+        if (isLoanSaved) {
+            updateReportsButton(getLoanForReport());
+        } else {
+            updateReportsButton(null);
+        }
+
+        // Initialize save loan functionality
+        const saveLoanBtn = document.getElementById('saveLoanBtn');
+
+        // Save loan button click handler
+        saveLoanBtn.addEventListener('click', async function() {
         try {
             // Check if loan name is provided
             const loanName = document.getElementById('loanName').value.trim();
@@ -1873,6 +1873,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             saveLoanBtn.innerHTML = `<i class="fas fa-save me-2"></i>${btnText}`;
         }
     });
+    } catch (err) {
+        console.error('Initialization error:', err);
+    }
 });
 
 // Function to open scenario comparison with current form data
@@ -2060,21 +2063,23 @@ function showDatabaseInfo() {
     loadDatabaseInfo();
 }
 
-function loadDatabaseInfo() {
-    fetch('/api/database-info')
-        .then(response => response.json())
-        .then(data => {
-            displayDatabaseInfo(data);
-        })
-        .catch(error => {
-            console.error('Error loading database info:', error);
-            document.getElementById('databaseInfoContent').innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    Error loading database information: ${error.message}
-                </div>
-            `;
-        });
+async function loadDatabaseInfo() {
+    try {
+        const response = await fetch('/api/database-info');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        displayDatabaseInfo(data);
+    } catch (error) {
+        console.error('Error loading database info:', error);
+        document.getElementById('databaseInfoContent').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error loading database information: ${error.message}
+            </div>
+        `;
+    }
 }
 
 function displayDatabaseInfo(data) {
