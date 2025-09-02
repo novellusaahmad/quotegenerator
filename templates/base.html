@@ -98,6 +98,11 @@
                     <a class="btn btn-nav" href="#" onclick="window.location.reload(); return false;">
                         <i class="fas fa-sync-alt"></i>
                     </a>
+                    {% if request.endpoint == 'calculator_page' %}
+                    <a class="btn btn-nav" href="{{ url_for('loan_history') }}">
+                        <i class="fas fa-history"></i>
+                    </a>
+                    {% endif %}
                     <a class="btn btn-nav" href="{{ url_for('landing_page') }}">
                         <i class="fas fa-home"></i>
                     </a>

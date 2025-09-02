@@ -572,6 +572,7 @@ h4, h5, h6 {
     border: none;
     color: white;
     font-weight: 600;
+    padding: 5px 5px;
 }
 
 .navbar .btn-nav:hover {
