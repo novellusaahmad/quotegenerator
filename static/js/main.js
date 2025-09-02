@@ -384,6 +384,12 @@ Novellus.components = {
  * Event Handlers
  */
 document.addEventListener('DOMContentLoaded', function() {
+    // Add tooltips to toggle buttons
+    document.querySelectorAll('.btn-group label.btn').forEach(btn => {
+        btn.setAttribute('title', btn.textContent.trim());
+        btn.setAttribute('data-bs-toggle', 'tooltip');
+    });
+
     // Initialize Bootstrap components
     Novellus.components.initTooltips();
     Novellus.components.initPopovers();
