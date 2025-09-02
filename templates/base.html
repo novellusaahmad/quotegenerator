@@ -104,6 +104,10 @@
                     <a class="btn btn-nav" href="{{ url_for('loan_history') }}">
                         <i class="fas fa-history"></i>
                     </a>
+                    {% else %}
+                    <a class="btn btn-nav" href="{{ url_for('calculator_page') }}">
+                        <i class="fas fa-calculator"></i>
+                    </a>
                     {% endif %}
                     <a class="btn btn-nav" href="{{ url_for('landing_page') }}">
                         <i class="fas fa-home"></i>
