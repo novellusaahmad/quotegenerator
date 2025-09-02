@@ -78,12 +78,12 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadConfig() {
     const resp = await fetch('/api/snowflake/config');
     if (!resp.ok) return;
-    const data = await resp.json();
+    const { config } = await resp.json();
     const savedDiv = document.getElementById('savedConfig');
     const detailsList = document.getElementById('savedDetails');
     const openBtn = document.getElementById('openModalBtn');
     const noConfig = document.getElementById('noConfig');
-    if (!data) {
+    if (!config) {
         savedDiv.style.display = 'none';
         noConfig.style.display = 'block';
         openBtn.style.display = 'inline-block';
@@ -92,18 +92,18 @@ async function loadConfig() {
     openBtn.style.display = 'none';
     noConfig.style.display = 'none';
     const form = document.getElementById('snowflakeForm');
-    form.account.value = data.account || '';
-    form.user.value = data.user || '';
-    form.warehouse.value = data.warehouse || '';
-    form.database.value = data.database || '';
-    form.schema.value = data.schema || '';
-    form.token.value = data.token || '';
+    form.account.value = config.account || '';
+    form.user.value = config.user || '';
+    form.warehouse.value = config.warehouse || '';
+    form.database.value = config.database || '';
+    form.schema.value = config.schema || '';
+    form.token.value = config.token || '';
     detailsList.innerHTML = `
-        <li class="list-group-item"><strong>Account:</strong> ${data.account || ''}</li>
-        <li class="list-group-item"><strong>User:</strong> ${data.user || ''}</li>
-        <li class="list-group-item"><strong>Warehouse:</strong> ${data.warehouse || ''}</li>
-        <li class="list-group-item"><strong>Database:</strong> ${data.database || ''}</li>
-        <li class="list-group-item"><strong>Schema:</strong> ${data.schema || ''}</li>
+        <li class="list-group-item"><strong>Account:</strong> ${config.account || ''}</li>
+        <li class="list-group-item"><strong>User:</strong> ${config.user || ''}</li>
+        <li class="list-group-item"><strong>Warehouse:</strong> ${config.warehouse || ''}</li>
+        <li class="list-group-item"><strong>Database:</strong> ${config.database || ''}</li>
+        <li class="list-group-item"><strong>Schema:</strong> ${config.schema || ''}</li>
     `;
     savedDiv.style.display = 'block';
 }
