@@ -990,5 +990,16 @@ h4, h5, h6 {
 .btn-group.interest-toggle > .btn {
     flex: 0 0 calc(100% / 3);
     max-width: calc(100% / 3);
+    white-space: normal;
+}
 
+/* Interest calculation options (simple/compound) shown as toggles */
+.btn-group.interest-type-toggle {
+    flex-wrap: wrap;
+}
+
+.btn-group.interest-type-toggle > .btn {
+    flex: 0 0 calc(100% / 2);
+    max-width: calc(100% / 2);
+    white-space: normal;
 }
