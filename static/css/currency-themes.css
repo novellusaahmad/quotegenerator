@@ -576,11 +576,11 @@ a:hover {
 }
 
 .nav-link {
-    color: var(--primary-color) !important;
+    color: var(--primary-color);
 }
 
 .nav-link:hover {
-    color: var(--primary-dark) !important;
+    color: var(--primary-dark);
 }
 
 /* Loan History Table */
