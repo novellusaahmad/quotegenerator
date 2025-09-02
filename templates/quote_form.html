@@ -392,15 +392,15 @@ function validateStep(step) {
         const interestRate = parseFloat(document.getElementById('interest_rate').value) || 0;
         const ltv = (grossAmount / propertyValue) * 100;
         if (ltv > 95) {
-            alert('LTV ratio cannot exceed 95%. Please adjust the gross amount.');
+            window.notifications.show('LTV ratio cannot exceed 95%. Please adjust the gross amount.', 'error');
             isValid = false;
         }
         if (grossAmount <= 0) {
-            alert('Gross amount must be greater than 0.');
+            window.notifications.show('Gross amount must be greater than 0.', 'error');
             isValid = false;
         }
         if (interestRate <= 0) {
-            alert('Interest rate must be greater than 0.');
+            window.notifications.show('Interest rate must be greater than 0.', 'error');
             isValid = false;
         }
     }

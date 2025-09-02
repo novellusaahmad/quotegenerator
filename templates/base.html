@@ -33,6 +33,8 @@
     <link href="{{ url_for('static', filename='css/chart-styles.css') }}" rel="stylesheet">
     <!-- Layout hotfix -->
     <link href="{{ url_for('static', filename='css/layout-hotfix.css') }}" rel="stylesheet">
+    <!-- Notifications -->
+    <link href="{{ url_for('static', filename='css/notifications.css') }}" rel="stylesheet">
     
     {% block head %}{% endblock %}
 </head>
@@ -140,12 +142,14 @@
     <script src="{{ url_for('static', filename='js/chart-font-override.js') }}"></script>
     <!-- Chart Enhancements for fullscreen data labels -->
     <script src="{{ url_for('static', filename='js/chart-enhancements.js') }}"></script>
+    <!-- Notifications -->
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
     
     <!-- Rollback functionality -->
     <script>
     // Rollback confirmation function
     function confirmRollback() {
-        if (window.notifications) {
+        
             // Create a custom confirmation notification
             const confirmMessage = `
                 <div style="margin-top: 8px;">
@@ -158,11 +162,6 @@
                 'warning',
                 15000
             );
-        } else {
-            if (confirm('Are you sure you want to rollback? This will undo recent changes.')) {
-                performRollback();
-            }
-        }
     }
     
     function performRollback() {
@@ -171,11 +170,9 @@
         notifications.forEach(n => n.remove());
         
         window.history.back();
-        if (window.notifications) {
-            setTimeout(() => {
-                window.notifications.info('Navigated back to previous page');
-            }, 500);
-        }
+        setTimeout(() => {
+            window.notifications.info('Navigated back to previous page');
+        }, 500);
     }
     </script>
     

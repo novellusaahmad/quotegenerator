@@ -403,7 +403,7 @@ function markAsPaid(paymentId) {
 function makePayment(paymentId) {
     // Implementation would redirect to payment gateway
     console.log('Making payment:', paymentId);
-    alert('Payment functionality would redirect to secure payment gateway');
+    window.notifications.show('Payment functionality would redirect to secure payment gateway', 'info');
 }
 
 document.getElementById('confirmMarkPaid').addEventListener('click', function() {

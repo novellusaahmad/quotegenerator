@@ -380,7 +380,7 @@ function validateStep(step) {
         if (propertyValue > 0) {
             const ltv = (loanAmount / propertyValue) * 100;
             if (ltv > 95) {
-                alert('LTV ratio cannot exceed 95%. Please adjust the loan amount or property value.');
+                window.notifications.show('LTV ratio cannot exceed 95%. Please adjust the loan amount or property value.', 'error');
                 isValid = false;
             }
         }

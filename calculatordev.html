@@ -1385,10 +1385,6 @@ function populateFormFromParams(params) {
     populateTrancheData(params);
 }
 
-
-
-
-
 // Populate tranche data for development loans
 function populateTrancheData(params) {
     // Check if this is a development loan
@@ -1472,7 +1468,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check if loan name is provided
             const loanName = document.getElementById('loanName').value.trim();
             if (!loanName) {
-                alert('Please enter a loan name before saving.');
+                window.notifications.show('Please enter a loan name before saving.', 'error');
                 document.getElementById('loanName').focus();
                 return;
             }
@@ -1480,7 +1476,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check if results section is visible (calculation completed)
             const resultsSection = document.getElementById('resultsSection');
             if (!resultsSection || resultsSection.style.display === 'none') {
-                alert('Please calculate the loan first before saving.');
+                window.notifications.show('Please calculate the loan first before saving.', 'info');
                 return;
             }
             
@@ -1546,8 +1542,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     `;
                     
-                    if (window.notifications) {
-                        window.notifications.show(notificationMessage, 'warning', 30000);
+                                            window.notifications.show(notificationMessage, 'warning', 30000);
                     } else {
                         // Fallback to prompt if notifications not available
                         const newName = prompt('A loan with this name already exists.\n\nPlease enter a different name:', loanName + '_copy');
@@ -1565,21 +1560,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             
             // Show success notification
-            if (window.notifications) {
+            
                 window.notifications.show(result.message, 'success');
             } else {
-                alert(`Success! ${result.message}`);
-            }
+                window.notifications.show(`Success! ${result.message}`, 'success');
+            
             
         } catch (error) {
             console.error('Save loan error:', error);
             
             // Show error notification
-            if (window.notifications) {
+            
                 window.notifications.show('Failed to save loan: ' + error.message, 'error');
             } else {
-                alert('Failed to save loan: ' + error.message);
-            }
+                window.notifications.show('Failed to save loan: ' + error.message, 'error');
+            
         } finally {
             // Re-enable button
             saveLoanBtn.disabled = false;
@@ -1622,7 +1617,6 @@ function openScenarioComparison() {
         // Fallback: open scenario comparison with default parameters
         window.open('/scenario-comparison', '_blank');
     }
-}
 
 // Helper function for retrying loan save with new name
 function retryLoanSave() {
@@ -1642,15 +1636,12 @@ function retryLoanSave() {
             // Trigger save again
             document.getElementById('saveLoanBtn').click();
         } else {
-            if (window.notifications) {
-                window.notifications.show('Please enter a valid loan name', 'warning');
+                            window.notifications.show('Please enter a valid loan name', 'warning');
             }
         }
     }
-}
 
 // Save button is enabled automatically by calculator.js after successful calculation
-
 
 </script>
 <style>

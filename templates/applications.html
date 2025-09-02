@@ -317,7 +317,7 @@ function viewApplication(id) {
         })
         .catch(error => {
             console.error('Error loading application:', error);
-            alert('Error loading application details');
+            window.notifications.show('Error loading application details', 'error');
         });
 }
 
@@ -343,12 +343,12 @@ function updateStatus(id, status) {
             if (data.success) {
                 location.reload();
             } else {
-                alert('Error updating status');
+                window.notifications.show('Error updating status', 'error');
             }
         })
         .catch(error => {
             console.error('Error updating status:', error);
-            alert('Error updating status');
+            window.notifications.show('Error updating status', 'error');
         });
     }
 }

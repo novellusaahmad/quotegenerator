@@ -401,12 +401,12 @@ document.getElementById('confirmDelete').addEventListener('click', function() {
             if (data.success) {
                 location.reload();
             } else {
-                alert('Error deleting document: ' + (data.error || 'Unknown error'));
+                window.notifications.show('Error deleting document: ' + (data.error || 'Unknown error'), 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error deleting document. Please try again.');
+            window.notifications.show('Error deleting document. Please try again.', 'error');
         });
         
         // Hide modal
@@ -421,7 +421,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
     
     if (file && file.size > 16 * 1024 * 1024) {
         e.preventDefault();
-        alert('File size exceeds the 16MB limit. Please choose a smaller file.');
+        window.notifications.show('File size exceeds the 16MB limit. Please choose a smaller file.', 'error');
         return;
     }
     
@@ -435,7 +435,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
         const appId = document.getElementById('application_select').value;
         if (!appId) {
             e.preventDefault();
-            alert('Please select an application first.');
+            window.notifications.show('Please select an application first.', 'error');
             return;
         }
         this.action = `/documents/upload/${appId}`;

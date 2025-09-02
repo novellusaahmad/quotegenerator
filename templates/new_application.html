@@ -253,7 +253,7 @@ document.getElementById('applicationForm').addEventListener('submit', function(e
     
     if (loanAmount > propertyValue) {
         e.preventDefault();
-        alert('Loan amount cannot exceed property value');
+        window.notifications.show('Loan amount cannot exceed property value', 'error');
         return false;
     }
     
