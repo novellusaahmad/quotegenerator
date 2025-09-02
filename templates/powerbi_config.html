@@ -39,19 +39,15 @@
     <div class="row justify-content-center">
         <div class="col-xl-10 col-lg-11">
             <!-- Page Header -->
-            <div class="page-title-bar d-flex justify-content-between">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-chart-bar title-icon"></i>
-                    <div>
-                        <h4 class="mb-0">Power BI Configuration & Scheduler</h4>
-                        <small class="text-white-50">Dataset refresh, scheduling, and report management</small>
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h2><i class="fas fa-chart-bar me-2"></i>Power BI Configuration & Scheduler</h2>
+                    <small class="text-muted">Dataset refresh, scheduling, and report management</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div id="schedulerStatusBadge" class="badge bg-light text-dark">
+                        <i class="fas fa-clock me-1"></i>Scheduler Inactive
                     </div>
-                </div>
-                <div id="schedulerStatusBadge" class="badge bg-light text-dark">
-                    <i class="fas fa-clock me-1"></i>Scheduler Inactive
-                </div>
-            </div>
-                <div class="d-flex gap-2 mb-3">
                     <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addReportModal">
                         <i class="fas fa-plus me-1"></i>Add Report
                     </button>
