@@ -220,6 +220,10 @@ else
     pip install "weasyprint>=65.1" || print_warning "WeasyPrint installation failed, but system will work without it"
 fi
 
+# Install OpenTelemetry for optional tracing
+print_status "Installing OpenTelemetry dependencies..."
+pip install "opentelemetry-api>=1.25.0" "opentelemetry-sdk>=1.25.0"
+
 # Install Snowflake connector for Snowflake testing feature
 print_status "Installing Snowflake connector..."
 pip install snowflake-connector-python
