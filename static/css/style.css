@@ -68,6 +68,13 @@ body {
     color: var(--primary-color) !important;
 }
 
+/* Navbar heading */
+.navbar-title .navbar-text {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
 /* Cards - Updated for Novellus Theme (moved to novellus-theme.css) */
 
 /* Buttons - Novellus Theme */

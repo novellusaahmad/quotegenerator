@@ -2,6 +2,8 @@
 
 {% block title %}Loan Calculator - Novellus{% endblock %}
 
+{% block nav_heading %}<span class="navbar-text"><i class="fas fa-calculator me-2"></i>Loan Calculator</span>{% endblock %}
+
 {% block head %}
 <link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
 <link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet"/>
@@ -452,9 +454,6 @@
 {% endblock %}
 
 {% block content %}
-<div class="text-center mb-3">
-    <h2><i class="fas fa-calculator me-2"></i>Loan Calculator</h2>
-</div>
 <div class="row calculator-layout">
 <!-- Calculator Form -->
 <div class="col-lg-4 user-input-col">
