@@ -2079,6 +2079,7 @@ class LoanCalculator:
     def _calculate_bridge_interest_only(self, gross_amount: Decimal, monthly_rate: Decimal,
                                       loan_term: int, fees: Dict, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False, payment_frequency: str = 'monthly') -> Dict:
         """Calculate bridge loan with interest only payments"""
+        import logging
 
         # Convert monthly rate to annual and derive periodic interest up front
         annual_rate = monthly_rate * Decimal('12')  # Annual rate as percentage
@@ -2090,7 +2091,6 @@ class LoanCalculator:
         if loan_term_days is not None:
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
             term_years = Decimal(loan_term_days) / days_per_year
-            import logging
             logging.info(
                 f"Bridge interest-only{' (net-to-gross)' if net_amount is not None else ''}: "
                 f"use_360_days={use_360_days} -> days_per_year={days_per_year}, "
@@ -2434,100 +2434,45 @@ class LoanCalculator:
             'netAdvance': self._two_dp(net_advance)
         }
     
-    def _calculate_term_interest_only(self, gross_amount: Decimal, annual_rate: Decimal,
-                                    loan_term: int, fees: Dict, loan_start_date: str, interest_type: str = 'simple', net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False) -> Dict:
-        """Calculate term loan with interest only payments using specified interest type"""
-        
-        if isinstance(loan_start_date, datetime):
-            start_date = loan_start_date
-        else:
-            start_date = datetime.strptime(loan_start_date, '%Y-%m-%d')
-        
-        # Determine term days for interest calculations
-        import logging
-        if loan_term_days is not None:
-            term_days = int(loan_term_days)
-        else:
-            if use_360_days:
-                term_days = loan_term * 30
-            else:
-                term_days = self._calculate_term_days(start_date, loan_term)
-        days_per_year = Decimal('360') if use_360_days else Decimal('365')
+    def _calculate_term_interest_only(
+        self,
+        gross_amount: Decimal,
+        annual_rate: Decimal,
+        loan_term: int,
+        fees: Dict,
+        loan_start_date: str,
+        interest_type: str = 'simple',
+        net_amount: Decimal = None,
+        loan_term_days: int = None,
+        use_360_days: bool = False,
+        payment_frequency: str = 'monthly'
+    ) -> Dict:
+        """Calculate term loan with interest-only payments by delegating to bridge logic."""
 
-        # Initialize variables to ensure they're always defined
-        monthly_payment = Decimal('0')
-        total_interest = Decimal('0')
+        # For 365-day calculations without explicit day count, derive actual days
+        if loan_term_days is None and not use_360_days:
+            start_date = (
+                loan_start_date
+                if isinstance(loan_start_date, datetime)
+                else datetime.strptime(loan_start_date, '%Y-%m-%d')
+            )
+            loan_term_days = self._calculate_term_days(start_date, loan_term)
 
-        if interest_type == 'simple':
-            # Simple interest based on explicit day count
-            interest_rate = (annual_rate / Decimal('100')) * (Decimal(term_days) / days_per_year)
+        # Convert annual rate to monthly to match bridge method signature
+        monthly_rate = annual_rate / Decimal('12')
 
-            if net_amount is not None:
-                total_interest = net_amount * interest_rate / (Decimal('1') - interest_rate)
-                monthly_payment = total_interest / Decimal(str(loan_term))
-                logging.info(
-                    f"Term loan (net-to-gross) using retained interest formula: net={net_amount:.2f}, total_interest={total_interest:.2f}"
-                )
-            else:
-                total_interest = self.calculate_simple_interest_by_days(
-                    gross_amount, annual_rate, term_days, use_360_days
-                )
-                monthly_payment = total_interest / Decimal(str(loan_term))
-                logging.info(
-                    f"Term loan (gross-to-net) simple interest: gross={gross_amount:.2f}, term_days={term_days}, use_360_days={use_360_days}, total_interest={total_interest:.2f}"
-                )
-        elif interest_type == 'compound_daily':
-            # Compound daily: A = P(1 + r/365)^(365*t) - P
-            daily_rate = annual_rate / Decimal('100') / Decimal('365')
-            days_total = Decimal(str(term_days))
-            compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
-            total_amount = gross_amount * compound_factor
-            total_interest = total_amount - gross_amount
-            monthly_payment = total_interest / Decimal(str(loan_term))
-            logging.info(f"Term loan compound daily: days={days_total}, total_interest={total_interest:.2f}")
-        elif interest_type == 'compound_monthly':
-            # Compound monthly: A = P(1 + r/12)^(12*t) - P
-            monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
-            compound_factor = (Decimal('1') + monthly_rate_decimal) ** loan_term
-            total_amount = gross_amount * compound_factor
-            total_interest = total_amount - gross_amount
-            monthly_payment = total_interest / Decimal(str(loan_term))
-            logging.info(f"Term loan compound monthly: total_interest={total_interest:.2f}")
-        elif interest_type == 'compound_quarterly':
-            # Compound quarterly: A = P(1 + r/4)^(4*t) - P
-            quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
-            quarters_total = Decimal(term_days) / Decimal('365') * Decimal('4')
-            compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
-            total_amount = gross_amount * compound_factor
-            total_interest = total_amount - gross_amount
-            monthly_payment = total_interest / Decimal(str(loan_term))
-            logging.info(f"Term loan compound quarterly: total_interest={total_interest:.2f}")
-        else:
-            # Default to simple interest
-            total_interest = gross_amount * (annual_rate / Decimal('100')) * (Decimal(term_days) / days_per_year)
-            monthly_payment = total_interest / Decimal(str(loan_term))
-            logging.info(f"Term loan default simple interest: total_interest={total_interest:.2f}")
-        
-        # For term loans with interest-only payments (non-retained), Net Advance = Gross Amount (same as bridge loans)
-        # BUT: If interest is paid in advance (most common scenario), deduct first period interest
-        net_advance = gross_amount
-        
-        # For service interest only, deduct first period interest from net amount when paid in advance
-        # This is the most common scenario per user requirements
-        first_period_interest = monthly_payment
-        net_advance_after_first_interest = net_advance - first_period_interest
-        
-        logging.info(f"Term loan interest-only: net_advance={net_advance:.2f} (same as gross, no fee deduction)")
-        logging.info(f"Term loan interest-only: first_period_interest={first_period_interest}, net_advance_after_advance_payment={net_advance_after_first_interest}")
-        
-        return {
-            'monthlyPayment': self._two_dp(monthly_payment),
-            'totalInterest': self._two_dp(total_interest),
-            'totalAmount': self._two_dp(gross_amount + total_interest),
-            'netAdvance': self._two_dp(net_advance_after_first_interest),  # Use net advance after first period interest deduction
-            'firstPeriodInterest': self._two_dp(first_period_interest),
-            'netAdvanceBeforeInterest': self._two_dp(net_advance)  # Keep original for reference
-        }
+        # Delegate calculation to bridge interest-only logic for consistent behaviour
+        return self._calculate_bridge_interest_only(
+            gross_amount,
+            monthly_rate,
+            loan_term,
+            fees,
+            interest_type,
+            net_amount,
+            loan_term_days,
+            use_360_days,
+            payment_frequency,
+        )
     
     def _calculate_term_retained_interest(self, gross_amount: Decimal, annual_rate: Decimal,
                                         loan_term: int, fees: Dict, loan_start_date: str, interest_type: str = 'simple', loan_term_days: int = None, use_360_days: bool = False) -> Dict:
@@ -2659,77 +2604,39 @@ class LoanCalculator:
             'savingsPercentage': float(savings_percentage)
         }
     
-    def _calculate_term_service_capital(self, gross_amount: Decimal, annual_rate: Decimal,
-                                      loan_term: int, capital_repayment: Decimal, fees: Dict, 
-                                      net_amount: Decimal = None, loan_term_days: int = None, use_360_days: bool = False) -> Dict:
-        """Calculate term loan with service + capital payments using user-specified capital amount"""
-        
-        # Calculate monthly interest + capital repayment with declining balance
-        remaining_balance = gross_amount
-        total_interest = Decimal('0')
-        
-        # Use date-sensitive calculation if loan_term_days provided
-        if loan_term_days is not None:
-            # Calculate effective monthly rate based on actual days with 360-day support
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(loan_term_days) / days_per_year
-            effective_annual_rate = annual_rate
-            effective_monthly_rate = effective_annual_rate / Decimal('12')
-            import logging
-            logging.info(f"Term service+capital using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}, effective_monthly_rate={effective_monthly_rate:.4f}%")
-        else:
-            # Apply 360-day rate adjustment if requested
-            if use_360_days:
-                effective_monthly_rate = annual_rate / Decimal('12') * Decimal('365') / Decimal('360')
-            else:
-                effective_monthly_rate = annual_rate / Decimal('12')
-            
-        for month in range(loan_term):
-            interest_payment = remaining_balance * (effective_monthly_rate / Decimal('100'))
-            total_interest += interest_payment
-            remaining_balance -= capital_repayment
-            
-            if remaining_balance <= 0:
-                remaining_balance = Decimal('0')
-                break
-        
-        # Calculate interest savings compared to pure interest-only payments
-        if loan_term_days is not None:
-            term_days = int(loan_term_days)
-        else:
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_days = int(round((Decimal(loan_term) / Decimal('12')) * days_per_year))
-        interest_only_total = self.calculate_simple_interest_by_days(
-            gross_amount, annual_rate, term_days, use_360_days
+    def _calculate_term_service_capital(
+        self,
+        gross_amount: Decimal,
+        annual_rate: Decimal,
+        loan_term: int,
+        capital_repayment: Decimal,
+        fees: Dict,
+        interest_type: str = 'simple',
+        net_amount: Decimal = None,
+        loan_term_days: int = None,
+        use_360_days: bool = False,
+        payment_frequency: str = 'monthly',
+        payment_timing: str = 'advance'
+    ) -> Dict:
+        """Calculate term loan with service + capital payments using bridge loan logic."""
+
+        # Convert annual rate to monthly to match bridge method signature
+        monthly_rate = annual_rate / Decimal('12')
+
+        # Delegate to bridge service+capital calculation for consistent behaviour
+        return self._calculate_bridge_service_capital(
+            gross_amount,
+            monthly_rate,
+            loan_term,
+            capital_repayment,
+            fees,
+            interest_type,
+            net_amount,
+            loan_term_days,
+            use_360_days,
+            payment_frequency,
+            payment_timing,
         )
-        interest_savings = interest_only_total - total_interest
-        savings_percentage = (interest_savings / interest_only_total) * Decimal('100') if interest_only_total > 0 else Decimal('0')
-        
-        import logging
-        if net_amount is not None:
-            logging.info(f"Term loan service+capital (net-to-gross) with declining balance: net={net_amount:.2f}, total_interest={total_interest:.2f}")
-        else:
-            logging.info(f"Term loan service+capital (gross-to-net) with declining balance: gross={gross_amount:.2f}, total_interest={total_interest:.2f}")
-        
-        logging.info(f"Interest comparison: Interest-only total={interest_only_total:.2f}, Service+capital total={total_interest:.2f}")
-        logging.info(f"Interest savings: £{interest_savings:.2f} ({savings_percentage:.1f}% reduction)")
-        
-        monthly_payment = capital_repayment + (gross_amount * effective_monthly_rate / Decimal('100'))
-        total_payment = total_interest + (gross_amount - remaining_balance)  # Interest + Principal paid
-        
-        # For term service+capital loans, Net Advance = Gross Amount (no fee deduction)
-        # Fees are handled separately, not deducted from net advance
-        return {
-            'netAdvance': self._two_dp(gross_amount),
-            'totalInterest': self._two_dp(total_interest),
-            'monthlyPayment': self._two_dp(capital_repayment + (gross_amount * effective_monthly_rate / Decimal('100'))),
-            'totalAmount': self._two_dp(total_payment),
-            'remainingBalance': self._two_dp(remaining_balance),
-            'interestRate': float(annual_rate),
-            'interestOnlyTotal': self._two_dp(interest_only_total),
-            'interestSavings': self._two_dp(interest_savings),
-            'savingsPercentage': float(savings_percentage)
-        }
     
     def _calculate_term_flexible_payment(self, gross_amount: Decimal, annual_rate: Decimal,
                                         loan_term: int, flexible_payment: Decimal, payment_frequency: str,
