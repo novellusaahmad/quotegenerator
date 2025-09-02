@@ -3,6 +3,10 @@
  * Minimal, fast currency switching for button colors and logos
  */
 
+// Ensure default currency is applied before styles load
+document.documentElement.setAttribute('data-currency', 'GBP');
+document.body.setAttribute('data-currency', 'GBP');
+
 class SimpleCurrencyTheme {
     constructor() {
         this.currentCurrency = 'GBP';
