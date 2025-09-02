@@ -95,7 +95,17 @@
                         </li>
                     {% endif %}
                 </ul>
-                
+                {% if current_user.is_authenticated %}
+                    <div class="d-flex ms-auto">
+                        <a href="{{ url_for('calculator_page') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-calculator me-1"></i>New Calculation
+                        </a>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </div>
+                {% endif %}
+
             </div>
         </div>
     </nav>
