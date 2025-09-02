@@ -91,9 +91,11 @@
                     <a class="btn btn-nav" href="{{ url_for('loan_history') }}">
                         <i class="fas fa-history me-1"></i>Loan History
                     </a>
+                    {% block nav_calculator %}
                     <a class="btn btn-nav" href="{{ url_for('calculator_page') }}">
                         <i class="fas fa-calculator me-1"></i>Calculator
                     </a>
+                    {% endblock %}
                     {% endif %}
                     <a class="btn btn-nav" href="#" onclick="window.location.reload(); return false;">
                         <i class="fas fa-sync-alt"></i>

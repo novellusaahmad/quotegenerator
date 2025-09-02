@@ -11,18 +11,18 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/currency-themes.css') }}">
 {% endblock %}
 
+{% block nav_calculator %}
+<a class="btn btn-nav" href="{{ url_for('calculator_page') }}">
+    <i class="fas fa-calculator"></i>
+</a>
+{% endblock %}
+
 {% block content %}
 <!-- Notification container for consistent notifications -->
 <div id="notification-container" style="position: fixed; top: 80px; right: 20px; z-index: 9999;"></div>
 <div class="container-fluid mt-4">
     <div class="row">
         <div class="col-12">
-            <div class="text-end mb-3">
-                <a href="{{ url_for('calculator_page') }}" class="btn btn-novellus-gold">
-                    <i class="fas fa-calculator me-2"></i>New Calculation
-                </a>
-            </div>
-
             <!-- Search and Filter Controls -->
             <div class="card mb-4">
                 <div class="card-body">
