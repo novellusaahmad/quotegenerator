@@ -981,7 +981,14 @@ h4, h5, h6 {
     animation: pulse 2s infinite;
 }
 
-/* Split Interest Calculation Type toggle into two lines when over three options */
-.interest-toggle .btn {
-    flex: 1 0 33%;
+
+/* Ensure Interest Calculation Type toggle shows three options per row */
+.btn-group.interest-toggle {
+    flex-wrap: wrap;
+}
+
+.btn-group.interest-toggle > .btn {
+    flex: 0 0 calc(100% / 3);
+    max-width: calc(100% / 3);
+
 }
