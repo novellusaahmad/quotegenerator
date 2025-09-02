@@ -459,12 +459,19 @@
 </div>
 <!-- Loan Type Selection -->
 <div class="">
-<label class="form-label" for="loanType">Loan Type</label>
-<select class="form-select" id="loanType" name="loan_type" required="">
-<option value="bridge">Bridge Loan</option>
-<option value="term">Term Loan</option>
-<!-- <option value="development">Development Loan</option>-->
-<option value="development2">Development Loan</option>
+<label class="form-label">Loan Type</label>
+<div class="btn-group w-100" role="group">
+    <input class="btn-check" id="loanTypeBridge" type="radio" name="loan_type_radio" value="bridge" checked>
+    <label class="btn btn-outline-secondary btn-sm" for="loanTypeBridge">Bridge Loan</label>
+    <input class="btn-check" id="loanTypeTerm" type="radio" name="loan_type_radio" value="term">
+    <label class="btn btn-outline-secondary btn-sm" for="loanTypeTerm">Term Loan</label>
+    <input class="btn-check" id="loanTypeDevelopment" type="radio" name="loan_type_radio" value="development2">
+    <label class="btn btn-outline-secondary btn-sm" for="loanTypeDevelopment">Development Loan</label>
+</div>
+<select class="form-select d-none" id="loanType" name="loan_type" required="">
+    <option value="bridge" selected>Bridge Loan</option>
+    <option value="term">Term Loan</option>
+    <option value="development2">Development Loan</option>
 </select>
 </div>
 <!-- Repayment Option -->
@@ -481,10 +488,16 @@
 
 <!-- Currency -->
 <div class="">
-<label class="form-label" for="currency">Currency</label>
-<select class="form-select" id="currency" name="currency">
-<option value="GBP">GBP (£)</option>
-<option value="EUR">EUR (€)</option>
+<label class="form-label">Currency</label>
+<div class="btn-group w-100" role="group">
+    <input class="btn-check" id="currencyGBP" type="radio" name="currency_radio" value="GBP" checked>
+    <label class="btn btn-outline-secondary btn-sm" for="currencyGBP">GBP (£)</label>
+    <input class="btn-check" id="currencyEUR" type="radio" name="currency_radio" value="EUR">
+    <label class="btn btn-outline-secondary btn-sm" for="currencyEUR">EUR (€)</label>
+</div>
+<select class="form-select d-none" id="currency" name="currency">
+    <option value="GBP" selected>GBP (£)</option>
+    <option value="EUR">EUR (€)</option>
 </select>
 </div>
 <!-- Property Value -->
@@ -2230,6 +2243,31 @@ function refreshDatabaseInfo() {
 <script>
 // Initialize currency theme manager on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Sync toggle controls with hidden selects
+    function setupToggle(selectId, radioName) {
+        const select = document.getElementById(selectId);
+        const radios = document.querySelectorAll(`input[name="${radioName}"]`);
+        if (!select || radios.length === 0) return;
+        radios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.checked) {
+                    select.value = radio.value;
+                    select.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+        select.addEventListener('change', () => {
+            radios.forEach(radio => {
+                radio.checked = (radio.value === select.value);
+            });
+        });
+        radios.forEach(radio => {
+            radio.checked = (radio.value === select.value);
+        });
+    }
+    setupToggle('loanType', 'loan_type_radio');
+    setupToggle('currency', 'currency_radio');
+
     // Currency theme is auto-initialized in currency-theme-simple.js
     // Access via window.currencyTheme if needed
     
