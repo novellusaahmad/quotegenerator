@@ -360,26 +360,22 @@ class LoanHistoryManager {
     generateReportDropdownItems(loan) {
         const reports = this.getPowerBIReports();
         let items = [];
-        
+
         console.log('Generating dropdown for loan:', loan.loan_name);
         console.log('Available reports:', Object.keys(reports));
         console.log('Reports object:', reports);
-        
-        // Add report sections
+
+        // Add report links
         Object.keys(reports).forEach(reportKey => {
             const report = reports[reportKey];
             console.log(`Adding report: ${reportKey} - ${report.name}`);
-            items.push(`<li><h6 class="dropdown-header"><i class="${report.icon} me-2"></i>${report.name}</h6></li>`);
-            items.push(`<li><a class="dropdown-item ps-4" href="${this.generatePowerBIUrl(loan, 'standard', reportKey)}" target="_blank">Standard Format</a></li>`);
-            items.push(`<li><a class="dropdown-item ps-4" href="${this.generatePowerBIUrl(loan, 'double', reportKey)}" target="_blank">Double Encoded</a></li>`);
-            items.push(`<li><a class="dropdown-item ps-4" href="${this.generatePowerBIUrl(loan, 'powerbi', reportKey)}" target="_blank">Power BI Specific</a></li>`);
-            items.push(`<li><hr class="dropdown-divider"></li>`);
+            items.push(`<li><a class="dropdown-item" href="${this.generatePowerBIUrl(loan, 'standard', reportKey)}" target="_blank"><i class="${report.icon} me-2"></i>${report.name}</a></li>`);
         });
-        
+
         // Add template info
         items.push(`<li><span class="dropdown-item-text small">Template: ${loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited'}</span></li>`);
         items.push(`<li><span class="dropdown-item-text small">Loan: ${loan.loan_name}</span></li>`);
-        
+
         console.log('Generated dropdown items:', items);
         return items.join('');
     }
