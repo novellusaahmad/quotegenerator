@@ -3,9 +3,7 @@
  * Minimal, fast currency switching for button colors and logos
  */
 
-// Ensure default currency is applied before styles load
-document.documentElement.setAttribute('data-currency', 'GBP');
-document.body.setAttribute('data-currency', 'GBP');
+// Default currency will be applied once the DOM is ready
 
 class SimpleCurrencyTheme {
     constructor() {
@@ -124,5 +122,7 @@ class SimpleCurrencyTheme {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    document.documentElement.setAttribute('data-currency', 'GBP');
+    document.body.setAttribute('data-currency', 'GBP');
     window.currencyTheme = new SimpleCurrencyTheme();
 });
