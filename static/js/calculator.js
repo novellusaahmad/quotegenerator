@@ -320,10 +320,15 @@ class LoanCalculator {
             });
         }
 
-        // Interest calculation type changes
-        const interestTypeSelect = document.getElementById('interestType');
-        if (interestTypeSelect) {
-            interestTypeSelect.addEventListener('change', () => {
+        // Interest calculation type changes (toggle buttons)
+        const interestTypeRadios = document.querySelectorAll('input[name="interestTypeToggle"]');
+        interestTypeRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                const hidden = document.getElementById('interestType');
+                if (hidden) {
+                    hidden.value = radio.value;
+                    hidden.dispatchEvent(new Event('change'));
+                }
                 try {
                     console.log('Interest calculation type changed');
                     // Recalculate automatically if we already have results
@@ -334,7 +339,7 @@ class LoanCalculator {
                     console.error('Error handling interest type change:', error);
                 }
             });
-        }
+        });
 
         // Input formatting disabled to prevent field clearing issues
 
@@ -1539,31 +1544,34 @@ class LoanCalculator {
             const netAmountSection = document.getElementById('netAmountSection');
             const grossAmountSection = document.getElementById('grossAmountSection');
             
+            const interestTypeRadios = document.querySelectorAll('input[name="interestTypeToggle"]');
             if (loanType === 'development' || loanType === 'development2') {
                 // Development loans default to net amount input
                 document.getElementById('netAmount').checked = true;
                 document.getElementById('grossAmount').checked = false;
                 if (netAmountSection) netAmountSection.style.display = 'block';
                 if (grossAmountSection) grossAmountSection.style.display = 'none';
-                
+
                 // Set interest calculation type to compound daily for development loans
-                const interestTypeSelect = document.getElementById('interestType');
-                if (interestTypeSelect) {
-                    interestTypeSelect.value = 'compound_daily';
-                    interestTypeSelect.disabled = true;
+                const compoundDaily = document.getElementById('interestCompoundDaily');
+                if (compoundDaily) {
+                    compoundDaily.checked = true;
                 }
+                const interestTypeHidden = document.getElementById('interestType');
+                if (interestTypeHidden) {
+                    interestTypeHidden.value = 'compound_daily';
+                    interestTypeHidden.dispatchEvent(new Event('change'));
+                }
+                interestTypeRadios.forEach(r => r.disabled = true);
             } else {
                 // Bridge and term loans default to gross amount input
                 document.getElementById('grossAmount').checked = true;
                 document.getElementById('netAmount').checked = false;
                 if (grossAmountSection) grossAmountSection.style.display = 'block';
                 if (netAmountSection) netAmountSection.style.display = 'none';
-                
+
                 // Enable interest calculation type selection for non-development loans
-                const interestTypeSelect = document.getElementById('interestType');
-                if (interestTypeSelect) {
-                    interestTypeSelect.disabled = false;
-                }
+                interestTypeRadios.forEach(r => r.disabled = false);
             }
             
             // Show/hide additional params container

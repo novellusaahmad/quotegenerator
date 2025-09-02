@@ -583,13 +583,18 @@
 </div>
 <!-- Interest Type -->
 <div class="">
-<label class="form-label">Interest Calculation</label>
-<select class="form-select" id="interestType" name="interest_type" required="">
-<option selected="" value="simple">Simple Interest</option>
-<option value="compound_daily">Compound Daily</option>
-<option value="compound_monthly">Compound Monthly</option>
-<option value="compound_quarterly">Compound Quarterly</option>
-</select>
+    <label class="form-label">Interest Calculation</label>
+    <div class="btn-group w-100 flex-wrap interest-type-toggle" role="group" aria-label="Interest Calculation">
+        <input type="radio" class="btn-check" name="interestTypeToggle" id="interestSimple" value="simple" checked>
+        <label class="btn btn-outline-primary" for="interestSimple">Simple Interest</label>
+        <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundDaily" value="compound_daily">
+        <label class="btn btn-outline-primary" for="interestCompoundDaily">Compound Daily</label>
+        <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundMonthly" value="compound_monthly">
+        <label class="btn btn-outline-primary" for="interestCompoundMonthly">Compound Monthly</label>
+        <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundQuarterly" value="compound_quarterly">
+        <label class="btn btn-outline-primary" for="interestCompoundQuarterly">Compound Quarterly</label>
+    </div>
+    <input type="hidden" id="interestType" name="interest_type" value="simple">
 </div>
 <!-- Start Date -->
 <div class="">
