@@ -194,8 +194,9 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
             start = row.get('start_period')
             end = row.get('end_period')
             if start and end:
-                day_count = (datetime.strptime(end, '%d/%m/%Y') - datetime.strptime(start, '%d/%m/%Y')).days
-                row['days_held'] = day_count
+                day_count = (datetime.strptime(end, '%d/%m/%Y') - datetime.strptime(start, '%d/%m/%Y')).days + 1
+                if int(row.get('days_held', 0)) != day_count:
+                    row['days_held'] = day_count
             else:
                 day_count = int(row.get('days_held', 0))
 
