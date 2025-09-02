@@ -440,7 +440,6 @@
 <div class="d-flex justify-content-between align-items-start">
     <div>
         <h2><i class="fas fa-calculator me-2"></i>Loan Calculator</h2>
-        <p class="text-muted">Calculate loan payments, interest, and generate detailed schedules</p>
     </div>
     <button type="button" class="btn btn-outline-secondary" id="refreshButton" onclick="window.location.reload();">
         <i class="fas fa-sync-alt"></i> Refresh
@@ -457,10 +456,6 @@
 <i class="fas me-1"></i>Loan Name <span class="text-danger">*</span>
 </label>
 <input class="form-control" id="loanName" maxlength="200" name="loanName" placeholder="Enter loan name (e.g., Client Name - Property Address)" required="" style="min-height: 38px; font-size: 1rem;" type="text"/>
-<small class="form-text text-muted">
-<i class="fas fa-info-circle me-1"></i>
-                        Required field - System will automatically add version number and date when saving
-                    </small>
 </div>
 <!-- Loan Type Selection -->
 <div class="">
@@ -574,9 +569,6 @@
                             Use 360-day calculation for daily rate
                         </label>
 </div>
-<small class="form-text text-muted">
-                        Checked: Daily rate = Annual rate ÷ 360 | Unchecked: Daily rate = Annual rate ÷ 365 (standard)
-                    </small>
 </div>
 <!-- Interest Type -->
 <div class="">
@@ -845,9 +837,6 @@
 </div>
 <!-- Calculation Results Section -->
 <div id="calculationResultsSection">
-<div class="">
-<h4>Calculation Results</h4>
-</div>
 <!-- Summary Table (Loan Summary Format) -->
 <div class="card">
 <div class="card-header d-flex align-items-center" data-currency="GBP" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white; font-weight: bold; border: 1px solid #000;">
