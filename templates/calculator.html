@@ -433,6 +433,21 @@
         margin-bottom: 0.6rem !important;
     }
 
+    /* Adjust layout spacing and widths */
+    .calculator-layout {
+        --bs-gutter-x: 2px;
+    }
+
+    @media (min-width: 992px) {
+        .calculator-layout .user-input-col {
+            width: calc(33.333333% + 10px);
+        }
+
+        .calculator-layout .results-col {
+            width: calc(66.666667% - 10px);
+        }
+    }
+
 </style>
 {% endblock %}
 
@@ -445,9 +460,9 @@
         <i class="fas fa-sync-alt"></i> Refresh
     </button>
 </div>
-<div class="row">
+<div class="row calculator-layout">
 <!-- Calculator Form -->
-<div class="col-lg-4">
+<div class="col-lg-4 user-input-col">
 <div class="calculator-section">
 <form id="calculatorForm">
 <!-- Loan Name -->
@@ -837,7 +852,7 @@
 </div>
 </div>
 <!-- Results Section -->
-<div class="col-lg-8">
+<div class="col-lg-8 results-col">
 <div class="results-section" id="resultsSection" style="display: none;">
 <!-- Edit Mode Notice -->
 <div class="row" id="editModeNotice" style="display: none;">
