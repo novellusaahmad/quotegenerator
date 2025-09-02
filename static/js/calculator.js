@@ -929,7 +929,7 @@ class LoanCalculator {
         const periodicInterestEl = document.getElementById('periodicInterestResult');
         const periodicInterestLabel = document.getElementById('periodicInterestLabel');
 
-        const interestRepaymentTypes = ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment', 'sc_only'];
+        const interestRepaymentTypes = ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment'];
         if ((loanType === 'term' || loanType === 'bridge') && interestRepaymentTypes.includes(repaymentOption)) {
             let periodicInterest = results.periodicInterest || results.periodic_interest;
             if (!periodicInterest) {
@@ -1014,7 +1014,7 @@ class LoanCalculator {
         
         const repaymentOption = results.repayment_option || results.repaymentOption || '';
         const isServicedOnly = repaymentOption === 'service_only';
-        const isServicedCapital = repaymentOption === 'service_and_capital' || repaymentOption === 'sc_only';
+        const isServicedCapital = repaymentOption === 'service_and_capital';
         const isFlexiblePayment = repaymentOption === 'flexible_payment';
         const isCapitalPaymentOnly = repaymentOption === 'capital_payment_only';
 
@@ -1313,7 +1313,7 @@ class LoanCalculator {
 
             const loanType = loanTypeElement.value;
             const optionsMap = {
-                bridge: ['none', 'service_only', 'service_and_capital', 'sc_only', 'capital_payment_only', 'flexible_payment'],
+                bridge: ['none', 'service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment'],
                 term: ['service_only', 'service_and_capital'],
                 development: ['none'],
                 development2: ['none']
@@ -1475,7 +1475,7 @@ class LoanCalculator {
             
             if (paymentTimingSection) {
                 // Show payment timing for service only, capital+interest, capital payment only, and flexible payment options
-                if (repaymentOption === 'service_only' || repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment' || repaymentOption === 'sc_only') {
+                if (repaymentOption === 'service_only' || repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment') {
                     paymentTimingSection.style.display = 'block';
                     showAdditionalParams = true;
                 } else {
@@ -1486,7 +1486,7 @@ class LoanCalculator {
             // Show capital repayment section for service + capital and capital payment only options
             const capitalRepaymentSection = document.getElementById('capitalRepaymentSection');
             if (capitalRepaymentSection) {
-                if (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'sc_only') {
+                if (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only') {
                     capitalRepaymentSection.style.display = 'block';
                     showAdditionalParams = true;
                 } else {
@@ -1509,7 +1509,7 @@ class LoanCalculator {
             const ltvSection = document.getElementById('ltvSimulationSection');
             if (ltvSection) {
                 if ((loanType === 'bridge' || loanType === 'term') &&
-                    (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment' || repaymentOption === 'sc_only')) {
+                    (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment')) {
                     ltvSection.style.display = 'block';
                     showAdditionalParams = true;
                 } else {
@@ -2460,9 +2460,6 @@ class LoanCalculator {
             case 'service_and_capital':
                 repaymentDescription = 'Capital & interest  regular payments amortise the loan using <code>Payment = P × r / (1 - (1 + r)<sup>-n</sup>)</code>.';
                 break;
-            case 'sc_only':
-                repaymentDescription = 'S+C only  interest and capital are paid each period without interest-only comparison.';
-                break;
             case 'capital_payment_only':
                 repaymentDescription = 'Capital payments only  interest is retained upfront and scheduled capital payments reduce the balance.';
                 break;
@@ -2482,7 +2479,6 @@ class LoanCalculator {
                     netToGrossDescription = 'Gross = (Net + Legal + Site) / (1 - Arrangement - (Rate / 12) - Title)';
                     break;
                 case 'service_and_capital':
-                case 'sc_only':
                 case 'flexible_payment':
                     netToGrossDescription = 'Gross = (Net + Legal + Site) / (1 - Arrangement - Title)';
                     break;
@@ -2494,7 +2490,7 @@ class LoanCalculator {
 
         // Fee impact on net and gross amounts
         let feeImpactDescription = `Fees total ${totalFees} (arrangement ${arrangement}, legal ${legal}, site visit ${site}, title insurance ${title}).`;
-        if (['service_only', 'service_and_capital', 'flexible_payment', 'sc_only'].includes(repaymentOption)) {
+        if (['service_only', 'service_and_capital', 'flexible_payment'].includes(repaymentOption)) {
             feeImpactDescription += ' Net = Gross - Fees. Interest is calculated on the gross amount.';
         } else {
             feeImpactDescription += ' Net = Gross - Fees - Interest. Interest is calculated on the gross amount.';
