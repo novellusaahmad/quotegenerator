@@ -579,6 +579,15 @@ h4, h5, h6 {
     color: white;
 }
 
+/* Ensure the home icon is visible against the gold background */
+.navbar .btn-nav .fa-home {
+    color: black;
+}
+
+.navbar .btn-nav:hover .fa-home {
+    color: black;
+}
+
 /* Remove any blue backgrounds */
 .bg-primary {
     background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
