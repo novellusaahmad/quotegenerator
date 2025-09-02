@@ -980,3 +980,8 @@ h4, h5, h6 {
 .download-option-card:hover {
     animation: pulse 2s infinite;
 }
+
+/* Split Interest Calculation Type toggle into two lines when over three options */
+.interest-toggle .btn {
+    flex: 1 0 33%;
+}
