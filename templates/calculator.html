@@ -853,6 +853,10 @@
 <div class="card-header d-flex align-items-center" data-currency="GBP" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white; font-weight: bold; border: 1px solid #000;">
                     <span class="flex-grow-1 text-center">Loan Summary</span>
                     <button type="button" class="btn btn-sm btn-light ms-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal">View Details</button>
+                    <div class="dropdown ms-2">
+                        <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="openReportsBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>Reports</button>
+                        <ul class="dropdown-menu" aria-labelledby="openReportsBtn" id="reportDropdownMenu"></ul>
+                    </div>
                 </div>
 <div class="card-body p-0">
 <table class="table" style="border: 1px solid #000; border-collapse: collapse;">
@@ -1602,7 +1606,7 @@ function cancelEdit() {
 // Initialize edit mode when page loads
 function initializeEditMode() {
     handleEditMode();
-    
+
     // Add cancel edit button handler
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) {
@@ -1610,10 +1614,147 @@ function initializeEditMode() {
     }
 }
 
+// Power BI report utilities
+let powerBIReports = {};
+
+async function loadPowerBIReports() {
+    try {
+        const response = await fetch('/api/powerbi/reports');
+        const data = await response.json();
+        if (response.ok && data.reports) {
+            powerBIReports = data.reports;
+        } else {
+            powerBIReports = {
+                'main': {
+                    name: 'Loan Summary Report',
+                    baseUrl: 'https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/3bcd8dd2-4773-4372-9a19-1174c108aee5?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21',
+                    icon: 'fas fa-chart-bar'
+                }
+            };
+        }
+    } catch (error) {
+        console.error('Error loading Power BI reports:', error);
+        powerBIReports = {
+            'main': {
+                name: 'Loan Summary Report',
+                baseUrl: 'https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/3bcd8dd2-4773-4372-9a19-1174c108aee5?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21',
+                icon: 'fas fa-chart-bar'
+            }
+        };
+    }
+}
+
+function getPowerBIReports() {
+    return powerBIReports;
+}
+
+function generatePowerBIUrl(loan, format = 'standard', reportKey = 'main') {
+    const reports = getPowerBIReports();
+    const report = reports[reportKey];
+    if (!report) {
+        console.error(`Power BI report '${reportKey}' not found`);
+        return '#';
+    }
+    const baseUrl = report.baseUrl;
+    const parameters = report.parameters || [];
+    let paramString = '';
+    if (parameters.length > 0) {
+        parameters.forEach(param => {
+            let value = '';
+            switch(param.source) {
+                case 'loan_name':
+                    value = loan.loan_name || param.defaultValue || '';
+                    break;
+                case 'currency':
+                    if (param.name.toLowerCase().includes('template')) {
+                        value = loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited';
+                    } else {
+                        value = loan.currency || param.defaultValue || '';
+                    }
+                    break;
+                case 'gross_amount':
+                    value = loan.gross_amount?.toString() || param.defaultValue || '';
+                    break;
+                case 'loan_type':
+                    value = loan.loan_type || param.defaultValue || '';
+                    break;
+                case 'property_value':
+                    value = loan.property_value?.toString() || param.defaultValue || '';
+                    break;
+                default:
+                    value = param.defaultValue || '';
+                    break;
+            }
+            if (value) {
+                const encodedValue = encodeURIComponent(value);
+                paramString += `&rp:${param.name}=${encodedValue}`;
+            }
+        });
+    } else {
+        const template = loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited';
+        const encodedTemplate = encodeURIComponent(template);
+        const encodedLoanName = encodeURIComponent(loan.loan_name || '');
+        paramString = `&rp:Template=${encodedTemplate}&rp:loansummaryloanname=${encodedLoanName}`;
+    }
+    let finalUrl = baseUrl + paramString;
+    if (format === 'powerbi') {
+        finalUrl = baseUrl + '&rs:Command=Render' + paramString;
+    }
+    return finalUrl;
+}
+
+function generateReportDropdownItems(loan) {
+    const reports = getPowerBIReports();
+    const items = [];
+    Object.keys(reports).forEach(reportKey => {
+        const report = reports[reportKey];
+        items.push(`<li><h6 class="dropdown-header"><i class="${report.icon} me-2"></i>${report.name}</h6></li>`);
+        items.push(`<li><a class="dropdown-item ps-4" href="${generatePowerBIUrl(loan,'standard',reportKey)}" target="_blank">Standard Format</a></li>`);
+        items.push(`<li><a class="dropdown-item ps-4" href="${generatePowerBIUrl(loan,'double',reportKey)}" target="_blank">Double Encoded</a></li>`);
+        items.push(`<li><a class="dropdown-item ps-4" href="${generatePowerBIUrl(loan,'powerbi',reportKey)}" target="_blank">Power BI Specific</a></li>`);
+        items.push('<li><hr class="dropdown-divider"></li>');
+    });
+    if (items.length > 0) {
+        items.pop();
+    }
+    return items.join('');
+}
+
+function getLoanForReport() {
+    if (!window.loanCalculator) return null;
+    const data = window.loanCalculator.collectFormData();
+    return {
+        loan_name: document.getElementById('loanName').value.trim(),
+        currency: data.currency || 'GBP',
+        gross_amount: data.gross_amount || data.net_amount || 0,
+        loan_type: data.loan_type || 'bridge',
+        property_value: data.property_value || 0
+    };
+}
+
+function updateReportsButton(loan) {
+    const btn = document.getElementById('openReportsBtn');
+    const menu = document.getElementById('reportDropdownMenu');
+    if (!btn || !menu) return;
+    if (!loan || !loan.loan_name) {
+        btn.disabled = true;
+        menu.innerHTML = '';
+        return;
+    }
+    btn.disabled = false;
+    menu.innerHTML = generateReportDropdownItems(loan);
+}
+
 // Initialize everything when page loads
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadPowerBIReports();
     // Initialize edit mode
     initializeEditMode();
+    if (window.editMode && window.editMode.loanId) {
+        updateReportsButton(getLoanForReport());
+    } else {
+        updateReportsButton(null);
+    }
     
     // Initialize save loan functionality
     const saveLoanBtn = document.getElementById('saveLoanBtn');
@@ -1718,13 +1859,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const result = await response.json();
-            
+
             // Show success notification
             if (window.notifications) {
                 window.notifications.show(result.message, 'success');
             } else {
                 alert(`Success! ${result.message}`);
             }
+            updateReportsButton(getLoanForReport());
             
         } catch (error) {
             console.error('Save loan error:', error);
