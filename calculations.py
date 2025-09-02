@@ -978,32 +978,23 @@ class LoanCalculator:
         })
 
         # Always provide reference monthly and quarterly interest payments
-        # using exact day counts for the first period when dates are supplied.
+        # using nominal calculations on the gross loan amount. This keeps
+        # the summary values consistent across all term loan repayment types
+        # and independent of date-based day-count conventions.
+        annual_rate_decimal = annual_rate / Decimal('100')
         rounding = Decimal('0.01')
-        monthly_interest = self._calculate_periodic_interest(
-            gross_amount,
-            annual_rate / Decimal('100'),
-            'monthly',
-            start_date,
-            loan_term,
-            payment_timing,
-            loan_term_days,
-            use_360_days,
+        monthly_interest = (
+            gross_amount * annual_rate_decimal / Decimal('12')
         ).quantize(rounding, rounding=ROUND_HALF_UP)
-        quarterly_interest = self._calculate_periodic_interest(
-            gross_amount,
-            annual_rate / Decimal('100'),
-            'quarterly',
-            start_date,
-            loan_term,
-            payment_timing,
-            loan_term_days,
-            use_360_days,
+        quarterly_interest = (
+            gross_amount * annual_rate_decimal / Decimal('4')
         ).quantize(rounding, rounding=ROUND_HALF_UP)
         calculation['monthlyInterestPayment'] = float(monthly_interest)
         calculation['quarterlyInterestPayment'] = float(quarterly_interest)
 
-        periodic_interest = monthly_interest if payment_frequency == 'monthly' else quarterly_interest
+        periodic_interest = (
+            monthly_interest if payment_frequency == 'monthly' else quarterly_interest
+        )
         calculation['periodicInterest'] = float(periodic_interest)
 
         if repayment_option == 'service_only':
