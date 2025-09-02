@@ -981,6 +981,7 @@ h4, h5, h6 {
     animation: pulse 2s infinite;
 }
 
+
 /* Ensure Interest Calculation Type toggle shows three options per row */
 .btn-group.interest-toggle {
     flex-wrap: wrap;
@@ -989,4 +990,5 @@ h4, h5, h6 {
 .btn-group.interest-toggle > .btn {
     flex: 0 0 calc(100% / 3);
     max-width: calc(100% / 3);
+
 }
