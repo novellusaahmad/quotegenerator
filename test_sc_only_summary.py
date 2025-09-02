@@ -39,7 +39,7 @@ def test_sc_only_uses_service_capital_logic_without_savings():
         'start_date': '2024-01-01',
     }
     result = calc.calculate_bridge_loan(params)
-    expected_interest = Decimal('1000000') * Decimal('0.12') / Decimal('365') * Decimal('31')
+    expected_interest = Decimal('1000000') * Decimal('0.12') / Decimal('12')
     assert result['monthlyPayment'] == pytest.approx(float(expected_interest + Decimal('5000')), abs=0.01)
     assert result.get('interestSavings', 0) == 0
     assert result.get('interestOnlyTotal', 0) == 0

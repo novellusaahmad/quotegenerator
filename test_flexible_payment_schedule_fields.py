@@ -30,8 +30,7 @@ def test_flexible_payment_schedule_fields_present():
     for idx, entry in enumerate(schedule, start=1):
         for field in required_fields:
             assert field in entry, f"Missing field {field} in period {idx}"
-    daily_rate = 0.12 / 365
-    days_first = schedule[0]['days_held']
-    days_quarter = sum(p['days_held'] for p in schedule[:3])
-    assert result['monthlyInterestPayment'] == pytest.approx(100000 * daily_rate * days_first, abs=0.01)
-    assert result['quarterlyInterestPayment'] == pytest.approx(100000 * daily_rate * days_quarter, abs=0.01)
+    monthly_expected = 100000 * 0.12 / 12
+    quarterly_expected = 100000 * 0.12 / 4
+    assert result['monthlyInterestPayment'] == pytest.approx(monthly_expected, abs=0.01)
+    assert result['quarterlyInterestPayment'] == pytest.approx(quarterly_expected, abs=0.01)

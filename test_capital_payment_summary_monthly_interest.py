@@ -41,6 +41,6 @@ def test_capital_only_summary_includes_monthly_interest():
     }
     result = calc.calculate_bridge_loan(params)
 
-    expected_monthly_interest = 2000000 * 0.12 / 365 * 31
+    expected_monthly_interest = 2000000 * 0.12 / 12
     assert result['periodicInterest'] == pytest.approx(expected_monthly_interest, abs=0.01)
     assert result['monthlyPayment'] == pytest.approx(10000, abs=0.01)

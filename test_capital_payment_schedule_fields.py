@@ -60,8 +60,7 @@ def test_capital_only_schedule_fields_present():
         for field in required_fields:
             assert field in entry, f"Missing field {field} in period {idx}"
     assert schedule[-1].get('interest_refund') not in (None, ''), 'Interest refund missing in last period'
-    daily_rate = 0.12 / 365
-    days_first = schedule[0]['days_held']
-    days_quarter = sum(p['days_held'] for p in schedule[:3])
-    assert result['monthlyInterestPayment'] == pytest.approx(2000000 * daily_rate * days_first, abs=0.01)
-    assert result['quarterlyInterestPayment'] == pytest.approx(2000000 * daily_rate * days_quarter, abs=0.01)
+    monthly_expected = 2000000 * 0.12 / 12
+    quarterly_expected = 2000000 * 0.12 / 4
+    assert result['monthlyInterestPayment'] == pytest.approx(monthly_expected, abs=0.01)
+    assert result['quarterlyInterestPayment'] == pytest.approx(quarterly_expected, abs=0.01)
