@@ -544,7 +544,7 @@ h4, h5, h6 {
 
 /* Remove any blue backgrounds */
 .bg-primary {
-    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%) !important;
+    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
 }
 
 .text-primary {

@@ -459,19 +459,12 @@
 </div>
 <!-- Loan Type Selection -->
 <div class="">
-<label class="form-label">Loan Type</label>
-<div class="btn-group w-100" role="group">
-    <input class="btn-check" id="loanTypeBridge" type="radio" name="loan_type_radio" value="bridge" checked>
-    <label class="btn btn-outline-secondary btn-sm" for="loanTypeBridge">Bridge Loan</label>
-    <input class="btn-check" id="loanTypeTerm" type="radio" name="loan_type_radio" value="term">
-    <label class="btn btn-outline-secondary btn-sm" for="loanTypeTerm">Term Loan</label>
-    <input class="btn-check" id="loanTypeDevelopment" type="radio" name="loan_type_radio" value="development2">
-    <label class="btn btn-outline-secondary btn-sm" for="loanTypeDevelopment">Development Loan</label>
-</div>
-<select class="form-select d-none" id="loanType" name="loan_type" required="">
-    <option value="bridge" selected>Bridge Loan</option>
-    <option value="term">Term Loan</option>
-    <option value="development2">Development Loan</option>
+<label class="form-label" for="loanType">Loan Type</label>
+<select class="form-select" id="loanType" name="loan_type" required="">
+<option value="bridge">Bridge Loan</option>
+<option value="term">Term Loan</option>
+<!-- <option value="development">Development Loan</option>-->
+<option value="development2">Development Loan</option>
 </select>
 </div>
 <!-- Repayment Option -->
@@ -481,6 +474,7 @@
 <option value="none">Retained Interest (Interest Only)</option>
 <option value="service_only">Service Only (Interest Payments)</option>
 <option value="service_and_capital">Service + Capital (Principal &amp; Interest)</option>
+<option value="sc_only">S+C Only (Principal &amp; Interest)</option>
 <option value="capital_payment_only">Capital Payment Only (Interest Retained)</option>
 <option value="flexible_payment">Flexible Payment Schedule</option>
 </select>
@@ -488,16 +482,10 @@
 
 <!-- Currency -->
 <div class="">
-<label class="form-label">Currency</label>
-<div class="btn-group w-100" role="group">
-    <input class="btn-check" id="currencyGBP" type="radio" name="currency_radio" value="GBP" checked>
-    <label class="btn btn-outline-secondary btn-sm" for="currencyGBP">GBP (£)</label>
-    <input class="btn-check" id="currencyEUR" type="radio" name="currency_radio" value="EUR">
-    <label class="btn btn-outline-secondary btn-sm" for="currencyEUR">EUR (€)</label>
-</div>
-<select class="form-select d-none" id="currency" name="currency">
-    <option value="GBP" selected>GBP (£)</option>
-    <option value="EUR">EUR (€)</option>
+<label class="form-label" for="currency">Currency</label>
+<select class="form-select" id="currency" name="currency">
+<option value="GBP">GBP (£)</option>
+<option value="EUR">EUR (€)</option>
 </select>
 </div>
 <!-- Property Value -->
@@ -1185,6 +1173,7 @@
 
 {% block scripts %}
 <!-- Modern Notification System -->
+<script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
 <script>
 // End date/term synchronization with automatic recalculation
@@ -1230,6 +1219,7 @@ function toggleLoanEndInputs() {
     document.getElementById('loanTermContainer').style.display = mode === 'term' ? '' : 'none';
     document.getElementById('endDateContainer').style.display = mode === 'term' ? 'none' : '';
 }
+
 // Helper function to trigger calculation update when dates change
 function triggerCalculationUpdate() {
     try {
@@ -1540,6 +1530,10 @@ function populateFormFromParams(params) {
     populateTrancheData(params);
 }
 
+
+
+
+
 // Populate tranche data for development loans
 function populateTrancheData(params) {
     // Check if this is a development loan
@@ -1616,17 +1610,18 @@ let isLoanSaved = false;
 async function loadPowerBIReports() {
     try {
         const response = await fetch('/api/powerbi/reports');
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
         const data = await response.json();
-        powerBIReports = data.reports || {
-            'main': {
-                name: 'Loan Summary Report',
-                baseUrl: 'https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/3bcd8dd2-4773-4372-9a19-1174c108aee5?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21',
-                icon: 'fas fa-chart-bar'
-            }
-        };
+        if (response.ok && data.reports) {
+            powerBIReports = data.reports;
+        } else {
+            powerBIReports = {
+                'main': {
+                    name: 'Loan Summary Report',
+                    baseUrl: 'https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/3bcd8dd2-4773-4372-9a19-1174c108aee5?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21',
+                    icon: 'fas fa-chart-bar'
+                }
+            };
+        }
     } catch (error) {
         console.error('Error loading Power BI reports:', error);
         powerBIReports = {
@@ -1742,27 +1737,26 @@ function updateReportsButton(loan) {
 
 // Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', async function() {
-    try {
-        await loadPowerBIReports();
-        // Initialize edit mode
-        initializeEditMode();
-        isLoanSaved = !!(window.editMode && window.editMode.loanId);
-        if (isLoanSaved) {
-            updateReportsButton(getLoanForReport());
-        } else {
-            updateReportsButton(null);
-        }
-
-        // Initialize save loan functionality
-        const saveLoanBtn = document.getElementById('saveLoanBtn');
-
-        // Save loan button click handler
-        saveLoanBtn.addEventListener('click', async function() {
+    await loadPowerBIReports();
+    // Initialize edit mode
+    initializeEditMode();
+    isLoanSaved = !!(window.editMode && window.editMode.loanId);
+    if (isLoanSaved) {
+        updateReportsButton(getLoanForReport());
+    } else {
+        updateReportsButton(null);
+    }
+    
+    // Initialize save loan functionality
+    const saveLoanBtn = document.getElementById('saveLoanBtn');
+    
+    // Save loan button click handler
+    saveLoanBtn.addEventListener('click', async function() {
         try {
             // Check if loan name is provided
             const loanName = document.getElementById('loanName').value.trim();
             if (!loanName) {
-                window.notifications.show('Please enter a loan name before saving.', 'error');
+                alert('Please enter a loan name before saving.');
                 document.getElementById('loanName').focus();
                 return;
             }
@@ -1770,7 +1764,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Check if results section is visible (calculation completed)
             const resultsSection = document.getElementById('resultsSection');
             if (!resultsSection || resultsSection.style.display === 'none') {
-                window.notifications.show('Please calculate the loan first before saving.', 'info');
+                alert('Please calculate the loan first before saving.');
                 return;
             }
             
@@ -1839,7 +1833,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         </div>
                     `;
                     
-                                            window.notifications.show(notificationMessage, 'warning', 30000);
+                    if (window.notifications) {
+                        window.notifications.show(notificationMessage, 'warning', 30000);
                     } else {
                         // Fallback to prompt if notifications not available
                         const newName = prompt('A loan with this name already exists.\n\nPlease enter a different name:', loanName + '_copy');
@@ -1860,22 +1855,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             isLoanSaved = true;
 
             // Show success notification
-            
+            if (window.notifications) {
                 window.notifications.show(result.message, 'success');
             } else {
-                window.notifications.show(`Success! ${result.message}`, 'success');
-            
+                alert(`Success! ${result.message}`);
+            }
             updateReportsButton(getLoanForReport());
             
         } catch (error) {
             console.error('Save loan error:', error);
             
             // Show error notification
-            
+            if (window.notifications) {
                 window.notifications.show('Failed to save loan: ' + error.message, 'error');
             } else {
-                window.notifications.show('Failed to save loan: ' + error.message, 'error');
-            
+                alert('Failed to save loan: ' + error.message);
+            }
         } finally {
             // Re-enable button
             saveLoanBtn.disabled = false;
@@ -1883,9 +1878,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             saveLoanBtn.innerHTML = `<i class="fas fa-save me-2"></i>${btnText}`;
         }
     });
-    } catch (err) {
-        console.error('Initialization error:', err);
-    }
 });
 
 // Function to open scenario comparison with current form data
@@ -1953,12 +1945,15 @@ function retryLoanSave() {
             // Trigger save again
             document.getElementById('saveLoanBtn').click();
         } else {
-                            window.notifications.show('Please enter a valid loan name', 'warning');
+            if (window.notifications) {
+                window.notifications.show('Please enter a valid loan name', 'warning');
             }
         }
     }
+}
 
 // Save button is enabled automatically by calculator.js after successful calculation
+
 
 </script>
 <style>
@@ -2074,23 +2069,21 @@ function showDatabaseInfo() {
     loadDatabaseInfo();
 }
 
-async function loadDatabaseInfo() {
-    try {
-        const response = await fetch('/api/database-info');
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const data = await response.json();
-        displayDatabaseInfo(data);
-    } catch (error) {
-        console.error('Error loading database info:', error);
-        document.getElementById('databaseInfoContent').innerHTML = `
-            <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Error loading database information: ${error.message}
-            </div>
-        `;
-    }
+function loadDatabaseInfo() {
+    fetch('/api/database-info')
+        .then(response => response.json())
+        .then(data => {
+            displayDatabaseInfo(data);
+        })
+        .catch(error => {
+            console.error('Error loading database info:', error);
+            document.getElementById('databaseInfoContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error loading database information: ${error.message}
+                </div>
+            `;
+        });
 }
 
 function displayDatabaseInfo(data) {
@@ -2238,34 +2231,10 @@ function refreshDatabaseInfo() {
 }
 </script>
 <!-- Currency Theme Manager -->
+<script src="{{ url_for('static', filename='js/currency-theme-simple.js') }}"></script>
 <script>
 // Initialize currency theme manager on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Sync toggle controls with hidden selects
-    function setupToggle(selectId, radioName) {
-        const select = document.getElementById(selectId);
-        const radios = document.querySelectorAll(`input[name="${radioName}"]`);
-        if (!select || radios.length === 0) return;
-        radios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                if (radio.checked) {
-                    select.value = radio.value;
-                    select.dispatchEvent(new Event('change'));
-                }
-            });
-        });
-        select.addEventListener('change', () => {
-            radios.forEach(radio => {
-                radio.checked = (radio.value === select.value);
-            });
-        });
-        radios.forEach(radio => {
-            radio.checked = (radio.value === select.value);
-        });
-    }
-    setupToggle('loanType', 'loan_type_radio');
-    setupToggle('currency', 'currency_radio');
-
     // Currency theme is auto-initialized in currency-theme-simple.js
     // Access via window.currencyTheme if needed
     

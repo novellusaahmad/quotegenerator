@@ -842,7 +842,7 @@ class LoanCalculator {
     }
 
     showError(message) {
-        window.notifications.show('Error: ' + message, 'error');
+        alert('Error: ' + message);
     }
 
     // All other UI helper methods remain the same...
@@ -1251,7 +1251,7 @@ class LoanCalculator {
             const rate = parseFloat(document.getElementById('annualRateValue')?.value) || 12;
 
             if (!startDate) {
-                window.notifications.show('Please select a start date', 'error');
+                alert('Please select a start date');
                 return;
             }
             if (trancheCount < 1) trancheCount = 1;
@@ -1293,7 +1293,7 @@ class LoanCalculator {
             console.log('Equal-only tranche generation complete:', { totalDev, trancheCount });
         } catch (err) {
             console.error('Error in generateTranches (equal-only):', err);
-            window.notifications.show('Error generating tranches: ' + err.message, 'error');
+            alert('Error generating tranches: ' + err.message);
         }
     }
 
@@ -1946,6 +1946,8 @@ class LoanCalculator {
 
         this.charts.loanBreakdown = new Chart(ctx, chartConfig);
     }
+
+
 
     // Create charts specific to development loans
     createDevelopmentLoanCharts(results) {

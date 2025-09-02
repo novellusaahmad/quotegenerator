@@ -377,7 +377,7 @@ function viewQuote(id) {
         })
         .catch(error => {
             console.error('Error loading quote:', error);
-            window.notifications.show('Error loading quote details', 'error');
+            alert('Error loading quote details');
         });
 }
 
@@ -398,12 +398,12 @@ function sendQuote(id) {
             if (data.success) {
                 location.reload();
             } else {
-                window.notifications.show('Error sending quote', 'error');
+                alert('Error sending quote');
             }
         })
         .catch(error => {
             console.error('Error sending quote:', error);
-            window.notifications.show('Error sending quote', 'error');
+            alert('Error sending quote');
         });
     }
 }
@@ -421,12 +421,12 @@ function acceptQuote(id) {
             if (data.success) {
                 location.reload();
             } else {
-                window.notifications.show('Error accepting quote', 'error');
+                alert('Error accepting quote');
             }
         })
         .catch(error => {
             console.error('Error accepting quote:', error);
-            window.notifications.show('Error accepting quote', 'error');
+            alert('Error accepting quote');
         });
     }
 }
@@ -446,12 +446,12 @@ function rejectQuote(id) {
             if (data.success) {
                 location.reload();
             } else {
-                window.notifications.show('Error rejecting quote', 'error');
+                alert('Error rejecting quote');
             }
         })
         .catch(error => {
             console.error('Error rejecting quote:', error);
-            window.notifications.show('Error rejecting quote', 'error');
+            alert('Error rejecting quote');
         });
     }
 }

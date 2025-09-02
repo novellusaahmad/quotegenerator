@@ -215,7 +215,7 @@ class LoanHistoryManager {
                 this.updateTimestamp();
                 
                 // Show success notification for manual refresh
-                if ( this.isManualRefresh) {
+                if (window.notifications && this.isManualRefresh) {
                     window.notifications.success(`Refreshed: ${this.loans.length} loans loaded`);
                     this.isManualRefresh = false;
                 }
@@ -224,7 +224,9 @@ class LoanHistoryManager {
         } catch (error) {
             console.error('Error loading loans:', error);
             this.showError(error.message);
-            window.notifications.error(`Failed to load loans: ${error.message}`);
+            if (window.notifications) {
+                window.notifications.error(`Failed to load loans: ${error.message}`);
+            }
         }
     }
 
@@ -525,9 +527,9 @@ class LoanHistoryManager {
                     Error loading loan details: ${error.message}
                 </div>
             `;
-            
+            if (window.notifications) {
                 window.notifications.error(`Error loading loan details: ${error.message}`);
-            
+            }
         }
     }
 
@@ -755,11 +757,11 @@ class LoanHistoryManager {
     editLoan() {
         try {
             if (!this.currentLoanId) {
-                
+                if (window.notifications) {
                     window.notifications.error('No loan selected for editing');
                 } else {
-                    window.notifications.show('No loan selected', 'error');
-                
+                    alert('No loan selected');
+                }
                 return;
             }
 
@@ -776,9 +778,9 @@ class LoanHistoryManager {
 
         } catch (error) {
             console.error('Edit loan error:', error);
-            
+            if (window.notifications) {
                 window.notifications.error(`Edit loan failed: ${error.message}`);
-            
+            }
         }
     }
 
@@ -905,7 +907,7 @@ class LoanHistoryManager {
 
     async deleteLoan(loanId, loanName) {
         // Use the same notification system as calculator page
-        
+        if (window.notifications) {
             // Create a custom confirmation notification
             const confirmMessage = `
                 <div style="margin-top: 8px;">
@@ -921,7 +923,7 @@ class LoanHistoryManager {
         } else {
             if (!confirm(`Are you sure you want to delete the loan "${loanName}"? This action cannot be undone.`)) {
                 return;
-            
+            }
             this.performDelete(loanId, loanName);
         }
     }
@@ -947,24 +949,25 @@ class LoanHistoryManager {
             }
 
             // Show success notification using notifications system
-            
+            if (window.notifications) {
                 window.notifications.success(data.message);
             } else {
-                window.notifications.show(data.message, 'error');
-            
+                alert(data.message);
+            }
 
             // Reload the loans list
             this.loadLoans();
 
         } catch (error) {
             console.error('Error deleting loan:', error);
-            
+            if (window.notifications) {
                 window.notifications.error(`Error deleting loan: ${error.message}`);
             } else {
-                window.notifications.show(`Error deleting loan: ${error.message}`, 'error');
-            
+                alert(`Error deleting loan: ${error.message}`);
+            }
         }
     }
+}
 
 // Initialize the loan history manager
 const loanHistory = new LoanHistoryManager();

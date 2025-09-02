@@ -283,7 +283,7 @@ function submitQuote() {
     const notes = document.getElementById('quote_notes').value;
     
     if (!appId || !interestRate) {
-        window.notifications.show('Please fill in all required fields', 'error');
+        alert('Please fill in all required fields');
         return;
     }
     

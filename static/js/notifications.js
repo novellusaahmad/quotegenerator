@@ -136,7 +136,6 @@ class NotificationSystem {
 
 // Global notification instance
 const notifications = new NotificationSystem();
-window.notifications = notifications;
 
 // Global functions for easy access
 function showNotification(message, type = 'info', duration = 8000) {
