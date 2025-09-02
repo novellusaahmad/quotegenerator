@@ -1720,15 +1720,8 @@ function generateReportDropdownItems(loan) {
     const items = [];
     Object.keys(reports).forEach(reportKey => {
         const report = reports[reportKey];
-        items.push(`<li><h6 class="dropdown-header"><i class="${report.icon} me-2"></i>${report.name}</h6></li>`);
-        items.push(`<li><a class="dropdown-item ps-4" href="${generatePowerBIUrl(loan,'standard',reportKey)}" target="_blank">Standard Format</a></li>`);
-        items.push(`<li><a class="dropdown-item ps-4" href="${generatePowerBIUrl(loan,'double',reportKey)}" target="_blank">Double Encoded</a></li>`);
-        items.push(`<li><a class="dropdown-item ps-4" href="${generatePowerBIUrl(loan,'powerbi',reportKey)}" target="_blank">Power BI Specific</a></li>`);
-        items.push('<li><hr class="dropdown-divider"></li>');
+        items.push(`<li><a class="dropdown-item" href="${generatePowerBIUrl(loan,'standard',reportKey)}" target="_blank"><i class="${report.icon} me-2"></i>${report.name}</a></li>`);
     });
-    if (items.length > 0) {
-        items.pop();
-    }
     return items.join('');
 }
 
