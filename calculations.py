@@ -909,6 +909,11 @@ class LoanCalculator:
                 total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
+
+                interest_only_total = self.calculate_simple_interest_by_days(
+                    gross_amount, annual_rate, loan_term_days, use_360_days
+                )
+                calculation['interestOnlyTotal'] = self._two_dp(interest_only_total)
         elif repayment_option in ['service_and_capital', 'sc_only']:
             capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
             net_for_calculation = net_amount if amount_input_type == 'net' else None
@@ -933,6 +938,18 @@ class LoanCalculator:
                 total_interest_from_schedule = self._two_dp(total_interest_from_schedule)
                 calculation['totalInterest'] = total_interest_from_schedule
                 calculation['total_interest'] = total_interest_from_schedule
+
+                interest_only_total = self.calculate_simple_interest_by_days(
+                    gross_amount, annual_rate, loan_term_days, use_360_days
+                )
+                interest_only_total = Decimal(str(self._two_dp(interest_only_total)))
+                interest_savings = interest_only_total - Decimal(str(total_interest_from_schedule))
+                calculation['interestOnlyTotal'] = float(interest_only_total)
+                calculation['interestSavings'] = float(self._two_dp(interest_savings))
+                if interest_only_total > 0:
+                    calculation['savingsPercentage'] = float(
+                        (interest_savings / interest_only_total) * 100
+                    )
             if repayment_option == 'sc_only':
                 calculation['interestSavings'] = 0.0
                 calculation['interestOnlyTotal'] = 0.0
