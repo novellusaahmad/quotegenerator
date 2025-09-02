@@ -2,6 +2,8 @@
 
 {% block title %}One-Click Scenario Comparison - Novellus Loan Management{% endblock %}
 
+{% block body_attr %}data-theme="document"{% endblock %}
+
 {% block head %}
 {{ super() }}
 <link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
