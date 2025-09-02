@@ -1616,6 +1616,7 @@ function initializeEditMode() {
 
 // Power BI report utilities
 let powerBIReports = {};
+let isLoanSaved = false;
 
 async function loadPowerBIReports() {
     try {
@@ -1736,7 +1737,7 @@ function updateReportsButton(loan) {
     const btn = document.getElementById('openReportsBtn');
     const menu = document.getElementById('reportDropdownMenu');
     if (!btn || !menu) return;
-    if (!loan || !loan.loan_name) {
+    if (!loan || !loan.loan_name || !isLoanSaved) {
         btn.disabled = true;
         menu.innerHTML = '';
         return;
@@ -1750,7 +1751,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadPowerBIReports();
     // Initialize edit mode
     initializeEditMode();
-    if (window.editMode && window.editMode.loanId) {
+    isLoanSaved = !!(window.editMode && window.editMode.loanId);
+    if (isLoanSaved) {
         updateReportsButton(getLoanForReport());
     } else {
         updateReportsButton(null);
@@ -1859,6 +1861,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             const result = await response.json();
+
+            // Mark loan as saved and enable reports
+            isLoanSaved = true;
 
             // Show success notification
             if (window.notifications) {
