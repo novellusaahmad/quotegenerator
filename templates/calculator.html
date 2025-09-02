@@ -459,34 +459,47 @@
 </div>
 <!-- Loan Type Selection -->
 <div class="">
-<label class="form-label" for="loanType">Loan Type</label>
-<select class="form-select" id="loanType" name="loan_type" required="">
-<option value="bridge">Bridge Loan</option>
-<option value="term">Term Loan</option>
-<!-- <option value="development">Development Loan</option>-->
-<option value="development2">Development Loan</option>
-</select>
+<label class="form-label">Loan Type</label>
+<div class="btn-group w-100" role="group" aria-label="Loan Type">
+    <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeBridge" value="bridge" checked>
+    <label class="btn btn-outline-primary" for="loanTypeBridge">Bridge Loan</label>
+    <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeTerm" value="term">
+    <label class="btn btn-outline-primary" for="loanTypeTerm">Term Loan</label>
+    <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeDevelopment" value="development2">
+    <label class="btn btn-outline-primary" for="loanTypeDevelopment">Development Loan</label>
+</div>
+<input type="hidden" id="loanType" name="loan_type" value="bridge">
 </div>
 <!-- Repayment Option -->
 <div class="">
-<label class="form-label" for="repaymentOption">Interest Calculation Type</label>
-<select class="form-select" id="repaymentOption" name="repayment_option" required="">
-<option value="none">Retained Interest (Interest Only)</option>
-<option value="service_only">Service Only (Interest Payments)</option>
-<option value="service_and_capital">Service + Capital (Principal &amp; Interest)</option>
-<option value="sc_only">S+C Only (Principal &amp; Interest)</option>
-<option value="capital_payment_only">Capital Payment Only (Interest Retained)</option>
-<option value="flexible_payment">Flexible Payment Schedule</option>
-</select>
+<label class="form-label">Interest Calculation Type</label>
+<div class="btn-group w-100 flex-wrap" role="group" aria-label="Interest Calculation Type">
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentNone" value="none" checked>
+    <label class="btn btn-outline-primary" for="repaymentNone">Retained Interest (Interest Only)</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceOnly" value="service_only">
+    <label class="btn btn-outline-primary" for="repaymentServiceOnly">Service Only (Interest Payments)</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceCapital" value="service_and_capital">
+    <label class="btn btn-outline-primary" for="repaymentServiceCapital">Service + Capital (Principal &amp; Interest)</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentSCOnly" value="sc_only">
+    <label class="btn btn-outline-primary" for="repaymentSCOnly">S+C Only (Principal &amp; Interest)</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentCapitalOnly" value="capital_payment_only">
+    <label class="btn btn-outline-primary" for="repaymentCapitalOnly">Capital Payment Only (Interest Retained)</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentFlexible" value="flexible_payment">
+    <label class="btn btn-outline-primary" for="repaymentFlexible">Flexible Payment Schedule</label>
+</div>
+<input type="hidden" id="repaymentOption" name="repayment_option" value="none">
 </div>
 
 <!-- Currency -->
 <div class="">
-<label class="form-label" for="currency">Currency</label>
-<select class="form-select" id="currency" name="currency">
-<option value="GBP">GBP (£)</option>
-<option value="EUR">EUR (€)</option>
-</select>
+<label class="form-label">Currency</label>
+<div class="btn-group w-100" role="group" aria-label="Currency">
+    <input type="radio" class="btn-check" name="currency" id="currencyGBP" value="GBP" checked>
+    <label class="btn btn-outline-primary" for="currencyGBP">GBP (£)</label>
+    <input type="radio" class="btn-check" name="currency" id="currencyEUR" value="EUR">
+    <label class="btn btn-outline-primary" for="currencyEUR">EUR (€)</label>
+</div>
+<input type="hidden" id="currency" value="GBP">
 </div>
 <!-- Property Value -->
 <div class="">
@@ -815,9 +828,6 @@
 </button>
 <button class="btn btn-outline-secondary" id="cancelEditBtn" style="display: none;" type="button">
 <i class="fas fa-times me-2"></i>Cancel Edit
-                    </button>
-<button class="btn btn-outline-primary" type="button" onclick="openScenarioComparison()">
-<i class="fas fa-chart-line me-2"></i>Scenario Comparison
                     </button>
 </div>
 </form>
@@ -1879,53 +1889,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 });
-
-// Function to open scenario comparison with current form data
-function openScenarioComparison() {
-    try {
-        // Collect all form data using the global collectFormData function
-        const formData = window.loanCalculator ? window.loanCalculator.collectFormData() : collectFormData();
-        
-        // Build URL with parameters - using safe access to avoid undefined errors
-        const params = new URLSearchParams({
-            loan_type: formData.loan_type || 'bridge',
-            gross_amount: formData.gross_amount || formData.net_amount || 1000000,
-            net_amount: formData.net_amount || 0,
-            gross_amount_type: formData.gross_amount_type || 'fixed',
-            gross_amount_percentage: formData.gross_amount_percentage || 0,
-            annual_rate: formData.annual_rate || (formData.monthly_rate ? formData.monthly_rate * 12 : 12),
-            monthly_rate: formData.monthly_rate || 0,
-            rate_input_type: formData.rate_input_type || 'annual',
-            loan_term: formData.loan_term || 12,
-            start_date: formData.start_date || '',
-            end_date: formData.end_date || '',
-            property_value: formData.property_value || 2000000,
-            currency: formData.currency || 'GBP',
-            amount_input_type: formData.amount_input_type || 'gross',
-            arrangement_fee_rate: formData.arrangement_fee_rate || 0,
-            legal_fees: formData.legal_fees || 0,
-            site_visit_fee: formData.site_visit_fee || 0,
-            title_insurance_rate: formData.title_insurance_rate || 0,
-            repayment_option: formData.repayment_option || 'none',
-            interest_type: formData.interest_type || 'simple',
-            payment_timing: formData.payment_timing || 'arrears',
-            payment_frequency: formData.payment_frequency || 'monthly',
-            capital_repayment: formData.capital_repayment || 0,
-            flexible_payment: formData.flexible_payment || 0,
-            day1_advance: formData.day1_advance || 0,
-            use_360_days: formData.use_360_days || 'false'
-        });
-        
-        // Open scenario comparison in new tab with current parameters
-        const url = `/scenario-comparison?${params.toString()}`;
-        window.open(url, '_blank');
-        
-    } catch (error) {
-        console.error('Error opening scenario comparison:', error);
-        // Fallback: open scenario comparison with default parameters
-        window.open('/scenario-comparison', '_blank');
-    }
-}
 
 // Helper function for retrying loan save with new name
 function retryLoanSave() {

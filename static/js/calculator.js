@@ -214,6 +214,37 @@ class LoanCalculator {
             }
         });
 
+        // Sync radio toggle inputs with hidden fields
+        document.querySelectorAll('input[name="loanTypeToggle"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const hidden = document.getElementById('loanType');
+                if (hidden) {
+                    hidden.value = radio.value;
+                    hidden.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
+        document.querySelectorAll('input[name="repaymentOptionToggle"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const hidden = document.getElementById('repaymentOption');
+                if (hidden) {
+                    hidden.value = radio.value;
+                    hidden.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
+        document.querySelectorAll('input[name="currency"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const hidden = document.getElementById('currency');
+                if (hidden) {
+                    hidden.value = radio.value;
+                    hidden.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+
         // Amount input type toggles
         document.querySelectorAll('input[name="amount_input_type"]').forEach(radio => {
             radio.addEventListener('change', () => {
@@ -1275,72 +1306,45 @@ class LoanCalculator {
     updateRepaymentOptions() {
         try {
             const loanTypeElement = document.getElementById('loanType');
-            const repaymentSelect = document.getElementById('repaymentOption');
-            
-            if (!loanTypeElement || !repaymentSelect) {
-                console.warn('Loan type or repayment option elements not found');
+            if (!loanTypeElement) {
+                console.warn('Loan type element not found');
                 return;
             }
-            
+
             const loanType = loanTypeElement.value;
-            console.log('Updating repayment options for loan type:', loanType);
-            
-            // Store current selection to preserve it if possible
-            const currentValue = repaymentSelect.value;
-            
-            // Clear existing options
-            repaymentSelect.innerHTML = '';
-            
-            let options = [];
-            
-            if (loanType === 'bridge') {
-                options = [
-                    { value: 'none', text: 'Retained Interest (Interest Only)' },
-                    { value: 'service_only', text: 'Service Only (Interest Payments)' },
-                    { value: 'service_and_capital', text: 'Service + Capital (Principal & Interest)' },
-                    { value: 'sc_only', text: 'S+C Only (Principal & Interest)' },
-                    { value: 'capital_payment_only', text: 'Capital Payment Only (Interest Retained)' },
-                    { value: 'flexible_payment', text: 'Flexible Payment Schedule' }
-                ];
-            } else if (loanType === 'term') {
-                options = [
-                    { value: 'service_only', text: 'Serviced Interest (Interest Payments)' },
-                    { value: 'service_and_capital', text: 'Serviced + Capital Repayment (Principal & Interest)' }
-                ];
-            } else if (loanType === 'development') {
-                options = [
-                    { value: 'none', text: 'Retained Interest (Interest Only)' }
-                ];
-            } else if (loanType === 'development2') {
-                options = [
-                    { value: 'none', text: 'Retained Interest (Excel Goal Seek)' }
-                ];
-            }
-            
-            // Add options to select
-            options.forEach(option => {
-                const optionElement = document.createElement('option');
-                optionElement.value = option.value;
-                optionElement.textContent = option.text;
-                repaymentSelect.appendChild(optionElement);
+            const optionsMap = {
+                bridge: ['none', 'service_only', 'service_and_capital', 'sc_only', 'capital_payment_only', 'flexible_payment'],
+                term: ['service_only', 'service_and_capital'],
+                development: ['none'],
+                development2: ['none']
+            };
+            const allowed = optionsMap[loanType] || [];
+
+            document.querySelectorAll('input[name="repaymentOptionToggle"]').forEach(radio => {
+                const label = document.querySelector(`label[for="${radio.id}"]`);
+                const show = allowed.includes(radio.value);
+                radio.style.display = show ? '' : 'none';
+                if (label) label.style.display = show ? '' : 'none';
+                if (!show && radio.checked) {
+                    radio.checked = false;
+                }
             });
-            
-            // Try to preserve the previous selection if it exists in new options
-            const validOption = options.find(opt => opt.value === currentValue);
-            if (validOption) {
-                repaymentSelect.value = currentValue;
-            } else {
-                // For term loans, default to 'service_only', otherwise default to first option
-                if (loanType === 'term') {
-                    repaymentSelect.value = 'service_only';
-                } else {
-                    repaymentSelect.value = options[0].value;
+
+            let checked = document.querySelector('input[name="repaymentOptionToggle"]:checked');
+            if (!checked && allowed.length) {
+                const first = document.querySelector(`input[name="repaymentOptionToggle"][value="${allowed[0]}"]`);
+                if (first) {
+                    first.checked = true;
+                    checked = first;
                 }
             }
-            
+
+            const hidden = document.getElementById('repaymentOption');
+            if (hidden && checked) {
+                hidden.value = checked.value;
+            }
+
             console.log('Repayment options updated successfully');
-            
-            // Update 360-day option visibility
             this.update360DayVisibility();
         } catch (error) {
             console.error('Error in updateRepaymentOptions:', error);
