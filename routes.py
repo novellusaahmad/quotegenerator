@@ -466,10 +466,6 @@ def api_calculate():
         # Use the unified calculation method
         result = calculator.calculate_loan(calc_params)
 
-        # Development 2 reports should not include detailed payment schedules
-        if loan_type == 'development2':
-            result.pop('detailed_payment_schedule', None)
-
         # Ensure detailed schedule structure for serviced + capital and flexible payments
         if loan_type == 'bridge' and repayment_option in ('service_and_capital', 'flexible_payment'):
             try:
