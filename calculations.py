@@ -6614,15 +6614,8 @@ class LoanCalculator:
                     tranche_release = Decimal('0')
                     logging.info(f"Month {month}: No user tranche available (index {tranche_index} out of {len(user_tranches)})")
             
-            # Calculate days in this month for interest calculation
-            if month < total_months:
-                next_payment_date = start_date + relativedelta(months=month)
-                if next_payment_date > loan_end_date:
-                    next_payment_date = loan_end_date
-                days_in_period = (next_payment_date - payment_date).days
-            else:
-                # Last period ends on loan_end_date
-                days_in_period = (loan_end_date - payment_date).days + 1
+            # Use precomputed period ranges to determine days in period
+            days_in_period = period_ranges[month-1]['days_held']
             
             # CRITICAL FIX: For Month 1, use tranche_release directly to ensure perfect consistency with summary table
             # For subsequent months, use opening balance + tranche release as this represents the total amount earning interest
@@ -6650,7 +6643,7 @@ class LoanCalculator:
                 logging.info(f"  Tranche Release: £{tranche_release:,.2f}")
                 logging.info(f"  Interest Calc Base: £{interest_calculation_base:,.2f}")
                 logging.info(f"  Daily Rate: {daily_rate:.8f}")
-                logging.info(f"  Days in Period: {days_in_period}")
+                logging.info(f"  Days Held: {days_in_period}")
                 
                 # Use the authoritative interest_calculation_base for all calculations
                 compound_factor = (Decimal('1') + daily_rate) ** days_in_period
@@ -6703,7 +6696,10 @@ class LoanCalculator:
                 'closing_balance': f"{currency_symbol}{closing_balance_for_display:,.2f}",
                 'balance_change': "↔ No Change"  # Visual consistency: show no change like retained interest loans
             })
-        
+
+        # Apply period start/end dates and days held to each entry
+        self._apply_period_dates(schedule, start_date, total_months, loan_term_days, period_ranges)
+
         logging.info(f"Generated detailed payment schedule with {len(schedule)} entries")
         return schedule
     
