@@ -133,8 +133,6 @@ class LoanCalculator {
         document.getElementById('endDate').addEventListener('change', endDateHandler);
         document.getElementById('endDate').addEventListener('input', endDateHandler);
 
-
-
         // Tranche mode toggle
         document.querySelectorAll('input[name="tranche_mode"]').forEach(radio => {
             radio.addEventListener('change', () => {
@@ -1836,8 +1834,6 @@ class LoanCalculator {
         }
     }
 
-
-
     async generatePdfQuote() {
         if (!this.currentResults) {
             this.showError('No calculation results available for PDF generation');
@@ -2147,7 +2143,7 @@ class LoanCalculator {
         const trancheCount = parseInt(document.getElementById('autoTrancheCount').value) || 6;
         
         if (!totalAmount || !startDate || !trancheCount) {
-            alert('Please fill in all required fields for auto generation.');
+            window.notifications.show('Please fill in all required fields for auto generation.', 'error');
             return;
         }
         
@@ -2381,7 +2377,7 @@ function downloadExcelQuote() {
     // Check if we have calculation results
     if (!window.calculatorResults || Object.keys(window.calculatorResults).length === 0) {
         console.error('No calculation results available for Excel download');
-        alert('Please perform a calculation first before downloading Excel');
+        window.notifications.show('Please perform a calculation first before downloading Excel', 'error');
         return;
     }
     

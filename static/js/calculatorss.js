@@ -791,7 +791,7 @@ class LoanCalculator {
     }
 
     showError(message) {
-        alert('Error: ' + message);
+        window.notifications.show('Error: ' + message, 'error');
     }
 
     // All other UI helper methods remain the same...
@@ -1147,12 +1147,12 @@ class LoanCalculator {
             });
 
             if (totalAmount <= 0) {
-                alert('Please enter a valid total loan amount');
+                window.notifications.show('Please enter a valid total loan amount', 'error');
                 return;
             }
 
             if (!startDate) {
-                alert('Please select a start date');
+                window.notifications.show('Please select a start date', 'error');
                 return;
             }
 
@@ -1203,7 +1203,7 @@ class LoanCalculator {
             
         } catch (error) {
             console.error('Error in generateTranches:', error);
-            alert('Error generating tranches: ' + error.message);
+            window.notifications.show('Error generating tranches: ' + error.message, 'error');
         }
     }
 
@@ -1856,8 +1856,6 @@ class LoanCalculator {
 
         this.charts.loanBreakdown = new Chart(ctx, chartConfig);
     }
-
-
 
     // Create charts specific to development loans
     createDevelopmentLoanCharts(results) {
