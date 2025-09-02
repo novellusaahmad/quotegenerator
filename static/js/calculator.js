@@ -1206,13 +1206,13 @@ class LoanCalculator {
         const balanceBtn = document.querySelector('[data-bs-target="#balanceModal"]');
 
         if (paymentScheduleBtn) {
-            paymentScheduleBtn.style.display = (hideAll || loanType === 'development') ? 'none' : '';
+            paymentScheduleBtn.style.display = (hideAll || loanType === 'development' || loanType === 'development2') ? 'none' : '';
         }
         if (balanceBtn) {
             balanceBtn.style.display = hideAll ? 'none' : '';
         }
 
-        if (loanType === 'development') {
+        if (loanType === 'development' || loanType === 'development2') {
             const modal = document.getElementById('paymentScheduleModal');
             if (modal) modal.style.display = 'none';
         } else {
