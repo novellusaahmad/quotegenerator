@@ -42,6 +42,12 @@ body {
     background: linear-gradient(135deg, var(--secondary-color) 0%, var(--dark-color) 100%) !important;
 }
 
+/* Alternate gold navbar for select pages */
+.gold-nav .navbar {
+    background-color: #EEB142 !important;
+    background-image: none !important;
+}
+
 .navbar-brand {
     font-weight: 700;
     font-size: 1.5rem;
