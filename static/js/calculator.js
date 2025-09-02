@@ -1627,62 +1627,6 @@ class LoanCalculator {
         }
     }
 
-    toggleRateInputs() {
-        const rateInputTypeRadio = document.querySelector('input[name="rate_input_type"]:checked');
-        if (!rateInputTypeRadio) return;
-        
-        const rateInputType = rateInputTypeRadio.value;
-        const monthlyRateInput = document.getElementById('monthlyRateInput');
-        const annualRateInput = document.getElementById('annualRateInput');
-        
-        console.log('Toggle rate inputs:', rateInputType);
-        
-        if (monthlyRateInput && annualRateInput) {
-            if (rateInputType === 'monthly') {
-                monthlyRateInput.style.setProperty('display', 'flex', 'important');
-                annualRateInput.style.setProperty('display', 'none', 'important');
-                console.log('Showing monthly input, hiding annual input');
-            } else {
-                monthlyRateInput.style.setProperty('display', 'none', 'important');
-                annualRateInput.style.setProperty('display', 'flex', 'important');
-                console.log('Hiding monthly input, showing annual input');
-            }
-        }
-    }
-
-    setDefaultDate() {
-        const startDateInput = document.getElementById('startDate');
-        const autoStartDateInput = document.getElementById('autoStartDate');
-        const today = new Date().toISOString().split('T')[0];
-        
-        if (startDateInput && !startDateInput.value) {
-            startDateInput.value = today;
-        }
-        
-        if (autoStartDateInput && !autoStartDateInput.value) {
-            autoStartDateInput.value = today;
-        }
-    }
-
-    toggleTrancheMode() {
-        const manualMode = document.getElementById('manual_tranches');
-        const autoSettings = document.getElementById('autoTrancheSettings');
-        const manualControls = document.getElementById('manualTrancheControls');
-        const tranchesContainer = document.getElementById('tranchesContainer');
-
-        if (manualMode && manualMode.checked) {
-            // Show manual controls
-            if (autoSettings) autoSettings.style.display = 'none';
-            if (manualControls) manualControls.style.display = 'flex';
-            if (tranchesContainer) tranchesContainer.style.display = 'block';
-        } else {
-            // Show auto generation settings
-            if (autoSettings) autoSettings.style.display = 'block';
-            if (manualControls) manualControls.style.display = 'none';
-            if (tranchesContainer) tranchesContainer.style.display = 'none';
-        }
-    }
-
     generateTranches() {
         try {
             console.log('Generate tranches button clicked');
@@ -1898,54 +1842,6 @@ class LoanCalculator {
         this.renumberTranches();
     }
 
-    // Additional helper methods for form handling
-    toggleAmountInputSections() {
-        const grossSection = document.getElementById('grossAmountSection');
-        const netSection = document.getElementById('netAmountSection');
-        const grossRadio = document.getElementById('grossAmount');
-        const netRadio = document.getElementById('netAmount');
-        
-        if (grossRadio && grossRadio.checked && grossSection) {
-            grossSection.style.display = 'block';
-            console.log('Showing gross amount section');
-        } else if (grossSection) {
-            grossSection.style.display = 'none';
-        }
-        
-        if (netRadio && netRadio.checked && netSection) {
-            netSection.style.display = 'block';
-            console.log('Showing net amount section');
-        } else if (netSection) {
-            netSection.style.display = 'none';
-        }
-    }
-    
-    toggleGrossAmountInputs() {
-        const fixedInput = document.getElementById('grossFixedInput');
-        const percentageInput = document.getElementById('grossPercentageInput');
-        const fixedRadio = document.getElementById('grossFixed');
-        
-        if (fixedRadio && fixedRadio.checked) {
-            console.log('Toggle gross amount inputs:', 'fixed');
-            if (fixedInput) {
-                fixedInput.style.setProperty('display', 'flex', 'important');
-                console.log('Showing fixed input, hiding percentage input');
-            }
-            if (percentageInput) {
-                percentageInput.style.setProperty('display', 'none', 'important');
-            }
-        } else {
-            console.log('Toggle gross amount inputs:', 'percentage');
-            if (fixedInput) {
-                fixedInput.style.setProperty('display', 'none', 'important');
-            }
-            if (percentageInput) {
-                percentageInput.style.setProperty('display', 'flex', 'important');
-                console.log('Showing percentage input, hiding fixed input');
-            }
-        }
-    }
-    
     toggleRateInputs() {
         const monthlyInput = document.getElementById('monthlyRateInput');
         const annualInput = document.getElementById('annualRateInput');
@@ -2047,14 +1943,6 @@ class LoanCalculator {
         } catch (error) {
             console.error('Error in toggleTrancheMode:', error);
         }
-    }
-
-    updateCurrencySymbols() {
-        const currency = document.getElementById('currency').value;
-        const symbol = currency === 'EUR' ? '€' : '£';
-        document.querySelectorAll('.currency-symbol').forEach(el => {
-            el.textContent = symbol;
-        });
     }
 
     setDefaultDate() {
