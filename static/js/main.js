@@ -503,13 +503,18 @@ window.addEventListener('offline', function() {
 
 // Global error handler
 window.addEventListener('error', function(event) {
+    // Ignore errors from loading resources like images or scripts
+    if (!event.error) {
+        return;
+    }
+
     console.error('Global error:', event.error);
-    
+
     // Don't show error toast for script loading errors in development
     if (event.filename && event.filename.includes('localhost')) {
         return;
     }
-    
+
     Novellus.utils.showToast('An unexpected error occurred', 'danger');
 });
 
