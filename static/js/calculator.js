@@ -898,7 +898,7 @@ class LoanCalculator {
         const periodicInterestEl = document.getElementById('periodicInterestResult');
         const periodicInterestLabel = document.getElementById('periodicInterestLabel');
 
-        const interestRepaymentTypes = ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment', 'sc_only'];
+        const interestRepaymentTypes = ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment', 'sc_only', 'none'];
         if ((loanType === 'term' || loanType === 'bridge') && interestRepaymentTypes.includes(repaymentOption)) {
             let periodicInterest = results.periodicInterest || results.periodic_interest;
             if (!periodicInterest) {

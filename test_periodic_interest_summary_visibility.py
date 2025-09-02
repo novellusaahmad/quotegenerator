@@ -25,7 +25,7 @@ sys.modules['dateutil.relativedelta'] = relativedelta_module
 from calculations import LoanCalculator
 
 
-@pytest.mark.parametrize("repayment_option", ['service_only', 'capital_payment_only', 'flexible_payment'])
+@pytest.mark.parametrize("repayment_option", ['service_only', 'capital_payment_only', 'flexible_payment', 'none'])
 @pytest.mark.parametrize("payment_frequency", ['monthly', 'quarterly'])
 def test_periodic_interest_visible_and_correct(repayment_option, payment_frequency):
     calc = LoanCalculator()
@@ -48,12 +48,26 @@ def test_periodic_interest_visible_and_correct(repayment_option, payment_frequen
         params['flexible_payment'] = 10000
 
     result = calc.calculate_bridge_loan(params)
-    daily_rate = 0.12 / 365
-    days_month = 31
-    days_quarter = 91
-    expected = 600000 * daily_rate * (days_month if payment_frequency == 'monthly' else days_quarter)
+    if repayment_option in ['service_only', 'none']:
+        monthly_expected = 600000 * 0.12 / 12
+        quarterly_expected = 600000 * 0.12 / 4
+        expected = monthly_expected if payment_frequency == 'monthly' else quarterly_expected
+        assert result['periodicInterest'] == pytest.approx(expected, abs=0.01)
+        assert result['monthlyInterestPayment'] == pytest.approx(monthly_expected, abs=0.01)
+        assert result['quarterlyInterestPayment'] == pytest.approx(quarterly_expected, abs=0.01)
+    else:
+        daily_rate = 0.12 / 365
+        days_month = 31
+        days_quarter = 91
+        expected = 600000 * daily_rate * (
+            days_month if payment_frequency == 'monthly' else days_quarter
+        )
 
-    assert result['periodicInterest'] == pytest.approx(expected, abs=0.01)
-    assert result['monthlyInterestPayment'] == pytest.approx(600000 * daily_rate * days_month, abs=0.01)
-    assert result['quarterlyInterestPayment'] == pytest.approx(600000 * daily_rate * days_quarter, abs=0.01)
+        assert result['periodicInterest'] == pytest.approx(expected, abs=0.01)
+        assert result['monthlyInterestPayment'] == pytest.approx(
+            600000 * daily_rate * days_month, abs=0.01
+        )
+        assert result['quarterlyInterestPayment'] == pytest.approx(
+            600000 * daily_rate * days_quarter, abs=0.01
+        )
     assert result['periodicInterest'] > 0

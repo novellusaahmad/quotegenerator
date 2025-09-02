@@ -700,36 +700,47 @@ class LoanCalculator:
             **{k: float(v) for k, v in fees.items()}
         })
 
-        # Always provide reference monthly and quarterly interest payments
-        # using exact day counts for the first period. This ensures that
-        # summaries align with detailed schedules, especially when the loan
-        # term includes additional days beyond whole months.
+        # Always provide reference monthly and quarterly interest payments.
+        # For service-only bridge loans, these are simple nominal
+        # calculations based on the gross loan amount. For other repayment
+        # options, use the exact day-count method so summaries align with
+        # detailed schedules.
         annual_rate_decimal = annual_rate / Decimal('100')
         rounding = Decimal('0.01')
-        monthly_interest = self._calculate_periodic_interest(
-            gross_amount,
-            annual_rate_decimal,
-            'monthly',
-            start_date,
-            loan_term,
-            payment_timing,
-            loan_term_days,
-            use_360_days,
-        ).quantize(rounding, rounding=ROUND_HALF_UP)
-        quarterly_interest = self._calculate_periodic_interest(
-            gross_amount,
-            annual_rate_decimal,
-            'quarterly',
-            start_date,
-            loan_term,
-            payment_timing,
-            loan_term_days,
-            use_360_days,
-        ).quantize(rounding, rounding=ROUND_HALF_UP)
+        if repayment_option in ['service_only', 'none']:
+            monthly_interest = (
+                gross_amount * annual_rate_decimal / Decimal('12')
+            ).quantize(rounding, rounding=ROUND_HALF_UP)
+            quarterly_interest = (
+                gross_amount * annual_rate_decimal / Decimal('4')
+            ).quantize(rounding, rounding=ROUND_HALF_UP)
+        else:
+            monthly_interest = self._calculate_periodic_interest(
+                gross_amount,
+                annual_rate_decimal,
+                'monthly',
+                start_date,
+                loan_term,
+                payment_timing,
+                loan_term_days,
+                use_360_days,
+            ).quantize(rounding, rounding=ROUND_HALF_UP)
+            quarterly_interest = self._calculate_periodic_interest(
+                gross_amount,
+                annual_rate_decimal,
+                'quarterly',
+                start_date,
+                loan_term,
+                payment_timing,
+                loan_term_days,
+                use_360_days,
+            ).quantize(rounding, rounding=ROUND_HALF_UP)
         calculation['monthlyInterestPayment'] = float(monthly_interest)
         calculation['quarterlyInterestPayment'] = float(quarterly_interest)
 
-        periodic_interest = monthly_interest if payment_frequency == 'monthly' else quarterly_interest
+        periodic_interest = (
+            monthly_interest if payment_frequency == 'monthly' else quarterly_interest
+        )
         calculation['periodicInterest'] = float(periodic_interest)
 
         # Service-only loans pay interest only each period. Service + capital
