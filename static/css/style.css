@@ -484,8 +484,8 @@ footer {
 .btn:focus,
 .form-control:focus,
 .form-select:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: none;
 }
 
 /* High Contrast Mode */
