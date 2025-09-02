@@ -224,8 +224,7 @@ class LoanHistoryManager {
         } catch (error) {
             console.error('Error loading loans:', error);
             this.showError(error.message);
-                            window.notifications.error(`Failed to load loans: ${error.message}`);
-            }
+            window.notifications.error(`Failed to load loans: ${error.message}`);
         }
     }
 
