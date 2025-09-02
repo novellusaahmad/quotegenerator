@@ -566,6 +566,19 @@ h4, h5, h6 {
     color: var(--novellus-gold) !important;
 }
 
+/* Primary-colored buttons in the navbar */
+.navbar .btn-nav {
+    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+}
+
+.navbar .btn-nav:hover {
+    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%);
+    color: white;
+}
+
 /* Remove any blue backgrounds */
 .bg-primary {
     background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
