@@ -55,6 +55,30 @@
     padding: 1.5rem;
 }
 
+/* Standard page title bar used across configuration and documentation pages */
+.page-title-bar {
+    background-color: var(--novellus-gold);
+    color: #fff;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.page-title-bar .title-icon {
+    margin-right: 0.5rem;
+}
+
+.page-title-bar h1,
+.page-title-bar h2,
+.page-title-bar h3,
+.page-title-bar h4,
+.page-title-bar h5 {
+    margin: 0;
+    font-weight: 600;
+}
+
 /* Special result cards - Alternating Colors for Visibility */
 .result-card {
     border: none;

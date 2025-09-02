@@ -36,24 +36,20 @@
 <div class="container-fluid py-3 powerbi-config-page">
     <div class="row justify-content-center">
         <div class="col-xl-10 col-lg-11">
-            <!-- Compact Header -->
-            <div class="d-flex align-items-center justify-content-between mb-3">
+            <!-- Page Header -->
+            <div class="page-title-bar d-flex justify-content-between">
                 <div class="d-flex align-items-center">
-                    <div class="bg-primary rounded p-2 me-3">
-                        <i class="fas fa-chart-bar text-white"></i>
-                    </div>
+                    <i class="fas fa-chart-bar title-icon"></i>
                     <div>
                         <h4 class="mb-0">Power BI Configuration & Scheduler</h4>
-                        <small class="text-muted">Dataset refresh, scheduling, and report management</small>
+                        <small class="text-white-50">Dataset refresh, scheduling, and report management</small>
                     </div>
                 </div>
-                
-                <!-- Scheduler Status Indicator -->
-                <div id="schedulerStatusBadge" class="badge bg-novellus-gold text-dark">
+                <div id="schedulerStatusBadge" class="badge bg-light text-dark">
                     <i class="fas fa-clock me-1"></i>Scheduler Inactive
                 </div>
             </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 mb-3">
                     <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addReportModal">
                         <i class="fas fa-plus me-1"></i>Add Report
                     </button>
