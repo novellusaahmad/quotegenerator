@@ -89,6 +89,11 @@
                     <a class="btn btn-nav" href="{{ url_for('calculator_page') }}">
                         <i class="fas fa-calculator me-1"></i>Calculator
                     </a>
+                    {% if request.endpoint in ['powerbi_config', 'snowflake_config', 'user_manual', 'scenario_comparison_page', 'loan_history', 'calculator_page'] %}
+                    <a class="btn btn-nav" href="{{ url_for('landing_page') }}">
+                        <i class="fas fa-home me-1"></i>Home
+                    </a>
+                    {% endif %}
                 </div>
                 {% endif %}
                 
