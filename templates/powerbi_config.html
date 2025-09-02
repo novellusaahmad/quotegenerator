@@ -2,6 +2,8 @@
 
 {% block title %}Power BI Configuration{% endblock %}
 
+{% block body_attr %}data-theme="document"{% endblock %}
+
 {% block head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
