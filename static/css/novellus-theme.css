@@ -581,12 +581,14 @@ h4, h5, h6 {
 
 /* Ensure the icons are visible against the gold background */
 .navbar .btn-nav .fa-home,
-.navbar .btn-nav .fa-sync-alt {
+.navbar .btn-nav .fa-sync-alt,
+.navbar .btn-nav .fa-calculator {
     color: black;
 }
 
 .navbar .btn-nav:hover .fa-home,
-.navbar .btn-nav:hover .fa-sync-alt {
+.navbar .btn-nav:hover .fa-sync-alt,
+.navbar .btn-nav:hover .fa-calculator {
     color: black;
 }
 
