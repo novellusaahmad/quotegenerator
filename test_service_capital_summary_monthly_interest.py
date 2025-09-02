@@ -39,7 +39,7 @@ def test_service_and_capital_summary_shows_interest_and_capital():
         'start_date': '2024-01-01',
     }
     result = calc.calculate_bridge_loan(params)
-    expected_interest = 1000000 * 0.12 / 365 * 31
+    expected_interest = 1000000 * 0.12 / 12
     assert result['periodicInterest'] == pytest.approx(expected_interest, abs=0.01)
     assert result['monthlyPayment'] == pytest.approx(expected_interest + 5000, abs=0.01)
 
@@ -62,6 +62,6 @@ def test_service_and_capital_summary_net_input_uses_gross_amount():
     }
     result = calc.calculate_bridge_loan(params)
     gross = Decimal(str(result['grossAmount']))
-    expected_interest = gross * Decimal('0.12') / Decimal('365') * Decimal('31')
+    expected_interest = gross * Decimal('0.12') / Decimal('12')
     assert result['periodicInterest'] == pytest.approx(float(expected_interest), abs=0.01)
     assert result['monthlyPayment'] == pytest.approx(float(expected_interest) + 5000, abs=0.01)
