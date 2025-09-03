@@ -244,11 +244,40 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light" style="background: #AD965F !important; background-color: #AD965F !important;">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary" style="background-color: rgb(173, 150, 95) !important; border: 2px solid rgb(0, 0, 0) !important; color: white !important; background-image: none !important;">
         <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('landing_page') }}">
+            <a class="navbar-brand d-flex align-items-center" href="/home">
                 <img src="/static/novellus_logo.png" alt="Novellus" height="32" class="me-2 navbar-logo" id="navbarLogo" style="height: 32px; width: auto; object-fit: contain; filter: none;">
+                <span class="fw-bold"></span>
             </a>
+
+            <div class="row row-cols-1 row-cols-md-5 g-2">
+                <div class="col">
+                    <a class="btn btn-info text-white w-100 nav-btn" href="{{ url_for('powerbi_config') }}">
+                        <i class="fas fa-cog me-1"></i>Power BI Configuration
+                    </a>
+                </div>
+                <div class="col">
+                    <a class="btn btn-info text-white w-100 nav-btn" href="{{ url_for('snowflake_config') }}">
+                        <i class="fas fa-database me-1"></i>Snowflake Config
+                    </a>
+                </div>
+                <div class="col">
+                    <a class="btn btn-secondary text-white w-100 nav-btn" href="{{ url_for('user_manual') }}">
+                        <i class="fas fa-book me-1"></i>User Manual
+                    </a>
+                </div>
+                <div class="col">
+                    <a class="btn btn-warning text-dark w-100 nav-btn" href="{{ url_for('scenario_comparison_page') }}">
+                        <i class="fas fa-chart-line me-1"></i>Compare
+                    </a>
+                </div>
+                <div class="col">
+                    <a class="btn btn-maroon text-white w-100 nav-btn" href="{{ url_for('loan_history') }}">
+                        <i class="fas fa-history me-1"></i>History
+                    </a>
+                </div>
+            </div>
         </div>
     </nav>
     <div class="landing-hero">
