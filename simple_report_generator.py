@@ -52,6 +52,7 @@ class WorkingReportGenerator:
             story.append(Spacer(1, 20))
             
             # Loan details table
+            show_end_ltv = not (loan.loan_type == 'bridge' and str(loan.repayment_option) in ('none', 'retained', 'retained_interest'))
             loan_data = [
                 ['Field', 'Value'],
                 ['Loan Name', loan.loan_name or 'N/A'],
@@ -61,11 +62,14 @@ class WorkingReportGenerator:
                 ['Total Interest', f"£{float(loan.total_interest or 0):,.2f}"],
                 ['Property Value', f"£{float(loan.property_value or 0):,.2f}"],
                 ['Start LTV', f"{float(loan.start_ltv or 0):.2f}%"],
-                ['End LTV', f"{float(loan.end_ltv or 0):.2f}%"],
+            ]
+            if show_end_ltv:
+                loan_data.append(['End LTV', f"{float(loan.end_ltv or 0):.2f}%"])
+            loan_data.extend([
                 ['Loan Term (Months)', str(getattr(loan, 'loan_term_months', getattr(loan, 'loan_term', 'N/A')))],
                 ['Interest Rate', f"{float(loan.interest_rate or 0):.2f}%"],
                 ['Created Date', loan.created_at.strftime('%Y-%m-%d %H:%M') if loan.created_at else 'N/A']
-            ]
+            ])
             
             table = Table(loan_data, colWidths=[2.5*inch, 3*inch])
             table.setStyle(TableStyle([
@@ -134,6 +138,7 @@ class WorkingReportGenerator:
             
             # Write data
             row = 1
+            show_end_ltv = not (loan.loan_type == 'bridge' and str(loan.repayment_option) in ('none', 'retained', 'retained_interest'))
             data_rows = [
                 ('Loan Name', loan.loan_name or 'N/A', data_format),
                 ('Loan Type', loan.loan_type or 'N/A', data_format),
@@ -142,11 +147,14 @@ class WorkingReportGenerator:
                 ('Total Interest', float(loan.total_interest or 0), currency_format),
                 ('Property Value', float(loan.property_value or 0), currency_format),
                 ('Start LTV', f"{float(loan.start_ltv or 0):.2f}%", data_format),
-                ('End LTV', f"{float(loan.end_ltv or 0):.2f}%", data_format),
+            ]
+            if show_end_ltv:
+                data_rows.append(('End LTV', f"{float(loan.end_ltv or 0):.2f}%", data_format))
+            data_rows.extend([
                 ('Loan Term (Months)', getattr(loan, 'loan_term_months', getattr(loan, 'loan_term', 'N/A')), data_format),
                 ('Interest Rate', f"{float(loan.interest_rate or 0):.2f}%", data_format),
                 ('Created Date', loan.created_at.strftime('%Y-%m-%d %H:%M') if loan.created_at else 'N/A', data_format)
-            ]
+            ])
             
             for field, value, fmt in data_rows:
                 worksheet.write(row, 0, field, data_format)
