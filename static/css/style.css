@@ -30,6 +30,10 @@
     --font-family: 'Brother 1816', Arial, sans-serif;
 }
 
+html, body {
+    overflow-x: hidden; /* Prevent horizontal scrollbars on all pages */
+}
+
 body {
     font-family: var(--font-family);
     line-height: 1.6;
