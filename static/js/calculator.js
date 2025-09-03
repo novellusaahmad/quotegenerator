@@ -745,8 +745,10 @@ class LoanCalculator {
         // Determine loan type and repayment option early for conditional displays
         const loanType = document.getElementById('loanType').value;
         const repaymentOption = document.getElementById('repaymentOption').value;
+
         const isBridgeRetainedOnly = loanType === 'bridge' && repaymentOption === 'retained';
         const isBridgeServicedOnly = loanType === 'bridge' && repaymentOption === 'service_only';
+
         const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
         const paymentTiming = document.querySelector('input[name="payment_timing"]:checked')?.value || 'advance';
 
