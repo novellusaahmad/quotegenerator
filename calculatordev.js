@@ -673,9 +673,17 @@ class LoanCalculator {
             const startLTV = results.startLTV || results.startLtv || 0;
             startLTVEl.textContent = startLTV.toFixed(2) + '%';
         }
-        
+
+        const loanType = document.getElementById('loanType').value;
+        const repaymentOption = document.getElementById('repaymentOption').value;
+        const isBridgeRetainedOnly = loanType === 'bridge' && repaymentOption === 'retained';
+        const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
+
         // Display End LTV based on closing balance of last month from payment schedule
-        if (endLTVEl && propertyValue > 0) {
+        const endLTVRow = endLTVEl ? endLTVEl.closest('tr') : null;
+        if (isBridgeRetainedOnly) {
+            if (endLTVRow) endLTVRow.style.display = 'none';
+        } else if (endLTVEl && propertyValue > 0) {
             let endLTV = 0;
             
             // Try to get the closing balance from the last month of the payment schedule for final remaining balance
@@ -724,11 +732,6 @@ class LoanCalculator {
             totalNetAdvanceEl.textContent = totalNetAdvance.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         
-        // Get loan type and repayment option for multiple uses
-        const loanType = document.getElementById('loanType').value;
-        const repaymentOption = document.getElementById('repaymentOption').value;
-        const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
-        
         // Show interest-only total and savings if available (for flexible payment options)
         const interestOnlyTotalRow = document.getElementById('interestOnlyTotalRow');
         const interestOnlyTotalEl = document.getElementById('interestOnlyTotalResult');
@@ -742,15 +745,18 @@ class LoanCalculator {
             (results.interestOnlyTotal !== undefined && results.interestOnlyTotal > 0) ||
             (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment')
         );
-        
-        if (shouldShowInterestComparison) {
+
+        if (isBridgeRetainedOnly) {
+            if (interestOnlyTotalRow) interestOnlyTotalRow.style.display = 'none';
+            if (interestSavingsRow) interestSavingsRow.style.display = 'none';
+        } else if (shouldShowInterestComparison) {
             // Show interest-only total row
             if (interestOnlyTotalRow) interestOnlyTotalRow.style.display = 'table-row';
             if (interestOnlyTotalEl) {
                 const interestOnlyTotal = results.interestOnlyTotal || 0;
                 interestOnlyTotalEl.textContent = interestOnlyTotal.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             }
-            
+
             // Show interest savings row only if there are actual savings
             const interestSavings = results.interestSavings || 0;
             if (interestSavings > 0 && interestSavingsRow) {
