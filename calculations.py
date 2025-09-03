@@ -716,6 +716,10 @@ class LoanCalculator:
         )
         calculation['periodicInterest'] = float(periodic_interest)
 
+        freq_label = 'Monthly' if payment_frequency == 'monthly' else 'Quarterly'
+        timing_label = 'in Advance' if payment_timing == 'advance' else 'in Arrears'
+        calculation['interestPaymentTiming'] = f"{freq_label} {timing_label}"
+
         # Service-only loans pay interest only each period. Service + capital
         # loans pay the interest plus the agreed capital repayment amount.
         # Capital-payment-only loans retain their provided payment values.

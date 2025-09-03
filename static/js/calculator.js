@@ -752,6 +752,7 @@ class LoanCalculator {
              repaymentOption === 'retained' ||
              repaymentOption === 'retained_interest');
         const isBridgeServicedOnly = loanType === 'bridge' && repaymentOption === 'service_only';
+        const showBridgeInterestTiming = loanType === 'bridge' && ['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment'].includes(repaymentOption);
 
         const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
         const paymentTiming = document.querySelector('input[name="payment_timing"]:checked')?.value || 'advance';
@@ -980,7 +981,7 @@ class LoanCalculator {
 
         const interestPaymentRow = document.getElementById('interestPaymentTimingRow');
         const interestPaymentEl = document.getElementById('interestPaymentTimingResult');
-        if (isBridgeServicedOnly) {
+        if (showBridgeInterestTiming) {
             if (interestPaymentRow && interestPaymentEl) {
                 const freqLabel = paymentFrequency === 'quarterly' ? 'Quarterly' : 'Monthly';
                 const timingLabel = paymentTiming === 'advance' ? 'in Advance' : 'in Arrears';
