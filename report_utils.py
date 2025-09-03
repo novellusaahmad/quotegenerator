@@ -257,6 +257,12 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
     summary["monthlyInterestPayment"] = float(monthly_interest)
     summary["quarterlyInterestPayment"] = float(quarterly_interest)
 
+    payment_frequency = params.get("payment_frequency", "monthly")
+    payment_timing = params.get("payment_timing", "arrears")
+    freq_label = "Monthly" if payment_frequency == "monthly" else "Quarterly"
+    timing_label = "in Advance" if payment_timing == "advance" else "in Arrears"
+    summary["interestPaymentTiming"] = f"{freq_label} {timing_label}"
+
     if is_service_and_capital_net and summary:
         gross_amount = Decimal(
             str(
