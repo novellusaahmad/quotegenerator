@@ -3162,18 +3162,32 @@ class LoanCalculator {
             return 0;
         });
 
-        // Convert interest values to a running cumulative sum
-        let cumulativeInterest = 0;
-        const interestData = schedule.map(entry => {
-            const interestRaw = entry.interest_amount || entry.interest || 0;
-            let interestValue = 0;
-            if (typeof interestRaw === 'number') {
-                interestValue = interestRaw;
-            } else if (typeof interestRaw === 'string') {
-                interestValue = parseFloat(interestRaw.replace(/[£€,]/g, '')) || 0;
+        // Helper to parse currency strings or numbers
+        const parseValue = (val) => {
+            if (typeof val === 'number') {
+                return val;
             }
-            cumulativeInterest += interestValue;
-            return cumulativeInterest;
+            if (typeof val === 'string') {
+                return parseFloat(val.replace(/[£€,]/g, '')) || 0;
+            }
+            return 0;
+        };
+
+        // Build running sums for interest accrued and retained
+        let cumulativeAccrued = 0;
+        const interestAccruedData = schedule.map(entry => {
+            const raw = entry.interest_accrued_raw ?? entry.interest_accrued ?? entry.interest_amount ?? entry.interest;
+            const val = parseValue(raw);
+            cumulativeAccrued += val;
+            return cumulativeAccrued;
+        });
+
+        let cumulativeRetained = 0;
+        const interestRetainedData = schedule.map(entry => {
+            const raw = entry.interest_retained_raw ?? entry.interest_retained;
+            const val = parseValue(raw);
+            cumulativeRetained += val;
+            return cumulativeRetained;
         });
 
         const data = {
@@ -3194,8 +3208,8 @@ class LoanCalculator {
                     pointBorderWidth: 2
                 },
                 {
-                    label: 'Interest Payment',
-                    data: interestData,
+                    label: 'Interest Accrued',
+                    data: interestAccruedData,
                     borderColor: 'rgba(70, 130, 180, 1)',
                     backgroundColor: 'rgba(70, 130, 180, 0.1)',
                     borderWidth: 2,
@@ -3204,6 +3218,21 @@ class LoanCalculator {
                     pointRadius: 3,
                     pointHoverRadius: 6,
                     pointBackgroundColor: 'rgba(70, 130, 180, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Interest Retained',
+                    data: interestRetainedData,
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgba(220, 53, 69, 1)',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2,
                     yAxisID: 'y1'
