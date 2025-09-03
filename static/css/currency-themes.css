@@ -113,6 +113,22 @@
     color: white !important;
 }
 
+/* EUR Navbar Button Colors */
+[data-currency="EUR"] .navbar .btn-nav {
+    background: #000 !important;
+    color: #fff !important;
+}
+
+[data-currency="EUR"] .navbar .btn-nav:hover {
+    background: #000 !important;
+    color: #fff !important;
+}
+
+[data-currency="EUR"] .navbar .btn-nav i,
+[data-currency="EUR"] .navbar .btn-nav:hover i {
+    color: #fff !important;
+}
+
 /* Table Headers and Cards - Currency Specific */
 [data-currency="GBP"] .table thead th,
 [data-currency="GBP"] .card-header,
