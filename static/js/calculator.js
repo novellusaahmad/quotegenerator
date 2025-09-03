@@ -746,7 +746,11 @@ class LoanCalculator {
         const loanType = document.getElementById('loanType').value;
         const repaymentOption = document.getElementById('repaymentOption').value;
 
-        const isBridgeRetainedOnly = loanType === 'bridge' && repaymentOption === 'retained';
+        // Treat both legacy and current values as retained interest for bridge loans
+        const isBridgeRetainedOnly = loanType === 'bridge' &&
+            (repaymentOption === 'none' ||
+             repaymentOption === 'retained' ||
+             repaymentOption === 'retained_interest');
         const isBridgeServicedOnly = loanType === 'bridge' && repaymentOption === 'service_only';
 
         const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
