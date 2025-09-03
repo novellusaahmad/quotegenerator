@@ -745,7 +745,8 @@ class LoanCalculator {
         // Determine loan type and repayment option early for conditional displays
         const loanType = document.getElementById('loanType').value;
         const repaymentOption = document.getElementById('repaymentOption').value;
-        const isBridgeRetainedOnly = loanType === 'bridge' && repaymentOption === 'retained';
+        // For bridge loans with retained interest only, hide interest-only and End LTV rows
+        const isBridgeRetainedOnly = loanType === 'bridge' && repaymentOption === 'none';
         const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
 
         // Update the display elements

@@ -676,7 +676,8 @@ class LoanCalculator {
 
         const loanType = document.getElementById('loanType').value;
         const repaymentOption = document.getElementById('repaymentOption').value;
-        const isBridgeRetainedOnly = loanType === 'bridge' && repaymentOption === 'retained';
+        // Detect bridge loans with retained interest only to hide certain summary rows
+        const isBridgeRetainedOnly = loanType === 'bridge' && repaymentOption === 'none';
         const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
 
         // Display End LTV based on closing balance of last month from payment schedule
