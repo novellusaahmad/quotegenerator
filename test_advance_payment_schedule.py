@@ -1,5 +1,6 @@
 import pytest
 from calculations import LoanCalculator
+from report_utils import recalculate_summary
 
 def _parse_interest(entry):
     val = entry['interest_amount']
@@ -171,8 +172,15 @@ def test_service_and_capital_advance_first_period_values():
     expected_interest = 100000 * 0.12 * 31 / 365
     assert _parse_currency(first['interest_amount']) == pytest.approx(0, abs=0.1)
     assert _parse_currency(first['interest_retained']) == pytest.approx(expected_interest, abs=0.1)
+    # Interest should still accrue even though it is retained
+    assert _parse_currency(first['interest_accrued']) == pytest.approx(expected_interest, abs=0.1)
     assert _parse_currency(first['principal_payment']) == pytest.approx(1000, abs=0.1)
     assert _parse_currency(first['total_payment']) == pytest.approx(1000, abs=0.1)
+
+    # Summary should include the accrued interest
+    summary = recalculate_summary(schedule)
+    total_accrued = sum(_parse_currency(r['interest_accrued']) for r in schedule)
+    assert summary['total_interest_accrued'] == pytest.approx(total_accrued, abs=0.1)
 
 
 def test_flexible_payment_advance_first_period_values():

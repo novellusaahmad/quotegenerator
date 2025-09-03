@@ -78,7 +78,8 @@ def recalculate_summary(schedule: List[Dict[str, Any]]) -> Dict[str, float]:
         total_savings += _to_decimal(entry.get('interest_saving', 0), currency_symbol)
         total_retained += _to_decimal(entry.get('interest_retained', 0), currency_symbol)
         total_refund += _to_decimal(entry.get('interest_refund', 0), currency_symbol)
-        total_accrued += _to_decimal(entry.get('interest_accrued', 0), currency_symbol)
+        accrued_val = entry.get('interest_accrued_raw', entry.get('interest_accrued', 0))
+        total_accrued += _to_decimal(accrued_val, currency_symbol)
         try:
             total_days += int(entry.get('days_held', 0))
         except Exception:

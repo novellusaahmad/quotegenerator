@@ -4451,6 +4451,13 @@ class LoanCalculator:
                     interest_refund_disp = Decimal('0.00')
                 interest_saving_disp = interest_refund_disp
 
+                # Preserve the pre-adjustment interest for accrual tracking. This
+                # ensures that even when the first period's interest is moved into
+                # retained interest (e.g. advance payment timing), the accrued
+                # totals still reflect that interest.
+                interest_accrued_disp_val = interest_amount_disp
+                interest_accrued_raw_val = interest_amount
+
                 # Default retained and refund amounts mirror gross-to-net savings
                 interest_retained_disp_val = interest_only_disp
                 interest_retained_raw_val = interest_only
@@ -4522,14 +4529,14 @@ class LoanCalculator:
                     'interest_calculation': interest_calc,
                     'interest_amount': f"{currency_symbol}{interest_amount_disp:,.2f}",
                     'interest_saving': f"{currency_symbol}{interest_saving_disp:,.2f}",
-                    'interest_accrued': f"{currency_symbol}{interest_amount_disp:,.2f}",
+                    'interest_accrued': f"{currency_symbol}{interest_accrued_disp_val:,.2f}",
                     'interest_retained': f"{currency_symbol}{interest_retained_disp_val:,.2f}",
                     'interest_refund': f"{currency_symbol}{interest_refund_disp_val:,.2f}",
                     'interest_amount_raw': interest_amount,
                     'interest_saving_raw': interest_saving,
                     'interest_retained_raw': interest_retained_raw_val,
                     'interest_refund_raw': interest_refund_raw_val,
-                    'interest_accrued_raw': interest_amount,
+                    'interest_accrued_raw': interest_accrued_raw_val,
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
