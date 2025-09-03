@@ -1,120 +1,120 @@
 # Novellus Loan Management System – User Manual
 
-*Version 2.1.0 | Last Updated: July 30, 2025*
+*Version 2.2.0 | Last Updated: September 3, 2025*
 
 ---
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Landing Page and System Overview](#landing-page-and-system-overview)
-3. [Loan Calculator Operations](#loan-calculator-operations)
-4. [Loan History Management](#loan-history-management)
-5. [Power BI Integration and Automation](#power-bi-integration-and-automation)
-6. [System Administration](#system-administration)
-7. [Net-to-Gross Calculation Formulas](#net-to-gross-calculation-formulas)
-   1. [Bridge Loan Formulas](#bridge-loan-formulas)
-   2. [Term Loan Formulas](#term-loan-formulas)
-   3. [Development Loan Methodology](#development-loan-methodology)
-8. [Calculation Logic Reference](#calculation-logic-reference)
+2. [Quick Tour](#quick-tour)
+3. [Running a Loan Calculation](#running-a-loan-calculation)
+4. [Viewing Loan History](#viewing-loan-history)
+5. [Power BI Automation](#power-bi-automation)
+6. [Administrator Tools](#administrator-tools)
+7. [Net-to-Gross Formulas](#net-to-gross-formulas)
+    1. [Bridge Loans](#bridge-loans)
+    2. [Term Loans](#term-loans)
+    3. [Development Loans](#development-loans)
+8. [Core Components](#core-components)
 9. [Installation and Deployment](#installation-and-deployment)
-   1. [Quick Start Installation](#quick-start-installation)
-   2. [Manual Installation Process](#manual-installation-process)
-   3. [Docker Deployment](#docker-deployment)
-10. [Security and Authentication](#security-and-authentication)
-11. [Performance Optimization](#performance-optimization)
-12. [Troubleshooting and Support](#troubleshooting-and-support)
+    1. [Quick Start](#quick-start)
+    2. [Manual Setup](#manual-setup)
+    3. [Docker](#docker)
+10. [Security](#security)
+11. [Performance Tips](#performance-tips)
+12. [Troubleshooting](#troubleshooting)
 13. [Revision History](#revision-history)
 
 ---
 
 ## Introduction
-The Novellus Loan Management System is a financial platform for calculating, tracking, and reporting loan applications. It supports bridge, term, and development loans and provides tools for administrators and analysts to configure and monitor the system.
+The Novellus Loan Management System helps lenders calculate, store and report on bridge, term and development loans. This guide walks through everyday tasks for end users and administrators.
 
 ---
 
-## Landing Page and System Overview
-The application redirects new visitors to the calculator interface after authentication. The landing page describes system capabilities and offers direct access to the primary calculation dashboard.
+## Quick Tour
+Authenticated users are redirected to the calculator page. The landing page briefly describes capabilities and links to the main dashboard.
 
 ---
 
-## Loan Calculator Operations
-1. **Access the Calculator** – Navigate to `/calculator` once logged in.
-2. **Select Loan Type** – Choose Bridge, Term, Development, or Development 2.
-3. **Enter Parameters** – Supply loan amount, fees, interest rate, and related details.
-4. **Review Results** – The interface displays gross amount, interest, fees, and repayment schedule.
-5. **Save or Download** – Persist results to the database or export to PDF.
+## Running a Loan Calculation
+1. **Open** `/calculator`.
+2. **Choose** a loan type: Bridge, Term, Development or Development 2.
+3. **Provide** the loan amount, fees, interest rate and other required values.
+4. **Review** the gross figure, fee breakdown and repayment schedule.
+5. **Save** the loan or **download** the result as a PDF.
 
 ---
 
-## Loan History Management
-- Access stored applications through `/loan_history`.
-- Search by customer, loan reference, or date.
-- View, edit, or archive existing loans.
-- Download historical calculations for auditing or review.
+## Viewing Loan History
+- Go to `/loan_history`.
+- Search by borrower name, reference or creation date.
+- Open a record to edit, archive or download the original calculation.
 
 ---
 
-## Power BI Integration and Automation
-The system exposes endpoints and scripts to refresh Power BI datasets and schedules. Automated refresh scripts (`powerbi_refresh.py`) may be configured for cron or Azure Functions.
+## Power BI Automation
+Scripts such as `powerbi_refresh.py` can trigger dataset refreshes. They may run on cron, Windows Task Scheduler or Azure Functions.
 
 ---
 
-## System Administration
-Administrative users manage accounts, permissions, and application settings through the administration interface. Database initialization scripts and configuration files support environment-specific deployments.
+## Administrator Tools
+Administrators manage accounts, permissions and environment settings. Initialization scripts and configuration files support different deployment targets.
 
 ---
 
-## Net-to-Gross Calculation Formulas
-### Bridge Loan Formulas
-**Bridge Retained Interest**
+## Net-to-Gross Formulas
+
+### Bridge Loans
+**Retained Interest**
 ```
 Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Interest rate - Title insurance)
 ```
-**Bridge Serviced (Service Only)**
+**Serviced (Service Only)**
 ```
 Gross = (Net + Legals + Site) / (1 - Arrangement Fee - (Interest rate/12) - Title insurance)
 ```
-**Bridge Service + Capital**
+**Service & Capital**
 ```
 Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)
 ```
-**Bridge Flexible Payment**
+**Flexible Payment**
 ```
 Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Title insurance)
 ```
-**Bridge Capital Payment Only**
+**Capital Payment Only**
 ```
 Gross = (Net + Legals + Site) / (1 - Arrangement Fee - Interest rate - Title insurance)
 ```
 
-### Term Loan Formulas
-Term loans mirror the bridge loan formulas for each payment structure.
+### Term Loans
+The same formulas apply to term loans for each payment structure.
 
-### Development Loan Methodology
-Development loans use an iterative goal seek approach:
-1. Specify the target net amount.
-2. Iteratively compute the gross amount: `Net = Gross - Arrangement Fee - Legal Fees - Interest`.
-3. Adjust the gross value until the net reaches the target within £0.01.
+### Development Loans
+Development loans use a goal‑seek approach:
+
+1. Enter the target net figure.
+2. Iteratively compute: `Net = Gross - Arrangement Fee - Legal Fees - Interest`.
+3. Adjust `Gross` until `Net` is within £0.01 of the target.
 4. Interest is calculated per tranche using daily compounding:
 ```
-Interest = Tranche1 × ((1 + daily_rate)^days1 - 1)
-         + Tranche2 × ((1 + daily_rate)^days2 - 1) + …
+Interest = Σ tranche_amount × ((1 + daily_rate)^days - 1)
 ```
-where `daily_rate = Annual Rate / 365` and `days` is the number of days from tranche release to loan end.
+where `daily_rate = Annual Rate / 365`.
 
 ---
 
-## Calculation Logic Reference
-- **Core Engine**: `calculations.py`
-- **Loan Models**: `models.py`
-- **Utilities**: `utils.py`
-- **Templates**: stored in `templates/`
-These components govern business logic and user interface rendering.
+## Core Components
+- **Business Logic:** `calculations.py`
+- **Data Models:** `models.py`
+- **Helpers:** `utils.py`
+- **HTML Templates:** `templates/`
 
 ---
 
 ## Installation and Deployment
-### Quick Start Installation
+
+### Quick Start
 **Linux/macOS**
 ```bash
 curl -O install.sh
@@ -128,38 +128,41 @@ install.bat
 start.bat
 ```
 
-### Manual Installation Process
+### Manual Setup
+
 **Prerequisites**
+
 - Python 3.8+
 - PostgreSQL 12+
 - Git
-- Node.js 16+ (optional for frontend assets)
+- Optional: Node.js 16+ for frontend builds
 
-**Database Setup**
+**Database**
+
 1. Install PostgreSQL.
-2. Create database: `createdb novellus_loans`.
-3. Create user: `createuser -P novellus_user`.
-4. Grant permissions: `GRANT ALL ON DATABASE novellus_loans TO novellus_user;`.
+2. `createdb novellus_loans`
+3. `createuser -P novellus_user`
+4. `GRANT ALL ON DATABASE novellus_loans TO novellus_user;`
 5. Enable SSL in `postgresql.conf`.
 
 **Python Environment**
 ```bash
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
+source venv/bin/activate      # Linux/Mac
+venv\Scripts\activate       # Windows
 pip install -r deploy_requirements.txt
 ```
 
 **Application Configuration**
 ```bash
 cp production.env.template .env
-nano .env  # Set DATABASE_URL and SESSION_SECRET
+nano .env    # Set DATABASE_URL and SESSION_SECRET
 python database_init.py
 gunicorn --bind 0.0.0.0:5000 main:app
 ```
 
-### Docker Deployment
-Dockerfile excerpt:
+### Docker
+Example `Dockerfile`:
 ```dockerfile
 FROM python:3.11-slim
 WORKDIR /app
@@ -181,47 +184,46 @@ az containerapp up \
 
 ---
 
-## Security and Authentication
-### Database Security
-- SSL encryption required for all connections.
-- Use dedicated database users with limited privileges.
-- Implement connection pooling with timeouts.
-- Schedule regular backups.
+## Security
+### Database
+- Enforce SSL.
+- Use accounts with least privilege.
+- Pool connections and apply timeouts.
+- Back up regularly.
 
-### Session Management
-- Authentication handled by Flask-Login.
-- Optional JWT support for API endpoints.
-- Configurable session timeouts.
+### Sessions
+- Uses Flask‑Login with optional JWT.
+- Configurable expiration.
 - CSRF protection enabled.
 
 ---
 
-## Performance Optimization
-### Server Configuration
-- Gunicorn recommended for production.
-- Configure worker processes to scale with CPU cores.
-- Optimize request handling for concurrent calculations.
-- Monitor memory usage for large datasets.
+## Performance Tips
+### Server
+- Use Gunicorn in production.
+- Configure workers for available CPU cores.
+- Monitor memory use for large calculations.
 
-### Database Optimization
-- Index frequently queried fields.
-- Use efficient SQLAlchemy queries.
-- Manage connections through pooling and recycling.
-- Track query performance for tuning.
+### Database
+- Index columns used for filtering.
+- Prefer efficient SQLAlchemy queries.
+- Tune the connection pool and recycle settings.
 
 ---
 
-## Troubleshooting and Support
-- Check application logs for stack traces or configuration issues.
-- Verify database connectivity and credentials.
-- For Power BI problems, confirm API keys and dataset IDs.
-- Contact the development team for unresolved issues.
+## Troubleshooting
+- Review application logs for errors.
+- Confirm database credentials and connectivity.
+- For Power BI issues, verify API keys and dataset IDs.
+- Contact the development team for additional support.
 
 ---
 
 ## Revision History
-| Version | Date           | Notes                             |
-|---------|----------------|-----------------------------------|
-| 2.1.0   | July 30, 2025  | Initial professional rewrite.     |
+| Version | Date            | Notes                               |
+|--------:|-----------------|-------------------------------------|
+| 2.2.0   | Sep 3, 2025     | Rewritten manual for clarity.       |
+| 2.1.0   | Jul 30, 2025    | Initial professional rewrite.       |
 
 *End of User Manual*
+
