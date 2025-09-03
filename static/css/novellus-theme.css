@@ -595,6 +595,14 @@ h4, h5, h6 {
     color: black;
 }
 
+/* Add thin black border around navbar icons */
+.navbar .btn-nav i,
+.navbar-nav .nav-link i {
+    border: 1px solid #000;
+    border-radius: 2px;
+    padding: 2px;
+}
+
 /* Remove any blue backgrounds */
 .bg-primary {
     background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
