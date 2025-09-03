@@ -102,11 +102,11 @@
                     </a>
                     {% if request.endpoint == 'calculator_page' %}
                     <a class="btn btn-nav" href="{{ url_for('loan_history') }}">
-                        <i class="fas fa-history"></i>
+                        <i class="fas fa-history me-1"></i>Loan History
                     </a>
                     {% else %}
                     <a class="btn btn-nav" href="{{ url_for('calculator_page') }}">
-                        <i class="fas fa-calculator"></i>
+                        <i class="fas fa-calculator me-1"></i>Calculator
                     </a>
                     {% endif %}
                     <a class="btn btn-nav" href="{{ url_for('landing_page') }}">
