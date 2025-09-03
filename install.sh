@@ -121,11 +121,26 @@ sleep 5
 
 # Configure PostgreSQL database
 print_status "Configuring PostgreSQL database..."
+# Backup existing database if present
+BACKUP_FILE=""
+if sudo -u postgres psql -lqt | cut -d \| -f 1 | tr -d ' ' | grep -qw novellus_loans; then
+    BACKUP_FILE="novellus_loans_backup_$(date +%Y%m%d%H%M%S).sql"
+    print_status "Backing up existing database to $BACKUP_FILE..."
+    sudo -u postgres pg_dump novellus_loans > "$BACKUP_FILE"
+else
+    print_warning "No existing novellus_loans database found to back up"
+fi
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS novellus_loans;" 2>/dev/null || true
 sudo -u postgres psql -c "DROP USER IF EXISTS novellus_user;" 2>/dev/null || true
 sudo -u postgres psql -c "CREATE USER novellus_user WITH PASSWORD 'novellus_secure_2025';"
 sudo -u postgres psql -c "CREATE DATABASE novellus_loans OWNER novellus_user;"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE novellus_loans TO novellus_user;"
+# Restore database from backup if one was created
+if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
+    print_status "Restoring data from backup..."
+    sudo -u postgres psql novellus_loans < "$BACKUP_FILE"
+    print_status "Data restoration complete"
+fi
 
 # Configure SSL certificate for PostgreSQL
 print_status "Configuring PostgreSQL SSL certificate..."
