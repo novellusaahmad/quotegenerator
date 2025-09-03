@@ -220,6 +220,11 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
 
     summary = recalculate_summary(schedule)
 
+    # Hide retained interest and refund figures for capital-only payments
+    if repayment_option == 'capital_payment_only':
+        summary.pop('retainedInterest', None)
+        summary.pop('interestRefund', None)
+
     # Always include reference monthly and quarterly interest payments
     gross_amount = Decimal(
         str(
