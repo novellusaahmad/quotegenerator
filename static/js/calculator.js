@@ -745,6 +745,7 @@ class LoanCalculator {
         // Determine loan type and repayment option early for conditional displays
         const loanType = document.getElementById('loanType').value;
         const repaymentOption = document.getElementById('repaymentOption').value;
+        const isBridgeRetainedOnly = loanType === 'bridge' && repaymentOption === 'retained';
         const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
 
         // Update the display elements
@@ -784,7 +785,10 @@ class LoanCalculator {
         }
         
         // Display End LTV based on closing balance of last month from payment schedule
-        if (endLTVEl && propertyValue > 0) {
+        const endLTVRow = endLTVEl ? endLTVEl.closest('tr') : null;
+        if (isBridgeRetainedOnly) {
+            if (endLTVRow) endLTVRow.style.display = 'none';
+        } else if (endLTVEl && propertyValue > 0) {
             let endLTV = 0;
             
             // Try to get the closing balance from the last month of the payment schedule for final remaining balance
@@ -900,14 +904,17 @@ class LoanCalculator {
             (interestOnlyTotalVal > 0) ||
             (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment')
         );
-        
-        if (shouldShowInterestComparison) {
+
+        if (isBridgeRetainedOnly) {
+            if (interestOnlyTotalRow) interestOnlyTotalRow.style.display = 'none';
+            if (interestSavingsRow) interestSavingsRow.style.display = 'none';
+        } else if (shouldShowInterestComparison) {
             // Show interest-only total row
             if (interestOnlyTotalRow) interestOnlyTotalRow.style.display = 'table-row';
             if (interestOnlyTotalEl) {
                 interestOnlyTotalEl.textContent = interestOnlyTotalVal.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             }
-            
+
             // Show interest savings row only if there are actual savings
             const interestSavings = interestSavingsVal;
             if (interestSavings > 0 && interestSavingsRow) {
