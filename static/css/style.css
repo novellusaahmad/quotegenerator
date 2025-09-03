@@ -171,12 +171,16 @@ body {
 .calculator-section {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border: 1px solid #dee2e6;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 .results-section {
     background: white;
     border: 1px solid #dee2e6;
     min-height: 400px;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 .result-card {
