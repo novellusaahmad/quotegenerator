@@ -184,62 +184,6 @@
             }
         }
 
-        /* Navigation button styles for footer links */
-        .nav-btn {
-            font-weight: 600;
-            padding: 8px 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            border: 2px solid;
-            white-space: nowrap;
-            font-size: 0.9rem;
-        }
-
-        .nav-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .nav-btn.btn-info {
-            background-color: #17a2b8;
-            border-color: #17a2b8;
-        }
-
-        .nav-btn.btn-info:hover {
-            background-color: #138496;
-            border-color: #138496;
-        }
-
-        .nav-btn.btn-secondary {
-            background-color: #6c757d;
-            border-color: #6c757d;
-        }
-
-        .nav-btn.btn-secondary:hover {
-            background-color: #5a6268;
-            border-color: #5a6268;
-        }
-
-        .nav-btn.btn-warning {
-            background-color: #ffc107;
-            border-color: #ffc107;
-        }
-
-        .nav-btn.btn-warning:hover {
-            background-color: #e0a800;
-            border-color: #e0a800;
-        }
-
-        .nav-btn.btn-maroon {
-            background-color: #800000;
-            border-color: #800000;
-            color: #fff;
-        }
-
-        .nav-btn.btn-maroon:hover {
-            background-color: #660000;
-            border-color: #660000;
-        }
     </style>
 </head>
 <body>
@@ -320,33 +264,17 @@
         </div>
     </div>
 
-    <footer class="bg-light py-4">
-        <div class="container">
-            <div class="row row-cols-1 row-cols-md-5 g-2">
-                <div class="col">
-                    <a class="btn btn-info text-white w-100 nav-btn" href="{{ url_for('powerbi_config') }}">
-                        <i class="fas fa-cog me-1"></i>Power BI Configuration
-                    </a>
+    <footer class="bg-light mt-5 py-4">
+        <div class="container-fluid px-4">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start">
+                    <div class="d-flex align-items-center justify-content-center justify-content-md-start">
+                        <img src="{{ url_for('static', filename='novellus_logo.png') }}" alt="Novellus" height="24" class="me-2">
+                        <span class="text-muted">&copy; 2025 Novellus Lending. All rights reserved.</span>
+                    </div>
                 </div>
-                <div class="col">
-                    <a class="btn btn-info text-white w-100 nav-btn" href="{{ url_for('snowflake_config') }}">
-                        <i class="fas fa-database me-1"></i>Snowflake Config
-                    </a>
-                </div>
-                <div class="col">
-                    <a class="btn btn-secondary text-white w-100 nav-btn" href="{{ url_for('user_manual') }}">
-                        <i class="fas fa-book me-1"></i>User Manual
-                    </a>
-                </div>
-                <div class="col">
-                    <a class="btn btn-warning text-dark w-100 nav-btn" href="{{ url_for('scenario_comparison_page') }}">
-                        <i class="fas fa-chart-line me-1"></i>Compare
-                    </a>
-                </div>
-                <div class="col">
-                    <a class="btn btn-maroon text-white w-100 nav-btn" href="{{ url_for('loan_history') }}">
-                        <i class="fas fa-history me-1"></i>History
-                    </a>
+                <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
+                    <small class="text-muted">Professional Lending Solutions</small>
                 </div>
             </div>
         </div>
