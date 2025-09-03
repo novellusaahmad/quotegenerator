@@ -119,27 +119,20 @@ fi
 print_status "Waiting for PostgreSQL to be ready..."
 sleep 5
 
-# Configure PostgreSQL database
+# Configure PostgreSQL database without wiping existing data
 print_status "Configuring PostgreSQL database..."
-# Backup existing database if present
-BACKUP_FILE=""
-if sudo -u postgres psql -lqt | cut -d \| -f 1 | tr -d ' ' | grep -qw novellus_loans; then
-    BACKUP_FILE="novellus_loans_backup_$(date +%Y%m%d%H%M%S).sql"
-    print_status "Backing up existing database to $BACKUP_FILE..."
-    sudo -u postgres pg_dump novellus_loans > "$BACKUP_FILE"
-else
-    print_warning "No existing novellus_loans database found to back up"
+
+# Ensure database user exists
+if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='novellus_user'" | grep -q 1; then
+    sudo -u postgres psql -c "CREATE USER novellus_user WITH PASSWORD 'novellus_secure_2025';"
 fi
-sudo -u postgres psql -c "DROP DATABASE IF EXISTS novellus_loans;" 2>/dev/null || true
-sudo -u postgres psql -c "DROP USER IF EXISTS novellus_user;" 2>/dev/null || true
-sudo -u postgres psql -c "CREATE USER novellus_user WITH PASSWORD 'novellus_secure_2025';"
-sudo -u postgres psql -c "CREATE DATABASE novellus_loans OWNER novellus_user;"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE novellus_loans TO novellus_user;"
-# Restore database from backup if one was created
-if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
-    print_status "Restoring data from backup..."
-    sudo -u postgres psql novellus_loans < "$BACKUP_FILE"
-    print_status "Data restoration complete"
+
+# Create database only if it doesn't already exist
+if sudo -u postgres psql -lqt | cut -d \| -f 1 | tr -d ' ' | grep -qw novellus_loans; then
+    print_status "Existing novellus_loans database found; preserving data"
+else
+    sudo -u postgres psql -c "CREATE DATABASE novellus_loans OWNER novellus_user;"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE novellus_loans TO novellus_user;"
 fi
 
 # Configure SSL certificate for PostgreSQL
@@ -243,9 +236,12 @@ pip install "opentelemetry-api>=1.25.0" "opentelemetry-sdk>=1.25.0"
 print_status "Installing Snowflake connector with pandas support..."
 pip install "snowflake-connector-python[pandas]"
 
-# Create .env file
-print_status "Creating environment configuration..."
-cat > .env << EOF
+# Create .env file if it doesn't exist
+if [ -f ".env" ]; then
+    print_warning ".env file already exists; skipping creation to preserve configuration"
+else
+    print_status "Creating environment configuration..."
+    cat > .env << EOF
 DATABASE_URL=postgresql://novellus_user:novellus_secure_2025@localhost/novellus_loans?sslmode=require
 PG_SSLMODE=require
 SESSION_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
@@ -255,6 +251,7 @@ MAX_CONTENT_LENGTH=16777216
 UPLOAD_FOLDER=uploads
 ALLOWED_EXTENSIONS=xlsx,xls,csv,pdf,docx,doc
 EOF
+fi
 
 # Create uploads directory
 mkdir -p uploads
