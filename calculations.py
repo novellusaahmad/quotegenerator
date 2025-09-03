@@ -4545,7 +4545,7 @@ class LoanCalculator:
                     'annual_interest_rate': f"{annual_rate:.2f}%",
                     'interest_pa': f"{daily_rate:.8f}",
                     'scheduled_repayment': f"{currency_symbol}{scheduled_repayment:,.2f}",
-                    'running_ltv': f"{running_ltv:.2f}"
+                    'running_ltv': f"{running_ltv:.2f}%"
                 }
                 if note:
                     entry['note'] = note
@@ -4658,7 +4658,7 @@ class LoanCalculator:
                     'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                     'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
                     'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
-                    'running_ltv': f"{running_ltv:.2f}"
+                    'running_ltv': f"{running_ltv:.2f}%"
                 })
 
                 if remaining_balance <= 0:
@@ -4756,7 +4756,7 @@ class LoanCalculator:
                         'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
                         'interest_refund': f"{currency_symbol}0.00",
-                        'running_ltv': f"{running_ltv:.2f}"
+                        'running_ltv': f"{running_ltv:.2f}%"
                     })
                 elif period < len(payment_dates):
                     if capital_per_payment > remaining_balance:
@@ -4803,7 +4803,7 @@ class LoanCalculator:
                         'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
                         'interest_refund': f"{currency_symbol}{interest_saving_disp:,.2f}",
-                        'running_ltv': f"{running_ltv:.2f}"
+                        'running_ltv': f"{running_ltv:.2f}%"
                     })
                     remaining_balance = closing_balance
                     if remaining_balance == 0:
@@ -4846,7 +4846,7 @@ class LoanCalculator:
                         'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                         'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
                         'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
-                        'running_ltv': f"{running_ltv:.2f}"
+                        'running_ltv': f"{running_ltv:.2f}%"
                     })
                     break
 
@@ -5663,7 +5663,7 @@ class LoanCalculator:
                     'interest_accrued': f"{currency_symbol}{actual_interest_paid:,.2f}",
                     'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
                     'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
-                    'running_ltv': f"{running_ltv:.2f}"
+                    'running_ltv': f"{running_ltv:.2f}%"
                 })
 
                 remaining_balance = closing_balance
