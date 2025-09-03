@@ -671,7 +671,8 @@ h4, h5, h6 {
     background: linear-gradient(135deg, var(--novellus-background) 0%, var(--novellus-card-bg) 100%);
     border: 1px solid var(--novellus-border);
     border-radius: 12px;
-    padding: 2rem;
+    /* Reduce horizontal padding for tighter layout */
+    padding: 2rem 5px;
     box-shadow: 0 4px 12px rgba(30, 43, 58, 0.06);
 }
 
