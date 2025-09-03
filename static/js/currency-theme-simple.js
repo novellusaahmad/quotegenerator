@@ -80,11 +80,11 @@ class SimpleCurrencyTheme {
             logo.style.objectFit = 'contain';
             
             if (currency === 'EUR') {
-                // Apply green filter to logo for EUR currency (#509664)
-                logo.style.filter = 'hue-rotate(90deg) saturate(0.8) brightness(0.7)';
+                // Apply green hue while keeping full brightness and saturation
+                logo.style.filter = 'hue-rotate(90deg) saturate(100%) brightness(100%)';
             } else {
-                // Remove filter for GBP (original golden color)
-                logo.style.filter = 'none';
+                // Keep original coloring with full brightness and saturation for GBP
+                logo.style.filter = 'brightness(100%) saturate(100%)';
             }
         }
     }
