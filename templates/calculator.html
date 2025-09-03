@@ -7,6 +7,7 @@
 {% block head %}
 <link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
 <link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}"/>
 <style>
     /* Calculator and results section styling moved to novellus-theme.css */
     
@@ -1773,15 +1774,23 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Check if loan name is provided
             const loanName = document.getElementById('loanName').value.trim();
             if (!loanName) {
-                alert('Please enter a loan name before saving.');
+                if (window.notifications) {
+                    window.notifications.show('Please enter a loan name before saving.', 'warning');
+                } else {
+                    alert('Please enter a loan name before saving.');
+                }
                 document.getElementById('loanName').focus();
                 return;
             }
-            
+
             // Check if results section is visible (calculation completed)
             const resultsSection = document.getElementById('resultsSection');
             if (!resultsSection || resultsSection.style.display === 'none') {
-                alert('Please calculate the loan first before saving.');
+                if (window.notifications) {
+                    window.notifications.show('Please calculate the loan first before saving.', 'warning');
+                } else {
+                    alert('Please calculate the loan first before saving.');
+                }
                 return;
             }
             

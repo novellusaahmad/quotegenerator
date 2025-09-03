@@ -1304,7 +1304,11 @@ class LoanCalculator {
     }
 
     showError(message) {
-        alert('Error: ' + message);
+        if (window.notifications) {
+            window.notifications.error('Error: ' + message);
+        } else {
+            alert('Error: ' + message);
+        }
     }
 
     // All other UI helper methods remain the same...
@@ -1754,12 +1758,20 @@ class LoanCalculator {
             });
 
             if (totalAmount <= 0) {
-                alert('Please enter a valid total loan amount');
+                if (window.notifications) {
+                    window.notifications.warning('Please enter a valid total loan amount');
+                } else {
+                    alert('Please enter a valid total loan amount');
+                }
                 return;
             }
 
             if (!startDate) {
-                alert('Please select a start date');
+                if (window.notifications) {
+                    window.notifications.warning('Please select a start date');
+                } else {
+                    alert('Please select a start date');
+                }
                 return;
             }
 
@@ -1811,7 +1823,11 @@ class LoanCalculator {
             
         } catch (error) {
             console.error('Error in generateTranches:', error);
-            alert('Error generating tranches: ' + error.message);
+            if (window.notifications) {
+                window.notifications.error('Error generating tranches: ' + error.message);
+            } else {
+                alert('Error generating tranches: ' + error.message);
+            }
         }
     }
 
