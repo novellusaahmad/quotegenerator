@@ -240,8 +240,8 @@ print_status "Installing OpenTelemetry dependencies..."
 pip install "opentelemetry-api>=1.25.0" "opentelemetry-sdk>=1.25.0"
 
 # Install Snowflake connector for Snowflake testing feature
-print_status "Installing Snowflake connector..."
-pip install snowflake-connector-python
+print_status "Installing Snowflake connector with pandas support..."
+pip install "snowflake-connector-python[pandas]"
 
 # Create .env file
 print_status "Creating environment configuration..."
