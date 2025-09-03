@@ -746,7 +746,9 @@ class LoanCalculator {
         const loanType = document.getElementById('loanType').value;
         const repaymentOption = document.getElementById('repaymentOption').value;
         const isBridgeRetainedOnly = loanType === 'bridge' && repaymentOption === 'retained';
+        const isBridgeServicedOnly = loanType === 'bridge' && repaymentOption === 'service_only';
         const paymentFrequency = document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
+        const paymentTiming = document.querySelector('input[name="payment_timing"]:checked')?.value || 'advance';
 
         // Update the display elements
         const moneyFormat = {minimumFractionDigits: 2, maximumFractionDigits: 2};
@@ -786,7 +788,7 @@ class LoanCalculator {
         
         // Display End LTV based on closing balance of last month from payment schedule
         const endLTVRow = endLTVEl ? endLTVEl.closest('tr') : null;
-        if (isBridgeRetainedOnly) {
+        if (isBridgeRetainedOnly || isBridgeServicedOnly) {
             if (endLTVRow) endLTVRow.style.display = 'none';
         } else if (endLTVEl && propertyValue > 0) {
             let endLTV = 0;
@@ -905,7 +907,7 @@ class LoanCalculator {
             (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment')
         );
 
-        if (isBridgeRetainedOnly) {
+        if (isBridgeRetainedOnly || isBridgeServicedOnly) {
             if (interestOnlyTotalRow) interestOnlyTotalRow.style.display = 'none';
             if (interestSavingsRow) interestSavingsRow.style.display = 'none';
         } else if (shouldShowInterestComparison) {
@@ -969,7 +971,20 @@ class LoanCalculator {
         } else {
             if (periodicInterestRow) periodicInterestRow.style.display = 'none';
         }
-        
+
+        const interestPaymentRow = document.getElementById('interestPaymentTimingRow');
+        const interestPaymentEl = document.getElementById('interestPaymentTimingResult');
+        if (isBridgeServicedOnly) {
+            if (interestPaymentRow && interestPaymentEl) {
+                const freqLabel = paymentFrequency === 'quarterly' ? 'Quarterly' : 'Monthly';
+                const timingLabel = paymentTiming === 'advance' ? 'in Advance' : 'in Arrears';
+                interestPaymentRow.style.display = 'table-row';
+                interestPaymentEl.textContent = `${freqLabel} ${timingLabel}`;
+            }
+        } else if (interestPaymentRow) {
+            interestPaymentRow.style.display = 'none';
+        }
+
         // Display detailed payment schedule if available (for all loan types)
         this.displayDetailedPaymentSchedule(results);
 
