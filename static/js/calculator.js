@@ -869,14 +869,15 @@ class LoanCalculator {
         const retainedInterestVal = parseFloat(results.retainedInterest ?? results.retained_interest ?? 0);
         const interestRefundVal = parseFloat(results.interestRefund ?? results.interest_refund ?? 0);
         const isServiceAndCapital = repaymentOption === 'service_and_capital';
+        const isCapitalPaymentOnly = repaymentOption === 'capital_payment_only';
 
         if (retainedInterestRow) {
-            if (isServiceAndCapital) {
+            if (isServiceAndCapital || isCapitalPaymentOnly) {
                 retainedInterestRow.style.display = 'none';
             } else if (retainedInterestVal > 0) {
                 retainedInterestRow.style.display = 'table-row';
                 if (retainedInterestEl) {
-                    retainedInterestEl.textContent = retainedInterestVal.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    retainedInterestEl.textContent = retainedInterestVal.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 }
             } else {
                 retainedInterestRow.style.display = 'none';
@@ -884,12 +885,12 @@ class LoanCalculator {
         }
 
         if (interestRefundRow) {
-            if (isServiceAndCapital) {
+            if (isServiceAndCapital || isCapitalPaymentOnly) {
                 interestRefundRow.style.display = 'none';
             } else if (interestRefundVal > 0) {
                 interestRefundRow.style.display = 'table-row';
                 if (interestRefundEl) {
-                    interestRefundEl.textContent = interestRefundVal.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    interestRefundEl.textContent = interestRefundVal.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 }
             } else {
                 interestRefundRow.style.display = 'none';

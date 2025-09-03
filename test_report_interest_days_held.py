@@ -39,8 +39,8 @@ def test_interest_fields_use_days_held():
     rounding = Decimal('0.01')
     expected_total_interest = (total_retained - total_refund).quantize(rounding)
     assert summary['totalInterest'] == float(expected_total_interest)
-    assert summary['retainedInterest'] == float(total_retained.quantize(rounding))
-    assert summary['interestRefund'] == float(total_refund.quantize(rounding))
+    assert 'retainedInterest' not in summary
+    assert 'interestRefund' not in summary
     assert summary['total_interest_accrued'] == float(total_accrued.quantize(rounding))
     assert summary['interestSavings'] == float(total_saving.quantize(rounding))
     assert summary['monthlyInterestPayment'] == 1000.0
