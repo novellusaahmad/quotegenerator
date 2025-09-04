@@ -1,1 +1,3 @@
 # Minimal requirements for running tests in constrained environments
+selenium>=4.34.2
+chromedriver-autoinstaller>=0.6.2
