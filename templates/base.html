@@ -89,19 +89,13 @@
                     <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('scenario_comparison_page') }}">
                         <i class="fas fa-chart-line me-1"></i>Scenario Comparison
                     </a>
-                    {% if request.endpoint != 'loan_history' %}
+                    {% endif %}
                     <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('loan_history') }}">
                         <i class="fas fa-history me-1"></i>Loan History
                     </a>
-                    {% endif %}
-                    {% block nav_calculator %}
-                    {% if request.endpoint != 'calculator_page' %}
                     <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('calculator_page') }}">
                         <i class="fas fa-calculator me-1"></i>Calculator
                     </a>
-                    {% endif %}
-                    {% endblock %}
-                    {% endif %}
                     <a class="btn btn-nav {{ nav_text_class }}" href="#" onclick="window.location.reload(); return false;">
                         <i class="fas fa-sync-alt me-1"></i>Refresh
                     </a>
