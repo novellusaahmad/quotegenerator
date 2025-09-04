@@ -909,6 +909,7 @@ def api_export_schedule_xlsx():
             'start_date': data.get('start_date'),
             'loan_term': data.get('loan_term'),
             'use_360_days': data.get('use_360_days', False),
+            'currency': data.get('currency', 'GBP'),
         }
 
         excel_gen = NovellussExcelGenerator()

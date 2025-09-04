@@ -10,6 +10,13 @@ import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+# Novellus currency theme configuration
+CURRENCY_THEME = {
+    "GBP": {"symbol": "£", "format": "£#,##0.00", "color": "AD965F"},
+    "EUR": {"symbol": "€", "format": "€#,##0.00", "color": "509195"},
+    "USD": {"symbol": "$", "format": "$#,##0.00", "color": "AD965F"},
+}
+
 class NovellussExcelGenerator:
     """Excel generator for loan quotes and calculations"""
     
@@ -40,36 +47,52 @@ class NovellussExcelGenerator:
         self.workbook = openpyxl.Workbook()
         self.worksheet = self.workbook.active
         self.worksheet.title = "Loan Quote"
-        
+
+        # Determine currency theme
+        currency = quote_data.get('currency', 'GBP')
+        theme = CURRENCY_THEME.get(currency, CURRENCY_THEME['GBP'])
+        currency_format = theme['format']
+        header_fill = PatternFill(start_color=theme['color'], end_color=theme['color'], fill_type='solid')
+
         # Set up styles
-        title_font = Font(name='Arial', size=16, bold=True)
-        header_font = Font(name='Arial', size=12, bold=True)
+        title_font = Font(name='Arial', size=16, bold=True, color='FFFFFF')
+        header_font = Font(name='Arial', size=12, bold=True, color='FFFFFF')
         normal_font = Font(name='Arial', size=10)
-        
+
         # Add title
         self.worksheet['A1'] = "Novellus Finance - Loan Quote"
         self.worksheet['A1'].font = title_font
         self.worksheet['A1'].alignment = Alignment(horizontal='center')
+        self.worksheet['A1'].fill = header_fill
         self.worksheet.merge_cells('A1:B1')
-        
+
         # Add quote details
         row = 3
         details = [
             ('Quote ID:', str(quote_data.get('id', 'N/A'))),
-            ('Date:', datetime.now().strftime('%d/%m/%Y')),
-            ('Gross Amount:', f"£{quote_data.get('gross_amount', 0):,.2f}"),
-            ('Net Advance:', f"£{quote_data.get('net_advance', 0):,.2f}"),
-            ('Interest Rate:', f"{quote_data.get('interest_rate', 0):.2f}%"),
+            ('Date:', datetime.now()),
+            ('Gross Amount:', quote_data.get('gross_amount', 0)),
+            ('Net Advance:', quote_data.get('net_advance', 0)),
+            ('Interest Rate:', self._to_float(quote_data.get('interest_rate', 0)) / 100.0),
             ('Loan Term:', f"{quote_data.get('loan_term', 0)} months"),
-            ('Monthly Payment:', f"£{quote_data.get('monthly_payment', 0):,.2f}"),
-            ('Total Interest:', f"£{quote_data.get('total_interest', 0):,.2f}"),
+            ('Monthly Payment:', quote_data.get('monthly_payment', 0)),
+            ('Total Interest:', quote_data.get('total_interest', 0)),
         ]
-        
+
         for key, value in details:
-            self.worksheet[f'A{row}'] = key
-            self.worksheet[f'A{row}'].font = header_font
-            self.worksheet[f'B{row}'] = value
-            self.worksheet[f'B{row}'].font = normal_font
+            label_cell = self.worksheet[f'A{row}']
+            label_cell.value = key
+            label_cell.font = header_font
+            label_cell.fill = header_fill
+            cell = self.worksheet[f'B{row}']
+            cell.value = value
+            cell.font = normal_font
+            if key in ('Gross Amount:', 'Net Advance:', 'Monthly Payment:', 'Total Interest:'):
+                cell.number_format = currency_format
+            elif key == 'Interest Rate:':
+                cell.number_format = '0.00%'
+            elif key == 'Date:':
+                cell.number_format = 'dd/mm/yyyy'
             row += 1
         
         # Auto-adjust column widths
@@ -111,6 +134,12 @@ class NovellussExcelGenerator:
         params_ws = self.workbook.active
         params_ws.title = "Parameters"
 
+        currency = params.get("currency", "GBP")
+        theme = CURRENCY_THEME.get(currency, CURRENCY_THEME["GBP"])
+        currency_format = theme["format"]
+        header_fill = PatternFill(start_color=theme["color"], end_color=theme["color"], fill_type="solid")
+        header_font = Font(name="Arial", size=12, bold=True, color="FFFFFF")
+
         annual_rate = self._to_float(params.get("annual_rate", 0)) / 100.0
         start_date_str = params.get("start_date")
         loan_term = int(params.get("loan_term", len(payment_schedule)))
@@ -143,7 +172,10 @@ class NovellussExcelGenerator:
         pay_ws = self.workbook.create_sheet("Payment Schedule")
         pay_headers = ["Payment #", "Date", "Opening Balance", "Payment", "Interest", "Closing Balance"]
         for col, header in enumerate(pay_headers, 1):
-            pay_ws.cell(row=1, column=col, value=header)
+            cell = pay_ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+            cell.fill = header_fill
 
         for r, payment in enumerate(payment_schedule, start=2):
             pay_ws.cell(row=r, column=1, value=r - 1)
@@ -155,12 +187,15 @@ class NovellussExcelGenerator:
 
         for col in (3, 4, 5, 6):
             for r in range(2, len(payment_schedule) + 2):
-                pay_ws.cell(row=r, column=col).number_format = "£#,##0.00"
+                pay_ws.cell(row=r, column=col).number_format = currency_format
 
         # --- Payment schedule (formulas) ---
         pay_form_ws = self.workbook.create_sheet("Payment Schedule Data")
         for col, header in enumerate(pay_headers, 1):
-            pay_form_ws.cell(row=1, column=col, value=header)
+            cell = pay_form_ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+            cell.fill = header_fill
 
         for r in range(2, len(payment_schedule) + 2):
             pay_form_ws.cell(row=r, column=1, value="=ROW()-1")
@@ -175,13 +210,16 @@ class NovellussExcelGenerator:
 
         for col in (3, 4, 5, 6):
             for r in range(2, len(payment_schedule) + 2):
-                pay_form_ws.cell(row=r, column=col).number_format = "£#,##0.00"
+                pay_form_ws.cell(row=r, column=col).number_format = currency_format
 
         # --- Tranche schedule (values) ---
         tranche_ws = self.workbook.create_sheet("Tranche Schedule")
         tranche_headers = ["Tranche #", "Release Date", "Amount", "Days Outstanding", "Rate", "Interest"]
         for col, header in enumerate(tranche_headers, 1):
-            tranche_ws.cell(row=1, column=col, value=header)
+            cell = tranche_ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+            cell.fill = header_fill
 
         for r, tranche in enumerate(tranche_schedule, start=2):
             release = tranche.get("release_date") or tranche.get("date")
@@ -205,14 +243,17 @@ class NovellussExcelGenerator:
             tranche_ws.cell(row=r, column=6, value=interest)
 
         for r in range(2, len(tranche_schedule) + 2):
-            tranche_ws.cell(row=r, column=3).number_format = "£#,##0.00"
+            tranche_ws.cell(row=r, column=3).number_format = currency_format
             tranche_ws.cell(row=r, column=5).number_format = "0.00%"
-            tranche_ws.cell(row=r, column=6).number_format = "£#,##0.00"
+            tranche_ws.cell(row=r, column=6).number_format = currency_format
 
         # --- Tranche schedule (formulas) ---
         tranche_form_ws = self.workbook.create_sheet("Tranche Schedule Data")
         for col, header in enumerate(tranche_headers, 1):
-            tranche_form_ws.cell(row=1, column=col, value=header)
+            cell = tranche_form_ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+            cell.fill = header_fill
 
         for r in range(2, len(tranche_schedule) + 2):
             tranche_form_ws.cell(row=r, column=1, value="=ROW()-1")
@@ -223,9 +264,9 @@ class NovellussExcelGenerator:
             tranche_form_ws.cell(row=r, column=6, value=f"=C{r}*E{r}*D{r}/Parameters!$B$3")
 
         for r in range(2, len(tranche_schedule) + 2):
-            tranche_form_ws.cell(row=r, column=3).number_format = "£#,##0.00"
+            tranche_form_ws.cell(row=r, column=3).number_format = currency_format
             tranche_form_ws.cell(row=r, column=5).number_format = "0.00%"
-            tranche_form_ws.cell(row=r, column=6).number_format = "£#,##0.00"
+            tranche_form_ws.cell(row=r, column=6).number_format = currency_format
 
         # Save workbook to temporary file and return bytes
         with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp_file:
@@ -245,18 +286,24 @@ class NovellussExcelGenerator:
         self.workbook = openpyxl.Workbook()
         self.worksheet = self.workbook.active
         self.worksheet.title = "Payment Schedule"
-        
+
+        currency = quote_data.get('currency', 'GBP')
+        theme = CURRENCY_THEME.get(currency, CURRENCY_THEME['GBP'])
+        currency_format = theme['format']
+        header_fill = PatternFill(start_color=theme['color'], end_color=theme['color'], fill_type='solid')
+
         # Set up styles
-        title_font = Font(name='Arial', size=16, bold=True)
-        header_font = Font(name='Arial', size=12, bold=True)
+        title_font = Font(name='Arial', size=16, bold=True, color='FFFFFF')
+        header_font = Font(name='Arial', size=12, bold=True, color='FFFFFF')
         normal_font = Font(name='Arial', size=10)
-        
+
         # Add title
         self.worksheet['A1'] = "Novellus Finance - Payment Schedule"
         self.worksheet['A1'].font = title_font
         self.worksheet['A1'].alignment = Alignment(horizontal='center')
+        self.worksheet['A1'].fill = header_fill
         self.worksheet.merge_cells('A1:F1')
-        
+
         # Add headers
         headers = ['Payment #', 'Date', 'Opening Balance', 'Payment', 'Interest', 'Closing Balance']
         for col, header in enumerate(headers, 1):
@@ -264,16 +311,27 @@ class NovellussExcelGenerator:
             cell.value = header
             cell.font = header_font
             cell.alignment = Alignment(horizontal='center')
-        
+            cell.fill = header_fill
+
         # Add payment schedule data
         row = 4
         for i, payment in enumerate(payment_schedule, 1):
             self.worksheet.cell(row=row, column=1).value = i
-            self.worksheet.cell(row=row, column=2).value = payment.get('date', '')
-            self.worksheet.cell(row=row, column=3).value = f"£{payment.get('opening_balance', 0):,.2f}"
-            self.worksheet.cell(row=row, column=4).value = f"£{payment.get('payment_amount', 0):,.2f}"
-            self.worksheet.cell(row=row, column=5).value = f"£{payment.get('interest_amount', 0):,.2f}"
-            self.worksheet.cell(row=row, column=6).value = f"£{payment.get('closing_balance', 0):,.2f}"
+            date_cell = self.worksheet.cell(row=row, column=2)
+            date_cell.value = payment.get('date', '')
+            date_cell.number_format = 'dd/mm/yyyy'
+            bal_cell = self.worksheet.cell(row=row, column=3)
+            bal_cell.value = self._to_float(payment.get('opening_balance', 0))
+            pay_cell = self.worksheet.cell(row=row, column=4)
+            pay_cell.value = self._to_float(payment.get('payment_amount', 0))
+            int_cell = self.worksheet.cell(row=row, column=5)
+            int_cell.value = self._to_float(payment.get('interest_amount', 0))
+            close_cell = self.worksheet.cell(row=row, column=6)
+            close_cell.value = self._to_float(payment.get('closing_balance', 0))
+            bal_cell.number_format = currency_format
+            pay_cell.number_format = currency_format
+            int_cell.number_format = currency_format
+            close_cell.number_format = currency_format
             row += 1
         
         # Auto-adjust column widths
