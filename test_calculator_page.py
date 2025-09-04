@@ -59,3 +59,16 @@ def test_calculator_page_runs_without_js_errors(live_server):
         assert not logs, f"JavaScript errors found: {logs}"
     finally:
         driver.quit()
+
+
+def test_development_loan_disables_gross_amount(live_server):
+    driver = _get_chrome_driver()
+    try:
+        driver.get(live_server + "/calculator")
+        driver.find_element(By.ID, "loanTypeDevelopment").click()
+        WebDriverWait(driver, 5).until(
+            lambda d: not d.find_element(By.ID, "grossAmount").is_enabled()
+        )
+        assert not driver.find_element(By.ID, "grossAmount").is_enabled()
+    finally:
+        driver.quit()

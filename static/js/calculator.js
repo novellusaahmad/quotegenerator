@@ -1769,12 +1769,19 @@ class LoanCalculator {
             // Show/hide amount input section based on loan type
             const netAmountSection = document.getElementById('netAmountSection');
             const grossAmountSection = document.getElementById('grossAmountSection');
+            const grossAmountRadio = document.getElementById('grossAmount');
+            const grossAmountLabel = document.querySelector('label[for="grossAmount"]');
+            const netAmountRadio = document.getElementById('netAmount');
             
             const interestTypeRadios = document.querySelectorAll('input[name="interestTypeToggle"]');
             if (loanType === 'development' || loanType === 'development2') {
-                // Development loans default to net amount input
-                document.getElementById('netAmount').checked = true;
-                document.getElementById('grossAmount').checked = false;
+                // Development loans default to net amount input and disallow gross amount selection
+                if (netAmountRadio) netAmountRadio.checked = true;
+                if (grossAmountRadio) {
+                    grossAmountRadio.checked = false;
+                    grossAmountRadio.disabled = true;
+                }
+                if (grossAmountLabel) grossAmountLabel.classList.add('disabled');
                 if (netAmountSection) netAmountSection.style.display = 'block';
                 if (grossAmountSection) grossAmountSection.style.display = 'none';
 
@@ -1790,9 +1797,13 @@ class LoanCalculator {
                 }
                 interestTypeRadios.forEach(r => r.disabled = true);
             } else {
-                // Bridge and term loans default to gross amount input
-                document.getElementById('grossAmount').checked = true;
-                document.getElementById('netAmount').checked = false;
+                // Bridge and term loans default to gross amount input and allow switching
+                if (grossAmountRadio) {
+                    grossAmountRadio.disabled = false;
+                    grossAmountRadio.checked = true;
+                }
+                if (grossAmountLabel) grossAmountLabel.classList.remove('disabled');
+                if (netAmountRadio) netAmountRadio.checked = false;
                 if (grossAmountSection) grossAmountSection.style.display = 'block';
                 if (netAmountSection) netAmountSection.style.display = 'none';
 
