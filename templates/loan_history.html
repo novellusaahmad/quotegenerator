@@ -24,7 +24,7 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-search"></i></span>
                                 <input type="text" class="form-control" id="searchInput" placeholder="Search loan names...">
@@ -35,10 +35,17 @@
                                 <option value="">All Loan Types</option>
                                 <option value="bridge">Bridge Loans</option>
                                 <option value="term">Term Loans</option>
-                                <option value="development">Development Loans</option>
+                                <option value="development2">Development Loans</option>
                             </select>
                         </div>
                         <div class="col-md-3">
+                            <select class="form-select" id="orgFilter">
+                                <option value="">All Organisations</option>
+                                <option value="Novellus Limited">Novellus Limited</option>
+                                <option value="Novellus Finance limited">Novellus Finance limited</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
                             <button class="btn btn-outline-secondary w-100" id="clearFilters">
                                 <i class="fas fa-times me-2"></i>Clear Filters
                             </button>
@@ -162,6 +169,7 @@ class LoanHistoryManager {
         // Search and filter events
         document.getElementById('searchInput').addEventListener('input', () => this.applyFilters());
         document.getElementById('loanTypeFilter').addEventListener('change', () => this.applyFilters());
+        document.getElementById('orgFilter').addEventListener('change', () => this.applyFilters());
         document.getElementById('clearFilters').addEventListener('click', () => this.clearFilters());
 
         // Edit loan event
@@ -216,11 +224,14 @@ class LoanHistoryManager {
     applyFilters() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         const loanTypeFilter = document.getElementById('loanTypeFilter').value;
+        const orgFilter = document.getElementById('orgFilter').value;
 
         this.filteredLoans = this.loans.filter(loan => {
             const matchesSearch = loan.loan_name.toLowerCase().includes(searchTerm);
             const matchesType = !loanTypeFilter || loan.loan_type === loanTypeFilter;
-            return matchesSearch && matchesType;
+            const loanOrg = loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited';
+            const matchesOrg = !orgFilter || loanOrg === orgFilter;
+            return matchesSearch && matchesType && matchesOrg;
         });
 
         if (this.filteredLoans.length === 0 && this.loans.length > 0) {
@@ -380,6 +391,7 @@ class LoanHistoryManager {
     clearFilters() {
         document.getElementById('searchInput').value = '';
         document.getElementById('loanTypeFilter').value = '';
+        document.getElementById('orgFilter').value = '';
         this.applyFilters();
     }
 
