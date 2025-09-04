@@ -4108,8 +4108,9 @@ class LoanCalculator:
 
                 remaining_balance -= principal_payment
 
-                if not fees_added_to_first:
-                    total_payment += fees_deducted_first
+                fees_added = Decimal('0')
+                if not fees_added_to_first and fees_deducted_first > 0:
+                    fees_added = fees_deducted_first
                     note = 'Fees deducted'
                     fees_added_to_first = True
                 else:
@@ -4125,6 +4126,8 @@ class LoanCalculator:
                     'closing_balance': float(remaining_balance)
                 }
 
+                if fees_added > 0:
+                    schedule_entry['fees_added'] = float(fees_added)
                 if note:
                     schedule_entry['note'] = note
 
@@ -4460,9 +4463,10 @@ class LoanCalculator:
 
                 interest_calc = interest_calc_base
                 note = None
+                fees_added = Decimal('0')
 
-                if period == 1:
-                    total_payment += arrangement_fee + legal_fees
+                if period == 1 and (arrangement_fee + legal_fees) > 0:
+                    fees_added = arrangement_fee + legal_fees
                     interest_calc += " + fees"
 
                 if amount_input_type == 'net':
@@ -4487,7 +4491,7 @@ class LoanCalculator:
                         interest_refund_disp_val = Decimal('0.00')
                         interest_refund_raw_val = Decimal('0')
                         scheduled_repayment = principal_payment.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                        total_payment = scheduled_repayment + arrangement_fee + legal_fees
+                        total_payment = scheduled_repayment
                         interest_calc = interest_calc_base + " + fees (first-period interest retained)"
                         note = "Fees and first-period interest retained."
                     else:
@@ -4537,6 +4541,8 @@ class LoanCalculator:
                     'scheduled_repayment': f"{currency_symbol}{scheduled_repayment:,.2f}",
                     'running_ltv': f"{running_ltv:.2f}%"
                 }
+                if fees_added > 0:
+                    entry['fees_added'] = f"{currency_symbol}{fees_added:,.2f}"
                 if note:
                     entry['note'] = note
                 detailed_schedule.append(entry)
