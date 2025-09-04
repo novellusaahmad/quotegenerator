@@ -1218,25 +1218,34 @@ function calculateEndDate() {
     if (mode === 'term') {
         const loanTerm = parseInt(loanTermEl.value);
         if (startDate && loanTerm) {
-            const start = new Date(startDate);
-            const end = new Date(start);
-            end.setMonth(end.getMonth() + loanTerm);
-            end.setDate(end.getDate() - 1);
-            endDateEl.value = end.toISOString().split('T')[0];
+            const [sy, sm, sd] = startDate.split('-').map(Number);
+            let endYear = sy;
+            let endMonth = sm - 1 + loanTerm;
+            endYear += Math.floor(endMonth / 12);
+            endMonth = endMonth % 12;
+            let end = new Date(Date.UTC(endYear, endMonth, sd));
+            if (end.getUTCMonth() !== endMonth) {
+                end = new Date(Date.UTC(endYear, endMonth + 1, 0));
+            }
+            end.setUTCDate(end.getUTCDate() - 1);
+            const endStr = `${end.getUTCFullYear()}-${String(end.getUTCMonth() + 1).padStart(2, '0')}-${String(end.getUTCDate()).padStart(2, '0')}`;
+            endDateEl.value = endStr;
             triggerCalculationUpdate();
         }
     } else {
         const endDate = endDateEl.value;
         if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            const daysDiff = Math.floor((end - start) / 86400000) + 1;
+            const [sy, sm, sd] = startDate.split('-').map(Number);
+            const [ey, em, ed] = endDate.split('-').map(Number);
+
+            const startUTC = Date.UTC(sy, sm - 1, sd);
+            const endUTC = Date.UTC(ey, em - 1, ed);
+            const daysDiff = Math.floor((endUTC - startUTC) / 86400000) + 1;
             const loanTermDaysEl = document.getElementById('loanTermDaysResult');
             if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
 
-            let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 +
-                             (end.getMonth() - start.getMonth());
-            if (end.getDate() < start.getDate()) {
+            let monthsDiff = (ey - sy) * 12 + (em - sm);
+            if (ed < sd) {
                 monthsDiff -= 1;
             }
             const loanTerm = Math.max(1, monthsDiff);
@@ -1289,11 +1298,12 @@ function hasMinimumFormData() {
 // Initialize end date calculation and loan calculator
 document.addEventListener('DOMContentLoaded', function() {
     try {
-        // Set default start date to today
-        const today = new Date().toISOString().split('T')[0];
+        // Set default start date to today without timezone shifts
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         const startDateElement = document.getElementById('startDate');
         if (startDateElement) {
-            startDateElement.value = today;
+            startDateElement.value = todayStr;
         }
         
         // Ensure correct field visibility and initial calculation
