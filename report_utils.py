@@ -138,9 +138,12 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
         cap_params = params.copy()
         cap_params['repayment_option'] = 'capital_payment_only'
         calculation = calc.calculate_bridge_loan(cap_params)
+        schedule = calculation.get('detailed_payment_schedule', [])
+        for row in schedule:
+            row['total_repayment'] = row.get('total_payment', row.get('scheduled_repayment', ''))
     else:
         calculation = calc.calculate_bridge_loan(params)
-    schedule = calculation.get('detailed_payment_schedule', [])
+        schedule = calculation.get('detailed_payment_schedule', [])
 
     summary: Dict[str, float] = {}
 
@@ -153,6 +156,7 @@ def generate_report_schedule(params: Dict[str, Any]) -> Tuple[List[Dict[str, Any
             scheduled = (interest_amt + capital_repayment).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             row['total_payment'] = f"{currency_symbol}{scheduled:,.2f}"
             row['scheduled_repayment'] = f"{currency_symbol}{scheduled:,.2f}"
+            row['total_repayment'] = f"{currency_symbol}{scheduled:,.2f}"
             row['interest_retained'] = f"{currency_symbol}0.00"
             row['interest_refund'] = f"{currency_symbol}0.00"
             row['interest_saving'] = f"{currency_symbol}0.00"

@@ -6,7 +6,8 @@ from calculations import LoanCalculator
 sys.modules['numpy'] = types.SimpleNamespace(
     linspace=lambda start, stop, num: [start + (stop - start) * i / (num - 1) for i in range(num)],
     isscalar=lambda obj: isinstance(obj, (int, float)),
-    bool_=bool
+    bool_=bool,
+    ndarray=list
 )
 
 # Stub dateutil.relativedelta with minimal month addition

@@ -14,7 +14,9 @@ def test_service_and_capital_matches_capital_payment_schedule():
     params_service = dict(base, repayment_option='service_and_capital', capital_repayment=2000)
     capital_schedule, _ = generate_report_schedule(params_capital)
     service_schedule, _ = generate_report_schedule(params_service)
-    assert service_schedule == capital_schedule
+    assert 'total_repayment' in service_schedule[0]
+    trimmed_service = [{k: v for k, v in row.items() if k != 'total_repayment'} for row in service_schedule]
+    assert trimmed_service == capital_schedule
 
 
 def test_flexible_payment_matches_capital_payment_schedule():
@@ -67,7 +69,8 @@ def test_schedule_field_sets_match_capital_format():
     svc, _ = generate_report_schedule(params_service)
     flex, _ = generate_report_schedule(params_flex)
     cap_fields = set(cap[0].keys())
-    assert set(svc[0].keys()) == cap_fields
+    svc_fields = set(svc[0].keys())
+    assert svc_fields == cap_fields | {'total_repayment'}
     expected_flex_fields = {
         'payment_date', 'start_period', 'end_period', 'days_held',
         'opening_balance', 'tranche_release', 'interest_calculation',
@@ -75,7 +78,7 @@ def test_schedule_field_sets_match_capital_format():
         'total_payment', 'closing_balance', 'balance_change',
         'flexible_payment_calculation', 'amortisation_calculation',
         'capital_outstanding', 'annual_interest_rate', 'interest_pa',
-        'scheduled_repayment', 'interest_accrued', 'interest_retained',
+        'total_repayment', 'capital_repayment', 'interest_accrued', 'interest_retained',
         'interest_refund', 'running_ltv'
     }
     assert set(flex[0].keys()) == expected_flex_fields

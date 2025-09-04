@@ -4151,8 +4151,10 @@ class LoanCalculator:
                 )
             )
 
-            # Use the provided flexible payment per selected period
-            flexible_per_payment = flexible_payment
+            # Scale payment by number of months in each period
+            freq_map = {'monthly': 1, 'quarterly': 3}
+            months_per_period = freq_map.get(payment_frequency, 1)
+            flexible_per_payment = flexible_payment * months_per_period
 
             start_date_str = quote_data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
             if isinstance(start_date_str, str):
@@ -4526,6 +4528,7 @@ class LoanCalculator:
                     'interest_accrued_raw': interest_accrued_raw_val,
                     'principal_payment': f"{currency_symbol}{principal_payment:,.2f}",
                     'total_payment': f"{currency_symbol}{total_payment:,.2f}",
+                    'total_repayment': f"{currency_symbol}{total_payment:,.2f}",
                     'closing_balance': f"{currency_symbol}{closing_balance:,.2f}",
                     'balance_change': balance_change,
                     'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
@@ -4614,6 +4617,11 @@ class LoanCalculator:
                 interest_refund_disp = interest_refund_current.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
                 interest_saving_disp = interest_refund_disp
 
+                flexible_payment_disp = flexible_per_payment.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                capital_repayment_disp = (flexible_payment_disp - interest_accrued_disp).quantize(
+                    Decimal('0.01'), rounding=ROUND_HALF_UP
+                )
+
                 detailed_schedule.append({
                     'payment_date': payment_date.strftime('%d/%m/%Y'),
                     'start_period': period_start.strftime('%d/%m/%Y'),
@@ -4638,7 +4646,8 @@ class LoanCalculator:
                     'capital_outstanding': f"{currency_symbol}{capital_outstanding:,.2f}",
                     'annual_interest_rate': f"{annual_rate:.2f}%",
                       'interest_pa': f"{daily_rate:.8f}",
-                    'scheduled_repayment': f"{currency_symbol}{flexible_per_payment:,.2f}",
+                    'total_repayment': f"{currency_symbol}{flexible_payment_disp:,.2f}",
+                    'capital_repayment': f"{currency_symbol}{capital_repayment_disp:,.2f}",
                     'interest_accrued': f"{currency_symbol}{interest_accrued_disp:,.2f}",
                     'interest_retained': f"{currency_symbol}{interest_retained_disp:,.2f}",
                     'interest_refund': f"{currency_symbol}{interest_refund_disp:,.2f}",
