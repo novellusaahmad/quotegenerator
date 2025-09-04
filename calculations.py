@@ -455,6 +455,13 @@ class LoanCalculator:
         params['loan_term'] = loan_term
         params['loan_term_days'] = loan_term_days
 
+        # 360-day calculation only valid for bridge loans up to 12 months
+        if use_360_days and loan_term > 12:
+            logging.info("Bridge loan term exceeds 12 months; disabling 360-day calculation")
+            use_360_days = False
+
+        params['use_360_days'] = use_360_days
+
         # Determine gross amount based on input type
         if amount_input_type == 'net' and net_amount > 0:
             logging.info(f"Converting net to gross: net={net_amount}")
