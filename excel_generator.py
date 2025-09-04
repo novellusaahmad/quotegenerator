@@ -6,6 +6,7 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 import tempfile
 import os
+import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
@@ -15,6 +16,23 @@ class NovellussExcelGenerator:
     def __init__(self):
         self.workbook = None
         self.worksheet = None
+
+    @staticmethod
+    def _to_float(value):
+        """Convert currency strings like '£1,000.00' to float.
+
+        Non-numeric characters (except period and minus sign) are stripped
+        before conversion. Returns 0.0 if conversion fails.
+        """
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            cleaned = re.sub(r"[^0-9.\-]", "", value)
+            try:
+                return float(cleaned) if cleaned else 0.0
+            except ValueError:
+                return 0.0
+        return 0.0
     
     def generate_quote_excel(self, quote_data, application_data=None):
         """Generate Excel quote document"""
@@ -93,7 +111,7 @@ class NovellussExcelGenerator:
         params_ws = self.workbook.active
         params_ws.title = "Parameters"
 
-        annual_rate = float(params.get("annual_rate", 0)) / 100.0
+        annual_rate = self._to_float(params.get("annual_rate", 0)) / 100.0
         start_date_str = params.get("start_date")
         loan_term = int(params.get("loan_term", len(payment_schedule)))
         use_360 = params.get("use_360_days", False)
@@ -107,7 +125,7 @@ class NovellussExcelGenerator:
 
         initial_balance = 0.0
         if payment_schedule:
-            initial_balance = float(payment_schedule[0].get("opening_balance", 0))
+            initial_balance = self._to_float(payment_schedule[0].get("opening_balance", 0))
 
         params_ws["A1"], params_ws["B1"] = "Annual Rate", annual_rate
         params_ws["A2"], params_ws["B2"] = "Periodic Rate", "=B1/12"
@@ -130,10 +148,10 @@ class NovellussExcelGenerator:
         for r, payment in enumerate(payment_schedule, start=2):
             pay_ws.cell(row=r, column=1, value=r - 1)
             pay_ws.cell(row=r, column=2, value=payment.get("date"))
-            pay_ws.cell(row=r, column=3, value=float(payment.get("opening_balance", 0)))
-            pay_ws.cell(row=r, column=4, value=float(payment.get("payment_amount", 0)))
-            pay_ws.cell(row=r, column=5, value=float(payment.get("interest_amount", 0)))
-            pay_ws.cell(row=r, column=6, value=float(payment.get("closing_balance", 0)))
+            pay_ws.cell(row=r, column=3, value=self._to_float(payment.get("opening_balance", 0)))
+            pay_ws.cell(row=r, column=4, value=self._to_float(payment.get("payment_amount", 0)))
+            pay_ws.cell(row=r, column=5, value=self._to_float(payment.get("interest_amount", 0)))
+            pay_ws.cell(row=r, column=6, value=self._to_float(payment.get("closing_balance", 0)))
 
         for col in (3, 4, 5, 6):
             for r in range(2, len(payment_schedule) + 2):
@@ -175,8 +193,8 @@ class NovellussExcelGenerator:
                 except Exception:
                     release = tranche.get("release_date", "")
 
-            amount = float(tranche.get("amount", 0))
-            rate = float(tranche.get("interest_rate", params.get("annual_rate", 0))) / 100.0
+            amount = self._to_float(tranche.get("amount", 0))
+            rate = self._to_float(tranche.get("interest_rate", params.get("annual_rate", 0))) / 100.0
             interest = amount * rate * days_outstanding / days_in_year if days_outstanding else 0
 
             tranche_ws.cell(row=r, column=1, value=tranche.get("tranche_number", r - 1))
