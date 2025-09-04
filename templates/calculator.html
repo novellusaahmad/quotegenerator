@@ -3,6 +3,7 @@
 {% block title %}Loan Calculator - Novellus{% endblock %}
 
 {% block head %}
+{{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}"/>
 <style>
     /* Calculator and results section styling moved to novellus-theme.css */
@@ -1203,6 +1204,7 @@
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <!-- Modern Notification System -->
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
