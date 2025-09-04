@@ -3729,16 +3729,19 @@ LoanCalculator.prototype.calculateLTVSimulation = function(results) {
     if (!propertyValue || !grossAmount || !loanTerm) return;
 
     let targets = [];
-    const exitVal = parseFloat(document.getElementById('targetLTVExit')?.value);
+    const exitInput = document.getElementById('targetLTVExit');
+    const exitVal = parseFloat(exitInput?.value);
     if (!isNaN(exitVal)) {
-        targets.push({month: loanTerm, ltv: exitVal});
+        targets.push({month: loanTerm, ltv: exitVal, el: exitInput});
     }
 
     document.querySelectorAll('.ltv-progressive-row').forEach(row => {
-        const month = parseInt(row.querySelector('.ltv-month').value);
-        const ltv = parseFloat(row.querySelector('.ltv-percent').value);
+        const monthInput = row.querySelector('.ltv-month');
+        const ltvInput = row.querySelector('.ltv-percent');
+        const month = parseInt(monthInput.value);
+        const ltv = parseFloat(ltvInput.value);
         if (!isNaN(month) && !isNaN(ltv) && month > 0 && month <= loanTerm) {
-            targets.push({month, ltv});
+            targets.push({month, ltv, el: ltvInput});
         }
     });
 
@@ -3812,5 +3815,28 @@ LoanCalculator.prototype.calculateLTVSimulation = function(results) {
                 capitalInput.dispatchEvent(new Event('input', { bubbles: true }));
             }
         }
+    }
+
+    // Validate LTV targets against the detailed payment schedule
+    const detailedSchedule = Array.isArray(results.detailed_payment_schedule) ? results.detailed_payment_schedule : [];
+    const tolerance = 0.1; // percent difference allowed
+    if (detailedSchedule.length > 0) {
+        targets.forEach(t => {
+            const inputEl = t.el;
+            const entry = detailedSchedule[t.month - 1];
+            if (!entry || !entry.closing_balance) {
+                inputEl?.classList.add('is-invalid');
+                return;
+            }
+
+            const closingBalance = parseFloat(String(entry.closing_balance).replace(/[^0-9.-]/g, '')) || 0;
+            const actualLTV = propertyValue ? (closingBalance / propertyValue) * 100 : 0;
+            const diff = actualLTV - t.ltv;
+            const mismatch = Math.abs(diff) > tolerance;
+            if (inputEl) {
+                inputEl.classList.toggle('is-invalid', mismatch);
+                inputEl.title = mismatch ? `Actual LTV ${actualLTV.toFixed(2)}%` : '';
+            }
+        });
     }
 };
