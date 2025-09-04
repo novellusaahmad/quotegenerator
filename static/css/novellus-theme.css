@@ -550,7 +550,7 @@ h4, h5, h6 {
 
 /* Alternate gold navbar for calculator and loan history pages */
 .gold-nav .navbar {
-    background-color: #D4AF37 !important;
+    background-color: var(--novellus-gold) !important;
     background-image: none !important;
 }
 
