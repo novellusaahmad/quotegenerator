@@ -658,11 +658,8 @@ class LoanCalculator:
         
         # Adjust monthlyPayment based on payment frequency
         original_monthly_payment = calculation.get('monthlyPayment', 0)
-        if payment_frequency == 'quarterly':
-            # For quarterly payments, multiply by 3 to show the quarterly amount
-            adjusted_payment = original_monthly_payment * 3
-        else:
-            adjusted_payment = original_monthly_payment
+        # Use the user-provided payment amount directly for all frequencies
+        adjusted_payment = original_monthly_payment
         
         # Date calculations already done above - use the calculated values
         
@@ -690,7 +687,7 @@ class LoanCalculator:
             'flexible_payment': params.get('flexible_payment', params.get('flexiblePayment', 2000)),
             'payment_timing': payment_timing,
             'payment_frequency': payment_frequency,
-            'monthlyPayment': adjusted_payment,  # Override with frequency-adjusted amount
+            'monthlyPayment': adjusted_payment,  # Use raw input amount per period
             'start_date': start_date_str,
             'end_date': end_date_str if end_date_str else end_date.strftime('%Y-%m-%d'),
             **{k: float(v) for k, v in fees.items()}
@@ -732,7 +729,7 @@ class LoanCalculator:
                 calculation['quarterlyPayment'] = 0
         elif repayment_option == 'service_and_capital':
             if payment_frequency == 'quarterly':
-                calculation['quarterlyPayment'] = float(periodic_interest + (capital_repayment * 3))
+                calculation['quarterlyPayment'] = float(periodic_interest + capital_repayment)
                 calculation['monthlyPayment'] = 0
             else:
                 calculation['monthlyPayment'] = float(periodic_interest + capital_repayment)
@@ -959,8 +956,8 @@ class LoanCalculator:
         # Adjust monthlyPayment based on payment frequency
         original_monthly_payment = calculation.get('monthlyPayment', 0)
         if payment_frequency == 'quarterly':
-            # For quarterly payments, multiply by 3 to show the quarterly amount
-            adjusted_payment = original_monthly_payment * 3
+            # Use the user-provided amount directly for quarterly payments
+            adjusted_payment = original_monthly_payment
         else:
             adjusted_payment = original_monthly_payment
         
@@ -984,7 +981,7 @@ class LoanCalculator:
             'capital_repayment': params.get('capital_repayment', 0),
             'payment_timing': payment_timing,
             'payment_frequency': payment_frequency,
-            'monthlyPayment': adjusted_payment,  # Override with frequency-adjusted amount
+            'monthlyPayment': adjusted_payment,  # Use raw input amount per period
             'start_date': loan_start_date,
             'end_date': end_date_str if end_date_str else end_date.strftime('%Y-%m-%d'),
             **{k: float(v) for k, v in fees.items()}
@@ -1019,7 +1016,7 @@ class LoanCalculator:
                 calculation['quarterlyPayment'] = 0
         elif repayment_option == 'service_and_capital':
             if payment_frequency == 'quarterly':
-                calculation['quarterlyPayment'] = float(periodic_interest + (Decimal(str(params.get('capital_repayment', 0))) * 3))
+                calculation['quarterlyPayment'] = float(periodic_interest + Decimal(str(params.get('capital_repayment', 0))))
                 calculation['monthlyPayment'] = 0
             else:
                 calculation['monthlyPayment'] = float(periodic_interest + Decimal(str(params.get('capital_repayment', 0))))
@@ -1878,11 +1875,8 @@ class LoanCalculator:
             capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
             payment_frequency = params.get('payment_frequency', 'monthly')
 
-            # Adjust capital payment based on frequency
-            if payment_frequency == 'quarterly':
-                capital_per_payment = capital_repayment * 3
-            else:
-                capital_per_payment = capital_repayment
+            # Use the provided capital repayment per selected period
+            capital_per_payment = capital_repayment
 
             # Calculate total interest using reducing balance
             # This is more complex for development loans due to tranches, so we'll use an approximation
@@ -2200,7 +2194,7 @@ class LoanCalculator:
         if payment_frequency == 'quarterly':
             periods = (loan_term + 2) // 3  # round up to cover term
             rate_per_period = (monthly_rate * 3) / Decimal('100')
-            capital_per_payment = capital_repayment * 3
+            capital_per_payment = capital_repayment
         else:
             periods = loan_term
             rate_per_period = monthly_rate / Decimal('100')
@@ -4090,10 +4084,8 @@ class LoanCalculator:
             payment_dates = self._generate_payment_dates(start_date, loan_term, payment_frequency, payment_timing, loan_term_days)
             period_ranges = self._compute_period_ranges(start_date, payment_dates, loan_term, payment_timing, loan_term_days)
 
-            if payment_frequency == 'quarterly':
-                capital_per_payment = capital_repayment * 3
-            else:
-                capital_per_payment = capital_repayment
+            # Use the provided capital repayment per period
+            capital_per_payment = capital_repayment
 
             fees_deducted_first = arrangement_fee + legal_fees
             fees_added_to_first = False
@@ -4159,11 +4151,8 @@ class LoanCalculator:
                 )
             )
 
-            # Scale flexible payment to the correct per-payment amount for quarterly frequency
-            if payment_frequency == "quarterly":
-                flexible_per_payment = flexible_payment * Decimal('3')
-            else:
-                flexible_per_payment = flexible_payment
+            # Use the provided flexible payment per selected period
+            flexible_per_payment = flexible_payment
 
             start_date_str = quote_data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
             if isinstance(start_date_str, str):
@@ -4405,10 +4394,8 @@ class LoanCalculator:
                 period_start = pr['start']
                 period_end = pr['end']
 
-                if payment_frequency == 'quarterly':
-                    capital_per_payment = capital_repayment * 3
-                else:
-                    capital_per_payment = capital_repayment
+                # Capital repayment per period provided directly by the user
+                capital_per_payment = capital_repayment
 
                 # For net-funded loans keep the capital repayment constant and do
                 # not force the final period to clear the remaining balance.
@@ -4559,11 +4546,8 @@ class LoanCalculator:
             flexible_payment = Decimal(
                 str(params.get('flexible_payment', params.get('flexiblePayment', 30000)))
             )
-            # Scale flexible payment to the correct per-payment amount for quarterly frequency
-            if payment_frequency == "quarterly":
-                flexible_per_payment = flexible_payment * Decimal('3')
-            else:
-                flexible_per_payment = flexible_payment
+            # Use the flexible payment amount as entered per period
+            flexible_per_payment = flexible_payment
 
             days_per_year = Decimal('360') if use_360_days else Decimal('365')
             daily_rate = annual_rate / Decimal('100') / days_per_year
@@ -4669,10 +4653,7 @@ class LoanCalculator:
             capital_repayment = Decimal(str(params.get('capital_repayment', 0)))
             
             # Calculate full interest retained at day 1
-            if payment_frequency == 'quarterly':
-                capital_per_payment = capital_repayment * 3  # 3 months worth
-            else:
-                capital_per_payment = capital_repayment
+            capital_per_payment = capital_repayment
             
             # Get retained interest and refund info from calculation results
             retained_interest = Decimal(str(calculation.get('retainedInterest', total_interest)))
@@ -5060,10 +5041,8 @@ class LoanCalculator:
                     remaining_balance, annual_rate, days_in_period, use_360_days
                 )
                 capital_repayment = Decimal(str(quote_data.get('capital_repayment', 0)))
-                if payment_frequency == 'quarterly':
-                    capital_per_payment = capital_repayment * 3  # 3 months worth
-                else:
-                    capital_per_payment = capital_repayment
+                # Use provided capital repayment per period
+                capital_per_payment = capital_repayment
 
                 principal_payment = capital_per_payment
                 if principal_payment > remaining_balance:
@@ -5074,10 +5053,8 @@ class LoanCalculator:
                     remaining_balance, annual_rate / Decimal('100'), payment_frequency
                 )
                 flexible_payment_amt = Decimal(str(quote_data.get('flexible_payment', quote_data.get('flexiblePayment', 0))))
-                if payment_frequency == 'quarterly':
-                    flexible_per_payment = flexible_payment_amt * 3
-                else:
-                    flexible_per_payment = flexible_payment_amt
+                # Use provided flexible payment per period
+                flexible_per_payment = flexible_payment_amt
                 interest_paid = min(flexible_per_payment, interest_due)
                 principal_payment = flexible_per_payment - interest_paid
                 if principal_payment > remaining_balance:
@@ -5315,10 +5292,8 @@ class LoanCalculator:
                     period_start = payment_date
                     period_end = payment_date
 
-                if payment_frequency == 'quarterly':
-                    capital_per_payment = capital_repayment * 3
-                else:
-                    capital_per_payment = capital_repayment
+                # Use capital repayment as provided per period
+                capital_per_payment = capital_repayment
 
                 if period == len(payment_dates) and capital_per_payment < remaining_balance:
                     capital_per_payment = remaining_balance
@@ -5419,11 +5394,8 @@ class LoanCalculator:
                     period_start = payment_date
                     period_end = payment_date
 
-                # Capital payment amount
-                if payment_frequency == 'quarterly':
-                    capital_per_payment = capital_repayment * 3
-                else:
-                    capital_per_payment = capital_repayment
+                # Capital payment amount per user input
+                capital_per_payment = capital_repayment
 
                 # Ensure the final period clears the remaining balance
                 if period == len(payment_dates):
@@ -5573,7 +5545,7 @@ class LoanCalculator:
                         days_label = " (quarterly)"
                     interest_amount = remaining_balance * quarterly_rate
                     baseline_rate = quarterly_rate
-                    flexible_per_payment = flexible_payment_amount * 3  # 3 months worth
+                    flexible_per_payment = flexible_payment_amount
                     interest_calc = f"{currency_symbol}{remaining_balance:,.2f} × {quarterly_rate_display:.3f}%{days_label}"
                 else:
                     if use_360_days:
@@ -7429,7 +7401,7 @@ class LoanCalculator:
         # Calculate interest refund based on payment schedule
         if payment_frequency == 'quarterly':
             periods = (loan_term + 2) // 3
-            capital_per_payment = capital_repayment * 3
+            capital_per_payment = capital_repayment
         else:
             periods = loan_term
             capital_per_payment = capital_repayment
