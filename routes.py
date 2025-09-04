@@ -179,26 +179,7 @@ except ImportError as e:
 @app.route('/')
 def landing_page():
     """Landing page with professional navigation cards"""
-
-    # Build a list of available GET routes that don't require parameters.
-    # This ensures the left navigation menu can display links for all
-    # accessible pages without breaking when routes expect arguments.
-    nav_routes = []
-    for rule in app.url_map.iter_rules():
-        if "GET" in rule.methods and len(rule.arguments) == 0 and not rule.rule.startswith('/static'):
-            try:
-                nav_routes.append({
-                    "rule": rule.rule,
-                    "url": url_for(rule.endpoint),
-                })
-            except Exception:
-                # Skip routes that cannot be built (e.g. missing dependencies)
-                continue
-
-    # Sort routes alphabetically by their URL path for consistent ordering
-    nav_routes.sort(key=lambda r: r["url"])
-
-    return render_template('landing.html', nav_routes=nav_routes)
+    return render_template('landing.html')
 
 @app.route('/home')  
 def index():
@@ -1574,6 +1555,21 @@ def inject_user():
 @app.context_processor
 def inject_now():
     return dict(now=datetime.utcnow())
+
+@app.context_processor
+def inject_nav_routes():
+    nav_routes = []
+    for rule in app.url_map.iter_rules():
+        if "GET" in rule.methods and len(rule.arguments) == 0 and not rule.rule.startswith('/static'):
+            try:
+                nav_routes.append({
+                    "rule": rule.rule,
+                    "url": url_for(rule.endpoint),
+                })
+            except Exception:
+                continue
+    nav_routes.sort(key=lambda r: r["url"])
+    return dict(nav_routes=nav_routes)
 
 @app.route('/download-professional-quote', methods=['POST'])
 @cross_origin()
