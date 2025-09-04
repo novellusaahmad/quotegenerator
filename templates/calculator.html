@@ -4,11 +4,7 @@
 
 {% block body_attr %}class="gold-nav"{% endblock %}
 
-{% block nav_heading %}<span class="navbar-text text-black fw-bold"><i class="fas fa-calculator me-2"></i>Loan Calculator</span>{% endblock %}
-
 {% block head %}
-<link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
-<link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet"/>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}"/>
 <style>
     /* Calculator and results section styling moved to novellus-theme.css */
@@ -460,6 +456,7 @@
 {% endblock %}
 
 {% block content %}
+<h1 class="mb-4">Loan Calculator</h1>
 <div class="row calculator-layout">
 <!-- Calculator Form -->
 <div class="col-lg-4 user-input-col">
