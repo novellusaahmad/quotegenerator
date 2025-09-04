@@ -69,3 +69,6 @@ def load_user(user_id):
 with app.app_context():
     db.create_all()
     logging.info("Database tables created")
+
+# Import routes to ensure they are registered when running the app directly
+import routes  # noqa: F401
