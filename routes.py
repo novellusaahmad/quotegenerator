@@ -1432,12 +1432,12 @@ def uploaded_file(filename):
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):
-    return render_template('errors/404.html'), 404
+    return render_template('error/404.html'), 404
 
 @app.errorhandler(500)
 def internal_error(error):
     db.session.rollback()
-    return render_template('errors/500.html'), 500
+    return render_template('error/500.html'), 500
 
 def perform_fresh_calculation_for_download(form_data):
     """Perform fresh calculation for document downloads to ensure currency symbols are correct"""
@@ -1531,7 +1531,7 @@ def perform_fresh_calculation_for_download(form_data):
 
 @app.errorhandler(403)
 def forbidden(error):
-    return render_template('errors/403.html'), 403
+    return render_template('error/403.html'), 403
 
 # Template filters
 @app.template_filter('currency')
