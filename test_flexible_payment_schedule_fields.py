@@ -24,7 +24,7 @@ def test_flexible_payment_schedule_fields_present():
     required_fields = [
         'start_period', 'end_period', 'days_held',
         'capital_outstanding', 'annual_interest_rate', 'interest_pa',
-        'scheduled_repayment', 'interest_accrued', 'interest_retained',
+        'total_repayment', 'capital_repayment', 'interest_accrued', 'interest_retained',
         'interest_refund', 'running_ltv'
     ]
     for idx, entry in enumerate(schedule, start=1):
