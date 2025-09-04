@@ -1678,24 +1678,39 @@ class LoanCalculator {
     toggleRateInputs() {
         const rateInputTypeRadio = document.querySelector('input[name="rate_input_type"]:checked');
         if (!rateInputTypeRadio) return;
-        
+
         const rateInputType = rateInputTypeRadio.value;
         const monthlyRateInput = document.getElementById('monthlyRateInput');
         const annualRateInput = document.getElementById('annualRateInput');
-        
+        const monthlyRateValue = document.getElementById('monthlyRateValue');
+        const annualRateValue = document.getElementById('annualRateValue');
+
         console.log('Toggle rate inputs:', rateInputType);
-        
+
         if (monthlyRateInput && annualRateInput) {
             if (rateInputType === 'monthly') {
+                if (monthlyRateValue && annualRateValue) {
+                    const annual = parseFloat(annualRateValue.value);
+                    if (!isNaN(annual)) {
+                        monthlyRateValue.value = (annual / 12).toFixed(4);
+                    }
+                }
                 monthlyRateInput.style.setProperty('display', 'flex', 'important');
                 annualRateInput.style.setProperty('display', 'none', 'important');
                 console.log('Showing monthly input, hiding annual input');
             } else {
+                if (monthlyRateValue && annualRateValue) {
+                    const monthly = parseFloat(monthlyRateValue.value);
+                    if (!isNaN(monthly)) {
+                        annualRateValue.value = (monthly * 12).toFixed(4);
+                    }
+                }
                 monthlyRateInput.style.setProperty('display', 'none', 'important');
                 annualRateInput.style.setProperty('display', 'flex', 'important');
                 console.log('Hiding monthly input, showing annual input');
             }
         }
+        this.updateRateEquivalenceNote();
     }
 
     setDefaultDate() {
@@ -2010,9 +2025,17 @@ class LoanCalculator {
         const monthlyInput = document.getElementById('monthlyRateInput');
         const annualInput = document.getElementById('annualRateInput');
         const monthlyRadio = document.getElementById('monthlyRate');
-        
+        const monthlyValue = document.getElementById('monthlyRateValue');
+        const annualValue = document.getElementById('annualRateValue');
+
         if (monthlyRadio && monthlyRadio.checked) {
             console.log('Toggle rate inputs:', 'monthly');
+            if (monthlyValue && annualValue) {
+                const annual = parseFloat(annualValue.value);
+                if (!isNaN(annual)) {
+                    monthlyValue.value = (annual / 12).toFixed(4);
+                }
+            }
             if (monthlyInput) {
                 monthlyInput.style.setProperty('display', 'flex', 'important');
                 console.log('Showing monthly input, hiding annual input');
@@ -2022,6 +2045,12 @@ class LoanCalculator {
             }
         } else {
             console.log('Toggle rate inputs:', 'annual');
+            if (monthlyValue && annualValue) {
+                const monthly = parseFloat(monthlyValue.value);
+                if (!isNaN(monthly)) {
+                    annualValue.value = (monthly * 12).toFixed(4);
+                }
+            }
             if (monthlyInput) {
                 monthlyInput.style.setProperty('display', 'none', 'important');
             }
