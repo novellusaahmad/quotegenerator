@@ -1565,6 +1565,7 @@ def inject_nav_routes():
                 nav_routes.append({
                     "rule": rule.rule,
                     "url": url_for(rule.endpoint),
+                    "name": rule.endpoint.replace('_', ' ').title(),
                 })
             except Exception:
                 continue
