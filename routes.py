@@ -897,6 +897,37 @@ def api_export_schedule():
         app.logger.error(f"Export error: {str(e)}")
         return jsonify({'error': 'Export failed'}), 500
 
+
+@app.route('/api/export-schedule-xlsx', methods=['POST'])
+@login_required
+def api_export_schedule_xlsx():
+    """Export payment and tranche schedules as XLSX workbook"""
+    try:
+        data = request.get_json()
+        payment_schedule = data.get('payment_schedule', [])
+        tranche_schedule = data.get('tranche_schedule', [])
+        params = {
+            'annual_rate': data.get('annual_rate', 0),
+            'start_date': data.get('start_date'),
+            'loan_term': data.get('loan_term'),
+            'use_360_days': data.get('use_360_days', False),
+        }
+
+        excel_gen = NovellussExcelGenerator()
+        excel_content = excel_gen.generate_detailed_schedules_excel(
+            payment_schedule, tranche_schedule, params
+        )
+
+        response = make_response(excel_content)
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        filename = f"schedules_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+        return response
+
+    except Exception as e:
+        app.logger.error(f"XLSX export error: {str(e)}")
+        return jsonify({'error': 'Export failed'}), 500
+
 @app.route('/applications')
 @login_required
 def applications():
