@@ -548,6 +548,12 @@ h4, h5, h6 {
     background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
 }
 
+/* Alternate gold navbar for calculator and loan history pages */
+.gold-nav .navbar {
+    background-color: #D4AF37 !important;
+    background-image: none !important;
+}
+
 .navbar-brand {
     color: white !important;
     font-weight: 700;
