@@ -587,7 +587,7 @@
 <small id="rateEquivalenceNote" class="form-text text-muted"></small>
 </div>
 <!-- Daily Rate Calculation Method -->
-<div class="">
+<div class="" id="use360DaysSection">
 <div class="form-check">
 <input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
 <label class="form-check-label" for="use360Days">
@@ -1231,6 +1231,15 @@ function calculateEndDate() {
             end.setUTCDate(end.getUTCDate() - 1);
             const endStr = `${end.getUTCFullYear()}-${String(end.getUTCMonth() + 1).padStart(2, '0')}-${String(end.getUTCDate()).padStart(2, '0')}`;
             endDateEl.value = endStr;
+
+            const startUTC = Date.UTC(sy, sm - 1, sd);
+            const endUTC = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate());
+            const daysDiff = Math.floor((endUTC - startUTC) / 86400000) + 1;
+            const loanTermDaysEl = document.getElementById('loanTermDaysResult');
+            if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
+            if (window.loanCalculator && typeof window.loanCalculator.update360DayVisibility === 'function') {
+                window.loanCalculator.update360DayVisibility();
+            }
             triggerCalculationUpdate();
         }
     } else {
@@ -1244,6 +1253,9 @@ function calculateEndDate() {
             const daysDiff = Math.floor((endUTC - startUTC) / 86400000) + 1;
             const loanTermDaysEl = document.getElementById('loanTermDaysResult');
             if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
+            if (window.loanCalculator && typeof window.loanCalculator.update360DayVisibility === 'function') {
+                window.loanCalculator.update360DayVisibility();
+            }
 
             let monthsDiff = (ey - sy) * 12 + (em - sm);
             if (ed < sd) {
