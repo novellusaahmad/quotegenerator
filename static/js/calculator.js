@@ -394,6 +394,11 @@ class LoanCalculator {
             });
         }
 
+        // Export schedules buttons
+        document.querySelectorAll('#exportPaymentScheduleBtn, #exportTrancheScheduleBtn').forEach(btn => {
+            btn.addEventListener('click', () => exportSchedulesToExcel());
+        });
+
         // View calculation breakdown
         const breakdownBtn = document.getElementById('viewBreakdownBtn');
         if (breakdownBtn) {
@@ -1024,21 +1029,28 @@ class LoanCalculator {
 
         const scheduleContainer = document.getElementById('detailedPaymentScheduleCard');
         const scheduleBody = document.getElementById('detailedPaymentScheduleBody');
+        const exportBtn = document.getElementById('exportPaymentScheduleBtn');
         const headerRow = scheduleContainer?.querySelector('thead tr');
         if (!this.defaultScheduleHeader && headerRow) {
             this.defaultScheduleHeader = headerRow.innerHTML;
         }
-        
-        if (!scheduleContainer || !scheduleBody || !results.detailed_payment_schedule) {
+
+        if (!scheduleContainer || !scheduleBody || !Array.isArray(results.detailed_payment_schedule) || results.detailed_payment_schedule.length === 0) {
             // Hide the schedule table if no data available
             if (scheduleContainer) {
                 scheduleContainer.style.display = 'none';
             }
+            if (exportBtn) {
+                exportBtn.style.display = 'none';
+            }
             return;
         }
-        
+
         // Show the schedule table
         scheduleContainer.style.display = 'block';
+        if (exportBtn) {
+            exportBtn.style.display = 'inline-block';
+        }
         
         // Clear existing rows
         scheduleBody.innerHTML = '';
@@ -2434,16 +2446,23 @@ class LoanCalculator {
     displayTrancheSchedule(results) {
         const btn = document.getElementById('trancheScheduleBtn');
         const body = document.getElementById('trancheScheduleBody');
+        const exportBtn = document.getElementById('exportTrancheScheduleBtn');
         if (!btn || !body) return;
 
         const schedule = results.detailed_tranche_schedule;
         if (!Array.isArray(schedule) || schedule.length === 0) {
             btn.style.display = 'none';
             body.innerHTML = '';
+            if (exportBtn) {
+                exportBtn.style.display = 'none';
+            }
             return;
         }
 
         btn.style.display = 'inline-block';
+        if (exportBtn) {
+            exportBtn.style.display = 'inline-block';
+        }
         body.innerHTML = '';
 
         const currency = document.getElementById('currency').value;
@@ -4104,3 +4123,47 @@ LoanCalculator.prototype.calculateLTVSimulation = function(results) {
         });
     }
 };
+
+async function exportSchedulesToExcel() {
+    try {
+        const r = window.calculatorResults;
+        if (!r) return;
+
+        const payload = {
+            payment_schedule: r.detailed_payment_schedule || [],
+            tranche_schedule: r.detailed_tranche_schedule || [],
+            annual_rate: r.annual_rate || r.annualRate || 0,
+            start_date: r.start_date || r.startDate || '',
+            loan_term: r.loan_term || r.loanTerm || 0,
+            use_360_days: r.use_360_days || false
+        };
+
+        const response = await fetch('/api/export-schedule-xlsx', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const disposition = response.headers.get('Content-Disposition');
+        let filename = 'schedules.xlsx';
+        if (disposition && disposition.includes('filename=')) {
+            filename = disposition.split('filename=')[1].replace(/\"/g, '');
+        }
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('Export error:', err);
+        if (window.notifications && typeof window.notifications.error === 'function') {
+            window.notifications.error('Failed to export schedules.');
+        }
+    }
+}
