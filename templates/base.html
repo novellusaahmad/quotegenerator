@@ -74,42 +74,43 @@
                     {% endif %}
                 </ul>
 
-                    <div class="d-flex ms-auto gap-2 {{ nav_group_classes|default('') }}">
+                    <div class="d-flex ms-auto gap-2">
+                    {% set nav_text_class = 'text-black' if request.endpoint in ['calculator_page', 'loan_history'] else '' %}
                     {% if current_user.is_authenticated %}
-                    <a class="btn btn-nav {{ nav_text_class|default('') }}" href="{{ url_for('powerbi_config') }}">
+                    <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('powerbi_config') }}">
                         <i class="fas fa-cog me-1"></i>Power BI Config
                     </a>
-                    <a class="btn btn-nav {{ nav_text_class|default('') }}" href="{{ url_for('snowflake_config') }}">
+                    <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('snowflake_config') }}">
                         <i class="fas fa-database me-1"></i>Snowflake Config
                     </a>
-                    <a class="btn btn-nav {{ nav_text_class|default('') }}" href="{{ url_for('user_manual') }}">
+                    <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('user_manual') }}">
                         <i class="fas fa-book me-1"></i>User Manual
                     </a>
-                    <a class="btn btn-nav {{ nav_text_class|default('') }}" href="{{ url_for('scenario_comparison_page') }}">
+                    <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('scenario_comparison_page') }}">
                         <i class="fas fa-chart-line me-1"></i>Scenario Comparison
                     </a>
-                    <a class="btn btn-nav {{ nav_text_class|default('') }}" href="{{ url_for('loan_history') }}">
+                    <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('loan_history') }}">
                         <i class="fas fa-history me-1"></i>Loan History
                     </a>
                     {% block nav_calculator %}
-                    <a class="btn btn-nav {{ nav_text_class|default('') }}" href="{{ url_for('calculator_page') }}">
+                    <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('calculator_page') }}">
                         <i class="fas fa-calculator me-1"></i>Calculator
                     </a>
                     {% endblock %}
                     {% endif %}
-                    <a class="btn btn-nav {{ nav_text_class|default('') }}" href="#" onclick="window.location.reload(); return false;">
+                    <a class="btn btn-nav {{ nav_text_class }}" href="#" onclick="window.location.reload(); return false;">
                         <i class="fas fa-sync-alt me-1"></i>Refresh
                     </a>
                     {% if request.endpoint == 'calculator_page' %}
-                    <a class="btn btn-nav {{ nav_text_class|default('') }}" href="{{ url_for('loan_history') }}">
+                    <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('loan_history') }}">
                         <i class="fas fa-history me-1"></i>Loan History
                     </a>
                     {% else %}
-                    <a class="btn btn-nav {{ nav_text_class|default('') }}" href="{{ url_for('calculator_page') }}">
+                    <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('calculator_page') }}">
                         <i class="fas fa-calculator me-1"></i>Calculator
                     </a>
                     {% endif %}
-                    <a class="btn btn-nav {{ nav_text_class|default('') }}" href="{{ url_for('landing_page') }}">
+                    <a class="btn btn-nav {{ nav_text_class }}" href="{{ url_for('landing_page') }}">
                         <i class="fas fa-home me-1"></i>Home
                     </a>
                     </div>
