@@ -1212,13 +1212,14 @@
 // End date/term synchronization with automatic recalculation
 function calculateEndDate() {
     const mode = document.querySelector('input[name="loan_end_type"]:checked').value;
-    const startDate = document.getElementById('startDate').value;
+    const startDateEl = document.getElementById('startDate');
+    const startDate = startDateEl.value;
     const loanTermEl = document.getElementById('loanTerm');
     const endDateEl = document.getElementById('endDate');
 
     if (mode === 'term') {
         const loanTerm = parseInt(loanTermEl.value);
-        if (startDate && loanTerm) {
+        if (startDate && loanTerm && (document.activeElement === loanTermEl || document.activeElement === startDateEl || !endDateEl.value)) {
             const [sy, sm, sd] = startDate.split('-').map(Number);
             let endYear = sy;
             let endMonth = sm - 1 + loanTerm;
@@ -1235,7 +1236,7 @@ function calculateEndDate() {
         }
     } else {
         const endDate = endDateEl.value;
-        if (startDate && endDate) {
+        if (startDate && endDate && (document.activeElement === endDateEl || document.activeElement === startDateEl || !loanTermEl.value)) {
             const [sy, sm, sd] = startDate.split('-').map(Number);
             const [ey, em, ed] = endDate.split('-').map(Number);
 
