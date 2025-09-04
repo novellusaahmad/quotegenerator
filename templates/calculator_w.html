@@ -457,7 +457,7 @@
 </select>
 </div>
 <!-- Daily Rate Calculation Method -->
-<div class="">
+<div class="" id="use360DaysSection">
 <div class="form-check">
 <input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
 <label class="form-check-label" for="use360Days">
@@ -1029,6 +1029,13 @@ function calculateEndDate() {
         const endDateInput = document.getElementById('endDate');
         endDateInput.value = end.toISOString().split('T')[0];
 
+        const daysDiff = Math.floor((end - start) / 86400000) + 1;
+        const loanTermDaysEl = document.getElementById('loanTermDaysResult');
+        if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
+        if (window.loanCalculator && typeof window.loanCalculator.update360DayVisibility === 'function') {
+            window.loanCalculator.update360DayVisibility();
+        }
+
         console.log(`Calculated end date for ${loanTerm}-month loan: ${startDate} to ${end.toISOString().split('T')[0]}`);
 
         // Trigger calculation update if calculator instance exists and form has data
@@ -1053,6 +1060,11 @@ function recalculateLoanTerm() {
         const end = new Date(endDate);
         const daysDiff = Math.floor((end - start) / 86400000) + 1;
         console.log(`Manual date change: ${daysDiff} days between ${startDate} and ${endDate}`);
+        const loanTermDaysEl = document.getElementById('loanTermDaysResult');
+        if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
+        if (window.loanCalculator && typeof window.loanCalculator.update360DayVisibility === 'function') {
+            window.loanCalculator.update360DayVisibility();
+        }
 
         let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 +
                          (end.getMonth() - start.getMonth());
