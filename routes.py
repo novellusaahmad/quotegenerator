@@ -875,7 +875,6 @@ def excel_style_breakdown():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/export-schedule', methods=['POST'])
-@login_required
 def api_export_schedule():
     """Export payment schedule as CSV"""
     try:
@@ -899,7 +898,6 @@ def api_export_schedule():
 
 
 @app.route('/api/export-schedule-xlsx', methods=['POST'])
-@login_required
 def api_export_schedule_xlsx():
     """Export payment and tranche schedules as XLSX workbook"""
     try:
