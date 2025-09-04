@@ -545,7 +545,8 @@ h4, h5, h6 {
 
 /* Navigation Theme - Override any blue */
 .navbar {
-    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
+    background-color: #AD965F !important;
+    background-image: none !important;
 }
 
 /* Alternate gold navbar for calculator and loan history pages */
