@@ -3823,7 +3823,15 @@ LoanCalculator.prototype.calculateLTVSimulation = function(results) {
     if (detailedSchedule.length > 0) {
         targets.forEach(t => {
             const inputEl = t.el;
-            const entry = detailedSchedule[t.month - 1];
+            // When the loan is fully repaid, the detailed schedule includes a
+            // final "payoff" row with a zero closing balance.  Using that row
+            // for LTV comparison makes the running LTV appear a month late.
+            // Skip that payoff entry and look at the preceding month instead.
+            let idx = t.month - 1;
+            if (detailedSchedule[idx]?.closing_balance === 0 && idx > 0) {
+                idx -= 1;  // use penultimate entry for LTV comparison
+            }
+            const entry = detailedSchedule[idx];
             if (!entry || !entry.closing_balance) {
                 inputEl?.classList.add('is-invalid');
                 return;
