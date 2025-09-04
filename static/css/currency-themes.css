@@ -471,15 +471,32 @@ body[data-currency="EUR"] .btn-success {
 }
 
 .currency-eur-toggle {
-    border-color: #42B89A !important;
-    color: #42B89A !important;
+    border-color: #509664 !important;
+    color: #509664 !important;
 }
 
 .currency-eur-toggle.active,
 .currency-eur-toggle:checked {
-    background-color: #42B89A !important;
-    border-color: #42B89A !important;
+    background-color: #509664 !important;
+    border-color: #509664 !important;
     color: white !important;
+}
+
+.currency-eur-toggle:focus,
+.currency-eur-toggle:focus-visible {
+    border-color: #509664 !important;
+    color: #509664 !important;
+    box-shadow: 0 0 0 0.2rem rgba(80, 150, 100, 0.25) !important;
+}
+
+.currency-eur-toggle.active:focus,
+.currency-eur-toggle:checked:focus,
+.currency-eur-toggle.active:focus-visible,
+.currency-eur-toggle:checked:focus-visible {
+    background-color: #509664 !important;
+    border-color: #509664 !important;
+    color: white !important;
+    box-shadow: 0 0 0 0.2rem rgba(80, 150, 100, 0.25) !important;
 }
 
 /* Table Headers */
