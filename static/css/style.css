@@ -20,12 +20,12 @@
 /* Global Styles - Novellus Theme */
 :root {
     --primary-color: #AD965F;  /* Novellus Gold */
-    --secondary-color: #1E2B3A;  /* Novellus Navy */
+    --secondary-color: #AD965F;  /* Novellus Navy */
     --success-color: green;  /* Dark Gold for success */
     --danger-color: #dc3545;
     --warning-color: #CDA44C;  /* Light Gold for warnings */
     --info-color: #2D3A49;  /* Light Navy for info */
-    --light-color: #FAFBFC;  /* Novellus Background */
+    --light-color: #AD965F;  /* Novellus Background */
     --dark-color: #1E2B3A;  /* Novellus Navy */
     --font-family: 'Brother 1816', Arial, sans-serif;
 }
@@ -43,7 +43,7 @@ body {
 
 /* Navigation - Novellus Theme */
 .navbar {
-    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
+    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--primary-color) 100%) !important;
 }
 
 /* Alternate gold navbar for select pages */
