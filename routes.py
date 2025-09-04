@@ -430,6 +430,11 @@ def api_calculate():
         else:
             use_360_days = False
         app.logger.info(f"ROUTES.PY DEBUG: use_360_days parameter = {use_360_days} (from {data.get('use_360_days')}, type: {type(use_360_days_value)})")
+
+        # Restrict 360-day calculation to bridge loans with terms up to 12 months
+        if loan_type == 'bridge' and loan_term > 12 and use_360_days:
+            app.logger.info("ROUTES.PY: disabling 360-day calculation for bridge term over 12 months")
+            use_360_days = False
         
         # Build parameters dictionary
         calc_params = {
