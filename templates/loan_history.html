@@ -222,12 +222,12 @@ class LoanHistoryManager {
 
     applyFilters() {
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const loanTypeFilter = document.getElementById('loanTypeFilter').value;
+        const loanTypeFilter = document.getElementById('loanTypeFilter').value.toLowerCase();
         const orgFilter = document.getElementById('orgFilter').value;
 
         this.filteredLoans = this.loans.filter(loan => {
             const matchesSearch = loan.loan_name.toLowerCase().includes(searchTerm);
-            const matchesType = !loanTypeFilter || loan.loan_type === loanTypeFilter;
+            const matchesType = !loanTypeFilter || loan.loan_type.toLowerCase() === loanTypeFilter;
             const loanOrg = loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited';
             const matchesOrg = !orgFilter || loanOrg === orgFilter;
             return matchesSearch && matchesType && matchesOrg;
@@ -424,7 +424,7 @@ class LoanHistoryManager {
                     <small class="text-muted">v${loan.version}</small>
                 </td>
                 <td>
-                    <span class="badge bg-${this.getLoanTypeBadgeColor(loan.loan_type)} text-dark">
+                    <span class="badge ${this.getLoanTypeBadgeClass(loan.loan_type)}">
                         ${this.formatLoanType(loan.loan_type)}
                     </span>
                 </td>
@@ -872,17 +872,26 @@ class LoanHistoryManager {
         document.getElementById('errorMessage').textContent = message;
     }
 
-    getLoanTypeBadgeColor(type) {
-        switch(type) {
-            case 'bridge': return 'warning';
-            case 'term': return 'info';
-            case 'development': return 'success';
-            default: return 'secondary';
+    getLoanTypeBadgeClass(type) {
+        switch(type.toLowerCase()) {
+            case 'bridge':
+                return 'bg-warning bg-opacity-25 text-dark';
+            case 'term':
+                return 'bg-info bg-opacity-25 text-dark';
+            case 'development':
+            case 'development2':
+                return 'bg-success bg-opacity-25 text-dark';
+            default:
+                return 'bg-secondary bg-opacity-25 text-dark';
         }
     }
 
     formatLoanType(type) {
-        return type.charAt(0).toUpperCase() + type.slice(1);
+        const lower = type.toLowerCase();
+        if (lower === 'development2' || lower === 'development') {
+            return 'Development';
+        }
+        return lower.charAt(0).toUpperCase() + lower.slice(1);
     }
 
     formatRepaymentOption(option) {
