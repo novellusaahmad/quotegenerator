@@ -2670,6 +2670,87 @@ class LoanCalculator {
         bootstrap.Modal.getInstance(modalEl).hide();
     }
 
+    /**
+     * Build summary cards for the calculation breakdown modal.
+     * The cards shown depend on loan type and repayment option.
+     * @param {Object} r - calculation result object
+     * @param {string} loanType
+     * @param {string} repaymentOption
+     * @returns {string} HTML string representing the card row
+     */
+    buildSummaryCards(r, loanType, repaymentOption) {
+        const currency = this.getCurrencySymbol(r.currency);
+        const formatMoney = (val) => {
+            const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[,£€]/g, '')) || 0;
+            return currency + num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        const startDateFmt = this.formatDate(r.start_date || r.startDate || '');
+        const endDateFmt = this.formatDate(r.end_date || r.endDate || '');
+
+        const arrangementNum = parseFloat(r.arrangementFee || 0);
+        const legalNum = parseFloat(r.legalCosts || r.legalFees || 0);
+        const siteNum = parseFloat(r.siteVisitFee || 0);
+        const titleNum = parseFloat(r.titleInsurance || 0);
+        const interestNum = parseFloat(r.totalInterest || 0);
+        const grossNum = parseFloat(r.grossAmount || r.gross_amount || 0);
+        const interest = formatMoney(interestNum);
+
+        const interestDeducted = ['none', 'retained', 'capital_payment_only'].includes(repaymentOption);
+        const netNum = grossNum - arrangementNum - legalNum - siteNum - titleNum - (interestDeducted ? interestNum : 0);
+        const withheldAmount = formatMoney(grossNum - netNum);
+        const retainedInterest = interestDeducted ? interest : null;
+
+        let partialRepaymentNum = 0;
+        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
+            partialRepaymentNum = r.detailed_payment_schedule
+                .slice(0, -1)
+                .reduce((sum, p) => {
+                    const val = parseFloat(String(p.principal_payment || p.principal || p.tranche_release || 0).replace(/[,£€]/g, '')) || 0;
+                    return sum + val;
+                }, 0);
+        }
+        const partialRepayment = formatMoney(partialRepaymentNum);
+
+        let redemptionValueNum = grossNum;
+        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
+            const lastEntry = r.detailed_payment_schedule[r.detailed_payment_schedule.length - 1];
+            redemptionValueNum = parseFloat(String(lastEntry.closing_balance || 0).replace(/[,£€]/g, '')) || 0;
+        }
+        const redemptionValue = formatMoney(redemptionValueNum);
+
+        const cards = [
+            { label: 'Loan Period', value: `${startDateFmt} &ndash; ${endDateFmt}`, class: 'bg-primary' },
+            { label: 'Interest Accrued', value: interest, class: 'bg-success' },
+            { label: 'Withheld Amount', value: withheldAmount, class: 'bg-warning text-dark' }
+        ];
+
+        if (interestDeducted && retainedInterest) {
+            cards.push({ label: 'Retained Interest', value: retainedInterest, class: 'bg-purple' });
+        }
+
+        if (['service_only', 'service_and_capital', 'flexible_payment'].includes(repaymentOption)) {
+            const monthlyPayment = formatMoney(r.monthlyPayment || r.monthly_payment || 0);
+            cards.push({ label: 'Monthly Payment', value: monthlyPayment, class: 'bg-secondary' });
+        }
+
+        if (partialRepaymentNum > 0) {
+            cards.push({ label: 'Partial Repayment', value: partialRepayment, class: 'bg-info text-dark' });
+        }
+
+        cards.push({ label: 'Redemption Value', value: redemptionValue, class: 'bg-success' });
+
+        const colClass = 'col-md-' + Math.floor(12 / cards.length) + ' col-sm-4 col-6';
+        const cardsHtml = cards.map(c => `
+                <div class="${colClass}">
+                    <div class="summary-card ${c.class || ''}">
+                        <div class="summary-label">${c.label}</div>
+                        <div class="summary-value">${c.value}</div>
+                    </div>
+                </div>`).join('');
+        return `<div class="row g-3 mb-4">${cardsHtml}</div>`;
+    }
+
     populateBreakdownModal() {
         const modalBody = document.getElementById('calculationBreakdownContent');
         if (!modalBody) return;
@@ -2847,66 +2928,7 @@ class LoanCalculator {
         const netFormula = `Net = Gross – Arrangement Fee – Legal Fees – Site Visit Fee – Title Insurance${interestDeducted ? ' – Retained Interest' : ''}`;
         const retainedInterestFormula = interestDeducted ? `(Interest Rate × Loan Term) × Gross` : '';
 
-        // Prepare summary values
-        const startDateFmt = this.formatDate(r.start_date || r.startDate || '');
-        const endDateFmt = this.formatDate(r.end_date || r.endDate || '');
-        const withheldAmount = formatMoney(grossNum - netNum);
-        const retainedInterest = interestDeducted ? interest : formatMoney(0);
-        let partialRepaymentNum = 0;
-        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
-            partialRepaymentNum = r.detailed_payment_schedule
-                .slice(0, -1)
-                .reduce((sum, p) => {
-                    const val = parseFloat(String(p.principal_payment || p.principal || p.tranche_release || 0).replace(/[,£€]/g, '')) || 0;
-                    return sum + val;
-                }, 0);
-        }
-        const partialRepayment = formatMoney(partialRepaymentNum);
-        let redemptionValueNum = grossNum;
-        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
-            const lastEntry = r.detailed_payment_schedule[r.detailed_payment_schedule.length - 1];
-            redemptionValueNum = parseFloat(String(lastEntry.closing_balance || 0).replace(/[,£€]/g, '')) || 0;
-        }
-        const redemptionValue = formatMoney(redemptionValueNum);
-        const summaryHtml = `
-            <div class="row g-3 mb-4">
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-primary">
-                        <div class="summary-label">Loan Period</div>
-                        <div class="summary-value">${startDateFmt} &ndash; ${endDateFmt}</div>
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-success">
-                        <div class="summary-label">Interest Accrued</div>
-                        <div class="summary-value">${interest}</div>
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-warning text-dark">
-                        <div class="summary-label">Withheld Amount</div>
-                        <div class="summary-value">${withheldAmount}</div>
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-purple">
-                        <div class="summary-label">Retained Interest</div>
-                        <div class="summary-value">${retainedInterest}</div>
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-info text-dark">
-                        <div class="summary-label">Partial Repayment</div>
-                        <div class="summary-value">${partialRepayment}</div>
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-success">
-                        <div class="summary-label">Redemption Value</div>
-                        <div class="summary-value">${redemptionValue}</div>
-                    </div>
-                </div>
-            </div>`;
+        const summaryHtml = this.buildSummaryCards(r, loanType, repaymentOption);
 
         // Special breakdown for bridge retained interest when user inputs gross amount
         if (loanType === 'bridge' && interestDeducted && amountInputType === 'gross') {
