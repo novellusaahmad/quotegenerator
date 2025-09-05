@@ -1593,19 +1593,25 @@ def inject_nav_routes():
             "icon": "fas fa-chart-line",
         },
         {
-            "url": url_for('snowflake_config'),
-            "name": "Snowflake Config",
-            "icon": "fas fa-database",
-        },
-        {
-            "url": url_for('powerbi_config'),
-            "name": "Power BI Config",
-            "icon": "fas fa-chart-bar",
-        },
-        {
-            "url": url_for('user_manual'),
-            "name": "User Manual",
-            "icon": "fas fa-book",
+            "name": "Administration",
+            "icon": "fas fa-cogs",
+            "children": [
+                {
+                    "url": url_for('snowflake_config'),
+                    "name": "Snowflake Config",
+                    "icon": "fas fa-database",
+                },
+                {
+                    "url": url_for('powerbi_config'),
+                    "name": "Power BI Config",
+                    "icon": "fas fa-chart-bar",
+                },
+                {
+                    "url": url_for('user_manual'),
+                    "name": "User Manual",
+                    "icon": "fas fa-book",
+                },
+            ],
         },
     ]
 

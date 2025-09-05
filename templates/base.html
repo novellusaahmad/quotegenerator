@@ -68,11 +68,31 @@
         <div class="offcanvas-body">
             <ul class="nav flex-column">
                 {% for route in nav_routes %}
-                <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center text-black{% if request.path == route.url %} active{% endif %}" href="{{ route.url }}">
-                        <i class="{{ route.icon }} me-2 text-black"></i>{{ route.name }}
-                    </a>
-                </li>
+                    {% if route.children %}
+                        {% set sub_active = route.children|selectattr('url', 'equalto', request.path)|list|length > 0 %}
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center text-black{% if sub_active %} active{% endif %}" data-bs-toggle="collapse" href="#submenu{{ loop.index }}" role="button" aria-expanded="{{ 'true' if sub_active else 'false' }}" aria-controls="submenu{{ loop.index }}">
+                                <i class="{{ route.icon }} me-2 text-black"></i>{{ route.name }}
+                            </a>
+                            <div class="collapse{% if sub_active %} show{% endif %}" id="submenu{{ loop.index }}">
+                                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small ms-4">
+                                    {% for sub in route.children %}
+                                        <li>
+                                            <a class="nav-link d-flex align-items-center text-black{% if request.path == sub.url %} active{% endif %}" href="{{ sub.url }}">
+                                                <i class="{{ sub.icon }} me-2 text-black"></i>{{ sub.name }}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center text-black{% if request.path == route.url %} active{% endif %}" href="{{ route.url }}">
+                                <i class="{{ route.icon }} me-2 text-black"></i>{{ route.name }}
+                            </a>
+                        </li>
+                    {% endif %}
                 {% endfor %}
             </ul>
         </div>
