@@ -269,12 +269,16 @@ class LoanSummary(db.Model):
     interest_only_total = db.Column(db.Numeric(15, 2))
     interest_savings = db.Column(db.Numeric(15, 2))
     savings_percentage = db.Column(db.Numeric(15, 4))
-    
+
     # Development loan specific
     day_1_advance = db.Column(db.Numeric(15, 2))
     user_input_day_1_advance = db.Column(db.Numeric(15, 2))
     tranches_data = db.Column(db.Text)  # JSON string for tranche details
-    
+
+    # Complete data snapshots
+    input_data = db.Column(db.Text)  # JSON of all user inputs
+    summary_data = db.Column(db.Text)  # JSON of summary calculations
+
     # Relationship to payment schedule
     payment_schedule = db.relationship('PaymentSchedule', backref='loan', lazy=True, cascade='all, delete-orphan')
     
@@ -302,9 +306,13 @@ class PaymentSchedule(db.Model):
     interest_amount = db.Column(db.Numeric(15, 2))
     principal_payment = db.Column(db.Numeric(15, 2))
     tranche_release = db.Column(db.Numeric(15, 2))
-    
+
     # Calculation details
     interest_calculation = db.Column(db.String(500))
+
+    # Full record of payment row and tranche info
+    schedule_data = db.Column(db.Text)  # JSON of raw payment schedule row
+    tranche_details = db.Column(db.Text)  # JSON of tranche schedule for this period
     
     def __repr__(self):
         return f'<PaymentSchedule Period {self.period_number} for Loan {self.loan_summary_id}>'

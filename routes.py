@@ -160,12 +160,31 @@ def parse_payment_date_flexible(payment_date_str):
             return datetime.now().date()
 
 def ensure_loan_tables():
-    """Create loan-related tables if they do not exist."""
+    """Create loan-related tables if they do not exist and ensure columns."""
     inspector = sa.inspect(db.engine)
     required_tables = ['loan_summary', 'payment_schedule']
     missing = [t for t in required_tables if not inspector.has_table(t)]
     if missing:
         db.create_all()
+        inspector = sa.inspect(db.engine)
+
+    column_definitions = {
+        'loan_summary': {
+            'input_data': 'TEXT',
+            'summary_data': 'TEXT'
+        },
+        'payment_schedule': {
+            'schedule_data': 'TEXT',
+            'tranche_details': 'TEXT'
+        }
+    }
+
+    for table, cols in column_definitions.items():
+        existing = {col['name'] for col in inspector.get_columns(table)}
+        for name, col_type in cols.items():
+            if name not in existing:
+                with db.engine.connect() as conn:
+                    conn.execute(sa.text(f'ALTER TABLE {table} ADD COLUMN {name} {col_type}'))
 
 # Initialize calculator and quote generator
 calculator = LoanCalculator()
@@ -1916,6 +1935,8 @@ def save_loan():
             loan_summary.day_1_advance = fresh_calculation.get('day1Advance', 0)
             loan_summary.user_input_day_1_advance = data.get('userInputDay1Advance', 0)
             loan_summary.tranches_data = json.dumps(data.get('tranches', []))
+            loan_summary.input_data = json.dumps(data)
+            loan_summary.summary_data = json.dumps(fresh_calculation)
 
             PaymentSchedule.query.filter_by(loan_summary_id=loan_summary.id).delete()
         else:
@@ -1964,7 +1985,9 @@ def save_loan():
                 savings_percentage=fresh_calculation.get('savingsPercentage', 0),
                 day_1_advance=fresh_calculation.get('day1Advance', 0),
                 user_input_day_1_advance=data.get('userInputDay1Advance', 0),
-                tranches_data=json.dumps(data.get('tranches', []))
+                tranches_data=json.dumps(data.get('tranches', [])),
+                input_data=json.dumps(data),
+                summary_data=json.dumps(fresh_calculation)
             )
             db.session.add(loan_summary)
             db.session.flush()  # Get the ID
@@ -1986,7 +2009,9 @@ def save_loan():
                         interest_amount=float(str(payment.get('interest_amount', '0')).replace('£', '').replace(',', '')) if payment.get('interest_amount') else 0,
                         principal_payment=float(str(payment.get('principal_payment', '0')).replace('£', '').replace(',', '')) if payment.get('principal_payment') else 0,
                         tranche_release=float(str(payment.get('tranche_release', '0')).replace('£', '').replace(',', '')) if payment.get('tranche_release') else 0,
-                        interest_calculation=payment.get('interest_calculation', '')
+                        interest_calculation=payment.get('interest_calculation', ''),
+                        schedule_data=json.dumps(payment),
+                        tranche_details=json.dumps(payment.get('tranche_schedule', []))
                     )
                     db.session.add(payment_record)
                     snowflake_payments.append(model_to_dict(payment_record))
