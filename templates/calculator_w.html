@@ -1314,6 +1314,22 @@ function handleEditMode() {
             
             // Populate form with URL parameters
             populateFormFromParams(urlParams);
+
+            // Ensure toggle-dependent sections reflect loaded values
+            if (window.loanCalculator) {
+                try {
+                    window.loanCalculator.toggleAmountInputSections();
+                    window.loanCalculator.toggleGrossAmountInputs();
+                    window.loanCalculator.toggleRateInputs();
+                    window.loanCalculator.toggleTrancheMode();
+                    window.loanCalculator.updateAdditionalParams();
+                    if (typeof window.loanCalculator.calculateLoan === 'function') {
+                        window.loanCalculator.calculateLoan(true);
+                    }
+                } catch (err) {
+                    console.error('Error toggling sections in edit mode:', err);
+                }
+            }
         }
     }
 }
@@ -1373,7 +1389,7 @@ function populateTrancheData(params) {
     }
     
     // Extract tranche parameters
-    const trancheContainer = document.getElementById('trancheContainer');
+    const trancheContainer = document.getElementById('tranchesContainer');
     if (!trancheContainer) {
         console.warn('Tranche container not found');
         return;
@@ -1390,16 +1406,18 @@ function populateTrancheData(params) {
         const description = params.get(`tranche_descriptions[${trancheIndex}]`);
         
         if (amount) {
-            // Add tranche if not first one (first one should exist)
+            // Add tranche if not first one (first row exists by default)
             if (trancheIndex > 0) {
-                addTranche();
+                if (window.loanCalculator && typeof window.loanCalculator.increaseTranches === 'function') {
+                    window.loanCalculator.increaseTranches();
+                }
             }
-            
+
             // Populate tranche fields
-            const amountField = document.querySelector(`#trancheContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheAmount"]`);
-            const dateField = document.querySelector(`#trancheContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheDate"]`);
-            const rateField = document.querySelector(`#trancheContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheRate"]`);
-            const descField = document.querySelector(`#trancheContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheDescription"]`);
+            const amountField = document.querySelector(`#tranchesContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheAmount"]`);
+            const dateField = document.querySelector(`#tranchesContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheDate"]`);
+            const rateField = document.querySelector(`#tranchesContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheRate"]`);
+            const descField = document.querySelector(`#tranchesContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheDescription"]`);
             
             if (amountField) amountField.value = amount;
             if (dateField) dateField.value = date;
