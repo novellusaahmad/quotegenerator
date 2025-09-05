@@ -86,226 +86,243 @@
                     <div class="calculator-section">
                         <h3 class="mb-3"><i class="fas fa-sliders-h me-2"></i>Base Parameters</h3>
                         <form id="baseParametersForm">
-                            <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Loan Type</label>
-                                            <div class="btn-group w-100" role="group" aria-label="Loan Type">
-                                                <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeBridge" value="bridge" checked>
-                                                <label class="btn btn-outline-primary" for="loanTypeBridge">Bridge</label>
-                                                <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeTerm" value="term">
-                                                <label class="btn btn-outline-primary" for="loanTypeTerm">Term</label>
-                                                <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeDevelopment" value="development">
-                                                <label class="btn btn-outline-primary" for="loanTypeDevelopment">Development</label>
-                                                <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeDevelopment2" value="development2">
-                                                <label class="btn btn-outline-primary" for="loanTypeDevelopment2">Development 2</label>
-                                            </div>
-                                            <input type="hidden" id="loanType" name="loan_type" value="bridge">
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Amount Input</label>
-                                            <div class="btn-group w-100" role="group">
-                                                <input checked class="btn-check" id="grossAmount" name="amount_input_type" type="radio" value="gross"/>
-                                                <label class="btn btn-outline-primary" for="grossAmount">Gross Amount</label>
-                                                <input class="btn-check" id="netAmount" name="amount_input_type" type="radio" value="net"/>
-                                                <label class="btn btn-outline-primary" for="netAmount">Net Amount</label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3" id="grossAmountSection">
-                                            <label class="form-label">Gross Amount</label>
-                                            <div class="btn-group w-100" role="group">
-                                                <input checked class="btn-check" id="grossFixed" name="gross_amount_type" type="radio" value="fixed"/>
-                                                <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossFixed">Fixed Amount</label>
-                                                <input class="btn-check" id="grossPercentage" name="gross_amount_type" type="radio" value="percentage"/>
-                                                <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossPercentage">% of Property Value</label>
-                                            </div>
-                                            <div class="input-group" id="grossFixedInput">
-                                                <span class="input-group-text currency-symbol">£</span>
-                                                <input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0" name="gross_amount" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-                                            </div>
-                                            <div class="input-group" id="grossPercentageInput" style="display:none;">
-                                                <input class="form-control" id="grossAmountPercentage" max="100" min="0" name="gross_amount_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3" id="netAmountSection" style="display:none;">
-                                            <label class="form-label" for="netAmountInput">Net Amount</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text currency-symbol">£</span>
-                                                <input class="form-control" id="netAmountInput" inputmode="decimal" min="0" name="net_amount" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3" id="day1AdvanceSection" style="display:none;">
-                                            <label class="form-label" for="day1Advance">Day 1 Advance (Optional)</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text currency-symbol">£</span>
-                                                <input class="form-control" id="day1Advance" inputmode="decimal" min="0" name="day1_advance" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="0"/>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <div class="form-check mt-4">
-                                                <input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
-                                                <label class="form-check-label" for="use360Days">
-                                                    Use 360-day calculation for daily rate
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Interest Rate</label>
-                                            <div class="btn-group w-100" role="group">
-                                                <input class="btn-check" id="monthlyRate" name="rate_input_type" type="radio" value="monthly"/>
-                                                <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="monthlyRate">Monthly Rate</label>
-                                                <input class="btn-check" id="annualRate" name="rate_input_type" type="radio" value="annual" checked=""/>
-                                                <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="annualRate">Annual Rate</label>
-                                            </div>
-                                            <div class="input-group" id="monthlyRateInput" style="display: none;">
-                                                <input class="form-control" id="monthlyRateValue" max="10" min="0" name="monthly_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="1"/>
-                                                <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
-                                            </div>
-                                            <div class="input-group" id="annualRateInput">
-                                                <input class="form-control" id="annualRateValue" max="50" min="0" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="12"/>
-                                                <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="propertyValue">Property Value</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text currency-symbol">£</span>
-                                                <input class="form-control" id="propertyValue" inputmode="decimal" min="0" name="property_value" pattern="[0-9,]*" required="" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Currency</label>
-                                            <div class="btn-group w-100" role="group" aria-label="Currency">
-                                                <input type="radio" class="btn-check" name="currency" id="currencyGBP" value="GBP" checked>
-                                                <label class="btn btn-outline-primary" for="currencyGBP">GBP (£)</label>
-                                                <input type="radio" class="btn-check" name="currency" id="currencyEUR" value="EUR">
-                                                <label class="btn btn-outline-primary" for="currencyEUR">EUR (€)</label>
-                                            </div>
-                                            <input type="hidden" id="currency" value="GBP">
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Interest Calculation Type</label>
-                                            <div class="btn-group w-100 flex-wrap interest-toggle" role="group" aria-label="Interest Calculation Type">
-                                                <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentNone" value="none" checked>
-                                                <label class="btn btn-outline-primary" for="repaymentNone">Retained</label>
-                                                <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceOnly" value="service_only">
-                                                <label class="btn btn-outline-primary" for="repaymentServiceOnly">Service</label>
-                                                <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceCapital" value="service_and_capital">
-                                                <label class="btn btn-outline-primary" for="repaymentServiceCapital">Service + Capital</label>
-                                                <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentCapitalOnly" value="capital_payment_only">
-                                                <label class="btn btn-outline-primary" for="repaymentCapitalOnly">Capital</label>
-                                                <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentFlexible" value="flexible_payment">
-                                                <label class="btn btn-outline-primary" for="repaymentFlexible">Flexible</label>
-                                            </div>
-                                            <input type="hidden" id="repaymentOption" name="repayment_option" value="none">
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Interest Calculation</label>
-                                            <div class="btn-group w-100 flex-wrap interest-type-toggle" role="group" aria-label="Interest Calculation">
-                                                <input type="radio" class="btn-check" name="interestTypeToggle" id="interestSimple" value="simple" checked>
-                                                <label class="btn btn-outline-primary" for="interestSimple">Simple</label>
-                                                <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundDaily" value="compound_daily">
-                                                <label class="btn btn-outline-primary" for="interestCompoundDaily">Daily</label>
-                                                <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundMonthly" value="compound_monthly">
-                                                <label class="btn btn-outline-primary" for="interestCompoundMonthly">Monthly</label>
-                                                <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundQuarterly" value="compound_quarterly">
-                                                <label class="btn btn-outline-primary" for="interestCompoundQuarterly">Quarterly</label>
-                                            </div>
-                        <input type="hidden" id="interestType" name="interest_type" value="simple">
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="arrangementFeeRate">Arrangement Fee</label>
-                                            <div class="input-group">
-                                                <input class="form-control" id="arrangementFeeRate" max="10" min="0" name="arrangement_fee_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="2"/>
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="legalFees">Legal Fees</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text currency-symbol">£</span>
-                                                <input class="form-control" id="legalFees" inputmode="decimal" min="0" name="legal_fees" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="siteVisitFee">Site Visit Fee</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text currency-symbol">£</span>
-                                                <input class="form-control" id="siteVisitFee" inputmode="decimal" min="0" name="site_visit_fee" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="titleInsuranceRate">Title Insurance</label>
-                                            <div class="input-group">
-                                                <input class="form-control" id="titleInsuranceRate" max="1" min="0" name="title_insurance_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="startDate">Start Date</label>
-                                            <input class="form-control" id="startDate" name="start_date" required style="min-height: 38px; font-size: 1rem;" type="date"/>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Loan End</label>
-                                            <div class="btn-group w-100" role="group">
-                                                <input class="btn-check" id="loanTermOption" name="loan_end_type" type="radio" value="term" checked>
-                                                <label class="btn btn-outline-secondary btn-sm" for="loanTermOption">Term (months)</label>
-                                                <input class="btn-check" id="loanEndDateOption" name="loan_end_type" type="radio" value="date">
-                                                <label class="btn btn-outline-secondary btn-sm" for="loanEndDateOption">End Date</label>
-                                            </div>
-                                            <div id="loanTermContainer" class="mt-2">
-                                                <div class="input-group">
-                                                    <input class="form-control" id="loanTerm" max="600" min="3" name="loan_term" required style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
-                                                    <span class="input-group-text">months</span>
-                                                </div>
-                                            </div>
-                                            <div id="endDateContainer" class="mt-2" style="display:none;">
-                                                <input class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;" type="date"/>
-                                                <small class="form-text text-muted">Select start and end dates to calculate the loan term in days.</small>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Payment Timing</label>
-                        <div class="btn-group w-100" role="group">
-                            <input class="btn-check" id="paymentInAdvance" name="payment_timing" type="radio" value="advance" checked>
-                            <label class="btn btn-outline-primary" for="paymentInAdvance">Advance</label>
-                            <input class="btn-check" id="paymentInArrears" name="payment_timing" type="radio" value="arrears">
-                            <label class="btn btn-outline-primary" for="paymentInArrears">Arrears</label>
-                        </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label">Payment Frequency</label>
-                        <div class="btn-group w-100" role="group">
-                            <input class="btn-check" id="paymentMonthly" name="payment_frequency" type="radio" value="monthly" checked>
-                            <label class="btn btn-outline-primary" for="paymentMonthly">Monthly</label>
-                            <input class="btn-check" id="paymentQuarterly" name="payment_frequency" type="radio" value="quarterly">
-                            <label class="btn btn-outline-primary" for="paymentQuarterly">Quarterly</label>
-                        </div>
-                                        </div>
-                                        <div id="additionalParams" style="display:none;" class="row">
-                                        <div class="col-md-6 mb-3" id="capitalRepaymentSection" style="display:none;">
-                                            <label class="form-label" for="capitalRepayment">Capital Repayment Amount</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text currency-symbol">£</span>
-                                                <input class="form-control" id="capitalRepayment" inputmode="decimal" min="0" step="0.0001" type="text" value="10000"/>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3" id="flexiblePaymentSection" style="display:none;">
-                                            <label class="form-label" for="flexiblePayment">Flexible Payment per Payment</label>
-                                            <div class="input-group">
-                                                <span class="input-group-text currency-symbol">£</span>
-                                                <input class="form-control" id="flexiblePayment" inputmode="decimal" min="0" step="0.0001" type="text" value="20000"/>
-                                            </div>
-                                        </div>
-                                        <div class="col-12 mb-3" id="developmentTrancheSection" style="display:none;">
-                                            <label class="form-label" for="trancheCount">Number of Tranches</label>
-                                            <input class="form-control" id="trancheCount" type="number" min="1" value="1"/>
-                                        </div>
-                                        </div>
+                            <div class="mb-3">
+                                <label class="form-label">Loan Type</label>
+                                <div class="btn-group w-100" role="group" aria-label="Loan Type">
+                                    <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeBridge" value="bridge" checked>
+                                    <label class="btn btn-outline-primary" for="loanTypeBridge">Bridge</label>
+                                    <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeTerm" value="term">
+                                    <label class="btn btn-outline-primary" for="loanTypeTerm">Term</label>
+                                    <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeDevelopment" value="development">
+                                    <label class="btn btn-outline-primary" for="loanTypeDevelopment">Development</label>
+                                    <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeDevelopment2" value="development2">
+                                    <label class="btn btn-outline-primary" for="loanTypeDevelopment2">Development 2</label>
+                                </div>
+                                <input type="hidden" id="loanType" name="loan_type" value="bridge">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Interest Calculation Type</label>
+                                <div class="btn-group w-100 flex-wrap interest-toggle" role="group" aria-label="Interest Calculation Type">
+                                    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentNone" value="none" checked>
+                                    <label class="btn btn-outline-primary" for="repaymentNone">Retained</label>
+                                    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceOnly" value="service_only">
+                                    <label class="btn btn-outline-primary" for="repaymentServiceOnly">Service</label>
+                                    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceCapital" value="service_and_capital">
+                                    <label class="btn btn-outline-primary" for="repaymentServiceCapital">Service + Capital</label>
+                                    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentCapitalOnly" value="capital_payment_only">
+                                    <label class="btn btn-outline-primary" for="repaymentCapitalOnly">Capital</label>
+                                    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentFlexible" value="flexible_payment">
+                                    <label class="btn btn-outline-primary" for="repaymentFlexible">Flexible</label>
+                                </div>
+                                <input type="hidden" id="repaymentOption" name="repayment_option" value="none">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Currency</label>
+                                <div class="btn-group w-100" role="group" aria-label="Currency">
+                                    <input type="radio" class="btn-check" name="currency" id="currencyGBP" value="GBP" checked>
+                                    <label class="btn btn-outline-primary" for="currencyGBP">GBP (£)</label>
+                                    <input type="radio" class="btn-check" name="currency" id="currencyEUR" value="EUR">
+                                    <label class="btn btn-outline-primary" for="currencyEUR">EUR (€)</label>
+                                </div>
+                        <input type="hidden" id="currency" value="GBP">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="propertyValue">Property Value</label>
+                                <div class="input-group">
+                                    <span class="input-group-text currency-symbol">£</span>
+                                    <input class="form-control" id="propertyValue" inputmode="decimal" min="0" name="property_value" pattern="[0-9,]*" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Amount Input</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input checked class="btn-check" id="grossAmount" name="amount_input_type" type="radio" value="gross"/>
+                                    <label class="btn btn-outline-primary" for="grossAmount">Gross Amount</label>
+                                    <input class="btn-check" id="netAmount" name="amount_input_type" type="radio" value="net"/>
+                                    <label class="btn btn-outline-primary" for="netAmount">Net Amount</label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" id="grossAmountSection">
+                                <label class="form-label">Gross Amount</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input checked class="btn-check" id="grossFixed" name="gross_amount_type" type="radio" value="fixed"/>
+                                    <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossFixed">Fixed Amount</label>
+                                    <input class="btn-check" id="grossPercentage" name="gross_amount_type" type="radio" value="percentage"/>
+                                    <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossPercentage">% of Property Value</label>
+                                </div>
+                                <div class="input-group" id="grossFixedInput">
+                                    <span class="input-group-text currency-symbol">£</span>
+                                    <input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0" name="gross_amount" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                </div>
+                                <div class="input-group" id="grossPercentageInput" style="display:none;">
+                                    <input class="form-control" id="grossAmountPercentage" max="100" min="0" name="gross_amount_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" id="netAmountSection" style="display:none;">
+                                <label class="form-label" for="netAmountInput">Net Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text currency-symbol">£</span>
+                                    <input class="form-control" id="netAmountInput" inputmode="decimal" min="0" name="net_amount" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                </div>
+                            </div>
+
+                            <div class="mb-3" id="day1AdvanceSection" style="display:none;">
+                                <label class="form-label" for="day1Advance">Day 1 Advance (Optional)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text currency-symbol">£</span>
+                                    <input class="form-control" id="day1Advance" inputmode="decimal" min="0" name="day1_advance" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="0"/>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Interest Rate</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input class="btn-check" id="monthlyRate" name="rate_input_type" type="radio" value="monthly"/>
+                                    <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="monthlyRate">Monthly Rate</label>
+                                    <input class="btn-check" id="annualRate" name="rate_input_type" type="radio" value="annual" checked/>
+                                    <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="annualRate">Annual Rate</label>
+                                </div>
+                                <div class="input-group" id="monthlyRateInput" style="display: none;">
+                                    <input class="form-control" id="monthlyRateValue" max="10" min="0" name="monthly_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="1"/>
+                                    <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
+                                </div>
+                                <div class="input-group" id="annualRateInput">
+                                    <input class="form-control" id="annualRateValue" max="50" min="0" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="12"/>
+                                    <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
+                                    <label class="form-check-label" for="use360Days">
+                                        Use 360-day calculation for daily rate
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Interest Calculation</label>
+                                <div class="btn-group w-100 flex-wrap interest-type-toggle" role="group" aria-label="Interest Calculation">
+                                    <input type="radio" class="btn-check" name="interestTypeToggle" id="interestSimple" value="simple" checked>
+                                    <label class="btn btn-outline-primary" for="interestSimple">Simple</label>
+                                    <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundDaily" value="compound_daily">
+                                    <label class="btn btn-outline-primary" for="interestCompoundDaily">Daily</label>
+                                    <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundMonthly" value="compound_monthly">
+                                    <label class="btn btn-outline-primary" for="interestCompoundMonthly">Monthly</label>
+                                    <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundQuarterly" value="compound_quarterly">
+                                    <label class="btn btn-outline-primary" for="interestCompoundQuarterly">Quarterly</label>
+                                </div>
+                                <input type="hidden" id="interestType" name="interest_type" value="simple">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="startDate">Start Date</label>
+                                <input class="form-control" id="startDate" name="start_date" required style="min-height: 38px; font-size: 1rem;" type="date"/>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Loan End</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input class="btn-check" id="loanTermOption" name="loan_end_type" type="radio" value="term" checked>
+                                    <label class="btn btn-outline-secondary btn-sm" for="loanTermOption">Term (months)</label>
+                                    <input class="btn-check" id="loanEndDateOption" name="loan_end_type" type="radio" value="date">
+                                    <label class="btn btn-outline-secondary btn-sm" for="loanEndDateOption">End Date</label>
+                                </div>
+                                <div id="loanTermContainer" class="mt-2">
+                                    <div class="input-group">
+                                        <input class="form-control" id="loanTerm" max="600" min="3" name="loan_term" required style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
+                                        <span class="input-group-text">months</span>
                                     </div>
-                                </form>
+                                </div>
+                                <div id="endDateContainer" class="mt-2" style="display:none;">
+                                    <input class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;" type="date"/>
+                                    <small class="form-text text-muted">Select start and end dates to calculate the loan term in days.</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="arrangementFeeRate">Arrangement Fee</label>
+                                <div class="input-group">
+                                    <input class="form-control" id="arrangementFeeRate" max="10" min="0" name="arrangement_fee_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="2"/>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="legalFees">Legal Fees</label>
+                                <div class="input-group">
+                                    <span class="input-group-text currency-symbol">£</span>
+                                    <input class="form-control" id="legalFees" inputmode="decimal" min="0" name="legal_fees" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="siteVisitFee">Site Visit Fee</label>
+                                <div class="input-group">
+                                    <span class="input-group-text currency-symbol">£</span>
+                                    <input class="form-control" id="siteVisitFee" inputmode="decimal" min="0" name="site_visit_fee" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="titleInsuranceRate">Title Insurance</label>
+                                <div class="input-group">
+                                    <input class="form-control" id="titleInsuranceRate" max="1" min="0" name="title_insurance_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Payment Timing</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input class="btn-check" id="paymentInAdvance" name="payment_timing" type="radio" value="advance" checked>
+                                    <label class="btn btn-outline-primary" for="paymentInAdvance">Advance</label>
+                                    <input class="btn-check" id="paymentInArrears" name="payment_timing" type="radio" value="arrears">
+                                    <label class="btn btn-outline-primary" for="paymentInArrears">Arrears</label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Payment Frequency</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input class="btn-check" id="paymentMonthly" name="payment_frequency" type="radio" value="monthly" checked>
+                                    <label class="btn btn-outline-primary" for="paymentMonthly">Monthly</label>
+                                    <input class="btn-check" id="paymentQuarterly" name="payment_frequency" type="radio" value="quarterly">
+                                    <label class="btn btn-outline-primary" for="paymentQuarterly">Quarterly</label>
+                                </div>
+                            </div>
+
+                            <div id="additionalParams" style="display:none;">
+                                <div class="mb-3" id="capitalRepaymentSection" style="display:none;">
+                                    <label class="form-label" for="capitalRepayment">Capital Repayment Amount</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text currency-symbol">£</span>
+                                        <input class="form-control" id="capitalRepayment" inputmode="decimal" min="0" step="0.0001" type="text" value="10000"/>
+                                    </div>
+                                </div>
+                                <div class="mb-3" id="flexiblePaymentSection" style="display:none;">
+                                    <label class="form-label" for="flexiblePayment">Flexible Payment per Payment</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text currency-symbol">£</span>
+                                        <input class="form-control" id="flexiblePayment" inputmode="decimal" min="0" step="0.0001" type="text" value="20000"/>
+                                    </div>
+                                </div>
+                                <div class="mb-3" id="developmentTrancheSection" style="display:none;">
+                                    <label class="form-label" for="trancheCount">Number of Tranches</label>
+                                    <input class="form-control" id="trancheCount" type="number" min="1" value="1"/>
+                                </div>
+                            </div>
+                        </form>
+                        </div>
                     </div>
-                </div>
 
                 <!-- Scenario Tools and Results -->
                 <div class="col-lg-8">
