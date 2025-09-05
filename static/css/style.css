@@ -89,6 +89,28 @@ body {
     color: rgba(255, 255, 255, 0.9);
 }
 
+/* Sidebar navigation */
+#sidebarMenu {
+    --bs-offcanvas-width: 300px; /* 25% reduction from default width */
+}
+
+#sidebarMenu .nav-link {
+    font-size: 1.1rem; /* increase font size of list items */
+}
+
+#sidebarMenu .nav-link:hover,
+#sidebarMenu .nav-link:focus,
+#sidebarMenu .nav-link.active {
+    background-color: var(--primary-color);
+    color: #fff !important;
+}
+
+#sidebarMenu .nav-link:hover i,
+#sidebarMenu .nav-link:focus i,
+#sidebarMenu .nav-link.active i {
+    color: #fff !important;
+}
+
 /* Cards - Updated for Novellus Theme (moved to novellus-theme.css) */
 
 /* Buttons - Novellus Theme */

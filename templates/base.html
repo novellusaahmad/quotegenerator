@@ -69,7 +69,7 @@
             <ul class="nav flex-column">
                 {% for route in nav_routes %}
                 <li class="nav-item">
-                    <a class="nav-link d-flex align-items-center text-black" href="{{ route.url }}">
+                    <a class="nav-link d-flex align-items-center text-black{% if request.path == route.url %} active{% endif %}" href="{{ route.url }}">
                         <i class="{{ route.icon }} me-2 text-black"></i>{{ route.name }}
                     </a>
                 </li>
