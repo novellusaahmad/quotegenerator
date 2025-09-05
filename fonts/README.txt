@@ -1,3 +1,2 @@
-This directory should contain the Brother 1816 font file required for Excel output.
-The current Brother-1816-Regular.ttf is a placeholder due to environment limitations.
-Replace it with the actual TTF file to ensure correct rendering in Excel.
+This directory contains the Brother 1816 Light font used across the application.
+The provided brother-1816-light.otf file is served for web pages and referenced by the Excel generator.

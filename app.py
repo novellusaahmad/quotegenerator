@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask
+from flask import Flask, send_from_directory
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -69,6 +69,11 @@ def load_user(user_id):
 with app.app_context():
     db.create_all()
     logging.info("Database tables created")
+
+# Serve font files from the fonts directory
+@app.route('/fonts/<path:filename>')
+def serve_font(filename):
+    return send_from_directory('fonts', filename)
 
 # Import routes to ensure they are registered when running the app directly
 import routes  # noqa: F401
