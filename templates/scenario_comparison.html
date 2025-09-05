@@ -264,6 +264,26 @@
                                                 <option value="quarterly">Quarterly</option>
                                             </select>
                                         </div>
+                                        <div id="additionalParams" style="display:none;" class="row">
+                                        <div class="col-md-6 mb-3" id="capitalRepaymentSection" style="display:none;">
+                                            <label class="form-label" for="capitalRepayment">Capital Repayment Amount</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input class="form-control" id="capitalRepayment" inputmode="decimal" min="0" step="0.0001" type="text" value="10000"/>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3" id="flexiblePaymentSection" style="display:none;">
+                                            <label class="form-label" for="flexiblePayment">Flexible Payment per Payment</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input class="form-control" id="flexiblePayment" inputmode="decimal" min="0" step="0.0001" type="text" value="20000"/>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 mb-3" id="developmentTrancheSection" style="display:none;">
+                                            <label class="form-label" for="trancheCount">Number of Tranches</label>
+                                            <input class="form-control" id="trancheCount" type="number" min="1" value="1"/>
+                                        </div>
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -588,6 +608,7 @@
 
 {% block scripts %}
 {{ super() }}
+    <script src="{{ url_for('static', filename='js/currency-theme-simple.js') }}"></script>
     <script src="{{ url_for('static', filename='js/scenario_comparison.js') }}"></script>
     <script>
         let currentComparison = null;
@@ -712,7 +733,10 @@
                 amount_input_type: urlParams.get('amount_input_type') || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross',
                 rate_input_type: urlParams.get('rate_input_type') || document.querySelector('input[name="rate_input_type"]:checked')?.value || 'annual',
                 day1_advance: parseFloat(urlParams.get('day1_advance') || document.getElementById('day1Advance')?.value || '0'),
-                use_360_days: urlParams.get('use_360_days') === 'true' || document.getElementById('use360Days')?.checked || false
+                use_360_days: urlParams.get('use_360_days') === 'true' || document.getElementById('use360Days')?.checked || false,
+                capital_repayment: parseFloat(urlParams.get('capital_repayment') || document.getElementById('capitalRepayment')?.value || '0'),
+                flexible_payment: parseFloat(urlParams.get('flexible_payment') || document.getElementById('flexiblePayment')?.value || '0'),
+                tranche_count: parseInt(urlParams.get('tranche_count') || document.getElementById('trancheCount')?.value || '0')
             };
         }
 
@@ -1123,18 +1147,10 @@
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Payment Timing</label>
-                                <select id="customPaymentTiming${scenarioNumber}" class="form-select">
-                                    <option value="advance">In Advance</option>
-                                    <option value="arrears">In Arrears</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Payment Frequency</label>
-                                <select id="customPaymentFrequency${scenarioNumber}" class="form-select">
-                                    <option value="monthly">Monthly</option>
-                                    <option value="quarterly">Quarterly</option>
-                                </select>
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="customUse360Days${scenarioNumber}">
+                                    <label class="form-check-label" for="customUse360Days${scenarioNumber}">Use 360-day calculation for daily rate</label>
+                                </div>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Start Date</label>
@@ -1475,29 +1491,16 @@
                 const capitalRepaymentSection = document.getElementById(`customCapitalRepaymentDiv${scenarioNumber}`);
                 const flexiblePaymentSection = document.getElementById(`customFlexiblePaymentDiv${scenarioNumber}`);
                 const day1AdvanceSection = document.getElementById(`customDay1AdvanceDiv${scenarioNumber}`);
-                
-                let showAdditionalParams = false;
-                
-                // EXACT LOGIC FROM CALCULATOR.JS:
-                
-                // Show payment timing for service only, capital+interest, capital payment only, flexible payment options
-                // AND for all development loans (development, development2) - they always show payment timing
+
+                // Always show payment timing section
                 if (paymentTimingSection) {
-                    if (repaymentOption === 'service_only' || repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only' || repaymentOption === 'flexible_payment' || loanType === 'development' || loanType === 'development2') {
-                        console.log(`Showing payment timing for scenario ${scenarioNumber}, loan type: ${loanType}, repayment: ${repaymentOption}`);
-                        paymentTimingSection.style.display = 'block';
-                        showAdditionalParams = true;
-                    } else {
-                        console.log(`Hiding payment timing for scenario ${scenarioNumber}, loan type: ${loanType}, repayment: ${repaymentOption}`);
-                        paymentTimingSection.style.display = 'none';
-                    }
+                    paymentTimingSection.style.display = 'block';
                 }
                 
                 // Show capital repayment section for service + capital and capital payment only options
                 if (capitalRepaymentSection) {
                     if (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only') {
                         capitalRepaymentSection.style.display = 'block';
-                        showAdditionalParams = true;
                     } else {
                         capitalRepaymentSection.style.display = 'none';
                     }
@@ -1507,7 +1510,6 @@
                 if (flexiblePaymentSection) {
                     if (repaymentOption === 'flexible_payment') {
                         flexiblePaymentSection.style.display = 'block';
-                        showAdditionalParams = true;
                     } else {
                         flexiblePaymentSection.style.display = 'none';
                     }
@@ -1518,7 +1520,6 @@
                     if (loanType === 'development' || loanType === 'development2') {
                         console.log(`Showing Day 1 advance for scenario ${scenarioNumber}, loan type: ${loanType}`);
                         day1AdvanceSection.style.display = 'block';
-                        showAdditionalParams = true;
                     } else {
                         console.log(`Hiding Day 1 advance for scenario ${scenarioNumber}, loan type: ${loanType}`);
                         day1AdvanceSection.style.display = 'none';
@@ -1529,13 +1530,7 @@
                 
                 // Show/hide the additional parameters container - EXACT LOGIC FROM CALCULATOR.JS
                 if (additionalParamsContainer) {
-                    if (showAdditionalParams || loanType === 'development' || loanType === 'development2') {
-                        console.log(`Showing additional params container for scenario ${scenarioNumber}, showAdditionalParams: ${showAdditionalParams}, loanType: ${loanType}`);
-                        additionalParamsContainer.style.display = 'block';
-                    } else {
-                        console.log(`Hiding additional params container for scenario ${scenarioNumber}, showAdditionalParams: ${showAdditionalParams}, loanType: ${loanType}`);
-                        additionalParamsContainer.style.display = 'none';
-                    }
+                    additionalParamsContainer.style.display = 'block';
                 }
                 
             } catch (error) {
@@ -1575,7 +1570,8 @@
                             end_date: document.getElementById(`customEndDate${i}`).value,
                             capital_repayment: parseFloat(document.getElementById(`customCapitalRepayment${i}`).value) || 0,
                             flexible_payment: parseFloat(document.getElementById(`customFlexiblePayment${i}`).value) || 0,
-                            day1_advance: parseFloat(document.getElementById(`customDay1Advance${i}`).value) || 100000
+                            day1_advance: parseFloat(document.getElementById(`customDay1Advance${i}`).value) || 100000,
+                            use_360_days: document.getElementById(`customUse360Days${i}`).checked
                         }
                     };
                     
