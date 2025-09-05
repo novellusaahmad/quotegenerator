@@ -540,14 +540,9 @@
 
 {% block scripts %}
 {{ super() }}
+    <script src="{{ url_for('static', filename='js/scenario_comparison.js') }}"></script>
     <script>
         let currentComparison = null;
-        
-        // Load parameters from URL on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadParametersFromURL();
-        });
-        
         function loadParametersFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
 
