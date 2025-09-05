@@ -2817,7 +2817,7 @@ class LoanCalculator {
             { label: 'Site Visit Fee (£)', value: site },
             { label: 'Title Insurance %', value: titlePctText },
             { label: 'Interest Rate (% p.a.)', value: rateText },
-            { label: 'Loan Term (months)', value: loanTerm },
+            { label: loanTermDays ? 'Loan Term (days)' : 'Loan Term (months)', value: loanTermDays || loanTerm },
             { label: 'Days in Year', value: daysPerYear }
         ];
         let mandatory = baseMandatory;
