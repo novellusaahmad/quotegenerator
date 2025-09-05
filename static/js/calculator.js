@@ -441,9 +441,15 @@ class LoanCalculator {
         submitButton.disabled = true;
         const originalText = submitButton.innerHTML;
         submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calculating...';
-        
+
         try {
             const formData = this.collectFormData();
+            if (!formData) {
+                // Validation failed in collectFormData
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalText;
+                return;
+            }
             console.log('Form data collected:', formData);
             
             const response = await fetch('/api/calculate', {
@@ -587,6 +593,7 @@ class LoanCalculator {
         // Handle tranches for development loans (both development and development2)
         if (data.loan_type === 'development' || data.loan_type === 'development2') {
             const tranches = [];
+            const trancheErrors = [];
             const trancheContainer = document.getElementById('tranchesContainer');
             const startDateValue = document.getElementById('startDate')?.value;
 
@@ -599,20 +606,32 @@ class LoanCalculator {
                     const rateInput = trancheItem.querySelector('.tranche-rate');
                     const descriptionInput = trancheItem.querySelector('.tranche-description');
 
-                    if (amountInput && dateInput && parseFloat(amountInput.value) > 0) {
+                    const amountVal = parseFloat(amountInput?.value);
+                    const rateVal = parseFloat(rateInput?.value);
+                    const descriptionVal = descriptionInput?.value.trim();
+                    const dateVal = dateInput?.value;
+
+                    if (amountVal < 0) trancheErrors.push('Tranche amount cannot be negative');
+                    if (rateVal < 0) trancheErrors.push('Tranche rate cannot be negative');
+                    if (!descriptionVal) trancheErrors.push('Tranche description is required');
+                    if (dateVal && startDateValue && new Date(dateVal) < new Date(startDateValue)) {
+                        trancheErrors.push('Tranche release date cannot be before loan start date');
+                    }
+
+                    if (amountInput && dateInput && amountVal > 0) {
                         // The calculation engine expects a month index to align each tranche
                         // with the loan schedule. Derive it from the release date when available
                         // or fall back to sequential months starting at 2 (post Day 1 advance).
                         let month = index + 2;
-                        if (dateInput.value && startDateValue) {
+                        if (dateVal && startDateValue) {
                             const start = new Date(startDateValue);
-                            const release = new Date(dateInput.value);
+                            const release = new Date(dateVal);
                             month = (release.getFullYear() - start.getFullYear()) * 12 +
                                     (release.getMonth() - start.getMonth()) + 1;
                             if (month < 2) month = 2;
                         }
 
-                        const rawRate = parseFloat(rateInput.value);
+                        const rawRate = rateVal;
                         let rate = rawRate;
                         if (isNaN(rate)) {
                             rate = parseFloat(data.annual_rate);
@@ -620,21 +639,31 @@ class LoanCalculator {
                         }
 
                         tranches.push({
-                            amount: parseFloat(amountInput.value),
-                            date: dateInput.value,
+                            amount: amountVal,
+                            date: dateVal,
                             rate: rate,
-                            description: descriptionInput.value || `Tranche ${index + 1}`,
+                            description: descriptionVal || `Tranche ${index + 1}`,
                             month: month
                         });
                     }
                 });
             }
 
+            if (trancheErrors.length > 0) {
+                const msg = trancheErrors[0];
+                if (window.notifications) {
+                    window.notifications.error(msg);
+                } else {
+                    alert(msg);
+                }
+                return null;
+            }
+
             if (tranches.length > 0) {
                 data.tranches = tranches;
             }
         }
-        
+
         return data;
     }
 
@@ -2007,8 +2036,18 @@ class LoanCalculator {
                 interestRate = 0;
                 if (interestRateInput) interestRateInput.value = '0';
             }
-            let trancheCount = parseInt(document.getElementById('autoTrancheCount')?.value) || 6;
-            
+            const trancheCountInput = document.getElementById('autoTrancheCount');
+            let trancheCount = trancheCountInput ? Number(trancheCountInput.value) : NaN;
+            if (!Number.isInteger(trancheCount) || trancheCount < 1) {
+                if (window.notifications) {
+                    window.notifications.error('Number of tranches must be a whole number and at least 1');
+                } else {
+                    alert('Number of tranches must be a whole number and at least 1');
+                }
+                if (trancheCountInput) trancheCountInput.focus();
+                return;
+            }
+
             // Fallback to main form values if auto fields don't exist
             if (totalAmount === 0) {
                 const netAmountInput = document.getElementById('netAmountInput');
@@ -2624,10 +2663,44 @@ class LoanCalculator {
             const rows = document.querySelectorAll('#tranchesContainer .tranche-item');
             const row = rows[idx];
             if (!row) return;
-            const amount = parseFloat(document.getElementById('editTrancheAmount').value) || 0;
+            const amount = parseFloat(document.getElementById('editTrancheAmount').value);
             const date = document.getElementById('editTrancheDate').value;
-            const rate = parseFloat(document.getElementById('editTrancheRate').value) || 0;
-            const description = document.getElementById('editTrancheDescription').value;
+            const rate = parseFloat(document.getElementById('editTrancheRate').value);
+            const description = document.getElementById('editTrancheDescription').value.trim();
+            const startDate = document.getElementById('startDate')?.value;
+
+            if (isNaN(amount) || amount < 0) {
+                if (window.notifications) {
+                    window.notifications.error('Tranche amount cannot be negative');
+                } else {
+                    alert('Tranche amount cannot be negative');
+                }
+                return;
+            }
+            if (isNaN(rate) || rate < 0) {
+                if (window.notifications) {
+                    window.notifications.error('Tranche rate cannot be negative');
+                } else {
+                    alert('Tranche rate cannot be negative');
+                }
+                return;
+            }
+            if (!description) {
+                if (window.notifications) {
+                    window.notifications.error('Tranche description is required');
+                } else {
+                    alert('Tranche description is required');
+                }
+                return;
+            }
+            if (startDate && date && new Date(date) < new Date(startDate)) {
+                if (window.notifications) {
+                    window.notifications.error('Tranche release date cannot be before loan start date');
+                } else {
+                    alert('Tranche release date cannot be before loan start date');
+                }
+                return;
+            }
             row.querySelector('input.tranche-amount').value = amount;
             row.querySelector('.tranche-amount-display').textContent = amount.toFixed(2);
             row.querySelector('input.tranche-date').value = date;
