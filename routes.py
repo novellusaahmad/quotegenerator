@@ -1558,17 +1558,31 @@ def inject_now():
 
 @app.context_processor
 def inject_nav_routes():
+    """Inject navigation routes for sidebar menu.
+
+    Filters out non-page endpoints (e.g. API routes) and generates a
+    human-readable name for each route based on its URL rule.
+    """
+
     nav_routes = []
     for rule in app.url_map.iter_rules():
-        if "GET" in rule.methods and len(rule.arguments) == 0 and not rule.rule.startswith('/static'):
+        if (
+            "GET" in rule.methods
+            and len(rule.arguments) == 0
+            and not rule.rule.startswith('/static')
+            and not rule.rule.startswith('/api')
+        ):
             try:
-                nav_routes.append({
-                    "rule": rule.rule,
-                    "url": url_for(rule.endpoint),
-                    "name": rule.endpoint.replace('_', ' ').title(),
-                })
+                url = url_for(rule.endpoint)
+                name = (
+                    "Home"
+                    if rule.rule == "/"
+                    else rule.rule.strip("/").replace('-', ' ').title()
+                )
+                nav_routes.append({"rule": rule.rule, "url": url, "name": name})
             except Exception:
                 continue
+
     nav_routes.sort(key=lambda r: r["url"])
     return dict(nav_routes=nav_routes)
 
