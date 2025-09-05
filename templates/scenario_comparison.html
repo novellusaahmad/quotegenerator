@@ -8,6 +8,8 @@
 
 {% block head %}
 {{ super() }}
+<link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
+<link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet"/>
     <style>
         .scenario-card {
             border: 2px solid #e9ecef;
@@ -91,104 +93,129 @@
                                     <h5>Base Parameters</h5>
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Loan Type</label>
-                                            <select id="baseLoanType" class="form-select">
+                                            <label class="form-label" for="loanType">Loan Type</label>
+                                            <select class="form-select" id="loanType" name="loan_type" required="">
                                                 <option value="bridge">Bridge Loan</option>
                                                 <option value="term">Term Loan</option>
                                                 <option value="development">Development Loan</option>
-                                                <option value="development2">Development 2 Loan</option>
+                                                <option value="development2">Development 2 (Excel Goal Seek)</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Loan Amount (£)</label>
-                                            <input type="number" id="baseLoanAmount" class="form-control" value="1000000">
+                                            <label class="form-label" for="grossAmountFixed">Gross Amount</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0" name="gross_amount" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                            </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Interest Rate (%)</label>
-                                            <input type="number" id="baseInterestRate" class="form-control" value="12" step="0.1">
+                                            <label class="form-label">Interest Rate</label>
+                                            <div class="btn-group w-100" role="group">
+                                                <input class="btn-check" id="monthlyRate" name="rate_input_type" type="radio" value="monthly"/>
+                                                <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="monthlyRate">Monthly Rate</label>
+                                                <input class="btn-check" id="annualRate" name="rate_input_type" type="radio" value="annual" checked=""/>
+                                                <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="annualRate">Annual Rate</label>
+                                            </div>
+                                            <div class="input-group" id="monthlyRateInput" style="display: none;">
+                                                <input class="form-control" id="monthlyRateValue" max="10" min="0" name="monthly_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="1"/>
+                                                <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
+                                            </div>
+                                            <div class="input-group" id="annualRateInput">
+                                                <input class="form-control" id="annualRateValue" max="50" min="0" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="12"/>
+                                                <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
+                                            </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Loan Term (months)</label>
-                                            <input type="number" id="baseLoanTerm" class="form-control" value="12">
+                                            <label class="form-label" for="loanTerm">Loan Term</label>
+                                            <div class="input-group">
+                                                <input class="form-control" id="loanTerm" max="600" min="3" name="loan_term" required="" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
+                                                <span class="input-group-text">months</span>
+                                            </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Property Value (£)</label>
-                                            <input type="number" id="basePropertyValue" class="form-control" value="2000000">
+                                            <label class="form-label" for="propertyValue">Property Value</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input class="form-control" id="propertyValue" inputmode="decimal" min="0" name="property_value" pattern="[0-9,]*" required="" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                            </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Currency</label>
-                                            <select id="baseCurrency" class="form-select">
+                                            <label class="form-label" for="currency">Currency</label>
+                                            <select class="form-select" id="currency" name="currency">
                                                 <option value="GBP">GBP (£)</option>
                                                 <option value="EUR">EUR (€)</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Repayment Option</label>
-                                            <select id="baseRepaymentOption" class="form-select">
-                                                <option value="none">Retained Interest</option>
-                                                <option value="service_only">Service Only</option>
-                                                <option value="service_and_capital">Service + Capital</option>
-                                                <option value="flexible_payment">Flexible Payment</option>
+                                            <label class="form-label" for="repaymentOption">Interest Calculation Type</label>
+                                            <select class="form-select" id="repaymentOption" name="repayment_option" required="">
+                                                <option value="none">Retained Interest (Interest Only)</option>
+                                                <option value="service_only">Service Only (Interest Payments)</option>
+                                                <option value="service_and_capital">Service + Capital (Principal &amp; Interest)</option>
+                                                <option value="capital_payment_only">Capital Payment Only (Interest Retained)</option>
+                                                <option value="flexible_payment">Flexible Payment Schedule</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Interest Type</label>
-                                            <select id="baseInterestType" class="form-select">
-                                                <option value="simple">Simple Interest</option>
+                                            <label class="form-label" for="interestType">Interest Calculation</label>
+                                            <select class="form-select" id="interestType" name="interest_type" required="">
+                                                <option value="simple" selected="">Simple Interest</option>
                                                 <option value="compound_daily">Compound Daily</option>
                                                 <option value="compound_monthly">Compound Monthly</option>
                                                 <option value="compound_quarterly">Compound Quarterly</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Arrangement Fee (%)</label>
-                                            <input type="number" id="baseArrangementFee" class="form-control" value="2.0" step="0.1">
+                                            <label class="form-label" for="arrangementFeeRate">Arrangement Fee</label>
+                                            <div class="input-group">
+                                                <input class="form-control" id="arrangementFeeRate" max="10" min="0" name="arrangement_fee_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="2"/>
+                                                <span class="input-group-text">%</span>
+                                            </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Legal Fees (£)</label>
-                                            <input type="number" id="baseLegalFees" class="form-control" value="1500">
+                                            <label class="form-label" for="legalFees">Legal Fees</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input class="form-control" id="legalFees" inputmode="decimal" min="0" name="legal_fees" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                            </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Site Visit Fee (£)</label>
-                                            <input type="number" id="baseSiteVisitFee" class="form-control" value="500">
+                                            <label class="form-label" for="siteVisitFee">Site Visit Fee</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input class="form-control" id="siteVisitFee" inputmode="decimal" min="0" name="site_visit_fee" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                            </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Title Insurance Rate (%)</label>
-                                            <input type="number" id="baseTitleInsuranceRate" class="form-control" value="0.01" step="0.001">
+                                            <label class="form-label" for="titleInsuranceRate">Title Insurance</label>
+                                            <div class="input-group">
+                                                <input class="form-control" id="titleInsuranceRate" max="1" min="0" name="title_insurance_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
+                                                <span class="input-group-text">%</span>
+                                            </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Start Date</label>
-                                            <input type="date" id="baseStartDate" class="form-control">
+                                            <label class="form-label" for="startDate">Start Date</label>
+                                            <input class="form-control" id="startDate" name="start_date" required="" style="min-height: 38px; font-size: 1rem;" type="date"/>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">End Date</label>
-                                            <input type="date" id="baseEndDate" class="form-control">
+                                            <label class="form-label" for="endDate">End Date</label>
+                                            <input class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;" type="date" readonly=""/>
+                                            <small class="form-text text-muted">Automatically calculated based on start date and loan term. You can edit manually to override.</small>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Payment Timing</label>
-                                            <select id="basePaymentTiming" class="form-select">
+                                            <label class="form-label" for="paymentTiming">Payment Timing</label>
+                                            <select class="form-select" id="paymentTiming" name="payment_timing">
                                                 <option value="advance">In Advance</option>
                                                 <option value="arrears">In Arrears</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label">Payment Frequency</label>
-                                            <select id="basePaymentFrequency" class="form-select">
+                                            <label class="form-label" for="paymentFrequency">Payment Frequency</label>
+                                            <select class="form-select" id="paymentFrequency" name="payment_frequency">
                                                 <option value="monthly">Monthly</option>
                                                 <option value="quarterly">Quarterly</option>
                                             </select>
                                         </div>
-                                        <!-- Hidden fields for additional parameters loaded from calculator -->
-                                        <input type="hidden" id="baseCapitalRepayment" value="0">
-                                        <input type="hidden" id="baseFlexiblePayment" value="0">
-                                        <input type="hidden" id="baseDay1Advance" value="0">
-                                        <input type="hidden" id="baseUse360Days">
-                                        <input type="hidden" id="baseMonthlyRate" value="0">
-                                        <input type="hidden" id="baseAmountInputType" value="gross">
-                                        <input type="hidden" id="baseRateInputType" value="annual">
-                                        <input type="hidden" id="baseNetAmount" value="0">
-                                        <input type="hidden" id="baseGrossAmountType" value="fixed">
-                                        <input type="hidden" id="baseGrossAmountPercentage" value="0">
                                     </div>
                                 </div>
                                 
@@ -523,87 +550,75 @@
         
         function loadParametersFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
-            
-            // Populate form fields with URL parameters if they exist
+
             if (urlParams.get('loan_type')) {
-                document.getElementById('baseLoanType').value = urlParams.get('loan_type');
+                document.getElementById('loanType').value = urlParams.get('loan_type');
             }
             if (urlParams.get('amount_input_type') === 'net' && urlParams.get('net_amount')) {
-                document.getElementById('baseLoanAmount').value = urlParams.get('net_amount');
+                document.getElementById('netAmountInput').value = urlParams.get('net_amount');
+                const netRadio = document.getElementById('netAmount');
+                if (netRadio) netRadio.checked = true;
             } else if (urlParams.get('gross_amount')) {
-                document.getElementById('baseLoanAmount').value = urlParams.get('gross_amount');
-            }
-            if (urlParams.get('net_amount')) {
-                document.getElementById('baseNetAmount').value = urlParams.get('net_amount');
-            }
-            if (urlParams.get('gross_amount_type')) {
-                document.getElementById('baseGrossAmountType').value = urlParams.get('gross_amount_type');
+                document.getElementById('grossAmountFixed').value = urlParams.get('gross_amount');
             }
             if (urlParams.get('gross_amount_percentage')) {
-                document.getElementById('baseGrossAmountPercentage').value = urlParams.get('gross_amount_percentage');
+                const percentInput = document.getElementById('grossAmountPercentage');
+                if (percentInput) percentInput.value = urlParams.get('gross_amount_percentage');
             }
             if (urlParams.get('annual_rate')) {
-                document.getElementById('baseInterestRate').value = urlParams.get('annual_rate');
+                document.getElementById('annualRateValue').value = urlParams.get('annual_rate');
             }
             if (urlParams.get('monthly_rate')) {
-                document.getElementById('baseMonthlyRate').value = urlParams.get('monthly_rate');
+                document.getElementById('monthlyRateValue').value = urlParams.get('monthly_rate');
             }
             if (urlParams.get('loan_term')) {
-                document.getElementById('baseLoanTerm').value = urlParams.get('loan_term');
+                document.getElementById('loanTerm').value = urlParams.get('loan_term');
             }
             if (urlParams.get('property_value')) {
-                document.getElementById('basePropertyValue').value = urlParams.get('property_value');
+                document.getElementById('propertyValue').value = urlParams.get('property_value');
             }
             if (urlParams.get('currency')) {
-                document.getElementById('baseCurrency').value = urlParams.get('currency');
+                document.getElementById('currency').value = urlParams.get('currency');
             }
             if (urlParams.get('repayment_option')) {
-                document.getElementById('baseRepaymentOption').value = urlParams.get('repayment_option');
+                document.getElementById('repaymentOption').value = urlParams.get('repayment_option');
             }
             if (urlParams.get('interest_type')) {
-                document.getElementById('baseInterestType').value = urlParams.get('interest_type');
+                document.getElementById('interestType').value = urlParams.get('interest_type');
             }
             if (urlParams.get('arrangement_fee_rate')) {
-                document.getElementById('baseArrangementFee').value = urlParams.get('arrangement_fee_rate');
+                document.getElementById('arrangementFeeRate').value = urlParams.get('arrangement_fee_rate');
             }
             if (urlParams.get('legal_fees')) {
-                document.getElementById('baseLegalFees').value = urlParams.get('legal_fees');
+                document.getElementById('legalFees').value = urlParams.get('legal_fees');
             }
             if (urlParams.get('site_visit_fee')) {
-                document.getElementById('baseSiteVisitFee').value = urlParams.get('site_visit_fee');
+                document.getElementById('siteVisitFee').value = urlParams.get('site_visit_fee');
             }
             if (urlParams.get('title_insurance_rate')) {
-                document.getElementById('baseTitleInsuranceRate').value = urlParams.get('title_insurance_rate');
+                document.getElementById('titleInsuranceRate').value = urlParams.get('title_insurance_rate');
             }
             if (urlParams.get('start_date')) {
-                document.getElementById('baseStartDate').value = urlParams.get('start_date');
+                document.getElementById('startDate').value = urlParams.get('start_date');
             }
             if (urlParams.get('end_date')) {
-                document.getElementById('baseEndDate').value = urlParams.get('end_date');
+                document.getElementById('endDate').value = urlParams.get('end_date');
             }
             if (urlParams.get('payment_timing')) {
-                document.getElementById('basePaymentTiming').value = urlParams.get('payment_timing');
+                document.getElementById('paymentTiming').value = urlParams.get('payment_timing');
             }
             if (urlParams.get('payment_frequency')) {
-                document.getElementById('basePaymentFrequency').value = urlParams.get('payment_frequency');
-            }
-            if (urlParams.get('capital_repayment')) {
-                document.getElementById('baseCapitalRepayment').value = urlParams.get('capital_repayment');
-            }
-            if (urlParams.get('flexible_payment')) {
-                document.getElementById('baseFlexiblePayment').value = urlParams.get('flexible_payment');
+                document.getElementById('paymentFrequency').value = urlParams.get('payment_frequency');
             }
             if (urlParams.get('day1_advance')) {
-                document.getElementById('baseDay1Advance').value = urlParams.get('day1_advance');
+                document.getElementById('day1Advance').value = urlParams.get('day1_advance');
             }
             if (urlParams.get('use_360_days')) {
-                document.getElementById('baseUse360Days').checked = urlParams.get('use_360_days') === 'true';
+                document.getElementById('use360Days').checked = urlParams.get('use_360_days') === 'true';
             }
-            if (urlParams.get('amount_input_type')) {
-                document.getElementById('baseAmountInputType').value = urlParams.get('amount_input_type');
-            }
-            if (urlParams.get('rate_input_type')) {
-                document.getElementById('baseRateInputType').value = urlParams.get('rate_input_type');
+            if (urlParams.get('rate_input_type') === 'monthly') {
+                const monthlyRadio = document.getElementById('monthlyRate');
+                if (monthlyRadio) monthlyRadio.checked = true;
             }
         }
 
@@ -631,32 +646,30 @@
 
             // If parameters exist in URL, use them; otherwise use form values
             return {
-                loan_type: urlParams.get('loan_type') || document.getElementById('baseLoanType').value,
-                gross_amount: parseFloat(urlParams.get('gross_amount') || document.getElementById('baseLoanAmount').value),
-                net_amount: parseFloat(urlParams.get('net_amount') || document.getElementById('baseNetAmount')?.value || '0'),
-                gross_amount_type: urlParams.get('gross_amount_type') || document.getElementById('baseGrossAmountType')?.value || 'fixed',
-                gross_amount_percentage: parseFloat(urlParams.get('gross_amount_percentage') || document.getElementById('baseGrossAmountPercentage')?.value || '0'),
-                annual_rate: parseFloat(urlParams.get('annual_rate') || document.getElementById('baseInterestRate').value),
-                monthly_rate: parseFloat(urlParams.get('monthly_rate') || document.getElementById('baseMonthlyRate')?.value || '0'),
-                loan_term: parseInt(urlParams.get('loan_term') || document.getElementById('baseLoanTerm').value),
-                property_value: parseFloat(urlParams.get('property_value') || document.getElementById('basePropertyValue').value),
-                currency: urlParams.get('currency') || document.getElementById('baseCurrency').value,
-                repayment_option: urlParams.get('repayment_option') || document.getElementById('baseRepaymentOption')?.value || 'none',
-                interest_type: urlParams.get('interest_type') || document.getElementById('baseInterestType')?.value || 'simple',
-                arrangement_fee_rate: parseFloat(urlParams.get('arrangement_fee_rate') || document.getElementById('baseArrangementFee')?.value || '2.0'),
-                legal_fees: parseFloat(urlParams.get('legal_fees') || document.getElementById('baseLegalFees')?.value || '1500'),
-                site_visit_fee: parseFloat(urlParams.get('site_visit_fee') || document.getElementById('baseSiteVisitFee')?.value || '500'),
-                title_insurance_rate: parseFloat(urlParams.get('title_insurance_rate') || document.getElementById('baseTitleInsuranceRate')?.value || '0.01'),
-                start_date: urlParams.get('start_date') || document.getElementById('baseStartDate')?.value || '',
-                end_date: urlParams.get('end_date') || document.getElementById('baseEndDate')?.value || '',
-                payment_timing: urlParams.get('payment_timing') || document.getElementById('basePaymentTiming')?.value || 'arrears',
-                payment_frequency: urlParams.get('payment_frequency') || document.getElementById('basePaymentFrequency')?.value || 'monthly',
-                amount_input_type: urlParams.get('amount_input_type') || document.getElementById('baseAmountInputType')?.value || 'gross',
-                rate_input_type: urlParams.get('rate_input_type') || document.getElementById('baseRateInputType')?.value || 'annual',
-                capital_repayment: parseFloat(urlParams.get('capital_repayment') || document.getElementById('baseCapitalRepayment')?.value || '0'),
-                flexible_payment: parseFloat(urlParams.get('flexible_payment') || document.getElementById('baseFlexiblePayment')?.value || '0'),
-                day1_advance: parseFloat(urlParams.get('day1_advance') || document.getElementById('baseDay1Advance')?.value || '0'),
-                use_360_days: urlParams.get('use_360_days') === 'true' || document.getElementById('baseUse360Days')?.checked || false
+                loan_type: urlParams.get('loan_type') || document.getElementById('loanType').value,
+                gross_amount: parseFloat(urlParams.get('gross_amount') || document.getElementById('grossAmountFixed').value || '0'),
+                net_amount: parseFloat(urlParams.get('net_amount') || document.getElementById('netAmountInput')?.value || '0'),
+                gross_amount_type: urlParams.get('gross_amount_type') || document.querySelector('input[name="gross_amount_type"]:checked')?.value || 'fixed',
+                gross_amount_percentage: parseFloat(urlParams.get('gross_amount_percentage') || document.getElementById('grossAmountPercentage')?.value || '0'),
+                annual_rate: parseFloat(urlParams.get('annual_rate') || document.getElementById('annualRateValue').value),
+                monthly_rate: parseFloat(urlParams.get('monthly_rate') || document.getElementById('monthlyRateValue')?.value || '0'),
+                loan_term: parseInt(urlParams.get('loan_term') || document.getElementById('loanTerm').value),
+                property_value: parseFloat(urlParams.get('property_value') || document.getElementById('propertyValue').value),
+                currency: urlParams.get('currency') || document.getElementById('currency').value,
+                repayment_option: urlParams.get('repayment_option') || document.getElementById('repaymentOption')?.value || 'none',
+                interest_type: urlParams.get('interest_type') || document.getElementById('interestType')?.value || 'simple',
+                arrangement_fee_rate: parseFloat(urlParams.get('arrangement_fee_rate') || document.getElementById('arrangementFeeRate')?.value || '2'),
+                legal_fees: parseFloat(urlParams.get('legal_fees') || document.getElementById('legalFees')?.value || '0'),
+                site_visit_fee: parseFloat(urlParams.get('site_visit_fee') || document.getElementById('siteVisitFee')?.value || '0'),
+                title_insurance_rate: parseFloat(urlParams.get('title_insurance_rate') || document.getElementById('titleInsuranceRate')?.value || '0'),
+                start_date: urlParams.get('start_date') || document.getElementById('startDate')?.value || '',
+                end_date: urlParams.get('end_date') || document.getElementById('endDate')?.value || '',
+                payment_timing: urlParams.get('payment_timing') || document.getElementById('paymentTiming')?.value || 'arrears',
+                payment_frequency: urlParams.get('payment_frequency') || document.getElementById('paymentFrequency')?.value || 'monthly',
+                amount_input_type: urlParams.get('amount_input_type') || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross',
+                rate_input_type: urlParams.get('rate_input_type') || document.querySelector('input[name="rate_input_type"]:checked')?.value || 'annual',
+                day1_advance: parseFloat(urlParams.get('day1_advance') || document.getElementById('day1Advance')?.value || '0'),
+                use_360_days: urlParams.get('use_360_days') === 'true' || document.getElementById('use360Days')?.checked || false
             };
         }
 
@@ -1571,65 +1584,72 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Scenario Comparison Tool loaded');
         });
-        // Page initialization
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('One-Click Scenario Comparison Tool loaded');
-            
-            // Set default start date to today for base parameters
-            const today = new Date().toISOString().split('T')[0];
-            const baseStartDate = document.getElementById('baseStartDate');
-            if (baseStartDate) {
-                baseStartDate.value = today;
-                
-                // Calculate default end date based on base loan term
-                const baseLoanTerm = document.getElementById('baseLoanTerm');
-                if (baseLoanTerm) {
-                    calculateBaseEndDate();
-                    baseLoanTerm.addEventListener('change', calculateBaseEndDate);
-                    baseStartDate.addEventListener('change', calculateBaseEndDate);
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const startDateElement = document.getElementById('startDate');
+                if (startDateElement) {
+                    startDateElement.value = today;
                 }
+
+                if (typeof calculateEndDate === 'function') {
+                    calculateEndDate();
+                }
+
+                const startDate = document.getElementById('startDate');
+                const loanTerm = document.getElementById('loanTerm');
+                const endDate = document.getElementById('endDate');
+
+                if (startDate) {
+                    startDate.addEventListener('change', calculateEndDate);
+                }
+                if (loanTerm) {
+                    loanTerm.addEventListener('input', calculateEndDate);
+                }
+                if (endDate) {
+                    endDate.addEventListener('click', makeEndDateEditable);
+                    endDate.addEventListener('change', recalculateLoanTerm);
+                }
+            } catch (e) {
+                console.error('Error initializing comparison form:', e);
             }
         });
 
-        // Calculate end date for base parameters
-        function calculateBaseEndDate() {
-            const startDate = document.getElementById('baseStartDate').value;
-            const loanTerm = parseInt(document.getElementById('baseLoanTerm').value);
-            
+        function calculateEndDate() {
+            const startDate = document.getElementById('startDate').value;
+            const loanTerm = parseInt(document.getElementById('loanTerm').value);
+
             if (startDate && loanTerm && loanTerm > 0) {
                 const start = new Date(startDate);
-                
-                // Calculate exact days for consistent loan terms
-                let daysToAdd;
-                switch (loanTerm) {
-                    case 6:
-                        daysToAdd = 181; // 6 months = 181 days
-                        break;
-                    case 12:
-                        daysToAdd = 365; // 12 months = exactly 365 days
-                        break;
-                    case 18:
-                        daysToAdd = 548; // 18 months = 548 days
-                        break;
-                    case 24:
-                        daysToAdd = 730; // 24 months = exactly 730 days
-                        break;
-                    default:
-                        // For other terms, use month-based calculation
-                        const end = new Date(start);
-                        end.setMonth(end.getMonth() + loanTerm);
-                        end.setDate(end.getDate() - 1);
-                        const endDateInput = document.getElementById('baseEndDate');
-                        if (endDateInput) endDateInput.value = end.toISOString().split('T')[0];
-                        return;
-                }
-                
-                // Add the exact number of days
                 const end = new Date(start);
-                end.setDate(end.getDate() + daysToAdd);
-                
-                const endDateInput = document.getElementById('baseEndDate');
-                if (endDateInput) endDateInput.value = end.toISOString().split('T')[0];
+                end.setMonth(end.getMonth() + loanTerm);
+                end.setDate(end.getDate() - 1);
+
+                const endDateInput = document.getElementById('endDate');
+                endDateInput.value = end.toISOString().split('T')[0];
+            }
+        }
+
+        function makeEndDateEditable() {
+            const endDateInput = document.getElementById('endDate');
+            endDateInput.removeAttribute('readonly');
+            endDateInput.focus();
+        }
+
+        function recalculateLoanTerm() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const daysDiff = Math.floor((end - start) / 86400000) + 1;
+
+                let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+                if (end.getDate() < start.getDate()) {
+                    monthsDiff -= 1;
+                }
+                document.getElementById('loanTerm').value = Math.max(1, monthsDiff);
             }
         }
     </script>
