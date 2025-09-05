@@ -102,8 +102,7 @@ function updateGrossAmountFromPercentage() {
 
 function updateRepaymentOptions() {
     const loanTypeElement = document.getElementById('loanType');
-    const repaymentSelect = document.getElementById('repaymentOption');
-    if (!loanTypeElement || !repaymentSelect) return;
+    if (!loanTypeElement) return;
 
     const loanType = loanTypeElement.value;
     const optionsMap = {
@@ -114,13 +113,31 @@ function updateRepaymentOptions() {
     };
     const allowed = optionsMap[loanType] || [];
 
-    Array.from(repaymentSelect.options).forEach(opt => {
-        opt.hidden = !allowed.includes(opt.value);
+    document.querySelectorAll('input[name="repaymentOptionToggle"]').forEach(radio => {
+        const label = document.querySelector(`label[for="${radio.id}"]`);
+        const show = allowed.includes(radio.value);
+        radio.style.display = show ? '' : 'none';
+        if (label) label.style.display = show ? '' : 'none';
+        if (!show && radio.checked) {
+            radio.checked = false;
+        }
     });
 
-    if (!allowed.includes(repaymentSelect.value)) {
-        repaymentSelect.value = allowed[0] || '';
+    let checked = document.querySelector('input[name="repaymentOptionToggle"]:checked');
+    if (!checked && allowed.length) {
+        const first = document.querySelector(`input[name="repaymentOptionToggle"][value="${allowed[0]}"]`);
+        if (first) {
+            first.checked = true;
+            checked = first;
+        }
     }
+
+    const hidden = document.getElementById('repaymentOption');
+    if (hidden && checked) {
+        hidden.value = checked.value;
+        hidden.dispatchEvent(new Event('change'));
+    }
+
     updateAdditionalParams();
 }
 
@@ -190,6 +207,43 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleRateInputs();
     updateRepaymentOptions();
     updateAdditionalParams();
+
+    document.querySelectorAll('input[name="loanTypeToggle"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const hidden = document.getElementById('loanType');
+            if (hidden) {
+                hidden.value = radio.value;
+                hidden.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+    document.querySelectorAll('input[name="repaymentOptionToggle"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const hidden = document.getElementById('repaymentOption');
+            if (hidden) {
+                hidden.value = radio.value;
+                hidden.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+    document.querySelectorAll('input[name="currency"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const hidden = document.getElementById('currency');
+            if (hidden) {
+                hidden.value = radio.value;
+                hidden.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+    document.querySelectorAll('input[name="interestTypeToggle"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            const hidden = document.getElementById('interestType');
+            if (hidden) {
+                hidden.value = radio.value;
+                hidden.dispatchEvent(new Event('change'));
+            }
+        });
+    });
 
     document.getElementById('loanType')?.addEventListener('change', () => {
         updateRepaymentOptions();

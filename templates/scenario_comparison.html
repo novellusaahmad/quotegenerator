@@ -10,6 +10,7 @@
 {{ super() }}
 <link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
 <link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}"/>
     <style>
         .scenario-card {
             border: 2px solid #e9ecef;
@@ -93,13 +94,18 @@
                                     <h5>Base Parameters</h5>
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="loanType">Loan Type</label>
-                                            <select class="form-select" id="loanType" name="loan_type" required="">
-                                                <option value="bridge">Bridge Loan</option>
-                                                <option value="term">Term Loan</option>
-                                                <option value="development">Development Loan</option>
-                                                <option value="development2">Development 2 (Excel Goal Seek)</option>
-                                            </select>
+                                            <label class="form-label">Loan Type</label>
+                                            <div class="btn-group w-100" role="group" aria-label="Loan Type">
+                                                <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeBridge" value="bridge" checked>
+                                                <label class="btn btn-outline-primary" for="loanTypeBridge">Bridge</label>
+                                                <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeTerm" value="term">
+                                                <label class="btn btn-outline-primary" for="loanTypeTerm">Term</label>
+                                                <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeDevelopment" value="development">
+                                                <label class="btn btn-outline-primary" for="loanTypeDevelopment">Development</label>
+                                                <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeDevelopment2" value="development2">
+                                                <label class="btn btn-outline-primary" for="loanTypeDevelopment2">Development 2</label>
+                                            </div>
+                                            <input type="hidden" id="loanType" name="loan_type" value="bridge">
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">Amount Input</label>
@@ -174,30 +180,44 @@
                                             </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="currency">Currency</label>
-                                            <select class="form-select" id="currency" name="currency">
-                                                <option value="GBP">GBP (£)</option>
-                                                <option value="EUR">EUR (€)</option>
-                                            </select>
+                                            <label class="form-label">Currency</label>
+                                            <div class="btn-group w-100" role="group" aria-label="Currency">
+                                                <input type="radio" class="btn-check" name="currency" id="currencyGBP" value="GBP" checked>
+                                                <label class="btn btn-outline-primary" for="currencyGBP">GBP (£)</label>
+                                                <input type="radio" class="btn-check" name="currency" id="currencyEUR" value="EUR">
+                                                <label class="btn btn-outline-primary" for="currencyEUR">EUR (€)</label>
+                                            </div>
+                                            <input type="hidden" id="currency" value="GBP">
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="repaymentOption">Interest Calculation Type</label>
-                                            <select class="form-select" id="repaymentOption" name="repayment_option" required="">
-                                                <option value="none">Retained Interest (Interest Only)</option>
-                                                <option value="service_only">Service Only (Interest Payments)</option>
-                                                <option value="service_and_capital">Service + Capital (Principal &amp; Interest)</option>
-                                                <option value="capital_payment_only">Capital Payment Only (Interest Retained)</option>
-                                                <option value="flexible_payment">Flexible Payment Schedule</option>
-                                            </select>
+                                            <label class="form-label">Interest Calculation Type</label>
+                                            <div class="btn-group w-100 flex-wrap interest-toggle" role="group" aria-label="Interest Calculation Type">
+                                                <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentNone" value="none" checked>
+                                                <label class="btn btn-outline-primary" for="repaymentNone">Retained</label>
+                                                <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceOnly" value="service_only">
+                                                <label class="btn btn-outline-primary" for="repaymentServiceOnly">Service</label>
+                                                <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceCapital" value="service_and_capital">
+                                                <label class="btn btn-outline-primary" for="repaymentServiceCapital">Service + Capital</label>
+                                                <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentCapitalOnly" value="capital_payment_only">
+                                                <label class="btn btn-outline-primary" for="repaymentCapitalOnly">Capital</label>
+                                                <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentFlexible" value="flexible_payment">
+                                                <label class="btn btn-outline-primary" for="repaymentFlexible">Flexible</label>
+                                            </div>
+                                            <input type="hidden" id="repaymentOption" name="repayment_option" value="none">
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="interestType">Interest Calculation</label>
-                                            <select class="form-select" id="interestType" name="interest_type" required="">
-                                                <option value="simple" selected="">Simple Interest</option>
-                                                <option value="compound_daily">Compound Daily</option>
-                                                <option value="compound_monthly">Compound Monthly</option>
-                                                <option value="compound_quarterly">Compound Quarterly</option>
-                                            </select>
+                                            <label class="form-label">Interest Calculation</label>
+                                            <div class="btn-group w-100 flex-wrap interest-type-toggle" role="group" aria-label="Interest Calculation">
+                                                <input type="radio" class="btn-check" name="interestTypeToggle" id="interestSimple" value="simple" checked>
+                                                <label class="btn btn-outline-primary" for="interestSimple">Simple</label>
+                                                <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundDaily" value="compound_daily">
+                                                <label class="btn btn-outline-primary" for="interestCompoundDaily">Daily</label>
+                                                <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundMonthly" value="compound_monthly">
+                                                <label class="btn btn-outline-primary" for="interestCompoundMonthly">Monthly</label>
+                                                <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundQuarterly" value="compound_quarterly">
+                                                <label class="btn btn-outline-primary" for="interestCompoundQuarterly">Quarterly</label>
+                                            </div>
+                        <input type="hidden" id="interestType" name="interest_type" value="simple">
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label" for="arrangementFeeRate">Arrangement Fee</label>
@@ -251,18 +271,22 @@
                                             </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="paymentTiming">Payment Timing</label>
-                                            <select class="form-select" id="paymentTiming" name="payment_timing">
-                                                <option value="advance">In Advance</option>
-                                                <option value="arrears">In Arrears</option>
-                                            </select>
+                                            <label class="form-label">Payment Timing</label>
+                        <div class="btn-group w-100" role="group">
+                            <input class="btn-check" id="paymentInAdvance" name="payment_timing" type="radio" value="advance" checked>
+                            <label class="btn btn-outline-primary" for="paymentInAdvance">Advance</label>
+                            <input class="btn-check" id="paymentInArrears" name="payment_timing" type="radio" value="arrears">
+                            <label class="btn btn-outline-primary" for="paymentInArrears">Arrears</label>
+                        </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="paymentFrequency">Payment Frequency</label>
-                                            <select class="form-select" id="paymentFrequency" name="payment_frequency">
-                                                <option value="monthly">Monthly</option>
-                                                <option value="quarterly">Quarterly</option>
-                                            </select>
+                                            <label class="form-label">Payment Frequency</label>
+                        <div class="btn-group w-100" role="group">
+                            <input class="btn-check" id="paymentMonthly" name="payment_frequency" type="radio" value="monthly" checked>
+                            <label class="btn btn-outline-primary" for="paymentMonthly">Monthly</label>
+                            <input class="btn-check" id="paymentQuarterly" name="payment_frequency" type="radio" value="quarterly">
+                            <label class="btn btn-outline-primary" for="paymentQuarterly">Quarterly</label>
+                        </div>
                                         </div>
                                         <div id="additionalParams" style="display:none;" class="row">
                                         <div class="col-md-6 mb-3" id="capitalRepaymentSection" style="display:none;">
@@ -609,6 +633,7 @@
 {% block scripts %}
 {{ super() }}
     <script src="{{ url_for('static', filename='js/currency-theme-simple.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
     <script src="{{ url_for('static', filename='js/scenario_comparison.js') }}"></script>
     <script>
         let currentComparison = null;
@@ -616,7 +641,10 @@
             const urlParams = new URLSearchParams(window.location.search);
 
             if (urlParams.get('loan_type')) {
-                document.getElementById('loanType').value = urlParams.get('loan_type');
+                const lt = urlParams.get('loan_type');
+                const ltRadio = document.querySelector(`input[name="loanTypeToggle"][value="${lt}"]`);
+                if (ltRadio) ltRadio.checked = true;
+                document.getElementById('loanType').value = lt;
             }
             if (urlParams.get('amount_input_type') === 'net' && urlParams.get('net_amount')) {
                 document.getElementById('netAmountInput').value = urlParams.get('net_amount');
@@ -642,13 +670,22 @@
                 document.getElementById('propertyValue').value = urlParams.get('property_value');
             }
             if (urlParams.get('currency')) {
-                document.getElementById('currency').value = urlParams.get('currency');
+                const curr = urlParams.get('currency');
+                const currRadio = document.querySelector(`input[name="currency"][value="${curr}"]`);
+                if (currRadio) currRadio.checked = true;
+                document.getElementById('currency').value = curr;
             }
             if (urlParams.get('repayment_option')) {
-                document.getElementById('repaymentOption').value = urlParams.get('repayment_option');
+                const ro = urlParams.get('repayment_option');
+                const roRadio = document.querySelector(`input[name="repaymentOptionToggle"][value="${ro}"]`);
+                if (roRadio) roRadio.checked = true;
+                document.getElementById('repaymentOption').value = ro;
             }
             if (urlParams.get('interest_type')) {
-                document.getElementById('interestType').value = urlParams.get('interest_type');
+                const it = urlParams.get('interest_type');
+                const itRadio = document.querySelector(`input[name="interestTypeToggle"][value="${it}"]`);
+                if (itRadio) itRadio.checked = true;
+                document.getElementById('interestType').value = it;
             }
             if (urlParams.get('arrangement_fee_rate')) {
                 document.getElementById('arrangementFeeRate').value = urlParams.get('arrangement_fee_rate');
@@ -669,10 +706,14 @@
                 document.getElementById('endDate').value = urlParams.get('end_date');
             }
             if (urlParams.get('payment_timing')) {
-                document.getElementById('paymentTiming').value = urlParams.get('payment_timing');
+                const pt = urlParams.get('payment_timing');
+                const ptRadio = document.querySelector(`input[name="payment_timing"][value="${pt}"]`);
+                if (ptRadio) ptRadio.checked = true;
             }
             if (urlParams.get('payment_frequency')) {
-                document.getElementById('paymentFrequency').value = urlParams.get('payment_frequency');
+                const pf = urlParams.get('payment_frequency');
+                const pfRadio = document.querySelector(`input[name="payment_frequency"][value="${pf}"]`);
+                if (pfRadio) pfRadio.checked = true;
             }
             if (urlParams.get('day1_advance')) {
                 document.getElementById('day1Advance').value = urlParams.get('day1_advance');
@@ -728,8 +769,8 @@
                 title_insurance_rate: parseFloat(urlParams.get('title_insurance_rate') || document.getElementById('titleInsuranceRate')?.value || '0'),
                 start_date: urlParams.get('start_date') || document.getElementById('startDate')?.value || '',
                 end_date: urlParams.get('end_date') || document.getElementById('endDate')?.value || '',
-                payment_timing: urlParams.get('payment_timing') || document.getElementById('paymentTiming')?.value || 'arrears',
-                payment_frequency: urlParams.get('payment_frequency') || document.getElementById('paymentFrequency')?.value || 'monthly',
+                payment_timing: urlParams.get('payment_timing') || document.querySelector('input[name="payment_timing"]:checked')?.value || 'advance',
+                payment_frequency: urlParams.get('payment_frequency') || document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly',
                 amount_input_type: urlParams.get('amount_input_type') || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross',
                 rate_input_type: urlParams.get('rate_input_type') || document.querySelector('input[name="rate_input_type"]:checked')?.value || 'annual',
                 day1_advance: parseFloat(urlParams.get('day1_advance') || document.getElementById('day1Advance')?.value || '0'),
