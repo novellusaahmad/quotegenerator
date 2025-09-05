@@ -1668,11 +1668,11 @@ class LoanCalculator {
             const threshold = includesLeapDay(start, end) ? 366 : 365;
 
             if (daysDiff > threshold) {
-                use360DaysSection.style.display = 'block';
-            } else {
                 use360DaysSection.style.display = 'none';
                 const checkbox = document.getElementById('use360Days');
                 if (checkbox) checkbox.checked = false;
+            } else {
+                use360DaysSection.style.display = 'block';
             }
         } catch (error) {
             console.error('Error in update360DayVisibility:', error);
