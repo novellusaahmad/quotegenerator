@@ -80,19 +80,15 @@
         <div class="container">
             <p class="mb-4 text-muted">Compare multiple loan scenarios side-by-side with predefined templates</p>
 
-            <!-- Template Selection -->
-            <div class="row mb-4">
-                <div class="col-12">
+            <div class="row">
+                <!-- Base Parameters Section -->
+                <div class="col-lg-4 mb-4">
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="mb-0"><i class="fas fa-template me-2"></i>Quick Start Templates</h3>
+                            <h3 class="mb-0"><i class="fas fa-sliders-h me-2"></i>Base Parameters</h3>
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <!-- Base Parameters -->
-                                <div class="col-md-6">
-                                    <h5>Base Parameters</h5>
-                                    <div class="row">
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">Loan Type</label>
                                             <div class="btn-group w-100" role="group" aria-label="Loan Type">
@@ -310,12 +306,20 @@
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- Template Buttons -->
-                                <div class="col-md-6">
-                                    <h5>Generate Scenarios</h5>
-                                    <p class="text-muted">Click a template to customize and generate comparison scenarios:</p>
-                                    <div class="d-grid gap-2">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scenario Tools and Results -->
+                <div class="col-lg-8">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h3 class="mb-0"><i class="fas fa-template me-2"></i>Quick Start Templates</h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Click a template to customize and generate comparison scenarios:</p>
+                            <div class="d-grid gap-2">
                                         <button class="btn btn-outline-primary template-btn" onclick="openInterestRateModal()">
                                             <i class="fas fa-percentage me-2"></i>Compare Interest Rates
                                         </button>
@@ -331,13 +335,9 @@
                                         <button class="btn btn-success template-btn" onclick="openCustomScenarioModal()">
                                             <i class="fas fa-plus me-2"></i>Create Custom 4-Scenario Comparison
                                         </button>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
             <!-- Loading Spinner -->
             <div class="row loading-spinner" id="loadingSpinner">
@@ -348,6 +348,7 @@
                     <p class="mt-2">Calculating scenarios...</p>
                 </div>
             </div>
+
 
             <!-- Comparison Results -->
             <div class="row" id="comparisonResults" style="display: none;">
@@ -388,10 +389,9 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Notification Toast -->
+                </div>
+            </div>
+<!-- Notification Toast -->
     <div class="toast-container position-fixed top-0 end-0 p-3">
         <div id="notificationToast" class="toast" role="alert">
             <div class="toast-header">
