@@ -74,16 +74,15 @@
     </style>
 {% endblock %}
 
-{% block content %}
-    <!-- Main Content -->
-    <div class="container-fluid">
-        <div class="container">
-            <p class="mb-4 text-muted">Compare multiple loan scenarios side-by-side with predefined templates</p>
+{% block main_class %}container-fluid mt-2 px-2{% endblock %}
 
-            <div class="row">
-                <!-- Base Parameters Section -->
-                <div class="col-lg-4 mb-4">
-                    <div class="calculator-section">
+{% block content %}
+    <p class="mb-4 text-muted">Compare multiple loan scenarios side-by-side with predefined templates</p>
+
+    <div class="row">
+        <!-- Base Parameters Section -->
+        <div class="col-lg-4 mb-4">
+            <div class="calculator-section">
                         <h3 class="mb-3"><i class="fas fa-sliders-h me-2"></i>Base Parameters</h3>
                         <form id="baseParametersForm">
                             <div class="mb-3">
@@ -351,20 +350,22 @@
                             </div>
                         </div>
                     </div>
+                </div>
+    </div>
 
-            <!-- Loading Spinner -->
-            <div class="row loading-spinner" id="loadingSpinner">
+    <!-- Loading Spinner -->
+    <div class="row loading-spinner" id="loadingSpinner">
                 <div class="col-12 text-center">
                     <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                     <p class="mt-2">Calculating scenarios...</p>
                 </div>
-            </div>
+    </div>
 
 
-            <!-- Comparison Results -->
-            <div class="row" id="comparisonResults" style="display: none;">
+    <!-- Comparison Results -->
+    <div class="row" id="comparisonResults" style="display: none;">
                 <!-- Best Scenario Analysis -->
                 <div class="col-12 mb-4">
                     <div class="card">
@@ -401,9 +402,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
-                </div>
-            </div>
+    </div>
 <!-- Notification Toast -->
     <div class="toast-container position-fixed top-0 end-0 p-3">
         <div id="notificationToast" class="toast" role="alert">
