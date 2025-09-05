@@ -1048,3 +1048,14 @@ h4, h5, h6 {
     max-width: calc(100% / 2);
     white-space: normal;
 }
+
+/* Responsive modal styling for reports */
+.modal-report .modal-dialog {
+    width: 90vw;
+    max-width: 1200px;
+}
+
+.modal-report .modal-body {
+    max-height: 80vh;
+    overflow-y: auto;
+}
