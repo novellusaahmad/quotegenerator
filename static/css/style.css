@@ -75,6 +75,14 @@ body {
 }
 
 /* Navbar heading */
+.navbar-title {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
 .navbar-title .navbar-text {
     font-size: 1.25rem;
     font-weight: 500;
