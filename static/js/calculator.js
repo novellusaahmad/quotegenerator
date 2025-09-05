@@ -2847,9 +2847,70 @@ class LoanCalculator {
         const netFormula = `Net = Gross – Arrangement Fee – Legal Fees – Site Visit Fee – Title Insurance${interestDeducted ? ' – Retained Interest' : ''}`;
         const retainedInterestFormula = interestDeducted ? `(Interest Rate × Loan Term) × Gross` : '';
 
+        // Prepare summary values
+        const startDateFmt = this.formatDate(r.start_date || r.startDate || '');
+        const endDateFmt = this.formatDate(r.end_date || r.endDate || '');
+        const withheldAmount = formatMoney(grossNum - netNum);
+        const retainedInterest = interestDeducted ? interest : formatMoney(0);
+        let partialRepaymentNum = 0;
+        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
+            partialRepaymentNum = r.detailed_payment_schedule
+                .slice(0, -1)
+                .reduce((sum, p) => {
+                    const val = parseFloat(String(p.principal_payment || p.principal || p.tranche_release || 0).replace(/[,£€]/g, '')) || 0;
+                    return sum + val;
+                }, 0);
+        }
+        const partialRepayment = formatMoney(partialRepaymentNum);
+        let redemptionValueNum = grossNum;
+        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
+            const lastEntry = r.detailed_payment_schedule[r.detailed_payment_schedule.length - 1];
+            redemptionValueNum = parseFloat(String(lastEntry.closing_balance || 0).replace(/[,£€]/g, '')) || 0;
+        }
+        const redemptionValue = formatMoney(redemptionValueNum);
+        const summaryHtml = `
+            <div class="row g-3 mb-4">
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="summary-card bg-primary">
+                        <div class="summary-label">Loan Period</div>
+                        <div class="summary-value">${startDateFmt} &ndash; ${endDateFmt}</div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="summary-card bg-success">
+                        <div class="summary-label">Interest Accrued</div>
+                        <div class="summary-value">${interest}</div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="summary-card bg-warning text-dark">
+                        <div class="summary-label">Withheld Amount</div>
+                        <div class="summary-value">${withheldAmount}</div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="summary-card bg-purple">
+                        <div class="summary-label">Retained Interest</div>
+                        <div class="summary-value">${retainedInterest}</div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="summary-card bg-info text-dark">
+                        <div class="summary-label">Partial Repayment</div>
+                        <div class="summary-value">${partialRepayment}</div>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="summary-card bg-success">
+                        <div class="summary-label">Redemption Value</div>
+                        <div class="summary-value">${redemptionValue}</div>
+                    </div>
+                </div>
+            </div>`;
+
         // Special breakdown for bridge retained interest when user inputs gross amount
         if (loanType === 'bridge' && interestDeducted && amountInputType === 'gross') {
-            modalBody.innerHTML = `
+            modalBody.innerHTML = summaryHtml + `
                 <h6>Gross to Net Calculation</h6>
                 <p>The formula for a Gross to Net bridge loan with retained interest is as follows:</p>
                 <ul>
@@ -2876,7 +2937,7 @@ class LoanCalculator {
             return;
         }
 
-        modalBody.innerHTML = `
+        modalBody.innerHTML = summaryHtml + `
             <p><strong>Calculation Engine:</strong> The calculator uses ${calcDescription}.</p>
             <p><strong>Repayment Method:</strong> ${repaymentDescription}</p>
             ${amountInputType === 'net' ? `<p><strong>Net to Gross:</strong> ${netToGrossDescription}</p>` : ''}
