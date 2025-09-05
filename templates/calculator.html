@@ -893,12 +893,14 @@
 <div id="calculationResultsSection">
 <!-- Summary Table (Loan Summary Format) -->
 <div class="card">
-<div class="card-header d-flex align-items-center bg-primary text-white fw-bold border border-dark" data-currency="GBP">
-                    <span class="flex-grow-1 text-center">Loan Summary</span>
-                    <button type="button" class="btn btn-sm btn-primary ms-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal">View Details</button>
-                    <div class="dropdown ms-2">
-                        <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="openReportsBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>Reports</button>
-                        <ul class="dropdown-menu" aria-labelledby="openReportsBtn" id="reportDropdownMenu"></ul>
+<div class="card-header d-flex justify-content-center align-items-center position-relative bg-primary text-white fw-bold border border-dark" data-currency="GBP">
+                    <span>Loan Summary</span>
+                    <div class="position-absolute top-50 end-0 translate-middle-y d-flex">
+                        <button type="button" class="btn btn-sm btn-light me-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal">View Details</button>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="openReportsBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>Reports</button>
+                            <ul class="dropdown-menu" aria-labelledby="openReportsBtn" id="reportDropdownMenu"></ul>
+                        </div>
                     </div>
                 </div>
 <div class="card-body p-0">
