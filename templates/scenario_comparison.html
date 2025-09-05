@@ -787,8 +787,8 @@
                 rate_input_type: urlParams.get('rate_input_type') || document.querySelector('input[name="rate_input_type"]:checked')?.value || 'annual',
                 day1_advance: parseFloat(urlParams.get('day1_advance') || document.getElementById('day1Advance')?.value || '0'),
                 use_360_days: urlParams.get('use_360_days') === 'true' || document.getElementById('use360Days')?.checked || false,
-                capital_repayment: parseFloat(urlParams.get('capital_repayment') || document.getElementById('capitalRepayment')?.value || '0'),
-                flexible_payment: parseFloat(urlParams.get('flexible_payment') || document.getElementById('flexiblePayment')?.value || '0'),
+                capital_repayment: parseFloat(urlParams.get('capital_repayment') || urlParams.get('capitalRepayment') || document.getElementById('capitalRepayment')?.value || '0'),
+                flexible_payment: parseFloat(urlParams.get('flexible_payment') || urlParams.get('flexiblePayment') || document.getElementById('flexiblePayment')?.value || '0'),
                 tranche_count: parseInt(urlParams.get('tranche_count') || document.getElementById('trancheCount')?.value || '0')
             };
         }
