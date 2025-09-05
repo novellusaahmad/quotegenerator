@@ -14,7 +14,7 @@ from pathlib import Path
 # font installed can locate it. OpenPyXL does not embed fonts, but setting the
 # default font helps signal the intended typeface.
 BROTHER_FONT_NAME = "Brother 1816"
-FONT_FILE = Path(__file__).with_name("fonts").joinpath("Brother-1816-Regular.ttf")
+FONT_FILE = Path(__file__).with_name("fonts").joinpath("brother-1816-light.otf")
 if FONT_FILE.exists():
     try:
         from openpyxl.styles import fonts as openpyxl_fonts

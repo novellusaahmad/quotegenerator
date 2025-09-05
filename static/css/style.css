@@ -1,18 +1,10 @@
 /* Novellus Loan Management System - Custom Styles */
 
-/* Import Brother 1816 font from OnlineWebFonts CDN */
-@import url(https://db.onlinewebfonts.com/c/e869c6b775bf55c06d009bbe92d03583?family=Brother+1816);
-
-/* Font-face declaration for Brother 1816 as backup */
+/* Font-face declaration for locally hosted Brother 1816 Light */
 @font-face {
     font-family: "Brother 1816";
-    src: url("https://db.onlinewebfonts.com/t/e869c6b775bf55c06d009bbe92d03583.eot");
-    src: url("https://db.onlinewebfonts.com/t/e869c6b775bf55c06d009bbe92d03583.eot?#iefix") format("embedded-opentype"),
-         url("https://db.onlinewebfonts.com/t/e869c6b775bf55c06d009bbe92d03583.woff2") format("woff2"),
-         url("https://db.onlinewebfonts.com/t/e869c6b775bf55c06d009bbe92d03583.woff") format("woff"),
-         url("https://db.onlinewebfonts.com/t/e869c6b775bf55c06d009bbe92d03583.ttf") format("truetype"),
-         url("https://db.onlinewebfonts.com/t/e869c6b775bf55c06d009bbe92d03583.svg#Brother1816") format("svg");
-    font-weight: normal;
+    src: url("/fonts/brother-1816-light.otf") format("opentype");
+    font-weight: 300;
     font-style: normal;
     font-display: swap;
 }
