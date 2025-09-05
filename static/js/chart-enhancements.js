@@ -4,7 +4,7 @@
  */
 
 // Global Chart.js configurations with bigger fonts for better visibility
-Chart.defaults.font.family = "'Brother1816', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+Chart.defaults.font.family = "'Brother 1816', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 Chart.defaults.font.size = 16; // Increased from default 12 to 16
 Chart.defaults.color = '#495057';
 

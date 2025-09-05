@@ -590,7 +590,7 @@ class ChartManager {
 window.chartManager = new ChartManager();
 
 // Chart.js default configuration
-Chart.defaults.font.family = "'Brother1816', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+Chart.defaults.font.family = "'Brother 1816', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 Chart.defaults.color = '#495057';
 Chart.defaults.plugins.legend.labels.usePointStyle = true;
 Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(0, 0, 0, 0.8)';
