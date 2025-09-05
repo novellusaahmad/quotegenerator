@@ -2341,10 +2341,17 @@ def get_loan_details(loan_id):
         except Exception as e:
             app.logger.warning(f"Could not parse loan tranches_data: {e}")
             loan_data['tranches'] = []
-        
+        # Include original user input data for editing
+        try:
+            input_data = json.loads(loan.input_data) if getattr(loan, 'input_data', None) else {}
+        except Exception as e:
+            app.logger.warning(f"Could not parse loan input_data: {e}")
+            input_data = {}
+
         return jsonify({
             'success': True,
-            'loan': loan_data
+            'loan': loan_data,
+            'input_data': input_data
         })
         
     except Exception as e:

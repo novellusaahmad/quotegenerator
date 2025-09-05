@@ -768,10 +768,8 @@ class LoanHistoryManager {
                 return;
             }
 
-            // Navigate to calculator with loan data for editing
-            const params = this.buildEditParams(loan);
-            const queryString = new URLSearchParams(params).toString();
-            window.location.href = `/calculator?edit=true&loanId=${this.currentLoanId}&loanName=${encodeURIComponent(loan.loan_name)}&${queryString}`;
+            // Navigate to calculator with loan ID; details loaded from server
+            window.location.href = `/calculator?edit=true&loanId=${this.currentLoanId}&loanName=${encodeURIComponent(loan.loan_name)}`;
 
         } catch (error) {
             console.error('Edit loan error:', error);

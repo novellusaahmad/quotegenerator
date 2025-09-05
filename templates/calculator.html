@@ -1553,27 +1553,46 @@ function handleEditMode() {
                 console.log('Set loan name field to:', decodeURIComponent(loanName));
             }
 
-            // Populate form with URL parameters
+            // Populate form with URL parameters (fallback)
             populateFormFromParams(urlParams);
 
-            // Ensure toggle-dependent sections reflect loaded values
-            if (window.loanCalculator) {
-                try {
-                    window.loanCalculator.toggleAmountInputSections();
-                    window.loanCalculator.toggleGrossAmountInputs();
-                    window.loanCalculator.toggleRateInputs();
-                    window.loanCalculator.toggleTrancheMode();
-                    // Ensure repayment-specific sections are visible when editing
-                    window.loanCalculator.updateRepaymentOptions();
-                    window.loanCalculator.updateAdditionalParams();
-                    // Automatically recalculate to reflect loaded values
-                    if (typeof window.loanCalculator.calculateLoan === 'function') {
-                        window.loanCalculator.calculateLoan(true);
+            // Fetch full loan details from server and populate form
+            fetch(`/api/loan/${loanId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.success && data.input_data) {
+                        const paramsFromData = new URLSearchParams();
+                        for (const [key, value] of Object.entries(data.input_data)) {
+                            if (value !== null && value !== undefined) {
+                                paramsFromData.set(key, value);
+                            }
+                        }
+                        populateFormFromParams(paramsFromData);
                     }
-                } catch (err) {
-                    console.error('Error toggling sections in edit mode:', err);
-                }
-            }
+                })
+                .catch(err => {
+                    console.error('Error loading loan data:', err);
+                })
+                .finally(() => {
+                    // Ensure toggle-dependent sections reflect loaded values
+                    if (window.loanCalculator) {
+                        try {
+                            window.loanCalculator.toggleAmountInputSections();
+                            window.loanCalculator.toggleGrossAmountInputs();
+                            window.loanCalculator.toggleRateInputs();
+                            window.loanCalculator.toggleTrancheMode();
+                            // Ensure repayment-specific sections are visible when editing
+                            window.loanCalculator.updateRepaymentOptions();
+                            window.loanCalculator.updateAdditionalParams();
+                            // Automatically recalculate to reflect loaded values
+                            if (typeof window.loanCalculator.calculateLoan === 'function') {
+                                window.loanCalculator.calculateLoan(true);
+                            }
+                        } catch (err) {
+                            console.error('Error toggling sections in edit mode:', err);
+                        }
+                    }
+                });
         }
     }
 }
