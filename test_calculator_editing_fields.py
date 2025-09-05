@@ -75,7 +75,7 @@ def test_editing_populates_tranches(live_server):
             "edit": "true",
             "loanId": "2",
             "loanName": "Dev Loan",
-            "loan_type": "development",
+            "loan_type": "development2",
             "tranche_mode": "manual",
             "tranche_amounts[0]": "10000",
             "tranche_dates[0]": "2024-01-01",
