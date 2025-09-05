@@ -2751,243 +2751,222 @@ class LoanCalculator {
         return `<div class="row g-3 mb-4">${cardsHtml}</div>`;
     }
 
-    populateBreakdownModal() {
-        const modalBody = document.getElementById('calculationBreakdownContent');
-        if (!modalBody) return;
-
-        if (!this.currentResults) {
-            modalBody.innerHTML = '<p>No calculation results available. Please run a calculation first.</p>';
-            return;
-        }
-
-        const r = this.currentResults;
+    getBreakdownData(r) {
         const currency = this.getCurrencySymbol(r.currency);
         const formatMoney = (val) => {
             const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[,£€]/g, '')) || 0;
             return currency + num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
 
-        const gross = formatMoney(r.grossAmount || r.gross_amount || 0);
+        const amountType = r.amount_input_type || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross';
+        const repayment = r.repaymentOption || r.repayment_option || document.getElementById('repaymentOption')?.value || 'none';
+        const loanTerm = r.loanTerm || r.loan_term || 0;
+        const use360 = r.use_360_days || document.getElementById('use360Days')?.checked || false;
+        const daysPerYear = use360 ? 360 : 365;
+
+        const arrangementPctText = document.getElementById('arrangementFeePercentageDisplay')?.textContent.trim() || `${r.arrangementFeePercentage || r.arrangement_fee_percentage || 0}%`;
+        const titlePctText = document.getElementById('titleInsurancePercentageDisplay')?.textContent.trim() || `${r.titleInsurancePercentage || r.title_insurance_percentage || 0}%`;
+        const rateText = document.getElementById('interestRatePercentageDisplay')?.textContent.trim() || `${r.interestRate || r.interest_rate || 0}%`;
+
+        const grossNum = parseFloat(r.grossAmount || r.gross_amount || 0);
         const arrangementNum = parseFloat(r.arrangementFee || 0);
         const legalNum = parseFloat(r.legalCosts || r.legalFees || 0);
         const siteNum = parseFloat(r.siteVisitFee || 0);
         const titleNum = parseFloat(r.titleInsurance || 0);
         const interestNum = parseFloat(r.totalInterest || 0);
-        const paymentFrequency = r.payment_frequency || document.querySelector('input[name="payment_frequency"]:checked')?.value || 'monthly';
+        const interestDeducted = ['none', 'retained', 'capital_payment_only'].includes(repayment);
+        const netNum = grossNum - arrangementNum - legalNum - siteNum - titleNum - (interestDeducted ? interestNum : 0);
+
+        const gross = formatMoney(grossNum);
+        const net = formatMoney(netNum);
         const arrangement = formatMoney(arrangementNum);
         const legal = formatMoney(legalNum);
         const site = formatMoney(siteNum);
         const title = formatMoney(titleNum);
         const interest = formatMoney(interestNum);
-        const day1 = formatMoney(r.day1NetAdvance || r.day1Advance || r.netDay1Advance || 0);
-        const totalNet = formatMoney(r.totalNetAdvance || 0);
-        const propertyValue = parseFloat(r.propertyValue || 0);
-        const grossNum = parseFloat(r.grossAmount || r.gross_amount || 0);
-        const startLTV = propertyValue > 0 ? ((grossNum / propertyValue) * 100).toFixed(2) : '0.00';
+
+        let firstMonthNum = 0;
+        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
+            firstMonthNum = parseFloat(String(r.detailed_payment_schedule[0].interest_amount || 0).replace(/[,£€]/g, '')) || 0;
+        }
+        const firstMonth = formatMoney(firstMonthNum);
+
+        const propertyValueNum = parseFloat(r.propertyValue || 0);
+        const propertyValue = formatMoney(propertyValueNum);
+        const startLTV = propertyValueNum > 0 ? ((grossNum / propertyValueNum) * 100).toFixed(2) : '0.00';
         let endLTV = startLTV;
-        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0 && propertyValue > 0) {
+        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0 && propertyValueNum > 0) {
             const last = r.detailed_payment_schedule[r.detailed_payment_schedule.length - 1];
             const closing = parseFloat(String(last.closing_balance || '').replace(/[,£€]/g, '')) || 0;
-            endLTV = ((closing / propertyValue) * 100).toFixed(2);
+            endLTV = ((closing / propertyValueNum) * 100).toFixed(2);
         }
 
-        const rateEl = document.getElementById('interestRatePercentageDisplay');
-        const rateText = rateEl ? rateEl.textContent.trim() : '';
-        const loanTerm = r.loanTerm || r.loan_term || 0;
-        const totalFeesNum = arrangementNum + legalNum + siteNum + titleNum;
-        const totalFees = formatMoney(totalFeesNum);
+        const baseMandatory = [
+            { label: amountType === 'gross' ? 'Gross Loan (£)' : 'Net Loan (£)', value: amountType === 'gross' ? gross : net },
+            { label: 'Arrangement Fee %', value: arrangementPctText },
+            { label: 'Legal Fees (£)', value: legal },
+            { label: 'Site Visit Fee (£)', value: site },
+            { label: 'Title Insurance %', value: titlePctText },
+            { label: 'Interest Rate (% p.a.)', value: rateText },
+            { label: 'Loan Term (months)', value: loanTerm },
+            { label: 'Days in Year', value: daysPerYear }
+        ];
 
-        const arrangementPctEl = document.getElementById('arrangementFeePercentageDisplay');
-        const arrangementPctText = arrangementPctEl ? arrangementPctEl.textContent.trim() : '';
-        const titlePctEl = document.getElementById('titleInsurancePercentageDisplay');
-        const titlePctText = titlePctEl ? titlePctEl.textContent.trim() : '';
-
-        let trancheHtml = '';
-        if (r.tranche_breakdown && r.tranche_breakdown.length > 0) {
-            trancheHtml = '<h6>Tranche Drawdowns</h6>' +
-                '<table class="table table-sm"><thead><tr><th>#</th><th>Date</th><th>Amount</th><th>Description</th></tr></thead><tbody>' +
-                r.tranche_breakdown.map(t => `
-                    <tr>
-                        <td>${t.tranche_number}</td>
-                        <td>${this.formatDate(t.release_date)}</td>
-                        <td>${formatMoney(t.amount)}</td>
-                        <td>${t.description || ''}</td>
-                    </tr>
-                `).join('') +
-                '</tbody></table>';
-        }
-
-        let scheduleHtml = '';
-        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
-            scheduleHtml = '<h6>Payment Schedule</h6>' +
-                '<table class="table table-sm"><thead><tr><th>Period</th><th>Interest</th><th>Principal</th><th>Balance</th></tr></thead><tbody>' +
-                r.detailed_payment_schedule.map((p, idx) => {
-                    const interestAmt = formatMoney(p.interest_amount || p.interest || 0);
-                    const principalAmt = formatMoney(p.principal_payment || p.principal || p.tranche_release || 0);
-                    const balanceAmt = formatMoney(p.closing_balance || 0);
-                    return `<tr><td>${idx + 1}</td><td>${interestAmt}</td><td>${principalAmt}</td><td>${balanceAmt}</td></tr>`;
-                }).join('') +
-                '</tbody></table>';
-        }
-
-        const interestSavingsValue = parseFloat(r.interestSavings ?? r.interest_savings ?? 0);
-        let interestSavingsHtml = '';
-        if (interestSavingsValue > 0) {
-            interestSavingsHtml = `<p><strong>Interest Savings:</strong> ${formatMoney(interestSavingsValue)} compared to an interest-only loan.</p>`;
-        }
-
-        // Determine interest calculation description
-        const interestType = r.interest_type || 'simple';
-        const use360 = r.use_360_days || (document.getElementById('use360Days') ? document.getElementById('use360Days').checked : false);
-        const daysPerYear = use360 ? 360 : 365;
-        let calcDescription = '';
-        switch (interestType) {
-            case 'compound_daily':
-                calcDescription = `Compound daily interest where <code>Interest = Principal × (1 + Rate / ${daysPerYear})<sup>${daysPerYear} × Time</sup> - Principal</code>`;
-                break;
-            case 'compound_monthly':
-                calcDescription = 'Compound monthly interest where <code>Interest = Principal × (1 + Rate / 12)<sup>12 × Time</sup> - Principal</code>';
-                break;
-            case 'compound_quarterly':
-                calcDescription = 'Compound quarterly interest where <code>Interest = Principal × (1 + Rate / 4)<sup>4 × Time</sup> - Principal</code>';
-                break;
-            default:
-                calcDescription = 'Simple interest where <code>Interest = Principal × Rate × Time</code>';
-        }
-
-        // Determine repayment method description
-        const loanType = r.loan_type || document.getElementById('loanType')?.value || '';
-        const repaymentOption = r.repaymentOption || r.repayment_option || document.getElementById('repaymentOption')?.value || 'none';
-        let repaymentDescription = '';
-        switch (repaymentOption) {
-            case 'none':
-            case 'retained':
-                repaymentDescription = 'Interest retained  total interest is deducted at the start and repaid with the principal at the end.';
-                break;
-            case 'service_only':
-                repaymentDescription = 'Serviced interest  interest is paid periodically while principal is repaid at maturity.';
-                break;
-            case 'service_and_capital':
-                repaymentDescription = 'Capital & interest  regular payments amortise the loan using <code>Payment = P × r / (1 - (1 + r)<sup>-n</sup>)</code>.';
-                break;
-            case 'capital_payment_only':
-                repaymentDescription = 'Capital payments only  interest is retained upfront and scheduled capital payments reduce the balance.';
-                break;
-            case 'flexible_payment':
-                repaymentDescription = 'Flexible payment  custom payments reduce the balance while any shortfall accrues interest.';
-                break;
-            default:
-                repaymentDescription = 'Standard repayment schedule.';
-        }
-
-        // Net-to-gross formula description when user inputs net amount
-        const amountInputType = r.amount_input_type || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross';
-        let netToGrossDescription = '';
-        if (amountInputType === 'net') {
-            switch (repaymentOption) {
-                case 'service_only':
-                    netToGrossDescription = 'Gross = (Net + Legal + Site) / (1 - Arrangement - (Rate / 12) - Title)';
-                    break;
-                case 'service_and_capital':
-                case 'flexible_payment':
-                    netToGrossDescription = 'Gross = (Net + Legal + Site) / (1 - Arrangement - Title)';
-                    break;
-                default:
-                    // none and capital_payment_only
-                    netToGrossDescription = 'Gross = (Net + Legal + Site) / (1 - Arrangement - Rate × Time - Title)';
+        const scenario = (() => {
+            if (['none', 'retained', 'capital_payment_only'].includes(repayment)) {
+                return amountType === 'gross' ? 'gross_to_net_retained' : 'net_to_gross_retained';
+            } else if (repayment === 'service_only') {
+                return amountType === 'gross' ? 'gross_to_net_serviced' : 'net_to_gross_serviced';
+            } else if (['service_and_capital', 'flexible_payment'].includes(repayment)) {
+                return amountType === 'gross' ? 'gross_to_net_service_capital' : 'net_to_gross_service_capital';
             }
+            return 'generic';
+        })();
+
+        let formula = '';
+        let calculated = [];
+        let outputs = [];
+
+        switch (scenario) {
+            case 'gross_to_net_retained':
+                formula = 'Net = Gross − Arrangement Fee − Legal Fees − Site Visit Fee − Title Insurance − Retained Interest';
+                calculated = [
+                    { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
+                    { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
+                    { label: `Retained Interest = ${rateText} × ${loanTerm} ÷ 12 × Gross`, value: interest }
+                ];
+                outputs = [
+                    { label: 'Net Loan (£)', value: net },
+                    { label: 'Repayment Method', value: 'Retained Interest' }
+                ];
+                break;
+            case 'net_to_gross_retained':
+                formula = 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance % − (Interest Rate × Loan Term ÷ 12))';
+                calculated = [
+                    { label: 'Gross Loan (£)', value: gross },
+                    { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
+                    { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
+                    { label: `Retained Interest = ${rateText} × ${loanTerm} ÷ 12 × Gross`, value: interest }
+                ];
+                outputs = [
+                    { label: 'Net Loan validation (£)', value: net },
+                    { label: 'Repayment Method', value: 'Retained Interest' }
+                ];
+                break;
+            case 'gross_to_net_serviced':
+                formula = 'Net = Gross − Arrangement Fee − Legal Fees − Site Visit Fee − Title Insurance';
+                calculated = [
+                    { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
+                    { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
+                    { label: 'Interest Serviced (£)', value: interest },
+                    { label: "First Month's Interest (£)", value: firstMonth }
+                ];
+                outputs = [
+                    { label: 'Net Loan (£)', value: net },
+                    { label: 'Repayment Method', value: 'Serviced Interest' }
+                ];
+                break;
+            case 'net_to_gross_serviced':
+                formula = 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance %)';
+                calculated = [
+                    { label: 'Gross Loan (£)', value: gross },
+                    { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
+                    { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
+                    { label: "First Month's Interest (£)", value: firstMonth },
+                    { label: 'Total Interest Serviced (£)', value: interest }
+                ];
+                outputs = [
+                    { label: 'Net Loan validation (£)', value: net },
+                    { label: 'Repayment Method', value: 'Serviced Interest' }
+                ];
+                break;
+            case 'gross_to_net_service_capital':
+                formula = 'Net = Gross − Arrangement Fee − Legal Fees − Site Visit Fee − Title Insurance';
+                calculated = [
+                    { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
+                    { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
+                    { label: 'Detailed Interest Schedule (Monthly)', value: 'See schedule' },
+                    { label: 'Capital Repayments Schedule', value: 'See schedule' }
+                ];
+                outputs = [
+                    { label: 'Net Loan (£)', value: net },
+                    { label: 'Repayment Method', value: 'Serviced Interest + Capital Repayments' }
+                ];
+                break;
+            case 'net_to_gross_service_capital':
+                formula = 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance %)';
+                calculated = [
+                    { label: 'Gross Loan (£)', value: gross },
+                    { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
+                    { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
+                    { label: "First Month's Interest (£)", value: firstMonth },
+                    { label: 'Total Interest Serviced (£)', value: interest },
+                    { label: 'Capital Repayment Schedule', value: 'See schedule' }
+                ];
+                outputs = [
+                    { label: 'Net Loan validation (£)', value: net },
+                    { label: 'Repayment Method', value: 'Serviced Interest + Capital Repayments' }
+                ];
+                break;
+            default:
+                formula = amountType === 'gross'
+                    ? 'Net = Gross − Arrangement Fee − Legal Fees − Site Visit Fee − Title Insurance − Retained Interest'
+                    : 'Gross = Net + Arrangement Fee + Legal Fees + Site Visit Fee + Title Insurance + Retained Interest';
+                const mandatory = baseMandatory.slice();
+                mandatory.unshift({ label: 'Property Value (£)', value: propertyValue });
+                calculated = [
+                    { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
+                    { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
+                    { label: 'Retained Interest (£)', value: interest },
+                    { label: 'Capital Repayment Schedule', value: 'See schedule' },
+                    { label: 'LTV at start (%)', value: `${startLTV}%` },
+                    { label: 'LTV at exit (%)', value: `${endLTV}%` }
+                ];
+                outputs = [
+                    { label: amountType === 'gross' ? 'Net Loan (£)' : 'Gross Loan (£)', value: amountType === 'gross' ? net : gross },
+                    { label: 'LTV start (%)', value: `${startLTV}%` },
+                    { label: 'LTV at exit (%)', value: `${endLTV}%` },
+                    { label: 'Repayment Method', value: interestDeducted ? 'Retained Interest + Capital Repayments' : 'Serviced Interest + Capital Repayments' }
+                ];
+                return { formula, mandatory, calculated, outputs };
         }
 
-        // Fee impact on net and gross amounts
-        let feeImpactDescription = `Fees total ${totalFees} (arrangement ${arrangement}, legal ${legal}, site visit ${site}, title insurance ${title}).`;
-        if (['service_only', 'service_and_capital', 'flexible_payment'].includes(repaymentOption)) {
-            feeImpactDescription += ' Net = Gross - Fees. Interest is calculated on the gross amount.';
-        } else {
-            feeImpactDescription += ' Net = Gross - Fees - Interest. Interest is calculated on the gross amount.';
-        }
+        return { formula, mandatory: baseMandatory, calculated, outputs };
+    }
 
-        // Development loan goal seek description
-        let goalSeekDescription = '';
-        if (loanType === 'development') {
-            goalSeekDescription = 'Uses Excel-style Goal Seek to find the gross amount where Net = Gross - Fees - Interest.';
-        }
+    populateBreakdownModal() {
+        const modalBody = document.getElementById('calculationBreakdownContent');
+        const modalHeader = document.getElementById('calculationBreakdownHeader');
+        if (!modalBody) return;
 
-        // Calculate daily, periodic and yearly interest based on gross amount and annual rate
-        const annualRateNum = parseFloat(r.interestRate || r.interest_rate || 0) / 100;
-        const dailyInterestNum = grossNum * annualRateNum / daysPerYear;
-        const periodicInterestNum = grossNum * annualRateNum / (paymentFrequency === 'quarterly' ? 4 : 12);
-        const yearlyInterestNum = grossNum * annualRateNum;
-        const dailyInterest = formatMoney(dailyInterestNum);
-        const periodicInterest = formatMoney(periodicInterestNum);
-        const yearlyInterest = formatMoney(yearlyInterestNum);
-        const periodicLabel = paymentFrequency === 'quarterly' ? 'Quarterly' : 'Monthly';
-
-        const interestDeducted = ['none', 'retained', 'capital_payment_only'].includes(repaymentOption);
-        const netNum = grossNum - arrangementNum - legalNum - siteNum - titleNum - (interestDeducted ? interestNum : 0);
-        const net = formatMoney(netNum);
-        const netFormula = `Net = Gross – Arrangement Fee – Legal Fees – Site Visit Fee – Title Insurance${interestDeducted ? ' – Retained Interest' : ''}`;
-        const retainedInterestFormula = interestDeducted ? `(Interest Rate × Loan Term) × Gross` : '';
-
-        const summaryHtml = this.buildSummaryCards(r, loanType, repaymentOption);
-
-        // Special breakdown for bridge retained interest when user inputs gross amount
-        if (loanType === 'bridge' && interestDeducted && amountInputType === 'gross') {
-            modalBody.innerHTML = summaryHtml + `
-                <h6>Gross to Net Calculation</h6>
-                <p>The formula for a Gross to Net bridge loan with retained interest is as follows:</p>
-                <ul>
-                    <li><strong>Gross</strong> = Defined by User</li>
-                    <li><strong>Net</strong> = Gross – Arrangement Fee – Legal Fees – Site Visit Fee – Title Insurance – Total Interest</li>
-                    <li><strong>Total Interest</strong> = Interest Rate × Loan Term × Gross</li>
-                </ul>
-                <h6>Net Loan Calculation Step by Step</h6>
-                <table class="table table-sm table-bordered mb-3">
-                    <tbody>
-                        <tr><th scope="row">Gross</th><td>${gross}</td></tr>
-                        <tr><th scope="row">Arrangement Fee = ${arrangementPctText} × Gross</th><td>${arrangement}</td></tr>
-                        <tr><th scope="row">Legal Fees</th><td>${legal}</td></tr>
-                        <tr><th scope="row">Site Visit Fee</th><td>${site}</td></tr>
-                        <tr><th scope="row">Title Insurance = ${titlePctText} × Gross</th><td>${title}</td></tr>
-                        <tr><th scope="row">Total Interest = ${rateText} × ${loanTerm} months ÷ 12 × Gross</th><td>${interest}</td></tr>
-                        <tr class="table-active fw-bold"><th scope="row">Net</th><td>${net}</td></tr>
-                    </tbody>
-                </table>
-                <p><strong>Term:</strong> ${loanTerm} Months</p>
-                <p><strong>Days in Year:</strong> ${daysPerYear}</p>
-                <p>Retained interest means total interest is deducted at the start and repaid when the loan redeems.</p>
-            `;
+        if (!this.currentResults) {
+            modalBody.innerHTML = '<p>No calculation results available. Please run a calculation first.</p>';
+            if (modalHeader) modalHeader.setAttribute('data-currency', 'GBP');
             return;
         }
 
-        modalBody.innerHTML = summaryHtml + `
-            <p><strong>Calculation Engine:</strong> The calculator uses ${calcDescription}.</p>
-            <p><strong>Repayment Method:</strong> ${repaymentDescription}</p>
-            ${amountInputType === 'net' ? `<p><strong>Net to Gross:</strong> ${netToGrossDescription}</p>` : ''}
-            <p><strong>Fee Impact:</strong> ${feeImpactDescription}</p>
-            ${loanType === 'development' ? `<p><strong>Goal Seek Logic:</strong> ${goalSeekDescription}</p>` : ''}
-            <p><strong>Interest Rate:</strong> ${rateText} for ${loanTerm} months.</p>
-            <p><strong>Interest Breakdown:</strong> Daily ${dailyInterest}, ${periodicLabel} ${periodicInterest}, Yearly ${yearlyInterest}.</p>
-            
-            <h6>Gross to Net Calculation</h6>
-            <p class="mb-2"><strong>Formula:</strong> ${netFormula}</p>
-            <table class="table table-sm table-bordered mb-3">
-                <tbody>
-                    <tr><th scope="row">Gross</th><td>${gross}</td></tr>
-                    <tr><th scope="row">Arrangement Fee (${arrangementPctText})</th><td>${arrangement}</td></tr>
-                    <tr><th scope="row">Legal Fees</th><td>${legal}</td></tr>
-                    <tr><th scope="row">Site Visit Fee</th><td>${site}</td></tr>
-                    <tr><th scope="row">Title Insurance (${titlePctText})</th><td>${title}</td></tr>
-                    ${interestDeducted ? `<tr><th scope="row">Retained Interest (${rateText} for ${loanTerm} months)</th><td>${interest}</td></tr>` : ''}
-                    <tr class="table-active fw-bold"><th scope="row">Net</th><td>${net}</td></tr>
-                </tbody>
-            </table>
-            ${interestDeducted ? `<p><strong>Retained Interest:</strong> ${retainedInterestFormula} = ${interest}</p>` : ''}
-            <p><strong>Loan to Value:</strong> start ${startLTV}% &rarr; end ${endLTV}%.</p>
-            ${interestSavingsHtml}
-            ${trancheHtml}
-            ${scheduleHtml}
-        `;
+        const r = this.currentResults;
+        if (modalHeader) modalHeader.setAttribute('data-currency', r.currency || 'GBP');
 
+        const data = this.getBreakdownData(r);
+
+        const renderSection = (title, items) => {
+            if (!items || items.length === 0) return '';
+            const cards = items.map(i => `
+                <div class="col-md-4 col-sm-6">
+                    <div class="summary-card bg-light text-dark">
+                        <div class="summary-label">${i.label}</div>
+                        <div class="summary-value">${i.value}</div>
+                    </div>
+                </div>`).join('');
+            return `<h6 class="mt-3">${title}</h6><div class="row g-3 mb-3">${cards}</div>`;
+        };
+
+        modalBody.innerHTML =
+            `<p><strong>Formula:</strong> ${data.formula}</p>` +
+            renderSection('Mandatory Inputs', data.mandatory) +
+            renderSection('Calculated Components', data.calculated) +
+            renderSection('Outputs', data.outputs);
     }
 
     // Load existing results from session storage or page data
