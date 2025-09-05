@@ -1931,8 +1931,13 @@ def save_loan():
             loan_summary.repayment_option = data.get('repaymentOption', 'none')
             loan_summary.payment_timing = data.get('paymentTiming') or data.get('payment_timing', 'advance')
             loan_summary.payment_frequency = data.get('paymentFrequency') or data.get('payment_frequency', 'monthly')
-            loan_summary.capital_repayment = data.get('capitalRepayment', 0)
-            loan_summary.flexible_payment = data.get('flexiblePayment', 0)
+            # Support both camelCase and snake_case field names from the form
+            loan_summary.capital_repayment = data.get(
+                'capitalRepayment', data.get('capital_repayment', 0)
+            )
+            loan_summary.flexible_payment = data.get(
+                'flexiblePayment', data.get('flexible_payment', 0)
+            )
             loan_summary.arrangement_fee = fresh_calculation.get('arrangementFee', 0)
             loan_summary.arrangement_fee_percentage = data.get(
                 'arrangementFeePercentage',
@@ -1982,8 +1987,13 @@ def save_loan():
                 repayment_option=data.get('repaymentOption', 'none'),
                 payment_timing=data.get('paymentTiming') or data.get('payment_timing', 'advance'),
                 payment_frequency=data.get('paymentFrequency') or data.get('payment_frequency', 'monthly'),
-                capital_repayment=data.get('capitalRepayment', 0),
-                flexible_payment=data.get('flexiblePayment', 0),
+                # Support both camelCase and snake_case field names from the form
+                capital_repayment=data.get(
+                    'capitalRepayment', data.get('capital_repayment', 0)
+                ),
+                flexible_payment=data.get(
+                    'flexiblePayment', data.get('flexible_payment', 0)
+                ),
                 arrangement_fee=fresh_calculation.get('arrangementFee', 0),
                 arrangement_fee_percentage=data.get(
                     'arrangementFeePercentage',
