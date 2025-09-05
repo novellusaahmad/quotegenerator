@@ -129,6 +129,11 @@
     color: #fff !important;
 }
 
+/* Change navbar background when using EUR */
+[data-currency="EUR"] .navbar {
+    background-color: #509664 !important;
+}
+
 /* Table Headers and Cards - Currency Specific */
 [data-currency="GBP"] .table thead th,
 [data-currency="GBP"] .card-header,
