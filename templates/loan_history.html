@@ -834,8 +834,8 @@ class LoanHistoryManager {
             }
         }
         
-        // Handle tranches for development loans
-        if (loan.loan_type === 'development' && loan.tranches && Array.isArray(loan.tranches)) {
+        // Handle tranches for development loans (both development and development2)
+        if ((loan.loan_type === 'development' || loan.loan_type === 'development2') && loan.tranches && Array.isArray(loan.tranches)) {
             loan.tranches.forEach((tranche, index) => {
                 params[`tranche_amounts[${index}]`] = tranche.amount ?? '';
                 params[`tranche_dates[${index}]`] = tranche.date ?? '';
