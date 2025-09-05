@@ -2792,13 +2792,11 @@ class LoanCalculator {
         const title = formatMoney(titleNum);
         const interest = formatMoney(interestNum);
 
-        let firstMonthNum = 0;
-        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
-            firstMonthNum = parseFloat(String(r.detailed_payment_schedule[0].interest_amount || 0).replace(/[,£€]/g, '')) || 0;
-        }
-        const firstMonth = formatMoney(firstMonthNum);
         const dailyInterestNum = grossNum * (annualRateNum / 100) / daysPerYear;
         const dailyInterest = formatMoney(dailyInterestNum);
+        const periodicInterestNum = parseFloat(String(r.periodicInterest || r.monthlyInterestPayment || r.quarterlyInterestPayment || 0).replace(/[,£€]/g, '')) || 0;
+        const periodicInterest = formatMoney(periodicInterestNum);
+        const paymentFrequency = r.payment_frequency || 'monthly';
 
         const propertyValueNum = parseFloat(r.propertyValue || 0);
         const propertyValue = formatMoney(propertyValueNum);
@@ -2954,7 +2952,8 @@ class LoanCalculator {
 
         // Add global calculated cards
         calculated.push({ label: `Daily Interest = ${rateText} ÷ ${daysPerYear} × Gross`, value: dailyInterest });
-        calculated.push({ label: 'First Month Interest = Daily Interest × Days in Month 1', value: firstMonth });
+        const interestLabel = paymentFrequency === 'quarterly' ? 'Quarterly Interest Payment' : 'Monthly Interest Payment';
+        calculated.push({ label: interestLabel, value: periodicInterest });
 
         const addIfMissing = (label, value) => {
             if (!outputs.some(o => o.label === label)) {
