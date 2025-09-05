@@ -14,7 +14,8 @@
     --light-color: #f8f9fa;
     --dark-color: #212529;
     --gbp-color: #AD965F;
-    --eur-color: #509195;
+    /* Updated EUR theme to use green palette */
+    --eur-color: #509664;
     --font-family: 'Brother1816', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --border-radius: 0.375rem;
     --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
@@ -61,8 +62,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-eur:hover {
-    background-color: #467e82;
-    border-color: #467e82;
+    /* Darker shade for EUR hover state */
+    background-color: #3d7450;
+    border-color: #3d7450;
     color: white;
 }
 
