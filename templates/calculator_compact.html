@@ -2,6 +2,10 @@
 
 {% block title %}Loan Calculator – Compact Layout{% endblock %}
 
+{% block nav_heading %}
+<span class="navbar-text text-black fw-bold"><i class="fas fa-calculator me-2"></i>Loan Calculator</span>
+{% endblock %}
+
 {% block head %}
 <link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
 <link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet"/>
