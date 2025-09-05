@@ -158,11 +158,24 @@
 
     #calculationBreakdownModal .modal-body {
         max-height: none;
-        overflow-y: visible;
+        overflow: hidden;
     }
 
     .bg-purple {
         background-color: #6f42c1 !important;
+    }
+
+    .modal-edge-to-edge .modal-dialog {
+        width: calc(100vw - 5px);
+        max-width: calc(100vw - 5px);
+        height: calc(100vh - 5px);
+        margin: 0;
+    }
+
+    .modal-edge-to-edge .modal-content,
+    .modal-edge-to-edge .modal-body {
+        height: 100%;
+        overflow: hidden;
     }
     
     /* Better spacing for wide screens */
@@ -1043,8 +1056,8 @@
 </div>
 
 <!-- Visualization Modals -->
-<div class="modal fade" id="paymentScheduleModal" tabindex="-1" aria-labelledby="paymentScheduleLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+<div class="modal fade modal-edge-to-edge" id="paymentScheduleModal" tabindex="-1" aria-labelledby="paymentScheduleLabel" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="paymentScheduleLabel">Detailed Payment Schedule</h5>
@@ -1052,8 +1065,8 @@
       </div>
       <div class="modal-body">
         <div id="detailedPaymentScheduleCard">
-          <div class="table-responsive">
-            <table class="table table-sm" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+          <div>
+            <table class="table table-sm" style="width: 100%; border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
               <thead>
                 <tr style="background: #f8f9fa; border: 1px solid #000;">
                   <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
@@ -1086,16 +1099,16 @@
 </div>
 </div>
 
-<div class="modal fade" id="trancheScheduleModal" tabindex="-1" aria-labelledby="trancheScheduleLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+<div class="modal fade modal-edge-to-edge" id="trancheScheduleModal" tabindex="-1" aria-labelledby="trancheScheduleLabel" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="trancheScheduleLabel">Tranche Schedule</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div class="table-responsive">
-          <table class="table table-sm" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+        <div>
+          <table class="table table-sm" style="width: 100%; border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
             <thead>
               <tr style="background: #f8f9fa; border: 1px solid #000;">
                 <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
@@ -1126,8 +1139,8 @@
   </div>
 </div>
 
-<div class="modal fade" id="loanBreakdownModal" tabindex="-1" aria-labelledby="loanBreakdownLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen">
+<div class="modal fade modal-edge-to-edge" id="loanBreakdownModal" tabindex="-1" aria-labelledby="loanBreakdownLabel" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="loanBreakdownLabel">Loan Breakdown</h5>
@@ -1143,8 +1156,8 @@
   </div>
 </div>
 
-<div class="modal fade" id="balanceModal" tabindex="-1" aria-labelledby="balanceLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen">
+<div class="modal fade modal-edge-to-edge" id="balanceModal" tabindex="-1" aria-labelledby="balanceLabel" aria-hidden="true">
+  <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="balanceLabel">Balance Over Time</h5>
@@ -1161,8 +1174,8 @@
 </div>
 
 <!-- Calculation Breakdown Modal -->
-<div class="modal fade" id="calculationBreakdownModal" tabindex="-1" aria-labelledby="calculationBreakdownLabel" aria-hidden="true">
-    <div class="modal-dialog modal-fullscreen">
+<div class="modal fade modal-edge-to-edge" id="calculationBreakdownModal" tabindex="-1" aria-labelledby="calculationBreakdownLabel" aria-hidden="true">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white" id="calculationBreakdownHeader" data-currency="GBP">
                 <h5 class="modal-title" id="calculationBreakdownLabel"></h5>
