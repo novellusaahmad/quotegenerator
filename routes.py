@@ -186,6 +186,26 @@ def ensure_loan_tables():
                 with db.engine.connect() as conn:
                     conn.execute(sa.text(f'ALTER TABLE {table} ADD COLUMN {name} {col_type}'))
 
+
+def is_table_structure_valid(model):
+    """Check if the actual database table matches the model's columns."""
+    try:
+        inspector = sa.inspect(db.engine)
+        actual_columns = {col["name"] for col in inspector.get_columns(model.__tablename__)}
+        expected_columns = {col.name for col in model.__table__.columns}
+        if actual_columns != expected_columns:
+            app.logger.error(
+                "Table structure mismatch for %s. Expected %s, got %s",
+                model.__tablename__,
+                sorted(expected_columns),
+                sorted(actual_columns),
+            )
+            return False
+        return True
+    except Exception as e:
+        app.logger.error(f"Could not inspect table {model.__tablename__}: {e}")
+        return False
+
 # Initialize calculator and quote generator
 calculator = LoanCalculator()
 # BIRT integration removed for simplified deployment
@@ -2055,6 +2075,12 @@ def save_loan():
 def loan_history():
     """Show saved loan history page"""
     try:
+        if not (
+            is_table_structure_valid(LoanSummary)
+            and is_table_structure_valid(PaymentSchedule)
+        ):
+            return render_template('loan_history.html', loan_data=[])
+
         # Get all loan summaries
         loans = LoanSummary.query.order_by(LoanSummary.created_at.desc()).all()
         
@@ -2096,6 +2122,9 @@ def user_manual():
 def get_saved_loans():
     """Get all saved loans"""
     try:
+        if not is_table_structure_valid(LoanSummary):
+            return jsonify({'success': True, 'loans': [], 'total_count': 0})
+
         # Get filter parameters
         search = request.args.get('search', '').strip()
         loan_type_filter = request.args.get('loan_type', '').strip()
