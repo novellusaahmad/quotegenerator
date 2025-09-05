@@ -102,10 +102,51 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="grossAmountFixed">Gross Amount</label>
-                                            <div class="input-group">
+                                            <label class="form-label">Amount Input</label>
+                                            <div class="btn-group w-100" role="group">
+                                                <input checked class="btn-check" id="grossAmount" name="amount_input_type" type="radio" value="gross"/>
+                                                <label class="btn btn-outline-primary" for="grossAmount">Gross Amount</label>
+                                                <input class="btn-check" id="netAmount" name="amount_input_type" type="radio" value="net"/>
+                                                <label class="btn btn-outline-primary" for="netAmount">Net Amount</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3" id="grossAmountSection">
+                                            <label class="form-label">Gross Amount</label>
+                                            <div class="btn-group w-100" role="group">
+                                                <input checked class="btn-check" id="grossFixed" name="gross_amount_type" type="radio" value="fixed"/>
+                                                <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossFixed">Fixed Amount</label>
+                                                <input class="btn-check" id="grossPercentage" name="gross_amount_type" type="radio" value="percentage"/>
+                                                <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossPercentage">% of Property Value</label>
+                                            </div>
+                                            <div class="input-group" id="grossFixedInput">
                                                 <span class="input-group-text currency-symbol">£</span>
                                                 <input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0" name="gross_amount" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                            </div>
+                                            <div class="input-group" id="grossPercentageInput" style="display:none;">
+                                                <input class="form-control" id="grossAmountPercentage" max="100" min="0" name="gross_amount_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3" id="netAmountSection" style="display:none;">
+                                            <label class="form-label" for="netAmountInput">Net Amount</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input class="form-control" id="netAmountInput" inputmode="decimal" min="0" name="net_amount" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3" id="day1AdvanceSection" style="display:none;">
+                                            <label class="form-label" for="day1Advance">Day 1 Advance (Optional)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input class="form-control" id="day1Advance" inputmode="decimal" min="0" name="day1_advance" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="0"/>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
+                                                <label class="form-check-label" for="use360Days">
+                                                    Use 360-day calculation for daily rate
+                                                </label>
                                             </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
@@ -123,13 +164,6 @@
                                             <div class="input-group" id="annualRateInput">
                                                 <input class="form-control" id="annualRateValue" max="50" min="0" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="12"/>
                                                 <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="loanTerm">Loan Term</label>
-                                            <div class="input-group">
-                                                <input class="form-control" id="loanTerm" max="600" min="3" name="loan_term" required="" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
-                                                <span class="input-group-text">months</span>
                                             </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
@@ -195,12 +229,26 @@
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label" for="startDate">Start Date</label>
-                                            <input class="form-control" id="startDate" name="start_date" required="" style="min-height: 38px; font-size: 1rem;" type="date"/>
+                                            <input class="form-control" id="startDate" name="start_date" required style="min-height: 38px; font-size: 1rem;" type="date"/>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="endDate">End Date</label>
-                                            <input class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;" type="date" readonly=""/>
-                                            <small class="form-text text-muted">Automatically calculated based on start date and loan term. You can edit manually to override.</small>
+                                            <label class="form-label">Loan End</label>
+                                            <div class="btn-group w-100" role="group">
+                                                <input class="btn-check" id="loanTermOption" name="loan_end_type" type="radio" value="term" checked>
+                                                <label class="btn btn-outline-secondary btn-sm" for="loanTermOption">Term (months)</label>
+                                                <input class="btn-check" id="loanEndDateOption" name="loan_end_type" type="radio" value="date">
+                                                <label class="btn btn-outline-secondary btn-sm" for="loanEndDateOption">End Date</label>
+                                            </div>
+                                            <div id="loanTermContainer" class="mt-2">
+                                                <div class="input-group">
+                                                    <input class="form-control" id="loanTerm" max="600" min="3" name="loan_term" required style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
+                                                    <span class="input-group-text">months</span>
+                                                </div>
+                                            </div>
+                                            <div id="endDateContainer" class="mt-2" style="display:none;">
+                                                <input class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;" type="date"/>
+                                                <small class="form-text text-muted">Select start and end dates to calculate the loan term in days.</small>
+                                            </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label" for="paymentTiming">Payment Timing</label>
@@ -1582,69 +1630,127 @@
         document.addEventListener('DOMContentLoaded', function() {
             try {
                 const today = new Date().toISOString().split('T')[0];
-                const startDateElement = document.getElementById('startDate');
-                if (startDateElement) {
-                    startDateElement.value = today;
-                }
+                const startDateEl = document.getElementById('startDate');
+                if (startDateEl) startDateEl.value = today;
 
-                if (typeof calculateEndDate === 'function') {
-                    calculateEndDate();
-                }
+                document.querySelectorAll('input[name="rate_input_type"]').forEach(r => r.addEventListener('change', toggleRateInputs));
+                document.querySelectorAll('input[name="amount_input_type"]').forEach(r => r.addEventListener('change', toggleAmountInputs));
+                document.querySelectorAll('input[name="gross_amount_type"]').forEach(r => r.addEventListener('change', toggleGrossAmountType));
+                document.querySelectorAll('input[name="loan_end_type"]').forEach(r => r.addEventListener('change', toggleLoanEnd));
 
-                const startDate = document.getElementById('startDate');
+                const propertyValue = document.getElementById('propertyValue');
+                const grossPct = document.getElementById('grossAmountPercentage');
+                if (propertyValue) propertyValue.addEventListener('input', updateGrossAmountFromPercentage);
+                if (grossPct) grossPct.addEventListener('input', updateGrossAmountFromPercentage);
+
                 const loanTerm = document.getElementById('loanTerm');
                 const endDate = document.getElementById('endDate');
+                if (startDateEl) startDateEl.addEventListener('change', calculateEndDate);
+                if (loanTerm) loanTerm.addEventListener('input', calculateEndDate);
+                if (endDate) endDate.addEventListener('change', calculateEndDate);
 
-                if (startDate) {
-                    startDate.addEventListener('change', calculateEndDate);
-                }
-                if (loanTerm) {
-                    loanTerm.addEventListener('input', calculateEndDate);
-                }
-                if (endDate) {
-                    endDate.addEventListener('click', makeEndDateEditable);
-                    endDate.addEventListener('change', recalculateLoanTerm);
-                }
+                toggleRateInputs();
+                toggleAmountInputs();
+                toggleGrossAmountType();
+                toggleLoanEnd();
+                calculateEndDate();
             } catch (e) {
                 console.error('Error initializing comparison form:', e);
             }
         });
 
-        function calculateEndDate() {
-            const startDate = document.getElementById('startDate').value;
-            const loanTerm = parseInt(document.getElementById('loanTerm').value);
-
-            if (startDate && loanTerm && loanTerm > 0) {
-                const start = new Date(startDate);
-                const end = new Date(start);
-                end.setMonth(end.getMonth() + loanTerm);
-                end.setDate(end.getDate() - 1);
-
-                const endDateInput = document.getElementById('endDate');
-                endDateInput.value = end.toISOString().split('T')[0];
+        function toggleRateInputs() {
+            const type = document.querySelector('input[name="rate_input_type"]:checked').value;
+            const monthlyInput = document.getElementById('monthlyRateInput');
+            const annualInput = document.getElementById('annualRateInput');
+            const monthlyValue = document.getElementById('monthlyRateValue');
+            const annualValue = document.getElementById('annualRateValue');
+            if (type === 'monthly') {
+                if (annualValue && annualValue.value) {
+                    const annual = parseFloat(annualValue.value);
+                    if (!isNaN(annual)) monthlyValue.value = (annual / 12).toFixed(4);
+                }
+                monthlyInput.style.display = 'flex';
+                annualInput.style.display = 'none';
+            } else {
+                if (monthlyValue && monthlyValue.value) {
+                    const monthly = parseFloat(monthlyValue.value);
+                    if (!isNaN(monthly)) annualValue.value = (monthly * 12).toFixed(4);
+                }
+                monthlyInput.style.display = 'none';
+                annualInput.style.display = 'flex';
             }
         }
 
-        function makeEndDateEditable() {
-            const endDateInput = document.getElementById('endDate');
-            endDateInput.removeAttribute('readonly');
-            endDateInput.focus();
+        function toggleAmountInputs() {
+            const type = document.querySelector('input[name="amount_input_type"]:checked').value;
+            document.getElementById('grossAmountSection').style.display = type === 'gross' ? '' : 'none';
+            document.getElementById('netAmountSection').style.display = type === 'net' ? '' : 'none';
         }
 
-        function recalculateLoanTerm() {
+        function toggleGrossAmountType() {
+            const type = document.querySelector('input[name="gross_amount_type"]:checked').value;
+            document.getElementById('grossFixedInput').style.display = type === 'fixed' ? 'flex' : 'none';
+            document.getElementById('grossPercentageInput').style.display = type === 'percentage' ? 'flex' : 'none';
+            updateGrossAmountFromPercentage();
+        }
+
+        function updateGrossAmountFromPercentage() {
+            const propertyValueInput = document.getElementById('propertyValue');
+            const percentageInput = document.getElementById('grossAmountPercentage');
+            const grossFixedInput = document.getElementById('grossAmountFixed');
+
+            const propertyValue = parseFloat((propertyValueInput?.value || '').replace(/,/g, '')) || 0;
+            const percentage = parseFloat((percentageInput?.value || '').replace(/,/g, '')) || 0;
+
+            if (propertyValue > 0 && percentage > 0 && grossFixedInput) {
+                const grossAmount = (propertyValue * percentage / 100).toFixed(2);
+                grossFixedInput.value = grossAmount;
+            }
+        }
+
+        function toggleLoanEnd() {
+            const mode = document.querySelector('input[name="loan_end_type"]:checked').value;
+            const loanTermContainer = document.getElementById('loanTermContainer');
+            const endDateContainer = document.getElementById('endDateContainer');
+            const endDate = document.getElementById('endDate');
+            if (mode === 'term') {
+                loanTermContainer.style.display = '';
+                endDateContainer.style.display = 'none';
+                if (endDate) endDate.setAttribute('readonly', '');
+            } else {
+                loanTermContainer.style.display = 'none';
+                endDateContainer.style.display = '';
+                if (endDate) endDate.removeAttribute('readonly');
+            }
+        }
+
+        function calculateEndDate() {
+            const mode = document.querySelector('input[name="loan_end_type"]:checked').value;
             const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
+            const loanTermEl = document.getElementById('loanTerm');
+            const endDateEl = document.getElementById('endDate');
 
-            if (startDate && endDate) {
-                const start = new Date(startDate);
-                const end = new Date(endDate);
-                const daysDiff = Math.floor((end - start) / 86400000) + 1;
-
-                let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-                if (end.getDate() < start.getDate()) {
-                    monthsDiff -= 1;
+            if (mode === 'term') {
+                const loanTerm = parseInt(loanTermEl.value);
+                if (startDate && loanTerm && loanTerm > 0) {
+                    const start = new Date(startDate);
+                    const end = new Date(start);
+                    end.setMonth(end.getMonth() + loanTerm);
+                    end.setDate(end.getDate() - 1);
+                    endDateEl.value = end.toISOString().split('T')[0];
                 }
-                document.getElementById('loanTerm').value = Math.max(1, monthsDiff);
+            } else {
+                const endDate = endDateEl.value;
+                if (startDate && endDate) {
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+                    if (end.getDate() < start.getDate()) {
+                        monthsDiff -= 1;
+                    }
+                    loanTermEl.value = Math.max(1, monthsDiff);
+                }
             }
         }
     </script>
