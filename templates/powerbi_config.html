@@ -27,6 +27,10 @@
     color: var(--novellus-gold);
 }
 
+.powerbi-config-page .nav-tabs .nav-link.active:hover {
+    color: #fff;
+}
+
 .bg-novellus-navy {
     background-color: var(--novellus-navy) !important;
 }
@@ -114,17 +118,17 @@
                                         <div class="col-md-4">
                                             <label class="form-label small fw-semibold text-secondary">Actions</label>
                                             <div class="d-flex gap-1">
-                                                <button type="button" class="btn btn-sm btn-primary" onclick="testConnection()" id="testBtn" title="Test Connection">
-                                                    <i class="fas fa-plug"></i>
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="testConnection()" id="testBtn">
+                                                    <i class="fas fa-plug me-1"></i>Test Connection
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-primary" onclick="startRefresh()" id="refreshBtn" title="Start Refresh">
-                                                    <i class="fas fa-sync-alt"></i>
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="startRefresh()" id="refreshBtn">
+                                                    <i class="fas fa-sync-alt me-1"></i>Start Refresh
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-primary" onclick="saveReportSettings()" id="saveBtn" title="Save Settings">
-                                                    <i class="fas fa-save"></i>
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="saveReportSettings()" id="saveBtn">
+                                                    <i class="fas fa-save me-1"></i>Save Settings
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-warning" onclick="testNotification()" id="testNotifyBtn" title="Test Notifications">
-                                                    <i class="fas fa-bell"></i>
+                                                <button type="button" class="btn btn-sm btn-warning" onclick="testNotification()" id="testNotifyBtn">
+                                                    <i class="fas fa-bell me-1"></i>Test Notifications
                                                 </button>
                                             </div>
                                         </div>
@@ -207,11 +211,11 @@
                                             </label>
                                         </div>
                                         <div class="d-flex gap-1">
-                                            <button type="button" class="btn btn-sm btn-primary" onclick="clearForm()" id="clearBtn" title="Clear All">
-                                                <i class="fas fa-broom"></i>
+                                            <button type="button" class="btn btn-sm btn-primary" onclick="clearForm()" id="clearBtn">
+                                                <i class="fas fa-broom me-1"></i>Clear All
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-primary" onclick="refreshAllReports()" id="refreshAllBtn" title="Refresh All Reports">
-                                                <i class="fas fa-list-alt"></i>
+                                            <button type="button" class="btn btn-sm btn-primary" onclick="refreshAllReports()" id="refreshAllBtn">
+                                                <i class="fas fa-list-alt me-1"></i>Refresh All
                                             </button>
                                         </div>
                                     </div>
@@ -328,8 +332,8 @@
                                     <div class="card-body d-flex justify-content-between align-items-center">
                                         <div id="sfSavedDetails"></div>
                                         <div class="d-flex gap-2">
-                                            <button type="button" class="btn btn-sm btn-primary" onclick="testSnowflakeConnection(this)" title="Test Connection">
-                                                <i class="fas fa-vial"></i>
+                                            <button type="button" class="btn btn-sm btn-primary" onclick="testSnowflakeConnection(this)">
+                                                <i class="fas fa-vial me-1"></i>Test Connection
                                             </button>
                                             <button type="button" class="btn btn-sm btn-danger" onclick="deleteSnowflakeConfig()">Delete</button>
                                         </div>
@@ -1293,14 +1297,14 @@ function createScheduleCard(status) {
                     <span class="badge bg-light text-success ms-2">Running</span>
                 </div>
                 <div class="btn-group btn-group-sm">
-                    <button class="btn btn-light btn-sm" onclick="pauseSchedule()" title="Pause Schedule">
-                        <i class="fas fa-pause"></i>
+                    <button class="btn btn-light btn-sm" onclick="pauseSchedule()">
+                        <i class="fas fa-pause me-1"></i>Pause
                     </button>
-                    <button class="btn btn-light btn-sm" onclick="editSchedule()" title="Edit Schedule">
-                        <i class="fas fa-edit"></i>
+                    <button class="btn btn-light btn-sm" onclick="editSchedule()">
+                        <i class="fas fa-edit me-1"></i>Edit
                     </button>
-                    <button class="btn btn-outline-light btn-sm" onclick="deleteSchedule()" title="Delete Schedule">
-                        <i class="fas fa-trash"></i>
+                    <button class="btn btn-outline-light btn-sm" onclick="deleteSchedule()">
+                        <i class="fas fa-trash me-1"></i>Delete
                     </button>
                 </div>
             </div>
@@ -2187,7 +2191,7 @@ function startStatusPolling() {
             
             // Re-enable refresh button
             const refreshBtn = document.getElementById('refreshBtn');
-            refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Start Refresh';
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Start Refresh';
             refreshBtn.disabled = false;
             
             // Update refresh history
