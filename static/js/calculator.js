@@ -2853,7 +2853,9 @@ class LoanCalculator {
                 formulaValues = `${net} = ${gross} − ${arrangement} − ${legal} − ${site} − ${title} − ${interest}`;
                 break;
             case 'net_to_gross_retained':
-                formula = 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance % − (Interest Rate × Loan Term ÷ 12))';
+                formula = loanTermDays
+                    ? 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance % − (Interest Rate × Loan Term Days ÷ Days in Year))'
+                    : 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance % − (Interest Rate × Loan Term ÷ 12))';
                 calculated = [
                     { label: 'Gross Loan (£)', value: gross },
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
@@ -2864,7 +2866,9 @@ class LoanCalculator {
                     { label: 'Net Loan validation (£)', value: net },
                     { label: 'Repayment Method', value: 'Retained Interest' }
                 ];
-                formulaValues = `${gross} = (${net} + ${legal} + ${site}) / (1 − ${arrangementPctText} − ${titlePctText} − (${rateText} × ${loanTermDays || loanTerm}/${loanTermDays ? daysPerYear : 12}))`;
+                formulaValues = loanTermDays
+                    ? `${gross} = (${net} + ${legal} + ${site}) / (1 − ${arrangementPctText} − ${titlePctText} − (${rateText} × ${loanTermDays} ÷ ${daysPerYear}))`
+                    : `${gross} = (${net} + ${legal} + ${site}) / (1 − ${arrangementPctText} − ${titlePctText} − (${rateText} × ${loanTerm} ÷ 12))`;
                 break;
             case 'gross_to_net_serviced':
                 formula = 'Net = Gross − Arrangement Fee − Legal Fees − Site Visit Fee − Title Insurance';
