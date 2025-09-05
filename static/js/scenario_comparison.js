@@ -132,21 +132,13 @@ function updateAdditionalParams() {
     const loanType = loanTypeElement.value;
     const repaymentOption = repaymentOptionElement.value;
 
-    const paymentTimingSection = document.getElementById('paymentTimingSection');
     const trancheSection = document.getElementById('developmentTrancheSection');
     const day1AdvanceSection = document.getElementById('day1AdvanceSection');
+    const capitalRepaymentSection = document.getElementById('capitalRepaymentSection');
+    const flexiblePaymentSection = document.getElementById('flexiblePaymentSection');
     const additionalParamsContainer = document.getElementById('additionalParams');
 
     let showAdditionalParams = false;
-
-    if (paymentTimingSection) {
-        if (['service_only', 'service_and_capital', 'capital_payment_only', 'flexible_payment'].includes(repaymentOption)) {
-            paymentTimingSection.style.display = 'block';
-            showAdditionalParams = true;
-        } else {
-            paymentTimingSection.style.display = 'none';
-        }
-    }
 
     if (trancheSection) {
         if (loanType === 'development' || loanType === 'development2') {
@@ -163,6 +155,24 @@ function updateAdditionalParams() {
             showAdditionalParams = true;
         } else {
             day1AdvanceSection.style.display = 'none';
+        }
+    }
+
+    if (capitalRepaymentSection) {
+        if (repaymentOption === 'service_and_capital' || repaymentOption === 'capital_payment_only') {
+            capitalRepaymentSection.style.display = 'block';
+            showAdditionalParams = true;
+        } else {
+            capitalRepaymentSection.style.display = 'none';
+        }
+    }
+
+    if (flexiblePaymentSection) {
+        if (repaymentOption === 'flexible_payment') {
+            flexiblePaymentSection.style.display = 'block';
+            showAdditionalParams = true;
+        } else {
+            flexiblePaymentSection.style.display = 'none';
         }
     }
 
