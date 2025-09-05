@@ -1563,6 +1563,8 @@ function handleEditMode() {
                     window.loanCalculator.toggleGrossAmountInputs();
                     window.loanCalculator.toggleRateInputs();
                     window.loanCalculator.toggleTrancheMode();
+                    // Ensure repayment-specific sections are visible when editing
+                    window.loanCalculator.updateRepaymentOptions();
                     window.loanCalculator.updateAdditionalParams();
                     // Automatically recalculate to reflect loaded values
                     if (typeof window.loanCalculator.calculateLoan === 'function') {
