@@ -90,9 +90,9 @@ def test_editing_populates_tranches(live_server):
         driver.get(url)
 
         WebDriverWait(driver, 10).until(
-            lambda d: len(d.find_elements(By.CSS_SELECTOR, "#trancheContainer .tranche-item")) == 2
+            lambda d: len(d.find_elements(By.CSS_SELECTOR, "#tranchesContainer .tranche-item")) == 2
         )
-        items = driver.find_elements(By.CSS_SELECTOR, "#trancheContainer .tranche-item")
+        items = driver.find_elements(By.CSS_SELECTOR, "#tranchesContainer .tranche-item")
         first = items[0]
         second = items[1]
         assert first.find_element(By.CSS_SELECTOR, 'input[id*="trancheAmount"]').get_attribute("value") == "10000"
@@ -127,6 +127,7 @@ def test_editing_shows_capital_repayment_section(live_server):
             lambda d: d.find_element(By.ID, "capitalRepaymentSection").is_displayed()
         )
         assert driver.find_element(By.ID, "capitalRepaymentSection").is_displayed()
+        assert driver.find_element(By.ID, "capitalRepayment").get_attribute("value") == "750"
         assert not driver.find_element(By.ID, "flexiblePaymentSection").is_displayed()
     finally:
         driver.quit()
@@ -152,6 +153,32 @@ def test_editing_shows_flexible_payment_section(live_server):
             lambda d: d.find_element(By.ID, "flexiblePaymentSection").is_displayed()
         )
         assert driver.find_element(By.ID, "flexiblePaymentSection").is_displayed()
+        assert driver.find_element(By.ID, "flexiblePayment").get_attribute("value") == "1000"
         assert not driver.find_element(By.ID, "capitalRepaymentSection").is_displayed()
+    finally:
+        driver.quit()
+
+
+def test_editing_populates_capital_payment_only(live_server):
+    driver = _get_chrome_driver()
+    try:
+        params = {
+            "edit": "true",
+            "loanId": "5",
+            "loanName": "Cap Only",
+            "loan_type": "bridge",
+            "repayment_option": "capital_payment_only",
+            "capital_repayment": "1500",
+            "payment_timing": "arrears",
+            "payment_frequency": "monthly",
+        }
+        url = f"{live_server}/calculator?{urlencode(params)}"
+        driver.get(url)
+
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.ID, "capitalRepaymentSection").is_displayed()
+        )
+        assert driver.find_element(By.ID, "capitalRepaymentSection").is_displayed()
+        assert driver.find_element(By.ID, "capitalRepayment").get_attribute("value") == "1500"
     finally:
         driver.quit()
