@@ -39,12 +39,12 @@
 :root[data-currency="EUR"], 
 [data-currency="EUR"] {
     /* Primary Teal Palette */
-    --primary-color: #62906F;
-    --primary-light: #5CC9B0;
-    --primary-lighter: #76DAC6;
-    --primary-lightest: #B8F0E5;
-    --primary-dark: #359677;
-    --primary-darker: #287654;
+    --primary-color: #509664;
+    --primary-light: #6CB180;
+    --primary-lighter: #91C4A0;
+    --primary-lightest: #B5D8BF;
+    --primary-dark: #3D7450;
+    --primary-darker: #30593C;
     
     /* Secondary Teal Variations */
     --secondary-color: #20B2AA;
