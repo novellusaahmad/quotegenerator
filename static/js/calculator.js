@@ -613,7 +613,6 @@ class LoanCalculator {
 
                     if (amountVal < 0) trancheErrors.push('Tranche amount cannot be negative');
                     if (rateVal < 0) trancheErrors.push('Tranche rate cannot be negative');
-                    if (!descriptionVal) trancheErrors.push('Tranche description is required');
                     if (dateVal && startDateValue && new Date(dateVal) < new Date(startDateValue)) {
                         trancheErrors.push('Tranche release date cannot be before loan start date');
                     }
@@ -2685,14 +2684,6 @@ class LoanCalculator {
                 }
                 return;
             }
-            if (!description) {
-                if (window.notifications) {
-                    window.notifications.error('Tranche description is required');
-                } else {
-                    alert('Tranche description is required');
-                }
-                return;
-            }
             if (startDate && date && new Date(date) < new Date(startDate)) {
                 if (window.notifications) {
                     window.notifications.error('Tranche release date cannot be before loan start date');
@@ -2701,20 +2692,22 @@ class LoanCalculator {
                 }
                 return;
             }
+            const finalDescription = description || `Tranche ${idx + 1}`;
             row.querySelector('input.tranche-amount').value = amount;
             row.querySelector('.tranche-amount-display').textContent = amount.toFixed(2);
             row.querySelector('input.tranche-date').value = date;
             row.querySelector('.tranche-date-display').textContent = date;
             row.querySelector('input.tranche-rate').value = rate;
             row.querySelector('.tranche-rate-display').textContent = rate.toFixed(2);
-            row.querySelector('input.tranche-description').value = description;
-            row.querySelector('.tranche-description-display').textContent = description;
+            row.querySelector('input.tranche-description').value = finalDescription;
+            row.querySelector('.tranche-description-display').textContent = finalDescription;
         } else {
             const data = this.trancheBreakdownData[idx];
             data.amount = parseFloat(document.getElementById('editTrancheAmount').value) || 0;
             data.release_date = document.getElementById('editTrancheDate').value;
             data.interest_rate = parseFloat(document.getElementById('editTrancheRate').value) || 0;
-            data.description = document.getElementById('editTrancheDescription').value;
+            const descInput = document.getElementById('editTrancheDescription').value.trim();
+            data.description = descInput || `Tranche ${idx + 1}`;
             this.displayTrancheBreakdown(this.trancheBreakdownData, this.trancheCurrency);
         }
         const modalEl = document.getElementById('trancheEditModal');
