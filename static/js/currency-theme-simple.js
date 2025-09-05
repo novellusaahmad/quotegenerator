@@ -105,12 +105,19 @@ class SimpleCurrencyTheme {
         
         const color = colors[currency];
         
-        // Update table headers
+        // Update table headers and other themed elements
         const tableHeaders = document.querySelectorAll('.table thead th, .card-header, .bg-primary');
         tableHeaders.forEach(header => {
             header.style.setProperty('background-color', color.primary, 'important');
             header.style.setProperty('border', '2px solid #000000', 'important');
             header.style.setProperty('color', 'white', 'important');
+        });
+
+        // Update navbar background to match currency theme
+        const navbars = document.querySelectorAll('nav.navbar');
+        navbars.forEach(nav => {
+            nav.style.setProperty('background-color', color.primary, 'important');
+            nav.style.setProperty('background-image', 'none', 'important');
         });
         
         // Force repaint to ensure changes are visible
