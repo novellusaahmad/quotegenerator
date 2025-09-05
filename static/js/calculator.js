@@ -2999,13 +2999,13 @@ class LoanCalculator {
         const renderSection = (title, items) => {
             if (!items || items.length === 0) return '';
             const cards = items.map(i => `
-                <div class="col-md-4 col-sm-6">
+                <div class="col-lg-2 col-md-3 col-sm-4 col-6">
                     <div class="summary-card" data-currency="${currencyCode}">
                         <div class="summary-value">${i.value}</div>
                         <div class="summary-label">${i.label}</div>
                     </div>
                 </div>`).join('');
-            return `<h6 class="mt-3">${title}</h6><div class="row g-2 mb-2">${cards}</div>`;
+            return `<h6 class="mt-2">${title}</h6><div class="row g-1 mb-1">${cards}</div>`;
         };
 
         modalBody.innerHTML =

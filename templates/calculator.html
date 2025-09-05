@@ -139,22 +139,26 @@
     /* Summary cards in calculation breakdown modal */
     .summary-card {
         border-radius: 10px;
-        padding: 1rem;
+        padding: 0.5rem;
         text-align: center;
         color: #fff;
-        height: 100%;
         background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     }
 
     .summary-card .summary-value {
-        font-size: 1.1rem;
+        font-size: 0.9rem;
         font-weight: 700;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
 
     .summary-card .summary-label {
-        font-size: 0.8rem;
+        font-size: 0.7rem;
         font-weight: 500;
+    }
+
+    #calculationBreakdownModal .modal-body {
+        max-height: none;
+        overflow-y: visible;
     }
 
     .bg-purple {
@@ -1156,7 +1160,7 @@
 
 <!-- Calculation Breakdown Modal -->
 <div class="modal fade" id="calculationBreakdownModal" tabindex="-1" aria-labelledby="calculationBreakdownLabel" aria-hidden="true">
-    <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+    <div class="modal-dialog modal-fullscreen">
         <div class="modal-content">
             <div class="modal-header" id="calculationBreakdownHeader" data-currency="GBP" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white;">
                 <h5 class="modal-title" id="calculationBreakdownLabel"></h5>
