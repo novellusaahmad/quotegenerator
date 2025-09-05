@@ -77,7 +77,11 @@
         <div class="offcanvas-body">
             <ul class="nav flex-column">
                 {% for route in nav_routes %}
-                <li class="nav-item"><a class="nav-link" href="{{ route.url }}">{{ route.name }}</a></li>
+                <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center text-black" href="{{ route.url }}">
+                        <i class="{{ route.icon }} me-2 text-black"></i>{{ route.name }}
+                    </a>
+                </li>
                 {% endfor %}
             </ul>
         </div>
