@@ -1670,49 +1670,40 @@ function populateTrancheData(params) {
     if (!['development', 'development2'].includes(loanType)) {
         return;
     }
-    
+
     // Extract tranche parameters
     const trancheContainer = document.getElementById('tranchesContainer');
-    if (!trancheContainer) {
-        console.warn('Tranche container not found');
+    if (!trancheContainer || !window.loanCalculator) {
+        console.warn('Tranche container not found or loan calculator unavailable');
         return;
     }
-    
+
+    // Remove any existing rows (including default blank row)
+    trancheContainer.innerHTML = '';
+
     let trancheIndex = 0;
     let foundTranches = false;
-    
+
     // Look for tranche parameters in URL
-    while (params.get(`tranche_amounts[${trancheIndex}]`)) {
+    while (params.has(`tranche_amounts[${trancheIndex}]`)) {
         const amount = params.get(`tranche_amounts[${trancheIndex}]`);
         const date = params.get(`tranche_dates[${trancheIndex}]`);
         const rate = params.get(`tranche_rates[${trancheIndex}]`);
         const description = params.get(`tranche_descriptions[${trancheIndex}]`);
-        
-        if (amount) {
-            // Add tranche if not first one (first row exists by default)
-            if (trancheIndex > 0) {
-                if (window.loanCalculator && typeof window.loanCalculator.increaseTranches === 'function') {
-                    window.loanCalculator.increaseTranches();
-                }
-            }
 
-            // Populate tranche fields
-            const amountField = document.querySelector(`#tranchesContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheAmount"]`);
-            const dateField = document.querySelector(`#tranchesContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheDate"]`);
-            const rateField = document.querySelector(`#tranchesContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheRate"]`);
-            const descField = document.querySelector(`#tranchesContainer .tranche-item:nth-child(${trancheIndex + 1}) input[id*="trancheDescription"]`);
-            
-            if (amountField) amountField.value = amount;
-            if (dateField) dateField.value = date;
-            if (rateField) rateField.value = rate;
-            if (descField) descField.value = description;
-            
-            foundTranches = true;
-        }
-        
+        // Create tranche rows directly using loan calculator helper
+        window.loanCalculator.createTrancheItem(
+            trancheIndex + 1,
+            parseFloat(amount) || 0,
+            date || '',
+            parseFloat(rate) || 0,
+            description || ''
+        );
+
+        foundTranches = true;
         trancheIndex++;
     }
-    
+
     if (foundTranches) {
         console.log(`Populated ${trancheIndex} tranches for development loan`);
     }
