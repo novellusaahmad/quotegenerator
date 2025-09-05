@@ -178,9 +178,16 @@ def ensure_loan_tables():
         for column in model.__table__.columns:
             if column.name not in existing:
                 column_type = column.type.compile(db.engine.dialect)
-                with db.engine.connect() as conn:
+                # Use a transactional connection to ensure DDL is committed.
+                # Without an explicit commit, PostgreSQL will roll back the
+                # column addition when the connection scope ends, leaving the
+                # table without the expected structure and causing errors like
+                # "column does not exist" on subsequent queries.
+                with db.engine.begin() as conn:
                     conn.execute(
-                        sa.text(f'ALTER TABLE {table_name} ADD COLUMN {column.name} {column_type}')
+                        sa.text(
+                            f'ALTER TABLE {table_name} ADD COLUMN {column.name} {column_type}'
+                        )
                     )
         inspector = sa.inspect(db.engine)
 
