@@ -162,12 +162,6 @@
             <div class="navigation-cards">
                 {% set nav_items = [
                     {
-                        'title': 'Home',
-                        'icon': 'fas fa-home',
-                        'desc': 'Return to the main dashboard.',
-                        'url': url_for('landing_page')
-                    },
-                    {
                         'title': 'Calculator',
                         'icon': 'fas fa-calculator',
                         'desc': 'Loan calculations for bridge, term, and development.',
@@ -184,24 +178,6 @@
                         'icon': 'fas fa-chart-line',
                         'desc': 'Compare different loan scenarios.',
                         'url': url_for('scenario_comparison_page')
-                    },
-                    {
-                        'title': 'Snowflake Config',
-                        'icon': 'fas fa-database',
-                        'desc': 'Configure Snowflake connection settings.',
-                        'url': url_for('snowflake_config')
-                    },
-                    {
-                        'title': 'Power BI Config',
-                        'icon': 'fas fa-chart-bar',
-                        'desc': 'Configure Power BI connection settings.',
-                        'url': url_for('powerbi_config')
-                    },
-                    {
-                        'title': 'User Manual',
-                        'icon': 'fas fa-book',
-                        'desc': 'View the user manual.',
-                        'url': url_for('user_manual')
                     },
                 ] %}
                 {% for item in nav_items %}
