@@ -388,7 +388,7 @@ class LoanCalculator:
         gross_amount = Decimal(str(params.get('gross_amount', 0)))
         net_amount = Decimal(str(params.get('net_amount', 0)))
         property_value = Decimal(str(params.get('property_value', 0)))
-        loan_term = int(params.get('loan_term', 12))
+        loan_term = max(1, int(params.get('loan_term', 12)))
         # Get interest rate from either parameter name
         interest_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
         repayment_option = params.get('repayment_option', 'none')
@@ -434,6 +434,9 @@ class LoanCalculator:
 
         if end_date_str:
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
+            if end_date < start_date:
+                end_date = start_date
+                end_date_str = end_date.strftime('%Y-%m-%d')
             loan_term_days = (end_date - start_date).days + 1
             try:
                 rd = relativedelta(end_date + timedelta(days=1), start_date)
@@ -816,7 +819,7 @@ class LoanCalculator:
         gross_amount = Decimal(str(params.get('gross_amount', 0)))
         net_amount = Decimal(str(params.get('net_amount', 0)))
         property_value = Decimal(str(params.get('property_value', 0)))
-        loan_term = int(params.get('loan_term', 12))
+        loan_term = max(1, int(params.get('loan_term', 12)))
         # Get interest rate from either parameter name
         interest_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
         repayment_option = params.get('repayment_option', 'service_only')
@@ -848,6 +851,9 @@ class LoanCalculator:
 
         if end_date_str:
             end_date = datetime.strptime(end_date_str, '%Y-%m-%d') if isinstance(end_date_str, str) else end_date_str
+            if end_date < start_date:
+                end_date = start_date
+                end_date_str = end_date.strftime('%Y-%m-%d')
             loan_term_days = (end_date - start_date).days + 1
             try:
                 rd = relativedelta(end_date + timedelta(days=1), start_date)
@@ -1079,13 +1085,16 @@ class LoanCalculator:
         
         start_date_str = params.get('start_date', '2025-07-24')
         end_date_str = params.get('end_date')
-        loan_term = int(params.get('loan_term', 18))
+        loan_term = max(1, int(params.get('loan_term', 18)))
 
         # Parse start date
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d') if isinstance(start_date_str, str) else start_date_str
 
         if end_date_str:
             end_date = datetime.strptime(end_date_str, "%Y-%m-%d")
+            if end_date < start_date:
+                end_date = start_date
+                end_date_str = end_date.strftime('%Y-%m-%d')
             actual_days = (end_date - start_date).days + 1
             rd = relativedelta(end_date + timedelta(days=1), start_date)
             total_term_months = rd.years * 12 + rd.months + (1 if rd.days > 0 else 0)
@@ -1338,7 +1347,7 @@ class LoanCalculator:
         
         # Calculate other values for frontend
         property_value = float(params.get('property_value', 2000000))
-        loan_term = int(params.get('loan_term', 18))
+        loan_term = max(1, int(params.get('loan_term', 18)))
         loan_term_days = int(params.get("loan_term_days", 0))
         ltv = (gross_amount_solution / property_value * 100) if property_value > 0 else 0
 
@@ -1535,7 +1544,7 @@ class LoanCalculator:
         currency = params.get('currency', 'GBP')
         net_amount = Decimal(str(params.get('net_amount', 0)))
         property_value = Decimal(str(params.get('property_value', 0)))
-        loan_term = int(params.get('loan_term', 12))
+        loan_term = max(1, int(params.get('loan_term', 12)))
         # Get interest rate from various possible parameter names
         annual_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
         repayment_option = params.get('repayment_option', 'none')  # Default to retained interest
@@ -3589,7 +3598,7 @@ class LoanCalculator:
             from datetime import datetime, timedelta
             from dateutil.relativedelta import relativedelta
             
-            loan_term = int(params.get('loan_term', 0))
+            loan_term = max(1, int(params.get('loan_term', 0)))
             start_date_str = params.get('start_date', '')
             end_date_str = params.get('end_date', '')
             
@@ -3938,7 +3947,7 @@ class LoanCalculator:
         
         repayment_option = quote_data.get('repaymentOption', quote_data.get('repayment_option', 'none'))
         gross_amount = Decimal(str(quote_data.get('grossAmount', quote_data.get('gross_amount', 0))))
-        loan_term = int(quote_data.get('loanTerm', quote_data.get('loan_term', 12)))
+        loan_term = max(1, int(quote_data.get('loanTerm', quote_data.get('loan_term', 12))))
         # Accept both legacy and new field names for interest rate
         annual_rate = Decimal(
             str(
@@ -4238,7 +4247,7 @@ class LoanCalculator:
         repayment_option = params.get('repayment_option', 'none')
         # Try multiple field names for gross_amount
         gross_amount = Decimal(str(calculation.get('grossAmount', calculation.get('gross_amount', params.get('gross_amount', 0)))))
-        loan_term = int(calculation.get('loanTerm', calculation.get('loan_term', params.get('loan_term', 12))))
+        loan_term = max(1, int(calculation.get('loanTerm', calculation.get('loan_term', params.get('loan_term', 12)))))
         annual_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
         property_value = Decimal(str(params.get('property_value', params.get('propertyValue', 0))))
         
@@ -4999,7 +5008,7 @@ class LoanCalculator:
         
         repayment_option = quote_data.get('repaymentOption', quote_data.get('repayment_option', 'service_only'))
         gross_amount = Decimal(str(quote_data.get('grossAmount', 0)))
-        loan_term = int(quote_data.get('loanTerm', 18))  # Default to 18 months for development loans
+        loan_term = max(1, int(quote_data.get('loanTerm', 18)))  # Default to 18 months for development loans
         annual_rate = Decimal(str(quote_data.get('interestRate', 0)))
         monthly_payment = Decimal(str(quote_data.get('monthlyPayment', 0)))
         
@@ -5139,7 +5148,7 @@ class LoanCalculator:
         gross_amount = Decimal(str(calculation.get('grossAmount', calculation.get('gross_amount', params.get('gross_amount', 0)))))
         # Get 360-day parameter
         use_360_days = params.get('use_360_days', False)
-        loan_term = int(params.get('loan_term', 18))
+        loan_term = max(1, int(params.get('loan_term', 18)))
         annual_rate = Decimal(str(params.get('annual_rate', params.get('interest_rate', 0))))
         loan_term_days_param = params.get('loan_term_days')
         property_value = Decimal(str(params.get('property_value', params.get('propertyValue', 0))))
@@ -6808,7 +6817,7 @@ class LoanCalculator:
         
         repayment_option = quote_data.get('repaymentOption', quote_data.get('repayment_option', 'service_only'))
         gross_amount = Decimal(str(quote_data.get('grossAmount', 0)))
-        loan_term = int(quote_data.get('loanTerm', 18))  # Default to 18 months for development loans
+        loan_term = max(1, int(quote_data.get('loanTerm', 18)))  # Default to 18 months for development loans
         annual_rate = Decimal(str(quote_data.get('interestRate', 0)))
         monthly_payment = Decimal(str(quote_data.get('monthlyPayment', 0)))
         tranches = quote_data.get('tranches', [])

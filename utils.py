@@ -85,8 +85,8 @@ def validate_loan_application_data(data: Dict[str, Any]) -> List[str]:
     if 'loan_term' in data:
         try:
             value = int(data['loan_term'])
-            if value < 3:
-                errors.append("Loan term must be at least 3 months")
+            if value < 1:
+                errors.append("Loan term must be at least 1 month")
             if value > 600:
                 errors.append("Loan term cannot exceed 600 months")
         except (ValueError, TypeError):
