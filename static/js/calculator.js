@@ -714,6 +714,9 @@ class LoanCalculator {
         
         // Update all currency symbols on the page to match selected currency
         this.updateCurrencySymbols();
+
+        const summaryHeader = document.querySelector('#calculationResultsSection .card-header');
+        if (summaryHeader) summaryHeader.setAttribute('data-currency', results.currency || 'GBP');
         
         // Get all the result elements
         const grossAmountEl = document.getElementById('grossAmountResult');
@@ -2978,7 +2981,8 @@ class LoanCalculator {
         }
 
         const r = this.currentResults;
-        if (modalHeader) modalHeader.setAttribute('data-currency', r.currency || 'GBP');
+        const currencyCode = r.currency || 'GBP';
+        if (modalHeader) modalHeader.setAttribute('data-currency', currencyCode);
 
         const amountType = r.amount_input_type || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross';
         const loanType = r.loan_type || 'Loan';
@@ -2996,12 +3000,12 @@ class LoanCalculator {
             if (!items || items.length === 0) return '';
             const cards = items.map(i => `
                 <div class="col-md-4 col-sm-6">
-                    <div class="summary-card bg-light text-dark">
-                        <div class="summary-label">${i.label}</div>
+                    <div class="summary-card" data-currency="${currencyCode}">
                         <div class="summary-value">${i.value}</div>
+                        <div class="summary-label">${i.label}</div>
                     </div>
                 </div>`).join('');
-            return `<h6 class="mt-3">${title}</h6><div class="row g-3 mb-3">${cards}</div>`;
+            return `<h6 class="mt-3">${title}</h6><div class="row g-2 mb-2">${cards}</div>`;
         };
 
         modalBody.innerHTML =
