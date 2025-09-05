@@ -1613,7 +1613,7 @@ function populateFormFromParams(params) {
     }
 
     // Handle radio/button groups separately
-    const radioParams = ['amount_input_type', 'gross_amount_type', 'rate_input_type', 'payment_timing', 'payment_frequency', 'tranche_mode'];
+    const radioParams = ['amount_input_type', 'gross_amount_type', 'rate_input_type', 'payment_timing', 'payment_frequency', 'tranche_mode', 'currency'];
     radioParams.forEach(name => {
         const value = params.get(name);
         if (value !== null) {
@@ -1626,6 +1626,34 @@ function populateFormFromParams(params) {
             }
         }
     });
+
+    // Map parameters where the radio group name differs from the parameter name
+    const toggleMap = [
+        { param: 'loan_type', name: 'loanTypeToggle' },
+        { param: 'repayment_option', name: 'repaymentOptionToggle' },
+        { param: 'interest_type', name: 'interestTypeToggle' }
+    ];
+    toggleMap.forEach(({ param, name }) => {
+        const value = params.get(param);
+        if (value !== null) {
+            const radio = document.querySelector(`input[name="${name}"][value="${value}"]`);
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change'));
+                radio.dispatchEvent(new Event('click'));
+            }
+        }
+    });
+
+    // Handle checkbox fields
+    const use360 = params.get('use_360_days');
+    if (use360 !== null) {
+        const checkbox = document.getElementById('use360Days');
+        if (checkbox) {
+            checkbox.checked = use360 === 'true' || use360 === '1';
+            checkbox.dispatchEvent(new Event('change'));
+        }
+    }
 
     // Handle tranche data population for development loans
     populateTrancheData(params);
