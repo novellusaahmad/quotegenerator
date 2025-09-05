@@ -402,8 +402,8 @@ body[data-currency="EUR"] .btn-success {
 
 [data-currency="EUR"] .btn-group .btn-outline-secondary,
 [data-currency="EUR"] .btn-group .btn-outline-primary {
-    border-color: #42B89A !important;
-    color: #42B89A !important;
+    border-color: #509664 !important;
+    color: #509664 !important;
 }
 
 [data-currency="EUR"] .btn-group .btn-outline-secondary:hover,
@@ -412,8 +412,8 @@ body[data-currency="EUR"] .btn-success {
 [data-currency="EUR"] .btn-group .btn-outline-primary.active,
 [data-currency="EUR"] .btn-group .btn-check:checked + .btn-outline-secondary,
 [data-currency="EUR"] .btn-group .btn-check:checked + .btn-outline-primary {
-    background-color: #42B89A !important;
-    border-color: #42B89A !important;
+    background-color: #509664 !important;
+    border-color: #509664 !important;
     color: white !important;
 }
   
@@ -438,15 +438,15 @@ body[data-currency="EUR"] .btn-success {
 }
 
 [data-currency="EUR"] .btn-outline-secondary {
-    border-color: #42B89A !important;
-    color: #42B89A !important;
+    border-color: #509664 !important;
+    color: #509664 !important;
 }
 
 [data-currency="EUR"] .btn-outline-secondary:hover,
 [data-currency="EUR"] .btn-outline-secondary.active,
 [data-currency="EUR"] .btn-check:checked + .btn-outline-secondary {
-    background-color: #42B89A !important;
-    border-color: #42B89A !important;
+    background-color: #509664 !important;
+    border-color: #509664 !important;
     color: white !important;
 }
 
@@ -458,8 +458,8 @@ body[data-currency="EUR"] .btn-success {
 }
 
 .currency-eur-btn {
-    background-color: #42B89A !important;
-    border-color: #42B89A !important;
+    background-color: #509664 !important;
+    border-color: #509664 !important;
     color: white !important;
 }
 
