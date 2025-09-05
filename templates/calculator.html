@@ -1012,8 +1012,8 @@
 </div>
 
 <!-- Visualization Modals -->
-<div class="modal fade" id="paymentScheduleModal" tabindex="-1" aria-labelledby="paymentScheduleLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+<div class="modal fade modal-report" id="paymentScheduleModal" tabindex="-1" aria-labelledby="paymentScheduleLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="paymentScheduleLabel">Detailed Payment Schedule</h5>
@@ -1047,16 +1047,16 @@
           </div>
         </div>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer d-flex flex-nowrap gap-2 justify-content-end">
         <button type="button" class="btn btn-primary" id="exportPaymentScheduleBtn" style="display: none;">Export</button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-</div>
+      </div>
 </div>
 </div>
 </div>
 
-<div class="modal fade" id="trancheScheduleModal" tabindex="-1" aria-labelledby="trancheScheduleLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+<div class="modal fade modal-report" id="trancheScheduleModal" tabindex="-1" aria-labelledby="trancheScheduleLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="trancheScheduleLabel">Tranche Schedule</h5>
@@ -1087,7 +1087,7 @@
           </table>
         </div>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer d-flex flex-nowrap gap-2 justify-content-end">
         <button type="button" class="btn btn-primary" id="exportTrancheScheduleBtn" style="display: none;">Export</button>
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
@@ -1095,15 +1095,15 @@
   </div>
 </div>
 
-<div class="modal fade" id="loanBreakdownModal" tabindex="-1" aria-labelledby="loanBreakdownLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen">
+<div class="modal fade modal-report" id="loanBreakdownModal" tabindex="-1" aria-labelledby="loanBreakdownLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="loanBreakdownLabel">Loan Breakdown</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <canvas id="loanBreakdownChart" class="w-100" style="height:80vh;"></canvas>
+        <canvas id="loanBreakdownChart" class="w-100" style="height:70vh;"></canvas>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -1112,15 +1112,15 @@
   </div>
 </div>
 
-<div class="modal fade" id="balanceModal" tabindex="-1" aria-labelledby="balanceLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen">
+<div class="modal fade modal-report" id="balanceModal" tabindex="-1" aria-labelledby="balanceLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-xl">
     <div class="modal-content">
       <div class="modal-header bg-novellus-navy text-white">
         <h5 class="modal-title" id="balanceLabel">Balance Over Time</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <canvas id="balanceOverTimeChart" class="w-100" style="height:80vh;"></canvas>
+        <canvas id="balanceOverTimeChart" class="w-100" style="height:70vh;"></canvas>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -1130,8 +1130,8 @@
 </div>
 
 <!-- Calculation Breakdown Modal -->
-<div class="modal fade" id="calculationBreakdownModal" tabindex="-1" aria-labelledby="calculationBreakdownLabel" aria-hidden="true">
-    <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
+<div class="modal fade modal-report" id="calculationBreakdownModal" tabindex="-1" aria-labelledby="calculationBreakdownLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="calculationBreakdownLabel">Calculation Details</h5>
