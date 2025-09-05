@@ -2888,10 +2888,17 @@ class LoanCalculator {
             { label: 'Site Visit Fee (£)', value: site },
             { label: 'Title Insurance %', value: titlePctText },
             { label: 'Interest Rate (% p.a.)', value: rateText },
-            { label: loanTermDays ? 'Loan Term (days)' : 'Loan Term (months)', value: loanTermDays || loanTerm },
-            { label: 'Days in Year', value: daysPerYear }
+            { label: loanTermDays ? 'Loan Term (days)' : 'Loan Term (months)', value: loanTermDays || loanTerm }
         ];
         let mandatory = baseMandatory;
+
+        // Only show "Days in Year" when the 360 day count option is selected.
+        if (use360) {
+            mandatory = [
+                ...mandatory,
+                { label: 'Days in Year', value: daysPerYear }
+            ];
+        }
 
         const scenario = (() => {
             if (['none', 'retained', 'capital_payment_only'].includes(repayment)) {
