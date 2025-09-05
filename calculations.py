@@ -4265,6 +4265,7 @@ class LoanCalculator:
             start_date = start_date_str
 
         loan_term_days = params.get('loan_term_days')
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
 
         # Generate payment dates
         payment_dates = self._generate_payment_dates(
@@ -4289,7 +4290,15 @@ class LoanCalculator:
                 if period == 1:
                     # First period: show all retained amounts
                     retained_amount = arrangement_fee + legal_fees + total_interest
-                    interest_calc = f"{currency_symbol}{gross_amount:,.2f} × {annual_rate}% × {loan_term}/12 months"
+                    if loan_term_days:
+                        interest_calc = (
+                            f"{currency_symbol}{gross_amount:,.2f} × {annual_rate}% "
+                            f"× {loan_term_days}/{days_per_year} days"
+                        )
+                    else:
+                        interest_calc = (
+                            f"{currency_symbol}{gross_amount:,.2f} × {annual_rate}% × {loan_term}/12 months"
+                        )
                     
                     detailed_schedule.append({
                         'payment_date': payment_date.strftime('%d/%m/%Y'),

@@ -2761,6 +2761,9 @@ class LoanCalculator {
         const amountType = r.amount_input_type || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross';
         const repayment = r.repaymentOption || r.repayment_option || document.getElementById('repaymentOption')?.value || 'none';
         const loanTerm = r.loanTerm || r.loan_term || 0;
+        const loanTermDays = r.loanTermDays || r.loan_term_days || 0;
+        const startDate = r.startDate || r.start_date || '';
+        const endDate = r.endDate || r.end_date || '';
         const use360 = r.use_360_days || document.getElementById('use360Days')?.checked || false;
         const daysPerYear = use360 ? 360 : 365;
 
@@ -2774,6 +2777,7 @@ class LoanCalculator {
         const siteNum = parseFloat(r.siteVisitFee || 0);
         const titleNum = parseFloat(r.titleInsurance || 0);
         const interestNum = parseFloat(r.totalInterest || 0);
+        const annualRateNum = parseFloat(r.interestRate || r.interest_rate || 0);
         const interestDeducted = ['none', 'retained', 'capital_payment_only'].includes(repayment);
         const netNum = grossNum - arrangementNum - legalNum - siteNum - titleNum - (interestDeducted ? interestNum : 0);
 
@@ -2790,6 +2794,8 @@ class LoanCalculator {
             firstMonthNum = parseFloat(String(r.detailed_payment_schedule[0].interest_amount || 0).replace(/[,£€]/g, '')) || 0;
         }
         const firstMonth = formatMoney(firstMonthNum);
+        const dailyInterestNum = grossNum * (annualRateNum / 100) / daysPerYear;
+        const dailyInterest = formatMoney(dailyInterestNum);
 
         const propertyValueNum = parseFloat(r.propertyValue || 0);
         const propertyValue = formatMoney(propertyValueNum);
@@ -2811,6 +2817,7 @@ class LoanCalculator {
             { label: 'Loan Term (months)', value: loanTerm },
             { label: 'Days in Year', value: daysPerYear }
         ];
+        let mandatory = baseMandatory;
 
         const scenario = (() => {
             if (['none', 'retained', 'capital_payment_only'].includes(repayment)) {
@@ -2824,6 +2831,7 @@ class LoanCalculator {
         })();
 
         let formula = '';
+        let formulaValues = '';
         let calculated = [];
         let outputs = [];
 
@@ -2833,12 +2841,13 @@ class LoanCalculator {
                 calculated = [
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
                     { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
-                    { label: `Retained Interest = ${rateText} × ${loanTerm} ÷ 12 × Gross`, value: interest }
+                    { label: `Retained Interest = ${rateText} × ${loanTermDays || loanTerm} ÷ ${loanTermDays ? daysPerYear : 12} × Gross`, value: interest }
                 ];
                 outputs = [
                     { label: 'Net Loan (£)', value: net },
                     { label: 'Repayment Method', value: 'Retained Interest' }
                 ];
+                formulaValues = `${net} = ${gross} − ${arrangement} − ${legal} − ${site} − ${title} − ${interest}`;
                 break;
             case 'net_to_gross_retained':
                 formula = 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance % − (Interest Rate × Loan Term ÷ 12))';
@@ -2846,25 +2855,26 @@ class LoanCalculator {
                     { label: 'Gross Loan (£)', value: gross },
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
                     { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
-                    { label: `Retained Interest = ${rateText} × ${loanTerm} ÷ 12 × Gross`, value: interest }
+                    { label: `Retained Interest = ${rateText} × ${loanTermDays || loanTerm} ÷ ${loanTermDays ? daysPerYear : 12} × Gross`, value: interest }
                 ];
                 outputs = [
                     { label: 'Net Loan validation (£)', value: net },
                     { label: 'Repayment Method', value: 'Retained Interest' }
                 ];
+                formulaValues = `${gross} = (${net} + ${legal} + ${site}) / (1 − ${arrangementPctText} − ${titlePctText} − (${rateText} × ${loanTermDays || loanTerm}/${loanTermDays ? daysPerYear : 12}))`;
                 break;
             case 'gross_to_net_serviced':
                 formula = 'Net = Gross − Arrangement Fee − Legal Fees − Site Visit Fee − Title Insurance';
                 calculated = [
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
                     { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
-                    { label: 'Interest Serviced (£)', value: interest },
-                    { label: "First Month's Interest (£)", value: firstMonth }
+                    { label: 'Interest Serviced (£)', value: interest }
                 ];
                 outputs = [
                     { label: 'Net Loan (£)', value: net },
                     { label: 'Repayment Method', value: 'Serviced Interest' }
                 ];
+                formulaValues = `${net} = ${gross} − ${arrangement} − ${legal} − ${site} − ${title}`;
                 break;
             case 'net_to_gross_serviced':
                 formula = 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance %)';
@@ -2872,13 +2882,13 @@ class LoanCalculator {
                     { label: 'Gross Loan (£)', value: gross },
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
                     { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
-                    { label: "First Month's Interest (£)", value: firstMonth },
                     { label: 'Total Interest Serviced (£)', value: interest }
                 ];
                 outputs = [
                     { label: 'Net Loan validation (£)', value: net },
                     { label: 'Repayment Method', value: 'Serviced Interest' }
                 ];
+                formulaValues = `${gross} = (${net} + ${legal} + ${site}) / (1 − ${arrangementPctText} − ${titlePctText})`;
                 break;
             case 'gross_to_net_service_capital':
                 formula = 'Net = Gross − Arrangement Fee − Legal Fees − Site Visit Fee − Title Insurance';
@@ -2892,6 +2902,7 @@ class LoanCalculator {
                     { label: 'Net Loan (£)', value: net },
                     { label: 'Repayment Method', value: 'Serviced Interest + Capital Repayments' }
                 ];
+                formulaValues = `${net} = ${gross} − ${arrangement} − ${legal} − ${site} − ${title}`;
                 break;
             case 'net_to_gross_service_capital':
                 formula = 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance %)';
@@ -2899,7 +2910,6 @@ class LoanCalculator {
                     { label: 'Gross Loan (£)', value: gross },
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
                     { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
-                    { label: "First Month's Interest (£)", value: firstMonth },
                     { label: 'Total Interest Serviced (£)', value: interest },
                     { label: 'Capital Repayment Schedule', value: 'See schedule' }
                 ];
@@ -2907,12 +2917,13 @@ class LoanCalculator {
                     { label: 'Net Loan validation (£)', value: net },
                     { label: 'Repayment Method', value: 'Serviced Interest + Capital Repayments' }
                 ];
+                formulaValues = `${gross} = (${net} + ${legal} + ${site}) / (1 − ${arrangementPctText} − ${titlePctText})`;
                 break;
             default:
                 formula = amountType === 'gross'
                     ? 'Net = Gross − Arrangement Fee − Legal Fees − Site Visit Fee − Title Insurance − Retained Interest'
                     : 'Gross = Net + Arrangement Fee + Legal Fees + Site Visit Fee + Title Insurance + Retained Interest';
-                const mandatory = baseMandatory.slice();
+                mandatory = baseMandatory.slice();
                 mandatory.unshift({ label: 'Property Value (£)', value: propertyValue });
                 calculated = [
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
@@ -2928,15 +2939,36 @@ class LoanCalculator {
                     { label: 'LTV at exit (%)', value: `${endLTV}%` },
                     { label: 'Repayment Method', value: interestDeducted ? 'Retained Interest + Capital Repayments' : 'Serviced Interest + Capital Repayments' }
                 ];
-                return { formula, mandatory, calculated, outputs };
+                formulaValues = amountType === 'gross'
+                    ? `${net} = ${gross} − ${arrangement} − ${legal} − ${site} − ${title} − ${interest}`
+                    : `${gross} = ${net} + ${arrangement} + ${legal} + ${site} + ${title} + ${interest}`;
+                break;
         }
 
-        return { formula, mandatory: baseMandatory, calculated, outputs };
+        // Add global calculated cards
+        calculated.push({ label: `Daily Interest = ${rateText} ÷ ${daysPerYear} × Gross`, value: dailyInterest });
+        calculated.push({ label: 'First Month Interest = Daily Interest × Days in Month 1', value: firstMonth });
+
+        const addIfMissing = (label, value) => {
+            if (!outputs.some(o => o.label === label)) {
+                outputs.push({ label, value });
+            }
+        };
+
+        if (propertyValueNum > 0) {
+            addIfMissing('LTV at Start (%)', `${startLTV}%`);
+            addIfMissing('LTV at End (%)', `${endLTV}%`);
+        }
+        if (startDate) addIfMissing('Start Date', startDate);
+        if (endDate) addIfMissing('End Date', endDate);
+
+        return { formula, formulaValues, mandatory, calculated, outputs };
     }
 
     populateBreakdownModal() {
         const modalBody = document.getElementById('calculationBreakdownContent');
         const modalHeader = document.getElementById('calculationBreakdownHeader');
+        const modalTitle = document.getElementById('calculationBreakdownLabel');
         if (!modalBody) return;
 
         if (!this.currentResults) {
@@ -2947,6 +2979,16 @@ class LoanCalculator {
 
         const r = this.currentResults;
         if (modalHeader) modalHeader.setAttribute('data-currency', r.currency || 'GBP');
+
+        const amountType = r.amount_input_type || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross';
+        const loanType = r.loan_type || 'Loan';
+        const interestType = r.interest_type || 'simple';
+        const paymentTiming = (r.payment_timing || 'advance').replace('in_', '');
+        const paymentFrequency = r.payment_frequency || 'monthly';
+        const netGross = amountType === 'gross' ? 'Gross to Net' : 'Net to Gross';
+        if (modalTitle) {
+            modalTitle.textContent = `${loanType} | ${interestType} | ${netGross} | ${paymentTiming} | ${paymentFrequency}`;
+        }
 
         const data = this.getBreakdownData(r);
 
@@ -2964,6 +3006,7 @@ class LoanCalculator {
 
         modalBody.innerHTML =
             `<p><strong>Formula:</strong> ${data.formula}</p>` +
+            (data.formulaValues ? `<p><strong>Values:</strong> ${data.formulaValues}</p>` : '') +
             renderSection('Mandatory Inputs', data.mandatory) +
             renderSection('Calculated Components', data.calculated) +
             renderSection('Outputs', data.outputs);
