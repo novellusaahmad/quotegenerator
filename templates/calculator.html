@@ -1560,13 +1560,33 @@ function handleEditMode() {
             fetch(`/api/loan/${loanId}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data && data.success && data.input_data) {
+                    if (data && data.success) {
                         const paramsFromData = new URLSearchParams();
-                        for (const [key, value] of Object.entries(data.input_data)) {
-                            if (value !== null && value !== undefined) {
-                                paramsFromData.set(key, value);
+                        // Prefer original input_data but fall back to loan summary data
+                        const source = (data.input_data && Object.keys(data.input_data).length > 0)
+                            ? data.input_data
+                            : (data.loan || {});
+
+                        for (const [key, value] of Object.entries(source)) {
+                            if (value === null || value === undefined) continue;
+
+                            // Handle tranche arrays separately
+                            if (key === 'tranches' && Array.isArray(value)) {
+                                value.forEach((tranche, index) => {
+                                    paramsFromData.set(`tranche_amounts[${index}]`, tranche.amount ?? '');
+                                    paramsFromData.set(`tranche_dates[${index}]`, tranche.date ?? '');
+                                    paramsFromData.set(`tranche_rates[${index}]`, tranche.rate ?? '');
+                                    paramsFromData.set(`tranche_descriptions[${index}]`, tranche.description ?? '');
+                                });
+                                continue; // skip setting 'tranches' key directly
                             }
+
+                            const formatted = typeof value === 'boolean'
+                                ? value.toString().toLowerCase()
+                                : value;
+                            paramsFromData.set(key, formatted);
                         }
+
                         populateFormFromParams(paramsFromData);
                     }
                 })
