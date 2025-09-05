@@ -363,9 +363,12 @@
     color: var(--novellus-navy);
 }
 
-.btn-outline-secondary:hover {
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
     background-color: var(--novellus-navy);
     border-color: var(--novellus-navy);
+    color: white;
+    box-shadow: none;
 }
 
 /* Alert styling */
@@ -435,6 +438,7 @@ canvas {
     background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%);
     border-color: var(--novellus-gold);
     color: white;
+    box-shadow: none;
 }
 
 /* Prevent form layout shift when content changes */
@@ -506,10 +510,12 @@ button[type="submit"] {
     color: var(--novellus-navy);
 }
 
-.btn-outline-secondary:hover {
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
     background-color: var(--novellus-navy);
     border-color: var(--novellus-navy);
     color: white;
+    box-shadow: none;
 }
 
 .btn-outline-secondary.active {
