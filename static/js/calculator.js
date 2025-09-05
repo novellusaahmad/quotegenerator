@@ -2670,6 +2670,160 @@ class LoanCalculator {
         bootstrap.Modal.getInstance(modalEl).hide();
     }
 
+    /**
+     * Build summary cards for the calculation breakdown modal.
+     * The cards shown depend on loan type and repayment option.
+     * @param {Object} r - calculation result object
+     * @param {string} loanType
+     * @param {string} repaymentOption
+     * @returns {string} HTML string representing the card row
+     */
+    buildSummaryCards(r, loanType, repaymentOption) {
+        const currency = this.getCurrencySymbol(r.currency);
+        const formatMoney = (val) => {
+            const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[,£€]/g, '')) || 0;
+            return currency + num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        const arrangementNum = parseFloat(r.arrangementFee || 0);
+        const legalNum = parseFloat(r.legalCosts || r.legalFees || 0);
+        const siteNum = parseFloat(r.siteVisitFee || 0);
+        const titleNum = parseFloat(r.titleInsurance || 0);
+        const interestNum = parseFloat(r.totalInterest || 0);
+        const grossNum = parseFloat(r.grossAmount || r.gross_amount || 0);
+
+        const rateEl = document.getElementById('interestRatePercentageDisplay');
+        const rateText = rateEl ? rateEl.textContent.trim() : '';
+        const arrangementPctEl = document.getElementById('arrangementFeePercentageDisplay');
+        const arrangementPctText = arrangementPctEl ? arrangementPctEl.textContent.trim() : '';
+        const titlePctEl = document.getElementById('titleInsurancePercentageDisplay');
+        const titlePctText = titlePctEl ? titlePctEl.textContent.trim() : '';
+        const loanTerm = r.loanTerm || r.loan_term || 0;
+        const daysPerYear = r.use_360_days || document.getElementById('use360Days')?.checked ? 360 : 365;
+
+        const amountInputType = r.amount_input_type || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross';
+        const key = `${amountInputType}_${repaymentOption}`;
+
+        const firstSchedule = r.detailed_payment_schedule && r.detailed_payment_schedule[0] ? r.detailed_payment_schedule[0] : null;
+        const firstMonthInterestNum = firstSchedule ? parseFloat(String(firstSchedule.interest_amount || firstSchedule.interest || 0).replace(/[,£€]/g, '')) || 0 : 0;
+
+        const interestDeducted = ['none', 'retained', 'capital_payment_only'].includes(repaymentOption);
+        const netNum = grossNum - arrangementNum - legalNum - siteNum - titleNum - (interestDeducted ? interestNum : 0);
+
+        const descriptors = {
+            'gross_retained': {
+                formula: 'Net = Gross - Arrangement - Legal - Site Visit - Title - Retained Interest',
+                mandatory: [
+                    { label: 'Gross Loan (£)', value: formatMoney(grossNum) },
+                    { label: 'Arrangement Fee %', value: arrangementPctText },
+                    { label: 'Legal Fees (£)', value: formatMoney(legalNum) },
+                    { label: 'Site Visit Fee (£)', value: formatMoney(siteNum) },
+                    { label: 'Title Insurance %', value: titlePctText },
+                    { label: 'Interest Rate (% p.a.)', value: rateText },
+                    { label: 'Loan Term (months)', value: loanTerm },
+                    { label: 'Days in Year', value: daysPerYear }
+                ],
+                calculated: [
+                    { label: 'Arrangement Fee (£)', value: formatMoney(arrangementNum) },
+                    { label: 'Title Insurance (£)', value: formatMoney(titleNum) },
+                    { label: 'Retained Interest (£)', value: formatMoney(interestNum) }
+                ],
+                outputs: [
+                    { label: 'Net Loan (£)', value: formatMoney(netNum) },
+                    { label: 'Repayment Method', value: 'Retained Interest' }
+                ]
+            },
+            'net_retained': {
+                formula: 'Gross = Net + Arrangement + Legal + Site + Title + Retained Interest',
+                mandatory: [
+                    { label: 'Net Loan (£)', value: formatMoney(netNum) },
+                    { label: 'Arrangement Fee %', value: arrangementPctText },
+                    { label: 'Legal Fees (£)', value: formatMoney(legalNum) },
+                    { label: 'Site Visit Fee (£)', value: formatMoney(siteNum) },
+                    { label: 'Title Insurance %', value: titlePctText },
+                    { label: 'Interest Rate (% p.a.)', value: rateText },
+                    { label: 'Loan Term (months)', value: loanTerm },
+                    { label: 'Days in Year', value: daysPerYear }
+                ],
+                calculated: [
+                    { label: 'Gross Loan (£)', value: formatMoney(grossNum) },
+                    { label: 'Arrangement Fee (£)', value: formatMoney(arrangementNum) },
+                    { label: 'Title Insurance (£)', value: formatMoney(titleNum) },
+                    { label: 'Retained Interest (£)', value: formatMoney(interestNum) }
+                ],
+                outputs: [
+                    { label: 'Net Loan validation (£)', value: formatMoney(netNum) },
+                    { label: 'Repayment Method', value: 'Retained Interest' }
+                ]
+            },
+            'gross_service_only': {
+                formula: 'Net = Gross - Arrangement - Legal - Site - Title',
+                mandatory: [
+                    { label: 'Gross Loan (£)', value: formatMoney(grossNum) },
+                    { label: 'Arrangement Fee %', value: arrangementPctText },
+                    { label: 'Legal Fees (£)', value: formatMoney(legalNum) },
+                    { label: 'Site Visit Fee (£)', value: formatMoney(siteNum) },
+                    { label: 'Title Insurance %', value: titlePctText },
+                    { label: 'Interest Rate (% p.a.)', value: rateText },
+                    { label: 'Loan Term (months)', value: loanTerm },
+                    { label: 'Days in Year', value: daysPerYear }
+                ],
+                calculated: [
+                    { label: 'Arrangement Fee (£)', value: formatMoney(arrangementNum) },
+                    { label: 'Title Insurance (£)', value: formatMoney(titleNum) },
+                    { label: 'Interest Serviced (£)', value: formatMoney(interestNum) },
+                    { label: "First Month's Interest (£)", value: formatMoney(firstMonthInterestNum) }
+                ],
+                outputs: [
+                    { label: 'Net Loan (£)', value: formatMoney(netNum) },
+                    { label: 'Repayment Method', value: 'Serviced Interest' }
+                ]
+            },
+            'net_service_only': {
+                formula: 'Gross = Net + Arrangement + Legal + Site + Title',
+                mandatory: [
+                    { label: 'Net Loan (£)', value: formatMoney(netNum) },
+                    { label: 'Arrangement Fee %', value: arrangementPctText },
+                    { label: 'Legal Fees (£)', value: formatMoney(legalNum) },
+                    { label: 'Site Visit Fee (£)', value: formatMoney(siteNum) },
+                    { label: 'Title Insurance %', value: titlePctText },
+                    { label: 'Interest Rate (% p.a.)', value: rateText },
+                    { label: 'Loan Term (months)', value: loanTerm },
+                    { label: 'Days in Year', value: daysPerYear }
+                ],
+                calculated: [
+                    { label: 'Gross Loan (£)', value: formatMoney(grossNum) },
+                    { label: 'Arrangement Fee (£)', value: formatMoney(arrangementNum) },
+                    { label: 'Title Insurance (£)', value: formatMoney(titleNum) },
+                    { label: "First Month's Interest (£)", value: formatMoney(firstMonthInterestNum) },
+                    { label: 'Total Interest Serviced (£)', value: formatMoney(interestNum) }
+                ],
+                outputs: [
+                    { label: 'Net Loan validation (£)', value: formatMoney(netNum) },
+                    { label: 'Repayment Method', value: 'Serviced Interest' }
+                ]
+            }
+        };
+
+        const config = descriptors[key] || descriptors['gross_retained'];
+
+        const cards = [];
+        cards.push({ label: 'Formula', value: config.formula });
+        config.mandatory.forEach(f => cards.push(f));
+        config.calculated.forEach(f => cards.push(f));
+        config.outputs.forEach(f => cards.push(f));
+
+        const colClass = 'col-md-' + Math.floor(12 / cards.length) + ' col-sm-4 col-6';
+        const cardsHtml = cards.map(c => `
+                <div class="${colClass}">
+                    <div class="summary-card">
+                        <div class="summary-label">${c.label}</div>
+                        <div class="summary-value">${c.value}</div>
+                    </div>
+                </div>`).join('');
+        return `<div class="row g-3 mb-4">${cardsHtml}</div>`;
+    }
+
     populateBreakdownModal() {
         const modalBody = document.getElementById('calculationBreakdownContent');
         if (!modalBody) return;
@@ -2847,66 +3001,7 @@ class LoanCalculator {
         const netFormula = `Net = Gross – Arrangement Fee – Legal Fees – Site Visit Fee – Title Insurance${interestDeducted ? ' – Retained Interest' : ''}`;
         const retainedInterestFormula = interestDeducted ? `(Interest Rate × Loan Term) × Gross` : '';
 
-        // Prepare summary values
-        const startDateFmt = this.formatDate(r.start_date || r.startDate || '');
-        const endDateFmt = this.formatDate(r.end_date || r.endDate || '');
-        const withheldAmount = formatMoney(grossNum - netNum);
-        const retainedInterest = interestDeducted ? interest : formatMoney(0);
-        let partialRepaymentNum = 0;
-        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
-            partialRepaymentNum = r.detailed_payment_schedule
-                .slice(0, -1)
-                .reduce((sum, p) => {
-                    const val = parseFloat(String(p.principal_payment || p.principal || p.tranche_release || 0).replace(/[,£€]/g, '')) || 0;
-                    return sum + val;
-                }, 0);
-        }
-        const partialRepayment = formatMoney(partialRepaymentNum);
-        let redemptionValueNum = grossNum;
-        if (r.detailed_payment_schedule && r.detailed_payment_schedule.length > 0) {
-            const lastEntry = r.detailed_payment_schedule[r.detailed_payment_schedule.length - 1];
-            redemptionValueNum = parseFloat(String(lastEntry.closing_balance || 0).replace(/[,£€]/g, '')) || 0;
-        }
-        const redemptionValue = formatMoney(redemptionValueNum);
-        const summaryHtml = `
-            <div class="row g-3 mb-4">
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-primary">
-                        <div class="summary-label">Loan Period</div>
-                        <div class="summary-value">${startDateFmt} &ndash; ${endDateFmt}</div>
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-success">
-                        <div class="summary-label">Interest Accrued</div>
-                        <div class="summary-value">${interest}</div>
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-warning text-dark">
-                        <div class="summary-label">Withheld Amount</div>
-                        <div class="summary-value">${withheldAmount}</div>
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-purple">
-                        <div class="summary-label">Retained Interest</div>
-                        <div class="summary-value">${retainedInterest}</div>
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-info text-dark">
-                        <div class="summary-label">Partial Repayment</div>
-                        <div class="summary-value">${partialRepayment}</div>
-                    </div>
-                </div>
-                <div class="col-md-2 col-sm-4 col-6">
-                    <div class="summary-card bg-success">
-                        <div class="summary-label">Redemption Value</div>
-                        <div class="summary-value">${redemptionValue}</div>
-                    </div>
-                </div>
-            </div>`;
+        const summaryHtml = this.buildSummaryCards(r, loanType, repaymentOption);
 
         // Special breakdown for bridge retained interest when user inputs gross amount
         if (loanType === 'bridge' && interestDeducted && amountInputType === 'gross') {
