@@ -1663,7 +1663,7 @@ function populateFormFromParams(params) {
 function populateTrancheData(params) {
     // Check if this is a development loan
     const loanType = params.get('loan_type');
-    if (loanType !== 'development') {
+    if (!['development', 'development2'].includes(loanType)) {
         return;
     }
     
