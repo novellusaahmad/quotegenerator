@@ -1056,3 +1056,20 @@ h4, h5, h6 {
     max-width: calc(100% / 2);
     white-space: normal;
 }
+
+/* Configuration pages - ensure buttons use white background with black text */
+.powerbi-config-page .btn,
+.snowflake-config-page .btn {
+    background-color: #fff !important;
+    color: #000 !important;
+    border: 1px solid var(--novellus-border) !important;
+}
+.powerbi-config-page .btn:hover,
+.powerbi-config-page .btn:focus,
+.powerbi-config-page .btn:active,
+.snowflake-config-page .btn:hover,
+.snowflake-config-page .btn:focus,
+.snowflake-config-page .btn:active {
+    background-color: #fff !important;
+    color: #000 !important;
+}

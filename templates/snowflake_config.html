@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-4 snowflake-config-page">
     <div class="d-flex justify-content-end align-items-start mb-3">
         <button id="openModalBtn" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#snowflakeModal">
             <i class="fas fa-cog me-1"></i>Configure
@@ -19,7 +19,7 @@
                 <ul id="savedDetails" class="list-group list-group-flush mb-3"></ul>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-primary" onclick="editConfig()">Edit</button>
-                    <button type="button" class="btn btn-info text-white" onclick="testConnection()" title="Test Connection">
+                    <button type="button" class="btn btn-info" onclick="testConnection()" title="Test Connection">
                         <i class="fas fa-vial"></i>
                     </button>
                     <button type="button" class="btn btn-danger" onclick="deleteConfig()">Delete</button>
