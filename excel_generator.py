@@ -1,6 +1,5 @@
-"""
-Excel Generator for Novellus Loan Management System
-"""
+"""Excel Generator for Novellus Loan Management System"""
+
 import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
@@ -9,6 +8,20 @@ import os
 import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from pathlib import Path
+
+# Register Brother 1816 font if available so that Excel viewers without the
+# font installed can locate it. OpenPyXL does not embed fonts, but setting the
+# default font helps signal the intended typeface.
+BROTHER_FONT_NAME = "Brother 1816"
+FONT_FILE = Path(__file__).with_name("fonts").joinpath("Brother-1816-Regular.ttf")
+if FONT_FILE.exists():
+    try:
+        from openpyxl.styles import fonts as openpyxl_fonts
+
+        openpyxl_fonts.DEFAULT_FONT = BROTHER_FONT_NAME
+    except Exception:
+        pass
 
 # Novellus currency theme configuration
 CURRENCY_THEME = {
@@ -55,9 +68,9 @@ class NovellussExcelGenerator:
         header_fill = PatternFill(start_color=theme['color'], end_color=theme['color'], fill_type='solid')
 
         # Set up styles
-        title_font = Font(name='Arial', size=16, bold=True, color='FFFFFF')
-        header_font = Font(name='Arial', size=12, bold=True, color='FFFFFF')
-        normal_font = Font(name='Arial', size=10)
+        title_font = Font(name=BROTHER_FONT_NAME, size=16, bold=True, color='FFFFFF')
+        header_font = Font(name=BROTHER_FONT_NAME, size=12, bold=True, color='FFFFFF')
+        normal_font = Font(name=BROTHER_FONT_NAME, size=10)
 
         # Add title
         self.worksheet['A1'] = "Novellus Finance - Loan Quote"
@@ -138,7 +151,7 @@ class NovellussExcelGenerator:
         theme = CURRENCY_THEME.get(currency, CURRENCY_THEME["GBP"])
         currency_format = theme["format"]
         header_fill = PatternFill(start_color=theme["color"], end_color=theme["color"], fill_type="solid")
-        header_font = Font(name="Arial", size=12, bold=True, color="FFFFFF")
+        header_font = Font(name=BROTHER_FONT_NAME, size=12, bold=True, color="FFFFFF")
 
         annual_rate = self._to_float(params.get("annual_rate", 0)) / 100.0
         start_date_str = params.get("start_date")
@@ -293,9 +306,9 @@ class NovellussExcelGenerator:
         header_fill = PatternFill(start_color=theme['color'], end_color=theme['color'], fill_type='solid')
 
         # Set up styles
-        title_font = Font(name='Arial', size=16, bold=True, color='FFFFFF')
-        header_font = Font(name='Arial', size=12, bold=True, color='FFFFFF')
-        normal_font = Font(name='Arial', size=10)
+        title_font = Font(name=BROTHER_FONT_NAME, size=16, bold=True, color='FFFFFF')
+        header_font = Font(name=BROTHER_FONT_NAME, size=12, bold=True, color='FFFFFF')
+        normal_font = Font(name=BROTHER_FONT_NAME, size=10)
 
         # Add title
         self.worksheet['A1'] = "Novellus Finance - Payment Schedule"
