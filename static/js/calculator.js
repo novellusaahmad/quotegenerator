@@ -165,6 +165,18 @@ class LoanCalculator {
             this.calculateLoan();
         });
 
+        // Explicit calculate button click handler to ensure functionality
+        // even if the button loses its submit behavior when loan parameters
+        // toggle and the DOM is updated. This guarantees the calculate
+        // action always runs when the user clicks the button.
+        const calcBtn = this.form.querySelector('.calculate-button');
+        if (calcBtn) {
+            calcBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.calculateLoan();
+            });
+        }
+
         // Loan type and repayment option changes with error handling
         document.getElementById('loanType').addEventListener('change', () => {
             try {
