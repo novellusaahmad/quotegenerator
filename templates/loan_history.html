@@ -119,13 +119,13 @@
 
 <!-- Loan Details Modal -->
 <div class="modal fade" id="loanDetailsModal" tabindex="-1" aria-labelledby="loanDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog" style="max-width: 95%; margin: 1rem auto; min-height: 80vh;">
-        <div class="modal-content" style="height: 90vh; overflow-y: auto;">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content h-100" style="overflow-y: auto;">
             <div class="modal-header bg-novellus-navy text-white">
                 <h5 class="modal-title" id="loanDetailsModalLabel">Loan Details</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-4" id="loanDetailsContent" style="max-height: 75vh; overflow-y: auto;">
+            <div class="modal-body p-4" id="loanDetailsContent" style="overflow-y: auto;">
                 <div class="text-center py-4">
                     <div class="spinner-border text-novellus-gold" role="status">
                         <span class="visually-hidden">Loading...</span>
@@ -605,8 +605,8 @@ class LoanHistoryManager {
 
             <!-- Loan Summary Section (Same format as calculator) -->
             <div class="card mb-4">
-                <div class="card-header" style="background: linear-gradient(135deg, #B8860B 0%, #DAA520 100%); color: white; text-align: center; font-weight: bold; border: 1px solid #000;">
-                    Loan Summary
+                <div class="card-header d-flex justify-content-center align-items-center position-relative bg-primary text-white fw-bold border border-dark">
+                    <span>Loan Summary</span>
                 </div>
                 <div class="card-body p-0">
                     <table class="table mb-0" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
@@ -715,20 +715,26 @@ class LoanHistoryManager {
                         <table class="table table-sm table-striped mb-0" style="font-size: 0.8rem;">
                             <thead class="table-light sticky-top">
                                 <tr>
-                                    <th style="min-width: 100px;">Payment Date</th>
-                                    <th style="min-width: 120px;">Opening Balance</th>
-                                    <th style="min-width: 100px;">Interest</th>
-                                    <th style="min-width: 100px;">Principal</th>
-                                    <th style="min-width: 120px;">Total Payment</th>
-                                    <th style="min-width: 120px;">Closing Balance</th>
-                                    <th style="min-width: 120px;">Balance Change</th>
+                                    <th style="min-width: 80px;">Period</th>
+                                    <th style="min-width: 120px;">Payment Date</th>
+                                    <th style="min-width: 140px;">Opening Balance</th>
+                                    <th style="min-width: 140px;">Tranche Release</th>
+                                    <th style="min-width: 160px;">Interest Calculation</th>
+                                    <th style="min-width: 120px;">Interest</th>
+                                    <th style="min-width: 120px;">Principal</th>
+                                    <th style="min-width: 140px;">Total Payment</th>
+                                    <th style="min-width: 140px;">Closing Balance</th>
+                                    <th style="min-width: 140px;">Balance Change</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${loan.detailed_payment_schedule.map(payment => `
+                                ${loan.detailed_payment_schedule.map((payment, index) => `
                                     <tr>
+                                        <td>${payment.period_number || index + 1}</td>
                                         <td>${payment.payment_date}</td>
                                         <td>${payment.opening_balance}</td>
+                                        <td>${payment.tranche_release}</td>
+                                        <td>${payment.interest_calculation}</td>
                                         <td class="text-danger">${payment.interest_amount}</td>
                                         <td class="text-primary">${payment.principal_payment}</td>
                                         <td class="fw-bold text-success">${payment.total_payment}</td>
