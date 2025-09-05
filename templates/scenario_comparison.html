@@ -1790,16 +1790,8 @@
                     endDateEl.value = end.toISOString().split('T')[0];
                 }
             } else {
-                const endDate = endDateEl.value;
-                if (startDate && endDate) {
-                    const start = new Date(startDate);
-                    const end = new Date(endDate);
-                    let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-                    if (end.getDate() < start.getDate()) {
-                        monthsDiff -= 1;
-                    }
-                    loanTermEl.value = Math.max(1, monthsDiff);
-                }
+                // In end date mode, avoid deriving a loan term from the end date
+                // to prevent incorrect month mappings during editing.
             }
         }
     </script>

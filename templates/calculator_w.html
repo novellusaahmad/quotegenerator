@@ -1070,17 +1070,8 @@ function recalculateLoanTerm() {
             window.loanCalculator.update360DayVisibility();
         }
 
-        let monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 +
-                         (end.getMonth() - start.getMonth());
-        if (end.getDate() < start.getDate()) {
-            monthsDiff -= 1;
-        }
-        const loanTerm = Math.max(1, monthsDiff);
-
-        document.getElementById('loanTerm').value = loanTerm;
-        console.log(`Set loan term to ${loanTerm} months based on ${daysDiff} days`);
-
-        // Trigger calculation update if calculator instance exists and form has data
+        // Avoid mapping the manual end date back to the loan term months
+        // to prevent incorrect values during editing
         triggerCalculationUpdate();
     }
 }
