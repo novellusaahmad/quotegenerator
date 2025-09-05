@@ -47,7 +47,10 @@ from scenario_comparison import ScenarioComparison, ScenarioTemplates, create_sc
 import threading
 import asyncio
 from datetime import datetime
-import json
+from uuid import uuid4
+
+# In-memory store for scenario comparisons to keep session data small
+SCENARIO_COMPARISON_STORE = {}
 
 # Initialize Power BI scheduler if available
 if POWERBI_AVAILABLE:
@@ -3456,12 +3459,15 @@ def create_scenario_comparison():
         
         # Calculate all scenarios
         comparison.calculate_all_scenarios()
-        
-        # Store in session for future access
-        session['scenario_comparison'] = {
+
+        # Store comparison server-side and keep only ID in session to avoid large cookies
+        comparison_id = str(uuid4())
+        SCENARIO_COMPARISON_STORE[comparison_id] = {
             'scenarios': comparison.scenarios,
             'created_at': datetime.now().isoformat()
         }
+        session['scenario_comparison_id'] = comparison_id
+        session.modified = True
         
         return jsonify({
             'success': True,
@@ -3524,7 +3530,8 @@ def get_scenario_templates(template_type):
 def export_scenario_comparison():
     """Export scenario comparison data"""
     try:
-        comparison_data = session.get('scenario_comparison')
+        comparison_id = session.get('scenario_comparison_id')
+        comparison_data = SCENARIO_COMPARISON_STORE.get(comparison_id) if comparison_id else None
         if not comparison_data:
             return jsonify({
                 'success': False,
