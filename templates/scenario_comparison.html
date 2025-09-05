@@ -102,11 +102,46 @@
                                             </select>
                                         </div>
                                         <div class="col-md-6 mb-3">
-                                            <label class="form-label" for="grossAmountFixed">Gross Amount</label>
+                                            <label class="form-label">Amount Input</label>
+                                            <div class="btn-group w-100" role="group">
+                                                <input checked="" class="btn-check" id="grossAmount" name="amount_input_type" type="radio" value="gross"/>
+                                                <label class="btn btn-outline-primary" for="grossAmount">Gross Amount</label>
+                                                <input class="btn-check" id="netAmount" name="amount_input_type" type="radio" value="net"/>
+                                                <label class="btn btn-outline-primary" for="netAmount">Net Amount</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3" id="grossAmountSection">
+                                            <label class="form-label">Gross Amount</label>
+                                            <div class="btn-group w-100" role="group">
+                                                <input checked="" class="btn-check" id="grossFixed" name="gross_amount_type" type="radio" value="fixed"/>
+                                                <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossFixed">Fixed Amount</label>
+                                                <input class="btn-check" id="grossPercentage" name="gross_amount_type" type="radio" value="percentage"/>
+                                                <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossPercentage">% of Property Value</label>
+                                            </div>
+                                            <div class="input-group" id="grossFixedInput">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0" name="gross_amount" pattern="[0-9.,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                            </div>
+                                            <div class="input-group" id="grossPercentageInput" style="display: none;">
+                                                <input class="form-control" id="grossAmountPercentage" max="100" min="0" name="gross_amount_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3" id="netAmountSection" style="display: none;">
+                                            <label class="form-label" for="netAmountInput">Net Amount</label>
                                             <div class="input-group">
                                                 <span class="input-group-text currency-symbol">£</span>
-                                                <input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0" name="gross_amount" pattern="[0-9,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+                                                <input class="form-control" id="netAmountInput" inputmode="decimal" min="0" name="net_amount" pattern="[0-9.,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
                                             </div>
+                                            <small class="form-text text-muted">Total net amount required for the loan</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3" id="day1AdvanceSection" style="display: none;">
+                                            <label class="form-label" for="day1Advance">Day 1 Advance (Optional)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text currency-symbol">£</span>
+                                                <input class="form-control" id="day1Advance" inputmode="decimal" min="0" name="day1_advance" pattern="[0-9.,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="0"/>
+                                            </div>
+                                            <small class="form-text text-muted">Initial advance on first day (will be included in first tranche)</small>
                                         </div>
                                         <div class="col-md-6 mb-3">
                                             <label class="form-label">Interest Rate</label>
@@ -123,6 +158,15 @@
                                             <div class="input-group" id="annualRateInput">
                                                 <input class="form-control" id="annualRateValue" max="50" min="0" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="12"/>
                                                 <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
+                                            </div>
+                                            <small id="rateEquivalenceNote" class="form-text text-muted"></small>
+                                        </div>
+                                        <div class="col-md-6 mb-3" id="use360DaysSection">
+                                            <div class="form-check">
+                                                <input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
+                                                <label class="form-check-label" for="use360Days">
+                                                    Use 360-day calculation for daily rate
+                                                </label>
                                             </div>
                                         </div>
                                         <div class="col-md-6 mb-3">
@@ -542,12 +586,82 @@
 {{ super() }}
     <script>
         let currentComparison = null;
-        
+
+        function updateCurrencySymbols() {
+            const currency = document.getElementById('currency').value;
+            const symbol = currency === 'EUR' ? '€' : '£';
+            document.querySelectorAll('.currency-symbol').forEach(el => {
+                el.textContent = symbol;
+            });
+        }
+
+        function toggleAmountInputSections() {
+            const amountType = document.querySelector('input[name="amount_input_type"]:checked').value;
+            const netSection = document.getElementById('netAmountSection');
+            const grossSection = document.getElementById('grossAmountSection');
+            if (amountType === 'net') {
+                netSection.style.display = 'block';
+                grossSection.style.display = 'none';
+            } else {
+                netSection.style.display = 'none';
+                grossSection.style.display = 'block';
+                toggleGrossAmountInputs();
+            }
+        }
+
+        function toggleGrossAmountInputs() {
+            const grossType = document.querySelector('input[name="gross_amount_type"]:checked').value;
+            const fixedInput = document.getElementById('grossFixedInput');
+            const percentInput = document.getElementById('grossPercentageInput');
+            if (grossType === 'percentage') {
+                fixedInput.style.setProperty('display', 'none', 'important');
+                percentInput.style.setProperty('display', 'flex', 'important');
+                updateGrossAmountFromPercentage();
+            } else {
+                fixedInput.style.setProperty('display', 'flex', 'important');
+                percentInput.style.setProperty('display', 'none', 'important');
+            }
+        }
+
+        function updateGrossAmountFromPercentage() {
+            const propertyValue = parseFloat(document.getElementById('propertyValue').value || '0');
+            const percentage = parseFloat(document.getElementById('grossAmountPercentage').value || '0');
+            const amount = propertyValue * (percentage / 100);
+            document.getElementById('grossAmountFixed').value = amount ? amount.toFixed(2) : '';
+        }
+
+        function toggleRateInputs() {
+            const rateType = document.querySelector('input[name="rate_input_type"]:checked').value;
+            document.getElementById('monthlyRateInput').style.display = rateType === 'monthly' ? 'flex' : 'none';
+            document.getElementById('annualRateInput').style.display = rateType === 'annual' ? 'flex' : 'none';
+        }
+
         // Load parameters from URL on page load
         document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('input[name="amount_input_type"]').forEach(radio => {
+                radio.addEventListener('change', toggleAmountInputSections);
+            });
+            document.querySelectorAll('input[name="gross_amount_type"]').forEach(radio => {
+                radio.addEventListener('change', toggleGrossAmountInputs);
+            });
+            document.querySelectorAll('input[name="rate_input_type"]').forEach(radio => {
+                radio.addEventListener('change', toggleRateInputs);
+            });
+            document.getElementById('currency').addEventListener('change', updateCurrencySymbols);
+            document.getElementById('grossAmountPercentage').addEventListener('input', updateGrossAmountFromPercentage);
+            document.getElementById('propertyValue').addEventListener('input', () => {
+                if (document.getElementById('grossPercentage').checked) {
+                    updateGrossAmountFromPercentage();
+                }
+            });
+
             loadParametersFromURL();
+            toggleAmountInputSections();
+            toggleGrossAmountInputs();
+            toggleRateInputs();
+            updateCurrencySymbols();
         });
-        
+
         function loadParametersFromURL() {
             const urlParams = new URLSearchParams(window.location.search);
 
@@ -556,20 +670,28 @@
             }
             if (urlParams.get('amount_input_type') === 'net' && urlParams.get('net_amount')) {
                 document.getElementById('netAmountInput').value = urlParams.get('net_amount');
-                const netRadio = document.getElementById('netAmount');
-                if (netRadio) netRadio.checked = true;
-            } else if (urlParams.get('gross_amount')) {
-                document.getElementById('grossAmountFixed').value = urlParams.get('gross_amount');
+                document.getElementById('netAmount').checked = true;
+            } else {
+                document.getElementById('grossAmount').checked = true;
+                if (urlParams.get('gross_amount_type') === 'percentage' && urlParams.get('gross_amount_percentage')) {
+                    document.getElementById('grossPercentage').checked = true;
+                    document.getElementById('grossAmountPercentage').value = urlParams.get('gross_amount_percentage');
+                } else if (urlParams.get('gross_amount')) {
+                    document.getElementById('grossFixed').checked = true;
+                    document.getElementById('grossAmountFixed').value = urlParams.get('gross_amount');
+                }
             }
             if (urlParams.get('gross_amount_percentage')) {
-                const percentInput = document.getElementById('grossAmountPercentage');
-                if (percentInput) percentInput.value = urlParams.get('gross_amount_percentage');
+                document.getElementById('grossAmountPercentage').value = urlParams.get('gross_amount_percentage');
             }
             if (urlParams.get('annual_rate')) {
                 document.getElementById('annualRateValue').value = urlParams.get('annual_rate');
             }
             if (urlParams.get('monthly_rate')) {
                 document.getElementById('monthlyRateValue').value = urlParams.get('monthly_rate');
+            }
+            if (urlParams.get('rate_input_type') === 'monthly') {
+                document.getElementById('monthlyRate').checked = true;
             }
             if (urlParams.get('loan_term')) {
                 document.getElementById('loanTerm').value = urlParams.get('loan_term');
@@ -616,10 +738,6 @@
             if (urlParams.get('use_360_days')) {
                 document.getElementById('use360Days').checked = urlParams.get('use_360_days') === 'true';
             }
-            if (urlParams.get('rate_input_type') === 'monthly') {
-                const monthlyRadio = document.getElementById('monthlyRate');
-                if (monthlyRadio) monthlyRadio.checked = true;
-            }
         }
 
         function showLoading() {
@@ -648,28 +766,28 @@
             return {
                 loan_type: urlParams.get('loan_type') || document.getElementById('loanType').value,
                 gross_amount: parseFloat(urlParams.get('gross_amount') || document.getElementById('grossAmountFixed').value || '0'),
-                net_amount: parseFloat(urlParams.get('net_amount') || document.getElementById('netAmountInput')?.value || '0'),
-                gross_amount_type: urlParams.get('gross_amount_type') || document.querySelector('input[name="gross_amount_type"]:checked')?.value || 'fixed',
-                gross_amount_percentage: parseFloat(urlParams.get('gross_amount_percentage') || document.getElementById('grossAmountPercentage')?.value || '0'),
+                net_amount: parseFloat(urlParams.get('net_amount') || document.getElementById('netAmountInput').value || '0'),
+                gross_amount_type: urlParams.get('gross_amount_type') || document.querySelector('input[name="gross_amount_type"]:checked').value || 'fixed',
+                gross_amount_percentage: parseFloat(urlParams.get('gross_amount_percentage') || document.getElementById('grossAmountPercentage').value || '0'),
                 annual_rate: parseFloat(urlParams.get('annual_rate') || document.getElementById('annualRateValue').value),
-                monthly_rate: parseFloat(urlParams.get('monthly_rate') || document.getElementById('monthlyRateValue')?.value || '0'),
+                monthly_rate: parseFloat(urlParams.get('monthly_rate') || document.getElementById('monthlyRateValue').value || '0'),
                 loan_term: parseInt(urlParams.get('loan_term') || document.getElementById('loanTerm').value),
                 property_value: parseFloat(urlParams.get('property_value') || document.getElementById('propertyValue').value),
                 currency: urlParams.get('currency') || document.getElementById('currency').value,
-                repayment_option: urlParams.get('repayment_option') || document.getElementById('repaymentOption')?.value || 'none',
-                interest_type: urlParams.get('interest_type') || document.getElementById('interestType')?.value || 'simple',
-                arrangement_fee_rate: parseFloat(urlParams.get('arrangement_fee_rate') || document.getElementById('arrangementFeeRate')?.value || '2'),
-                legal_fees: parseFloat(urlParams.get('legal_fees') || document.getElementById('legalFees')?.value || '0'),
-                site_visit_fee: parseFloat(urlParams.get('site_visit_fee') || document.getElementById('siteVisitFee')?.value || '0'),
-                title_insurance_rate: parseFloat(urlParams.get('title_insurance_rate') || document.getElementById('titleInsuranceRate')?.value || '0'),
-                start_date: urlParams.get('start_date') || document.getElementById('startDate')?.value || '',
-                end_date: urlParams.get('end_date') || document.getElementById('endDate')?.value || '',
-                payment_timing: urlParams.get('payment_timing') || document.getElementById('paymentTiming')?.value || 'arrears',
-                payment_frequency: urlParams.get('payment_frequency') || document.getElementById('paymentFrequency')?.value || 'monthly',
-                amount_input_type: urlParams.get('amount_input_type') || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross',
-                rate_input_type: urlParams.get('rate_input_type') || document.querySelector('input[name="rate_input_type"]:checked')?.value || 'annual',
-                day1_advance: parseFloat(urlParams.get('day1_advance') || document.getElementById('day1Advance')?.value || '0'),
-                use_360_days: urlParams.get('use_360_days') === 'true' || document.getElementById('use360Days')?.checked || false
+                repayment_option: urlParams.get('repayment_option') || document.getElementById('repaymentOption').value || 'none',
+                interest_type: urlParams.get('interest_type') || document.getElementById('interestType').value || 'simple',
+                arrangement_fee_rate: parseFloat(urlParams.get('arrangement_fee_rate') || document.getElementById('arrangementFeeRate').value || '2'),
+                legal_fees: parseFloat(urlParams.get('legal_fees') || document.getElementById('legalFees').value || '0'),
+                site_visit_fee: parseFloat(urlParams.get('site_visit_fee') || document.getElementById('siteVisitFee').value || '0'),
+                title_insurance_rate: parseFloat(urlParams.get('title_insurance_rate') || document.getElementById('titleInsuranceRate').value || '0'),
+                start_date: urlParams.get('start_date') || document.getElementById('startDate').value || '',
+                end_date: urlParams.get('end_date') || document.getElementById('endDate').value || '',
+                payment_timing: urlParams.get('payment_timing') || document.getElementById('paymentTiming').value || 'arrears',
+                payment_frequency: urlParams.get('payment_frequency') || document.getElementById('paymentFrequency').value || 'monthly',
+                amount_input_type: urlParams.get('amount_input_type') || document.querySelector('input[name="amount_input_type"]:checked').value || 'gross',
+                rate_input_type: urlParams.get('rate_input_type') || document.querySelector('input[name="rate_input_type"]:checked').value || 'annual',
+                day1_advance: parseFloat(urlParams.get('day1_advance') || document.getElementById('day1Advance').value || '0'),
+                use_360_days: urlParams.get('use_360_days') === 'true' || document.getElementById('use360Days').checked
             };
         }
 
