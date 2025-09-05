@@ -2,6 +2,10 @@
 
 {% block title %}Loan Calculator - Novellus{% endblock %}
 
+{% block nav_heading %}
+<span class="navbar-text text-black fw-bold"><i class="fas fa-calculator me-2"></i>Loan Calculator</span>
+{% endblock %}
+
 {% block head %}
 {{ super() }}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}"/>
