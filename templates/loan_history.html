@@ -227,7 +227,8 @@ class LoanHistoryManager {
 
         this.filteredLoans = this.loans.filter(loan => {
             const matchesSearch = loan.loan_name.toLowerCase().includes(searchTerm);
-            const matchesType = !loanTypeFilter || loan.loan_type.toLowerCase() === loanTypeFilter;
+            const normalizedType = this.normalizeLoanType(loan.loan_type);
+            const matchesType = !loanTypeFilter || normalizedType === loanTypeFilter;
             const loanOrg = loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited';
             const matchesOrg = !orgFilter || loanOrg === orgFilter;
             return matchesSearch && matchesType && matchesOrg;
@@ -877,7 +878,10 @@ class LoanHistoryManager {
             case 'bridge':
                 return 'bg-warning bg-opacity-25 text-dark';
             case 'term':
-                return 'bg-info bg-opacity-25 text-dark';
+            case 'term loan':
+            case 'term_loan':
+            case 'termloan':
+                return 'bg-light text-dark border border-info';
             case 'development':
             case 'development2':
                 return 'bg-success bg-opacity-25 text-dark';
@@ -888,10 +892,24 @@ class LoanHistoryManager {
 
     formatLoanType(type) {
         const lower = type.toLowerCase();
+        if (lower.startsWith('term')) {
+            return 'Term';
+        }
         if (lower === 'development2' || lower === 'development') {
             return 'Development';
         }
         return lower.charAt(0).toUpperCase() + lower.slice(1);
+    }
+
+    normalizeLoanType(type) {
+        const lower = type.toLowerCase();
+        if (lower.startsWith('term')) {
+            return 'term';
+        }
+        if (lower.startsWith('development')) {
+            return 'development2';
+        }
+        return lower;
     }
 
     formatRepaymentOption(option) {
