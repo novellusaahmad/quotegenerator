@@ -1558,32 +1558,51 @@ def inject_now():
 
 @app.context_processor
 def inject_nav_routes():
-    """Inject navigation routes for sidebar menu.
+    """Provide a fixed list of navigation routes for the sidebar.
 
-    Filters out non-page endpoints (e.g. API routes) and generates a
-    human-readable name for each route based on its URL rule.
+    The sidebar should present a curated set of links with associated
+    FontAwesome icons. Both text and icons are styled in the template to
+    appear black.
     """
 
-    nav_routes = []
-    for rule in app.url_map.iter_rules():
-        if (
-            "GET" in rule.methods
-            and len(rule.arguments) == 0
-            and not rule.rule.startswith('/static')
-            and not rule.rule.startswith('/api')
-        ):
-            try:
-                url = url_for(rule.endpoint)
-                name = (
-                    "Home"
-                    if rule.rule == "/"
-                    else rule.rule.strip("/").replace('-', ' ').title()
-                )
-                nav_routes.append({"rule": rule.rule, "url": url, "name": name})
-            except Exception:
-                continue
+    nav_routes = [
+        {
+            "url": url_for('landing_page'),
+            "name": "Home",
+            "icon": "fas fa-home",
+        },
+        {
+            "url": url_for('calculator_page'),
+            "name": "Calculator",
+            "icon": "fas fa-calculator",
+        },
+        {
+            "url": url_for('loan_history'),
+            "name": "Loan History",
+            "icon": "fas fa-history",
+        },
+        {
+            "url": url_for('scenario_comparison_page'),
+            "name": "Scenario",
+            "icon": "fas fa-chart-line",
+        },
+        {
+            "url": url_for('snowflake_config'),
+            "name": "Snowflake Config",
+            "icon": "fas fa-database",
+        },
+        {
+            "url": url_for('powerbi_config'),
+            "name": "Power BI Config",
+            "icon": "fas fa-chart-bar",
+        },
+        {
+            "url": url_for('user_manual'),
+            "name": "User Manual",
+            "icon": "fas fa-book",
+        },
+    ]
 
-    nav_routes.sort(key=lambda r: r["url"])
     return dict(nav_routes=nav_routes)
 
 @app.route('/download-professional-quote', methods=['POST'])
