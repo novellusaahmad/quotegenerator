@@ -160,31 +160,29 @@ def parse_payment_date_flexible(payment_date_str):
             return datetime.now().date()
 
 def ensure_loan_tables():
-    """Create loan-related tables if they do not exist and ensure columns."""
+    """Create loan-related tables and ensure they contain required columns."""
     inspector = sa.inspect(db.engine)
-    required_tables = ['loan_summary', 'payment_schedule']
-    missing = [t for t in required_tables if not inspector.has_table(t)]
-    if missing:
-        db.create_all()
-        inspector = sa.inspect(db.engine)
 
-    column_definitions = {
-        'loan_summary': {
-            'input_data': 'TEXT',
-            'summary_data': 'TEXT'
-        },
-        'payment_schedule': {
-            'schedule_data': 'TEXT',
-            'tranche_details': 'TEXT'
-        }
-    }
+    models_to_check = [LoanSummary, PaymentSchedule]
 
-    for table, cols in column_definitions.items():
-        existing = {col['name'] for col in inspector.get_columns(table)}
-        for name, col_type in cols.items():
-            if name not in existing:
+    # Create missing tables if necessary
+    for model in models_to_check:
+        if not inspector.has_table(model.__tablename__):
+            db.create_all()
+            inspector = sa.inspect(db.engine)
+
+    # Ensure all columns defined in the models exist in the database
+    for model in models_to_check:
+        table_name = model.__tablename__
+        existing = {col['name'] for col in inspector.get_columns(table_name)}
+        for column in model.__table__.columns:
+            if column.name not in existing:
+                column_type = column.type.compile(db.engine.dialect)
                 with db.engine.connect() as conn:
-                    conn.execute(sa.text(f'ALTER TABLE {table} ADD COLUMN {name} {col_type}'))
+                    conn.execute(
+                        sa.text(f'ALTER TABLE {table_name} ADD COLUMN {column.name} {column_type}')
+                    )
+        inspector = sa.inspect(db.engine)
 
 
 def is_table_structure_valid(model):
