@@ -369,7 +369,7 @@ def api_calculate():
         logging.info(f"Routes - Interest rate extraction: rate_input_type={rate_input_type}, annual_rate={annual_rate}, monthly_rate={monthly_rate}")
         
         # Other parameters - using safe conversion
-        loan_term = safe_int(data.get('loan_term'), 12)
+        loan_term = max(1, safe_int(data.get('loan_term'), 12))
         start_date_str = data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
 
@@ -379,6 +379,9 @@ def api_calculate():
         if end_date_str and end_date_str.strip():
             try:
                 end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+                if end_date < start_date:
+                    end_date = start_date
+                    end_date_str = end_date.strftime('%Y-%m-%d')
                 rd = relativedelta(end_date + timedelta(days=1), start_date)
                 loan_term = max(1, rd.years * 12 + rd.months)
                 loan_term_days = (end_date + timedelta(days=1) - start_date).days
@@ -730,7 +733,7 @@ def monthly_breakdown():
         params = {
             'loan_type': 'development',
             'annual_rate': float(data.get('annual_rate', 12.0)),
-            'loan_term': int(data.get('loan_term', 18)),
+            'loan_term': max(1, int(data.get('loan_term', 18))),
             'start_date': data.get('start_date', '2025-07-16'),
             'day1_advance': float(data.get('day1_advance', 100000)),
             'net_amount': float(data.get('net_amount', 0))
@@ -763,7 +766,7 @@ def excel_style_breakdown():
         
         # Extract parameters
         annual_rate = float(data.get('annual_rate', 12.0))
-        loan_term = int(data.get('loan_term', 18))
+        loan_term = max(1, int(data.get('loan_term', 18)))
         start_date_str = data.get('start_date', '2025-07-16')
         day1_advance = float(data.get('day1_advance', 100000))
         net_amount = float(data.get('net_amount', 0))
@@ -1472,7 +1475,7 @@ def perform_fresh_calculation_for_download(form_data):
             annual_rate = monthly_rate * 12
         
         # Other parameters
-        loan_term = int(form_data.get('loan_term', 12))
+        loan_term = max(1, int(form_data.get('loan_term', 12)))
         start_date_str = form_data.get('start_date', datetime.now().strftime('%Y-%m-%d'))
         
         # Fees
@@ -1871,7 +1874,7 @@ def save_loan():
             loan_summary.net_amount = fresh_calculation.get('netAmount', 0)
             loan_summary.property_value = fresh_calculation.get('propertyValue', 0)
             loan_summary.interest_rate = data.get('interestRate', 0)
-            loan_summary.loan_term = data.get('loanTerm', 12)
+            loan_summary.loan_term = max(1, safe_int(data.get('loanTerm'), 12))
             loan_summary.loan_term_days = fresh_calculation.get('loanTermDays', 365)
             loan_summary.start_date = datetime.strptime(data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('startDate') else datetime.now().date()
             loan_summary.end_date = datetime.strptime(data.get('endDate', (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('endDate') else (datetime.now() + timedelta(days=365)).date()
