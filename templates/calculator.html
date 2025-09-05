@@ -893,9 +893,9 @@
 <div id="calculationResultsSection">
 <!-- Summary Table (Loan Summary Format) -->
 <div class="card">
-<div class="card-header d-flex align-items-center" data-currency="GBP" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white; font-weight: bold; border: 1px solid #000;">
+<div class="card-header d-flex align-items-center bg-primary text-white fw-bold border border-dark" data-currency="GBP">
                     <span class="flex-grow-1 text-center">Loan Summary</span>
-                    <button type="button" class="btn btn-sm btn-light ms-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal">View Details</button>
+                    <button type="button" class="btn btn-sm btn-primary ms-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal">View Details</button>
                     <div class="dropdown ms-2">
                         <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="openReportsBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>Reports</button>
                         <ul class="dropdown-menu" aria-labelledby="openReportsBtn" id="reportDropdownMenu"></ul>
@@ -1162,7 +1162,7 @@
 <div class="modal fade" id="calculationBreakdownModal" tabindex="-1" aria-labelledby="calculationBreakdownLabel" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
         <div class="modal-content">
-            <div class="modal-header" id="calculationBreakdownHeader" data-currency="GBP" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white;">
+            <div class="modal-header bg-primary text-white" id="calculationBreakdownHeader" data-currency="GBP">
                 <h5 class="modal-title" id="calculationBreakdownLabel"></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
