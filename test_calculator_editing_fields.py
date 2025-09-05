@@ -105,3 +105,53 @@ def test_editing_populates_tranches(live_server):
         assert second.find_element(By.CSS_SELECTOR, 'input[id*="trancheDescription"]').get_attribute("value") == "Phase 2"
     finally:
         driver.quit()
+
+
+def test_editing_shows_capital_repayment_section(live_server):
+    driver = _get_chrome_driver()
+    try:
+        params = {
+            "edit": "true",
+            "loanId": "3",
+            "loanName": "Cap Loan",
+            "loan_type": "bridge",
+            "repayment_option": "service_and_capital",
+            "capital_repayment": "750",
+            "payment_timing": "arrears",
+            "payment_frequency": "monthly",
+        }
+        url = f"{live_server}/calculator?{urlencode(params)}"
+        driver.get(url)
+
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.ID, "capitalRepaymentSection").is_displayed()
+        )
+        assert driver.find_element(By.ID, "capitalRepaymentSection").is_displayed()
+        assert not driver.find_element(By.ID, "flexiblePaymentSection").is_displayed()
+    finally:
+        driver.quit()
+
+
+def test_editing_shows_flexible_payment_section(live_server):
+    driver = _get_chrome_driver()
+    try:
+        params = {
+            "edit": "true",
+            "loanId": "4",
+            "loanName": "Flex Loan",
+            "loan_type": "bridge",
+            "repayment_option": "flexible_payment",
+            "flexible_payment": "1000",
+            "payment_timing": "arrears",
+            "payment_frequency": "monthly",
+        }
+        url = f"{live_server}/calculator?{urlencode(params)}"
+        driver.get(url)
+
+        WebDriverWait(driver, 10).until(
+            lambda d: d.find_element(By.ID, "flexiblePaymentSection").is_displayed()
+        )
+        assert driver.find_element(By.ID, "flexiblePaymentSection").is_displayed()
+        assert not driver.find_element(By.ID, "capitalRepaymentSection").is_displayed()
+    finally:
+        driver.quit()

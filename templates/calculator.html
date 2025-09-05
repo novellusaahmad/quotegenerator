@@ -1563,6 +1563,7 @@ function handleEditMode() {
                     window.loanCalculator.toggleGrossAmountInputs();
                     window.loanCalculator.toggleRateInputs();
                     window.loanCalculator.toggleTrancheMode();
+                    window.loanCalculator.updateAdditionalParams();
                 } catch (err) {
                     console.error('Error toggling sections in edit mode:', err);
                 }
