@@ -36,3 +36,11 @@ def test_build_edit_params_includes_development2_tranches():
     assert result['tranche_dates[1]'] == '2024-06-01'
     assert result['tranche_rates[1]'] == '11'
     assert result['tranche_descriptions[1]'] == 'Phase 2'
+
+
+def test_build_edit_params_rounds_interest_rate():
+    loan_obj = {
+        'interest_rate': 9.9996
+    }
+    result = _run_build_edit_params(loan_obj)
+    assert result['annual_rate'] == '10'
