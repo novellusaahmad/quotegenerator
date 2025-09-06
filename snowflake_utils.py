@@ -175,6 +175,7 @@ def sync_data_to_snowflake(table: str, rows):
     ensure_snowflake_table(conn, table, rows[0])
 
     def _prepare_value(val):
+
         """Prepare values for binding with the Snowflake connector.
 
         The Python connector cannot bind dictionaries directly. When a value is
@@ -194,11 +195,13 @@ def sync_data_to_snowflake(table: str, rows):
 
         return val
 
+
     columns = list(rows[0].keys())
+    placeholders = ["parse_json(%s)" for _ in columns]
     insert_stmt = "insert into {0} ({1}) values ({2})".format(
         table,
         ", ".join(columns),
-        ", ".join(["%s"] * len(columns)),
+        ", ".join(placeholders),
     )
 
     cs = conn.cursor()
