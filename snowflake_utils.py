@@ -104,11 +104,57 @@ def test_snowflake_connection() -> None:
     conn.close()
 
 
-def sync_data_to_snowflake(table: str, rows):
-    """Insert rows into an existing Snowflake table.
+def ensure_snowflake_table(conn, table: str, sample) -> None:
+    """Ensure ``table`` exists in Snowflake and has required columns.
 
-    The destination table must already exist in Snowflake; this function does
-    not attempt to create it.
+    Parameters
+    ----------
+    conn:
+        Active Snowflake connection.
+    table: str
+        Destination table name.
+    sample: dict or SQLAlchemy model
+        Object used to derive the table schema.
+
+    Notes
+    -----
+    Columns are created using the ``VARIANT`` type which accepts arbitrary
+    JSON-compatible values. Any schema changes are logged for auditing.
+    """
+
+    if not sample:
+        return
+
+    if hasattr(sample, "__table__"):
+        columns = [c.name for c in sample.__table__.columns]  # type: ignore[attr-defined]
+    else:
+        columns = list(sample.keys())
+
+    cs = conn.cursor()
+    try:
+        cs.execute(f"show tables like '{table}'")
+        exists = cs.fetchone() is not None
+        if not exists:
+            create_stmt = f"create table {table} ({', '.join(f'{c} variant' for c in columns)})"
+            cs.execute(create_stmt)
+            conn.commit()
+            current_app.logger.info("Created Snowflake table %s with columns %s", table, ", ".join(columns))
+            return
+
+        cs.execute(f"describe table {table}")
+        existing_cols = {row[0].upper() for row in cs.fetchall()}
+        missing = [c for c in columns if c.upper() not in existing_cols]
+        for col in missing:
+            cs.execute(f"alter table {table} add column {col} variant")
+            current_app.logger.info("Added column %s to Snowflake table %s", col, table)
+        if missing:
+            conn.commit()
+    finally:
+        cs.close()
+
+
+def sync_data_to_snowflake(table: str, rows):
+    """Insert rows into a Snowflake table, creating/altering the table if needed.
 
     Parameters
     ----------
@@ -125,6 +171,8 @@ def sync_data_to_snowflake(table: str, rows):
         rows = [rows]
     if not rows:
         return
+
+    ensure_snowflake_table(conn, table, rows[0])
 
     columns = list(rows[0].keys())
     insert_stmt = "insert into {0} ({1}) values ({2})".format(
