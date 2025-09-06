@@ -175,21 +175,26 @@ def sync_data_to_snowflake(table: str, rows):
     ensure_snowflake_table(conn, table, rows[0])
 
     def _prepare_value(val):
-        """Convert JSON strings to native objects for VARIANT columns."""
-        if isinstance(val, str):
-            trimmed = val.strip()
-            if trimmed.startswith("{") or trimmed.startswith("["):
-                try:
-                    return json.loads(trimmed)
-                except Exception:
-                    return val
-        return val
+        """JSON-encode ``val`` for safe ``VARIANT`` insertion.
+
+        Snowflake expects ``VARIANT`` values to be provided as JSON strings and
+        converted using ``parse_json``. Serialising *all* values (including
+        numbers and strings) keeps the behaviour uniform and allows
+        ``parse_json`` to correctly recreate the original types. Any value that
+        cannot be serialised is converted to its string representation.
+        """
+
+        try:
+            return json.dumps(val)
+        except Exception:
+            return json.dumps(str(val))
 
     columns = list(rows[0].keys())
+    placeholders = ["parse_json(%s)" for _ in columns]
     insert_stmt = "insert into {0} ({1}) values ({2})".format(
         table,
         ", ".join(columns),
-        ", ".join(["%s"] * len(columns)),
+        ", ".join(placeholders),
     )
 
     cs = conn.cursor()

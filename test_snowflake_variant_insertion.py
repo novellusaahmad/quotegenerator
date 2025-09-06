@@ -11,7 +11,7 @@ class DummyCursor:
         self.executed = executed
 
     def execute(self, stmt, params):  # pragma: no cover - executed in test
-        self.executed.append(params)
+        self.executed.append((stmt, params))
 
     def close(self):
         pass
@@ -39,9 +39,11 @@ def test_sync_data_to_snowflake_parses_json(monkeypatch):
     )
     monkeypatch.setattr(snowflake_utils, "ensure_snowflake_table", lambda *_, **__: None)
 
-    data = {"input_data": json.dumps({"a": 1}), "value": 2}
+    data = {"input_data": {"a": 1}, "value": 2}
     snowflake_utils.sync_data_to_snowflake("tbl", data)
 
-    assert executed[0][0] == {"a": 1}
-    assert executed[0][1] == 2
+    stmt, params = executed[0]
+    assert stmt == "insert into tbl (input_data, value) values (parse_json(%s), parse_json(%s))"
+    assert params[0] == json.dumps({"a": 1})
+    assert params[1] == json.dumps(2)
 
