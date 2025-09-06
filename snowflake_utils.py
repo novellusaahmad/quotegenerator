@@ -184,14 +184,27 @@ def sync_data_to_snowflake(table: str, rows):
         that JSON already stored as text remains valid.
         """
 
-        if isinstance(val, (dict, list)):
-            # Convert Python containers to JSON so the connector can bind them
-            # as strings. Snowflake will automatically cast these strings into
+        if isinstance(val, (dict, list, int, float, Decimal)) or val in (True, False, None):
+            # ``parse_json`` expects a JSON string. For Python containers and
+            # scalar values we JSON-encode them so the bound parameter is valid
+            # JSON. Snowflake will automatically cast these strings into
             # VARIANT values on insert.
             try:
                 return json.dumps(val)
             except Exception:
                 return str(val)
+
+        if isinstance(val, str):
+            # Plain strings such as loan names are not valid JSON literals on
+            # their own and would cause ``parse_json`` to fail with
+            # ``unknown keyword"``. If the string already contains JSON we keep
+            # it as-is; otherwise we JSON-encode it to ensure it parses
+            # correctly.
+            try:
+                json.loads(val)
+                return val  # already valid JSON
+            except Exception:
+                return json.dumps(val)
 
         return val
 

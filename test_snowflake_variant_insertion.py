@@ -49,3 +49,20 @@ def test_sync_data_to_snowflake_parses_json(monkeypatch):
     assert params[1] == json.dumps(2)
 
 
+def test_sync_data_to_snowflake_handles_plain_strings(monkeypatch):
+    executed = []
+
+    monkeypatch.setattr(
+        snowflake_utils, "_get_snowflake_connection", lambda: DummyConnection(executed)
+    )
+    monkeypatch.setattr(snowflake_utils, "ensure_snowflake_table", lambda *_, **__: None)
+
+    data = {"loan_name": "asadahmad"}
+    snowflake_utils.sync_data_to_snowflake("tbl", data)
+
+    stmt, params = executed[0]
+    assert stmt == "insert into tbl (loan_name) select parse_json(%s)"
+    # The plain string should be JSON encoded so ``parse_json`` can handle it
+    assert params[0] == json.dumps("asadahmad")
+
+
