@@ -174,6 +174,17 @@ def sync_data_to_snowflake(table: str, rows):
 
     ensure_snowflake_table(conn, table, rows[0])
 
+    def _prepare_value(val):
+        """Convert JSON strings to native objects for VARIANT columns."""
+        if isinstance(val, str):
+            trimmed = val.strip()
+            if trimmed.startswith("{") or trimmed.startswith("["):
+                try:
+                    return json.loads(trimmed)
+                except Exception:
+                    return val
+        return val
+
     columns = list(rows[0].keys())
     insert_stmt = "insert into {0} ({1}) values ({2})".format(
         table,
@@ -184,7 +195,8 @@ def sync_data_to_snowflake(table: str, rows):
     cs = conn.cursor()
     try:
         for row in rows:
-            cs.execute(insert_stmt, [row.get(col) for col in columns])
+            params = [_prepare_value(row.get(col)) for col in columns]
+            cs.execute(insert_stmt, params)
         conn.commit()
     finally:
         cs.close()
