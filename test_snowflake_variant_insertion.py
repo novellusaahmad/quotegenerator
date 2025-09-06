@@ -42,8 +42,10 @@ def test_sync_data_to_snowflake_parses_json(monkeypatch):
     data = {"input_data": {"a": 1}, "value": 2}
     snowflake_utils.sync_data_to_snowflake("tbl", data)
 
+
     stmt, params = executed[0]
     assert stmt == "insert into tbl (input_data, value) values (parse_json(%s), parse_json(%s))"
     assert params[0] == json.dumps({"a": 1})
     assert params[1] == json.dumps(2)
+
 

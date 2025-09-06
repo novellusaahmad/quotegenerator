@@ -175,19 +175,26 @@ def sync_data_to_snowflake(table: str, rows):
     ensure_snowflake_table(conn, table, rows[0])
 
     def _prepare_value(val):
-        """JSON-encode ``val`` for safe ``VARIANT`` insertion.
 
-        Snowflake expects ``VARIANT`` values to be provided as JSON strings and
-        converted using ``parse_json``. Serialising *all* values (including
-        numbers and strings) keeps the behaviour uniform and allows
-        ``parse_json`` to correctly recreate the original types. Any value that
-        cannot be serialised is converted to its string representation.
+        """Prepare values for binding with the Snowflake connector.
+
+        The Python connector cannot bind dictionaries directly. When a value is
+        already a ``dict`` or ``list`` (for ``VARIANT`` columns), serialise it
+        to a JSON string before binding. String values are returned unchanged so
+        that JSON already stored as text remains valid.
         """
 
-        try:
-            return json.dumps(val)
-        except Exception:
-            return json.dumps(str(val))
+        if isinstance(val, (dict, list)):
+            # Convert Python containers to JSON so the connector can bind them
+            # as strings. Snowflake will automatically cast these strings into
+            # VARIANT values on insert.
+            try:
+                return json.dumps(val)
+            except Exception:
+                return str(val)
+
+        return val
+
 
     columns = list(rows[0].keys())
     placeholders = ["parse_json(%s)" for _ in columns]
