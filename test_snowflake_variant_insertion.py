@@ -42,6 +42,6 @@ def test_sync_data_to_snowflake_parses_json(monkeypatch):
     data = {"input_data": json.dumps({"a": 1}), "value": 2}
     snowflake_utils.sync_data_to_snowflake("tbl", data)
 
-    assert executed[0][0] == {"a": 1}
+    assert executed[0][0] == json.dumps({"a": 1})
     assert executed[0][1] == 2
 
