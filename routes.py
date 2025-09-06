@@ -2264,6 +2264,21 @@ def get_loan_details(loan_id):
                 'interest_calculation': payment.interest_calculation or ''
             })
         
+        # Parse original input data for use in tranche schedules
+        try:
+            input_params = json.loads(loan.input_data) if getattr(loan, 'input_data', None) else {}
+        except Exception as e:
+            app.logger.warning(f"Could not parse loan input_data: {e}")
+            input_params = {}
+
+        # Generate tranche schedule for development loans
+        tranche_schedule_data = []
+        try:
+            if loan.loan_type in ("development", "development2"):
+                tranche_schedule_data = generate_tranche_schedule(input_params)
+        except Exception as e:
+            app.logger.warning(f"Could not generate tranche schedule: {e}")
+
         # Convert loan data to JSON with comprehensive edit parameters
         loan_data = {
             'id': loan.id,
@@ -2282,6 +2297,7 @@ def get_loan_details(loan_id):
             'loan_term': loan.loan_term,
             'start_date': loan.start_date.strftime('%Y-%m-%d') if loan.start_date else '',
             'end_date': loan.end_date.strftime('%Y-%m-%d') if loan.end_date else '',
+            'currency_symbol': '€' if loan.currency == 'EUR' else '£',
             
             # Repayment and fee parameters
             'repayment_option': loan.repayment_option,
@@ -2353,7 +2369,8 @@ def get_loan_details(loan_id):
             'userInputDay1Advance': float(loan.user_input_day_1_advance) if loan.user_input_day_1_advance else 0,
 
             # Payment schedule
-            'detailed_payment_schedule': schedule_data
+            'detailed_payment_schedule': schedule_data,
+            'detailed_tranche_schedule': tranche_schedule_data
         }
 
         # Derive reference monthly and quarterly interest payments
@@ -2386,11 +2403,7 @@ def get_loan_details(loan_id):
             app.logger.warning(f"Could not parse loan tranches_data: {e}")
             loan_data['tranches'] = []
         # Include original user input data for editing
-        try:
-            input_data = json.loads(loan.input_data) if getattr(loan, 'input_data', None) else {}
-        except Exception as e:
-            app.logger.warning(f"Could not parse loan input_data: {e}")
-            input_data = {}
+        input_data = input_params
 
         return jsonify({
             'success': True,
