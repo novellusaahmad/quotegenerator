@@ -175,14 +175,23 @@ def sync_data_to_snowflake(table: str, rows):
     ensure_snowflake_table(conn, table, rows[0])
 
     def _prepare_value(val):
-        """Convert JSON strings to native objects for VARIANT columns."""
-        if isinstance(val, str):
-            trimmed = val.strip()
-            if trimmed.startswith("{") or trimmed.startswith("["):
-                try:
-                    return json.loads(trimmed)
-                except Exception:
-                    return val
+        """Prepare values for binding with the Snowflake connector.
+
+        The Python connector cannot bind dictionaries directly. When a value is
+        already a ``dict`` or ``list`` (for ``VARIANT`` columns), serialise it
+        to a JSON string before binding. String values are returned unchanged so
+        that JSON already stored as text remains valid.
+        """
+
+        if isinstance(val, (dict, list)):
+            # Convert Python containers to JSON so the connector can bind them
+            # as strings. Snowflake will automatically cast these strings into
+            # VARIANT values on insert.
+            try:
+                return json.dumps(val)
+            except Exception:
+                return str(val)
+
         return val
 
     columns = list(rows[0].keys())
