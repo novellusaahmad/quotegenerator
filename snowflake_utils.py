@@ -198,7 +198,7 @@ def sync_data_to_snowflake(table: str, rows):
 
     columns = list(rows[0].keys())
     placeholders = ["parse_json(%s)" for _ in columns]
-    insert_stmt = "insert into {0} ({1}) values ({2})".format(
+    insert_stmt = "insert into {0} ({1}) select {2}".format(
         table,
         ", ".join(columns),
         ", ".join(placeholders),

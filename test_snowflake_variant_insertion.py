@@ -44,7 +44,7 @@ def test_sync_data_to_snowflake_parses_json(monkeypatch):
 
 
     stmt, params = executed[0]
-    assert stmt == "insert into tbl (input_data, value) values (parse_json(%s), parse_json(%s))"
+    assert stmt == "insert into tbl (input_data, value) select parse_json(%s), parse_json(%s)"
     assert params[0] == json.dumps({"a": 1})
     assert params[1] == json.dumps(2)
 
