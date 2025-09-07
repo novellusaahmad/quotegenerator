@@ -1904,14 +1904,15 @@ function updateSummaryDocxIcon() {
     const link = document.getElementById('downloadSummaryDocx');
     const configLink = document.getElementById('openReportFields');
     if (!link || !configLink) return;
+    // Always show the report fields icon, even if the loan hasn't been saved
+    configLink.style.display = 'inline';
+
     if (isLoanSaved && window.editMode && window.editMode.loanId) {
         link.style.display = 'inline';
         link.href = `/loan/${window.editMode.loanId}/summary-docx`;
-        configLink.style.display = 'inline';
     } else {
         link.style.display = 'none';
         link.removeAttribute('href');
-        configLink.style.display = 'none';
     }
 }
 
