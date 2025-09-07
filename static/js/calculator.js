@@ -226,6 +226,16 @@ class LoanCalculator {
             }
         });
 
+        // Rebuild tranche breakdown when currency changes
+        document.addEventListener('currencyChanged', (e) => {
+            const selectedCurrency = e.detail?.currency || 'GBP';
+            const selectedSymbol = this.getCurrencySymbol(selectedCurrency);
+            if (this.trancheBreakdownData && this.trancheBreakdownData.length > 0) {
+                this.displayTrancheBreakdown(this.trancheBreakdownData, selectedSymbol);
+                this.updateCurrencySymbols();
+            }
+        });
+
         // Sync radio toggle inputs with hidden fields
         document.querySelectorAll('input[name="loanTypeToggle"]').forEach(radio => {
             radio.addEventListener('change', () => {
@@ -2622,9 +2632,9 @@ class LoanCalculator {
                                 <tr>
                                     <td>${tranche.tranche_number}</td>
                                     <td>${this.formatDate(tranche.release_date)}</td>
-                                    <td>${currency}${tranche.amount.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td><span class="currency-symbol"></span>${tranche.amount.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                     <td>${tranche.description}</td>
-                                    <td>${currency}${tranche.cumulative_amount.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td><span class="currency-symbol"></span>${tranche.cumulative_amount.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                     <td>${tranche.interest_rate.toFixed(2)}%</td>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="window.loanCalculator.openEditTrancheModal(${index})"><i class="fas fa-edit"></i></button>
@@ -2640,6 +2650,7 @@ class LoanCalculator {
 
         trancheContainer.innerHTML = tableHtml;
         trancheContainer.style.display = 'block';
+        this.updateCurrencySymbols();
     }
 
     openEditTrancheModal(index, context = 'breakdown') {
