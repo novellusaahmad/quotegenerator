@@ -1906,16 +1906,13 @@ function updateSummaryDocxIcon() {
 function updateLoanReportLink() {
     const link = document.getElementById('openLoanReport');
     if (!link) return;
-    if (isLoanSaved) {
-        const loan = getLoanForReport();
-        if (loan) {
-            link.style.display = 'inline';
-            link.href = generatePowerBIUrl(loan, 'standard', 'main');
-            return;
-        }
+    if (isLoanSaved && window.editMode && window.editMode.loanId) {
+        link.style.display = 'inline';
+        link.href = `/loan/${window.editMode.loanId}/summary-docx`;
+    } else {
+        link.style.display = 'none';
+        link.removeAttribute('href');
     }
-    link.style.display = 'none';
-    link.removeAttribute('href');
 }
 
 function updateReportsButton(loan) {
