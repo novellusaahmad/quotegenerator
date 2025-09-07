@@ -15,7 +15,11 @@ from models import User, Application, Quote, Document, Payment, Communication, L
 import sqlalchemy as sa
 from calculations import LoanCalculator
 # Import PDF and Excel generators
-from pdf_quote_generator import generate_quote_pdf, generate_professional_quote_docx
+from pdf_quote_generator import (
+    generate_quote_pdf,
+    generate_professional_quote_docx,
+    generate_loan_summary_docx,
+)
 from excel_generator import NovellussExcelGenerator
 # BIRT integration removed for simplified on-premise deployment
 from utils import (
@@ -2088,6 +2092,18 @@ def save_loan():
         db.session.rollback()
         app.logger.error(f"Save loan error: {str(e)}")
         return jsonify({'error': f'Failed to save loan: {str(e)}'}), 500
+
+
+@app.route('/loan/<int:loan_id>/summary-docx')
+def download_loan_summary_docx(loan_id):
+    """Download saved loan summary as DOCX report."""
+    loan = LoanSummary.query.get_or_404(loan_id)
+    docx_content = generate_loan_summary_docx(loan)
+    response = make_response(docx_content)
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    response.headers['Content-Disposition'] = f'attachment; filename="{loan.loan_name}_Summary.docx"'
+    response.headers['Content-Length'] = str(len(docx_content))
+    return response
 
 
 @app.route('/loan-history')
