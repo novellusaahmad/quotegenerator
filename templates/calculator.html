@@ -923,6 +923,7 @@
 <th class="px-3" style="color: #000 !important; border-right: 1px solid #000;"></th>
 <th class="px-3 text-end" style="color: #000 !important; border-right: 1px solid #000;"></th>
 <th class="px-3 text-end" style="color: #000 !important;">
+    <a id="openLoanReport" href="#" style="display:none;" target="_blank" title="Open Loan Report" class="me-2"><i class="fas fa-chart-bar"></i></a>
     <a id="downloadSummaryDocx" href="#" style="display:none;" title="Download Loan Summary"><i class="bi bi-download"></i></a>
 </th>
 </tr>
@@ -1900,6 +1901,21 @@ function updateSummaryDocxIcon() {
     }
 }
 
+function updateLoanReportLink() {
+    const link = document.getElementById('openLoanReport');
+    if (!link) return;
+    if (isLoanSaved) {
+        const loan = getLoanForReport();
+        if (loan) {
+            link.style.display = 'inline';
+            link.href = generatePowerBIUrl(loan, 'standard', 'main');
+            return;
+        }
+    }
+    link.style.display = 'none';
+    link.removeAttribute('href');
+}
+
 function updateReportsButton(loan) {
     const btn = document.getElementById('openReportsBtn');
     const menu = document.getElementById('reportDropdownMenu');
@@ -1925,7 +1941,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateReportsButton(null);
     }
     updateSummaryDocxIcon();
-    
+    updateLoanReportLink();
+
     // Initialize save loan functionality
     const saveLoanBtn = document.getElementById('saveLoanBtn');
     
@@ -2042,6 +2059,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             isLoanSaved = true;
             window.editMode = { loanId: result.loan_id, loanName: loanName };
             updateSummaryDocxIcon();
+            updateLoanReportLink();
             // Show success notification
             if (window.notifications) {
                 window.notifications.show(result.message, 'success');
