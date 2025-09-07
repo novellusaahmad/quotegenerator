@@ -913,6 +913,10 @@
                             <i class="fas fa-chart-column"></i>
                         </a>
                         <button type="button" class="btn btn-sm btn-light me-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal">View Details</button>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="openReportsBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>Reports</button>
+                            <ul class="dropdown-menu" aria-labelledby="openReportsBtn" id="reportDropdownMenu"></ul>
+                        </div>
                     </div>
                 </div>
 <div class="card-body p-0">
@@ -922,7 +926,6 @@
 <th class="px-3" style="color: #000 !important; border-right: 1px solid #000;"></th>
 <th class="px-3 text-end" style="color: #000 !important; border-right: 1px solid #000;"></th>
 <th class="px-3 text-end" style="color: #000 !important;">
-    <a id="openReportFieldsModal" href="#" class="me-2" style="display:none;" title="Map Report Fields"><i class="fas fa-list"></i></a>
     <a id="downloadSummaryDocx" href="#" style="display:none;" title="Download Loan Summary"><i class="fas fa-file-word"></i></a>
 </th>
 </tr>
@@ -1866,6 +1869,28 @@ function generatePowerBIUrl(loan, format = 'standard', reportKey = 'main') {
     return finalUrl;
 }
 
+function generateReportDropdownItems(loan) {
+    const reports = getPowerBIReports();
+    const items = [];
+    Object.keys(reports).forEach(reportKey => {
+        const report = reports[reportKey];
+        items.push(`<li><a class="dropdown-item" href="${generatePowerBIUrl(loan,'standard',reportKey)}" target="_blank"><i class="${report.icon} me-2"></i>${report.name}</a></li>`);
+    });
+    return items.join('');
+}
+
+function getLoanForReport() {
+    if (!window.loanCalculator) return null;
+    const data = window.loanCalculator.collectFormData();
+    return {
+        loan_name: document.getElementById('loanName').value.trim(),
+        currency: data.currency || 'GBP',
+        gross_amount: data.gross_amount || data.net_amount || 0,
+        loan_type: data.loan_type || 'bridge',
+        property_value: data.property_value || 0
+    };
+}
+
 function updateSummaryDocxIcon() {
     const link = document.getElementById('downloadSummaryDocx');
     if (!link) return;
@@ -1890,14 +1915,17 @@ function updateLoanReportLink() {
     }
 }
 
-function updateReportFieldsIcon() {
-    const link = document.getElementById('openReportFieldsModal');
-    if (!link) return;
-    if (isLoanSaved && window.editMode && window.editMode.loanId) {
-        link.style.display = 'inline';
-    } else {
-        link.style.display = 'none';
+function updateReportsButton(loan) {
+    const btn = document.getElementById('openReportsBtn');
+    const menu = document.getElementById('reportDropdownMenu');
+    if (!btn || !menu) return;
+    if (!loan || !loan.loan_name || !isLoanSaved) {
+        btn.disabled = true;
+        menu.innerHTML = '';
+        return;
     }
+    btn.disabled = false;
+    menu.innerHTML = generateReportDropdownItems(loan);
 }
 
 // Initialize everything when page loads
@@ -1906,38 +1934,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Initialize edit mode
     initializeEditMode();
     isLoanSaved = !!(window.editMode && window.editMode.loanId);
+    if (isLoanSaved) {
+        updateReportsButton(getLoanForReport());
+    } else {
+        updateReportsButton(null);
+    }
     updateSummaryDocxIcon();
-    updateReportFieldsIcon();
     updateLoanReportLink();
 
-    const mappingLink = document.getElementById('openReportFieldsModal');
-    if (mappingLink) {
-        mappingLink.addEventListener('click', async function(e) {
+    const docxLink = document.getElementById('downloadSummaryDocx');
+    if (docxLink) {
+        docxLink.addEventListener('click', function(e) {
             e.preventDefault();
-            if (!window.editMode || !window.editMode.loanId) return;
-            const resp = await fetch(`/loan/${window.editMode.loanId}/report-fields`);
-            if (resp.ok) {
-                const data = await resp.json();
-                document.getElementById('docxPropertyAddress').value = data.property_address || '';
-                document.getElementById('docxDebenture').value = data.debenture || '';
-                document.getElementById('docxGuarantor').value = data.corporate_guarantor || '';
-                document.getElementById('docxBrokerName').value = data.broker_name || '';
-                document.getElementById('docxBrokerage').value = data.brokerage || '';
-                document.getElementById('docxMaxLtv').value = data.max_ltv || '';
-                document.getElementById('docxExitFee').value = data.exit_fee_percent || '';
-                document.getElementById('docxCommitmentFee').value = data.commitment_fee || '';
-            }
-
             const modal = new bootstrap.Modal(document.getElementById('loanSummaryFieldsModal'));
             modal.show();
         });
     }
 
-
-    const saveFieldsBtn = document.getElementById('saveReportFields');
-    if (saveFieldsBtn) {
-        saveFieldsBtn.addEventListener('click', async function() {
-
+    const generateDocxBtn = document.getElementById('generateSummaryDocx');
+    if (generateDocxBtn) {
+        generateDocxBtn.addEventListener('click', async function() {
             const data = {
                 property_address: document.getElementById('docxPropertyAddress').value,
                 debenture: document.getElementById('docxDebenture').value,
@@ -1949,7 +1965,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                 commitment_fee: document.getElementById('docxCommitmentFee').value
             };
 
-            await fetch(`/loan/${window.editMode.loanId}/report-fields`, {
+            const response = await fetch(`/loan/${window.editMode.loanId}/summary-docx`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${window.editMode.loanId}_Summary.docx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
 
             const modalEl = document.getElementById('loanSummaryFieldsModal');
             const modalInstance = bootstrap.Modal.getInstance(modalEl);
@@ -2073,7 +2103,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             isLoanSaved = true;
             window.editMode = { loanId: result.loan_id, loanName: loanName };
             updateSummaryDocxIcon();
-            updateReportFieldsIcon();
             updateLoanReportLink();
             // Show success notification
             if (window.notifications) {
@@ -2081,7 +2110,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 alert(`Success! ${result.message}`);
             }
-
+            updateReportsButton(getLoanForReport());
+            
         } catch (error) {
             console.error('Save loan error:', error);
             
@@ -2246,9 +2276,7 @@ function retryLoanSave() {
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-
-        <button type="button" class="btn btn-primary" id="saveReportFields">Save</button>
-
+        <button type="button" class="btn btn-primary" id="generateSummaryDocx">Generate</button>
       </div>
     </div>
   </div>

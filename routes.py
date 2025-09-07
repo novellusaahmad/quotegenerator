@@ -11,17 +11,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import tempfile
 
 from app import app, db
-from models import (
-    User,
-    Application,
-    Quote,
-    Document,
-    Payment,
-    Communication,
-    LoanSummary,
-    PaymentSchedule,
-    ReportFields,
-)
+from models import User, Application, Quote, Document, Payment, Communication, LoanSummary, PaymentSchedule
 import sqlalchemy as sa
 from calculations import LoanCalculator
 # Import PDF and Excel generators
@@ -2122,36 +2112,11 @@ def save_loan():
         return jsonify({'error': f'Failed to save loan: {str(e)}'}), 500
 
 
-
-@app.route('/loan/<int:loan_id>/report-fields', methods=['GET', 'POST'])
-def loan_report_fields(loan_id):
-    loan = LoanSummary.query.get_or_404(loan_id)
-    fields = ReportFields.query.filter_by(loan_summary_id=loan_id).first()
-    if request.method == 'GET':
-        return jsonify(fields.to_dict() if fields else {})
-    data = request.get_json() or {}
-    if not fields:
-        fields = ReportFields(loan_summary_id=loan_id)
-        db.session.add(fields)
-    fields.property_address = data.get('property_address')
-    fields.debenture = data.get('debenture')
-    fields.corporate_guarantor = data.get('corporate_guarantor')
-    fields.broker_name = data.get('broker_name')
-    fields.brokerage = data.get('brokerage')
-    fields.max_ltv = data.get('max_ltv')
-    fields.exit_fee_percent = data.get('exit_fee_percent')
-    fields.commitment_fee = data.get('commitment_fee')
-    db.session.commit()
-    return jsonify({'success': True})
-
-
-@app.route('/loan/<int:loan_id>/summary-docx')
+@app.route('/loan/<int:loan_id>/summary-docx', methods=['GET', 'POST'])
 def download_loan_summary_docx(loan_id):
     """Download saved loan summary as DOCX report."""
     loan = LoanSummary.query.get_or_404(loan_id)
-    fields = ReportFields.query.filter_by(loan_summary_id=loan_id).first()
-    extra_fields = fields.to_dict() if fields else {}
-
+    extra_fields = request.get_json() if request.method == 'POST' else {}
     docx_content = generate_loan_summary_docx(loan, extra_fields)
     if not docx_content:
         app.logger.error('Loan summary DOCX generation failed - missing python-docx dependency')
