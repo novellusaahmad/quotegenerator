@@ -214,11 +214,21 @@ def generate_professional_quote_docx(quote_data, application_data=None):
     return docx_content
 
 
-def generate_loan_summary_docx(loan):
-    """Generate DOCX loan summary report."""
+def generate_loan_summary_docx(loan, extra_fields=None):
+    """Generate DOCX loan summary report.
+
+    Parameters
+    ----------
+    loan: LoanSummary
+        Database loan summary instance containing core data.
+    extra_fields: dict, optional
+        Additional user supplied fields gathered from the modal form. These
+        are used to populate specific placeholders within the report.
+    """
+    extra_fields = extra_fields or {}
     try:
         from docx import Document
-        from docx.shared import Inches, Pt
+        from docx.shared import Inches, Pt, RGBColor
         from docx.enum.text import WD_ALIGN_PARAGRAPH
         from docx.oxml.shared import OxmlElement, qn
         from docx.opc.constants import RELATIONSHIP_TYPE as RT
@@ -281,9 +291,16 @@ def generate_loan_summary_docx(loan):
         "Further to our correspondence, please see below our high-level terms subject to (i) valuation, (ii) planning appraisal, (iii) QS appraisal, (iv) due diligence and (v) legals:"
     )
 
-    doc.add_heading("Loan Summary", level=1)
+    # Helper to add bullet paragraphs with optional bold segments
+    def _add_bullet(parts):
+        p = doc.add_paragraph(style='List Bullet')
+        for text, bold in parts:
+            run = p.add_run(text)
+            run.bold = bold
+            run.font.color.rgb = RGBColor(0, 0, 0)
 
-    table = doc.add_table(rows=8, cols=3)
+    # Table with header row whose color depends on currency
+    table = doc.add_table(rows=9, cols=3)
     table.style = 'Table Grid'
 
     currency_symbol = '€' if getattr(loan, 'currency', 'GBP') == 'EUR' else '£'
@@ -322,27 +339,68 @@ def generate_loan_summary_docx(loan):
         ),
     ]
 
-    for i, (c1, c2, c3) in enumerate(rows):
+    # Create heading row
+    heading_cell = table.cell(0, 0)
+    heading_cell.text = "Loan Summary"
+    heading_cell.merge(table.cell(0, 2))
+    heading_para = heading_cell.paragraphs[0]
+    heading_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    heading_run = heading_para.runs[0]
+    heading_run.font.bold = True
+    heading_run.font.color.rgb = RGBColor(0, 0, 0)
+
+    # Apply currency-specific color to header
+    header_color = "509664" if currency == 'EUR' else "AD965F"
+    tc_pr = heading_cell._tc.get_or_add_tcPr()
+    shd = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), header_color))
+    tc_pr.append(shd)
+
+    # Populate remaining rows
+    for i, (c1, c2, c3) in enumerate(rows, start=1):
         table.cell(i, 0).text = c1
         table.cell(i, 1).text = c2
         table.cell(i, 2).text = c3
+        for col in (1, 2):
+            for run in table.cell(i, col).paragraphs[0].runs:
+                run.font.bold = True
 
-    for row_idx, row in enumerate(table.rows):
-        shade = "F8F9FA" if row_idx % 2 == 0 else "FFFFFF"
+    # Shade alternating rows
+    for row_idx, row in enumerate(table.rows[1:], start=1):
+        shade = "F8F9FA" if row_idx % 2 == 1 else "FFFFFF"
         for cell in row.cells:
             tc_pr = cell._tc.get_or_add_tcPr()
             shd = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), shade))
             tc_pr.append(shd)
 
+    # Extract extra fields
+    property_address = extra_fields.get('property_address', '[•]')
+    debenture = extra_fields.get('debenture', '[•]')
+    corporate_guarantor = extra_fields.get('corporate_guarantor', '[•]')
+    broker_name = extra_fields.get('broker_name')
+    brokerage = extra_fields.get('brokerage')
+    broker_info = ''
+    if broker_name and brokerage:
+        broker_info = f" (of which 50% is paid to {broker_name}, {brokerage})"
+    max_ltv = extra_fields.get('max_ltv') or float(ltv_ratio or 0)
+    exit_fee_pct = float(extra_fields.get('exit_fee_percent') or 0)
+    exit_fee_amount = (exit_fee_pct / 100) * float(getattr(loan, 'gross_amount', 0) or 0)
+    commitment_fee = float(extra_fields.get('commitment_fee') or 0)
+    first_interest = float(
+        getattr(loan, 'monthly_payment', 0)
+        if getattr(loan, 'payment_frequency', 'monthly') == 'monthly'
+        else getattr(loan, 'quarterly_payment', 0)
+    )
+    interest_rate = float(getattr(loan, 'interest_rate', 0) or 0)
+
     sections = [
         (
             "Security",
             [
-                "First legal charge over the site located at [•] (the “Property”).",
+                [("First legal charge over the site located at ", False), (property_address, True), (" (the “Property”).", False)],
                 "[if applicable] First legal charge over the following assets (collectively, the \"Property\"):",
-                "Debenture over [•] (the “Borrower”).",
+                [("Debenture over ", False), (debenture, True), (" (the “Borrower”).", False)],
                 "A full personal guarantee from the directors and any shareholder or beneficial owner with equal to or greater than 20% ownership in the Borrower.",
-                "[if applicable]A full corporate guarantee from [•] (optional: together with a charge over its shares) (the “Corporate Guarantor”).",
+                [("[if applicable]A full corporate guarantee from ", False), (corporate_guarantor, True), (" (optional: together with a charge over its shares) (the “Corporate Guarantor”).", False)],
             ],
         ),
         (
@@ -350,26 +408,26 @@ def generate_loan_summary_docx(loan):
             [
                 "*Legal Costs / Fees (including Title Insurance and site visit, if applicable) are estimated at this stage. The final net advance figures will need to be adjusted accordingly to reflect final costs including any other (as yet unquoted) deductions.",
                 "[if applicable] [Broker fees to be paid directly by the Borrower or can be added to the Arrangement Fee (tbc).]",
-                f"The arrangement fee is {currency_symbol}{arr_fee_amount} i.e. {arr_fee_pct} of the gross loan of which 50% is paid to the broker.",
+                [("The arrangement fee is ", False), (f"{currency_symbol}{arr_fee_amount}", True), (" i.e. ", False), (arr_fee_pct, True), (" of the gross loan of which 50% is paid to the broker", False), (broker_info, True if broker_info else False), (".", False)],
                 f"The loan Term is {getattr(loan, 'loan_term', 0) or 0} months in total (the “Term”).",
                 f"Day 1 Net Advance of {currency_symbol}{float((getattr(loan, 'day_1_advance', None) or getattr(loan, 'net_advance', 0) or 0)):,.2f} to fund the purchase of/form part of the development tranche of the Property.",
-                f"Breach of value condition, the outstanding loan not to exceed {float(ltv_ratio or 0):.2f}% LTV (gross).",
-                "There is a [•]% exit fee in the sum of €[•] that is payable upon the redemption of this loan. This is in addition to the fee referred to at clause [facility fee clause number] below.",
+                [("Breach of value condition, loan not to exceed ", False), (f"{float(max_ltv):.2f}%", True), (" LTV (gross) throughout the Term.", False)],
+                [("There is a ", False), (f"{exit_fee_pct:.2f}%", True), (" exit fee in the sum of ", False), (f"{currency_symbol}{exit_fee_amount:,.2f}", True), (" that is payable upon the redemption of this loan. This is in addition to the fee referred to at clause [facility fee clause number] below.", False)],
                 "[If Term Loan] The following exit fees apply to the loan:",
                 "(a) a 3.00% exit fee (in the sum of €[•]) that applies if the loan redeems at any time in year 1 of the Term (subject always to the minimum interest period);",
                 "(b) 2.00% exit fee (in the sum of €[•]) that applies if the loan redeems at any time in year 2 of the Term; and",
                 "(c) a 1.00% exit fee (in the sum of €[•]) that applies if the loan redeems at any time thereafter.",
                 "For the avoidance of doubt, the exit fee is payable in addition to the fee referred to at clause [facility fee clause number] below.",
-                "A commitment fee of €[•] is payable upon signing Novellus' non-binding offer letter. This fee shall only be refunded to the Borrower if the loan completes within 6 weeks from the date of Novellus’ NBOL.",
+                [("A commitment fee of ", False), (f"{currency_symbol}{commitment_fee:,.2f}", True), (" is payable upon signing Novellus' non-binding offer letter. This fee shall only be refunded to the Borrower if the loan completes within 6 weeks from the date of Novellus’ NBOL.", False)],
                 "Facility Fee: 2.00% of the loan which will be payable by the Borrower if either (1) the loan is not repaid in full on or before the repayment date (as defined in the Facility Agreement ) or (2) an event of default pursuant to the Facility Agreement occurs (and has not been waived by Novellus). This is in addition to any exit fee.",
                 "The minimum interest period is [•] months.",
                 "[The retained] Interest is estimated, based on a drawing of €[•] per month during months [•]-[•] of the Term, [in addition to the Day 1 Net Advance].",
                 "No Early Repayment Charges (ERCs) save for a minimum notice period of 28 days to repay (or interest equivalent).",
                 "Interest to be serviced monthly in advance/arrears.",
                 "The loan will be subject to interest and capital repayments throughout the Term. The minimum monthly payment shall be €[•] (to be applied as interest first with the balance applied to the loan as capital reduction(s)) and is payable monthly in arrears.",
-                "Net advance includes the first month interest deduction of €[•].",
-                "The interest rate is fixed at [•]% p.a. for the Term.",
-                "An application fee of €495.00 is payable upon the acceptance of these terms.",
+                [("Net advance includes the first month interest deduction of ", False), (f"{currency_symbol}{first_interest:,.2f}", True), (".", False)],
+                [("The interest rate is fixed at ", False), (f"{interest_rate:.2f}%", True), (" p.a. for the Term.", False)],
+                [("An application fee of ", False), (f"{currency_symbol}495.00", True), (" is payable upon the acceptance of these terms.", False)],
             ],
         ),
         ("Conditions", []),
@@ -432,7 +490,7 @@ def generate_loan_summary_docx(loan):
         (
             "Financial Covenants",
             [
-                "Maximum LTV [•]%",
+                [("Maximum LTV ", False), (f"{float(max_ltv):.2f}%", True)],
                 "Minimum Debt Service Cover Ratio – minimum of [•] based on [•].",
                 "Covenant compliance certificate confirming the financial covenants for the Borrower to be provided within one month of each Interest Payment Date (as defined in the Facility Agreement) during the Term. Quarterly management profit & loss statements for the Borrower to be received with each covenant compliance certificate.",
                 "Draft year-end financial statements for the Borrower to be provided annually, within 3 months of the company’s year-end, with full audited statements to be received not less than 120 days following the company’s financial year end.",
@@ -455,16 +513,24 @@ def generate_loan_summary_docx(loan):
             [
                 "Subject to an evidenced clear path to exit.",
                 "This quote will expire within 7 days of this email.",
-                "[If the above is of interest to your client, please fill out the application form attached and arrange to pay the €495, bank details also attached. Should you have any questions, don't hesitate to contact us.]",
+                [(
+                    "[If the above is of interest to your client, please fill out the application form attached and arrange to pay the ",
+                    False,
+                ), (f"{currency_symbol}495", True), (", bank details also attached. Should you have any questions, don't hesitate to contact us.]", False)],
             ],
         ),
     ]
 
     for heading, bullets in sections:
-        doc.add_heading(heading, level=1)
+        hp = doc.add_heading(heading, level=1)
+        for run in hp.runs:
+            run.font.color.rgb = RGBColor(0, 0, 0)
         for bullet in bullets:
-            p = doc.add_paragraph(bullet)
-            p.style = 'List Bullet'
+            if isinstance(bullet, list):
+                _add_bullet(bullet)
+            else:
+                p = doc.add_paragraph(bullet)
+                p.style = 'List Bullet'
 
     doc.add_paragraph("Yours sincerely, [or faithfully if Dear Sir],")
     doc.add_paragraph("[•]")
@@ -508,6 +574,10 @@ def generate_loan_summary_docx(loan):
 
     for run in footer_para.runs:
         run.font.size = Pt(8)
+        if currency == 'EUR':
+            run.font.color.rgb = RGBColor(0x50, 0x96, 0x64)
+        else:
+            run.font.color.rgb = RGBColor(0, 0, 0)
 
 
     with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
