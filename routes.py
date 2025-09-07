@@ -2122,6 +2122,7 @@ def save_loan():
         return jsonify({'error': f'Failed to save loan: {str(e)}'}), 500
 
 
+
 @app.route('/loan/<int:loan_id>/report-fields', methods=['GET', 'POST'])
 def loan_report_fields(loan_id):
     loan = LoanSummary.query.get_or_404(loan_id)
@@ -2150,6 +2151,7 @@ def download_loan_summary_docx(loan_id):
     loan = LoanSummary.query.get_or_404(loan_id)
     fields = ReportFields.query.filter_by(loan_summary_id=loan_id).first()
     extra_fields = fields.to_dict() if fields else {}
+
     docx_content = generate_loan_summary_docx(loan, extra_fields)
     if not docx_content:
         app.logger.error('Loan summary DOCX generation failed - missing python-docx dependency')
