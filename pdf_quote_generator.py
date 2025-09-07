@@ -11,6 +11,24 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 import tempfile
 from datetime import datetime
 
+
+BROTHER_FONT = "Brother 1816 Light"
+BROTHER_STYLES = ["Normal", "Heading 1", "Heading 2", "Heading 3", "Title", "List Bullet"]
+
+
+def _apply_brother_font(doc):
+    """Apply the Brother font to common Word styles."""
+    from docx.oxml.ns import qn
+
+    for style_name in BROTHER_STYLES:
+        try:
+            style = doc.styles[style_name]
+        except KeyError:
+            continue
+        font = style.font
+        font.name = BROTHER_FONT
+        style._element.rPr.rFonts.set(qn("w:eastAsia"), BROTHER_FONT)
+
 def generate_quote_pdf(quote_data, application_data=None):
     """Generate PDF quote document"""
     # Create temporary file
@@ -88,6 +106,7 @@ def generate_professional_quote_docx(quote_data, application_data=None):
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     doc = Document()
+    _apply_brother_font(doc)
 
     # Determine currency-specific logo
     currency = quote_data.get('currency', 'GBP')
@@ -162,6 +181,7 @@ def generate_loan_summary_docx(loan):
     import tempfile
 
     doc = Document()
+    _apply_brother_font(doc)
 
     # Determine currency-specific logo
     currency = getattr(loan, 'currency', 'GBP')
