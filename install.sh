@@ -181,15 +181,15 @@ print_status "Installing Python dependencies..."
 if [ -f "deploy_requirements.txt" ]; then
     pip install -r deploy_requirements.txt
     # Ensure critical libraries not listed are installed
-    pip install "requests>=2.32.4" "scipy>=1.15.3" "webdriver-manager>=4.0.2"
+    pip install "requests>=2.32.4" "scipy>=1.15.3" "webdriver-manager>=4.0.2" "python-docx>=1.2.0"
 elif [ -f "requirements.txt" ]; then
     pip install -r requirements.txt
     # Ensure critical libraries not listed are installed
-    pip install "requests>=2.32.4" "scipy>=1.15.3" "webdriver-manager>=4.0.2"
+    pip install "requests>=2.32.4" "scipy>=1.15.3" "webdriver-manager>=4.0.2" "python-docx>=1.2.0"
 elif [ -f "Requirements.txt" ]; then
     pip install -r Requirements.txt
     # Ensure critical libraries not listed are installed
-    pip install "requests>=2.32.4" "scipy>=1.15.3" "webdriver-manager>=4.0.2"
+    pip install "requests>=2.32.4" "scipy>=1.15.3" "webdriver-manager>=4.0.2" "python-docx>=1.2.0"
 else
     # Install core dependencies with specific versions for compatibility
     pip install \
