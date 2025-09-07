@@ -918,6 +918,15 @@
                 </div>
 <div class="card-body p-0">
 <table class="table" style="border: 1px solid #000; border-collapse: collapse;">
+<thead>
+<tr style="border: 1px solid #000; background: #f8f9fa;">
+<th class="px-3" style="color: #000 !important; border-right: 1px solid #000;"></th>
+<th class="px-3 text-end" style="color: #000 !important; border-right: 1px solid #000;"></th>
+<th class="px-3 text-end" style="color: #000 !important;">
+    <a id="downloadSummaryDocx" href="#" style="display:none;" title="Download Loan Summary"><i class="bi bi-download"></i></a>
+</th>
+</tr>
+</thead>
 <tbody>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Valuation</td>
@@ -1879,6 +1888,18 @@ function getLoanForReport() {
     };
 }
 
+function updateSummaryDocxIcon() {
+    const link = document.getElementById('downloadSummaryDocx');
+    if (!link) return;
+    if (isLoanSaved && window.editMode && window.editMode.loanId) {
+        link.style.display = 'inline';
+        link.href = `/loan/${window.editMode.loanId}/summary-docx`;
+    } else {
+        link.style.display = 'none';
+        link.removeAttribute('href');
+    }
+}
+
 function updateReportsButton(loan) {
     const btn = document.getElementById('openReportsBtn');
     const menu = document.getElementById('reportDropdownMenu');
@@ -1903,6 +1924,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     } else {
         updateReportsButton(null);
     }
+    updateSummaryDocxIcon();
     
     // Initialize save loan functionality
     const saveLoanBtn = document.getElementById('saveLoanBtn');
@@ -2018,7 +2040,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Mark loan as saved and enable reports
             isLoanSaved = true;
-
+            window.editMode = { loanId: result.loan_id, loanName: loanName };
+            updateSummaryDocxIcon();
             // Show success notification
             if (window.notifications) {
                 window.notifications.show(result.message, 'success');
