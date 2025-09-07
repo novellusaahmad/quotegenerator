@@ -281,6 +281,11 @@ class LoanSummary(db.Model):
 
     # Relationship to payment schedule
     payment_schedule = db.relationship('PaymentSchedule', backref='loan', lazy=True, cascade='all, delete-orphan')
+
+    # Report fields for DOCX generation
+    report_fields = db.relationship(
+        'ReportFields', backref='loan', uselist=False, cascade='all, delete-orphan'
+    )
     
     def __repr__(self):
         return f'<LoanSummary {self.loan_name} v{self.version}>'
@@ -316,3 +321,43 @@ class PaymentSchedule(db.Model):
     
     def __repr__(self):
         return f'<PaymentSchedule Period {self.period_number} for Loan {self.loan_summary_id}>'
+
+
+class ReportFields(db.Model):
+    __tablename__ = 'report_fields'
+
+    id = db.Column(db.Integer, primary_key=True)
+    loan_id = db.Column(
+        db.Integer, db.ForeignKey('loan_summary.id'), nullable=False, unique=True
+    )
+    property_address = db.Column(db.Text)
+    debenture = db.Column(db.Text)
+    corporate_guarantor = db.Column(db.Text)
+    broker_name = db.Column(db.String(200))
+    brokerage = db.Column(db.String(200))
+    max_ltv = db.Column(db.Numeric(15, 4))
+    exit_fee_percent = db.Column(db.Numeric(5, 2))
+    commitment_fee = db.Column(db.Numeric(15, 2))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    def to_dict(self):
+        return {
+            'property_address': self.property_address,
+            'debenture': self.debenture,
+            'corporate_guarantor': self.corporate_guarantor,
+            'broker_name': self.broker_name,
+            'brokerage': self.brokerage,
+            'max_ltv': float(self.max_ltv) if self.max_ltv is not None else None,
+            'exit_fee_percent': float(self.exit_fee_percent)
+            if self.exit_fee_percent is not None
+            else None,
+            'commitment_fee': float(self.commitment_fee)
+            if self.commitment_fee is not None
+            else None,
+        }
+
+    def __repr__(self):
+        return f'<ReportFields for Loan {self.loan_id}>'

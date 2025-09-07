@@ -926,6 +926,7 @@
 <th class="px-3" style="color: #000 !important; border-right: 1px solid #000;"></th>
 <th class="px-3 text-end" style="color: #000 !important; border-right: 1px solid #000;"></th>
 <th class="px-3 text-end" style="color: #000 !important;">
+    <a id="openReportFields" href="#" style="display:none;" class="me-2" title="Edit Report Fields"><i class="fas fa-list"></i></a>
     <a id="downloadSummaryDocx" href="#" style="display:none;" title="Download Loan Summary"><i class="fas fa-file-word"></i></a>
 </th>
 </tr>
@@ -1893,13 +1894,16 @@ function getLoanForReport() {
 
 function updateSummaryDocxIcon() {
     const link = document.getElementById('downloadSummaryDocx');
-    if (!link) return;
+    const configLink = document.getElementById('openReportFields');
+    if (!link || !configLink) return;
     if (isLoanSaved && window.editMode && window.editMode.loanId) {
         link.style.display = 'inline';
         link.href = `/loan/${window.editMode.loanId}/summary-docx`;
+        configLink.style.display = 'inline';
     } else {
         link.style.display = 'none';
         link.removeAttribute('href');
+        configLink.style.display = 'none';
     }
 }
 
@@ -1942,18 +1946,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateSummaryDocxIcon();
     updateLoanReportLink();
 
-    const docxLink = document.getElementById('downloadSummaryDocx');
-    if (docxLink) {
-        docxLink.addEventListener('click', function(e) {
+    const reportFieldsLink = document.getElementById('openReportFields');
+    if (reportFieldsLink) {
+        reportFieldsLink.addEventListener('click', async function(e) {
             e.preventDefault();
+            if (!window.editMode || !window.editMode.loanId) return;
+            const resp = await fetch(`/loan/${window.editMode.loanId}/report-fields`);
+            const data = await resp.json();
+            document.getElementById('docxPropertyAddress').value = data.property_address || '';
+            document.getElementById('docxDebenture').value = data.debenture || '';
+            document.getElementById('docxGuarantor').value = data.corporate_guarantor || '';
+            document.getElementById('docxBrokerName').value = data.broker_name || '';
+            document.getElementById('docxBrokerage').value = data.brokerage || '';
+            document.getElementById('docxMaxLtv').value = data.max_ltv || '';
+            document.getElementById('docxExitFee').value = data.exit_fee_percent || '';
+            document.getElementById('docxCommitmentFee').value = data.commitment_fee || '';
+
             const modal = new bootstrap.Modal(document.getElementById('loanSummaryFieldsModal'));
             modal.show();
         });
     }
 
-    const generateDocxBtn = document.getElementById('generateSummaryDocx');
-    if (generateDocxBtn) {
-        generateDocxBtn.addEventListener('click', async function() {
+    const saveFieldsBtn = document.getElementById('saveReportFields');
+    if (saveFieldsBtn) {
+        saveFieldsBtn.addEventListener('click', async function() {
+            if (!window.editMode || !window.editMode.loanId) return;
             const data = {
                 property_address: document.getElementById('docxPropertyAddress').value,
                 debenture: document.getElementById('docxDebenture').value,
@@ -1964,23 +1981,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 exit_fee_percent: document.getElementById('docxExitFee').value,
                 commitment_fee: document.getElementById('docxCommitmentFee').value
             };
-
-            const response = await fetch(`/loan/${window.editMode.loanId}/summary-docx`, {
+            await fetch(`/loan/${window.editMode.loanId}/report-fields`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${window.editMode.loanId}_Summary.docx`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url);
-
             const modalEl = document.getElementById('loanSummaryFieldsModal');
             const modalInstance = bootstrap.Modal.getInstance(modalEl);
             if (modalInstance) modalInstance.hide();
@@ -2236,9 +2241,9 @@ function retryLoanSave() {
 <div class="modal fade" id="loanSummaryFieldsModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Loan Summary Fields</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-header bg-primary text-white" id="loanSummaryFieldsHeader" data-currency="GBP">
+        <h5 class="modal-title">Report Fields</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <div class="mb-3">
@@ -2276,7 +2281,7 @@ function retryLoanSave() {
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="generateSummaryDocx">Generate</button>
+        <button type="button" class="btn btn-primary" id="saveReportFields">Save</button>
       </div>
     </div>
   </div>
@@ -2534,6 +2539,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update table headers immediately
                 const tableHeaders = document.querySelectorAll('.table thead th, .card-header, .bg-primary');
                 tableHeaders.forEach(header => {
+                    header.setAttribute('data-currency', e.target.value);
                     header.style.setProperty('background-color', colors.primary, 'important');
                     header.style.setProperty('border', '2px solid #000000', 'important');
                     header.style.setProperty('color', 'white', 'important');

@@ -11,7 +11,17 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import tempfile
 
 from app import app, db
-from models import User, Application, Quote, Document, Payment, Communication, LoanSummary, PaymentSchedule
+from models import (
+    User,
+    Application,
+    Quote,
+    Document,
+    Payment,
+    Communication,
+    LoanSummary,
+    PaymentSchedule,
+    ReportFields,
+)
 import sqlalchemy as sa
 from calculations import LoanCalculator
 # Import PDF and Excel generators
@@ -168,7 +178,7 @@ def ensure_loan_tables():
     """Create loan-related tables and ensure they contain required columns."""
     inspector = sa.inspect(db.engine)
 
-    models_to_check = [LoanSummary, PaymentSchedule]
+    models_to_check = [LoanSummary, PaymentSchedule, ReportFields]
 
     # Create missing tables if necessary
     for model in models_to_check:
@@ -2112,11 +2122,44 @@ def save_loan():
         return jsonify({'error': f'Failed to save loan: {str(e)}'}), 500
 
 
+@app.route('/loan/<int:loan_id>/report-fields', methods=['GET', 'POST'])
+def manage_report_fields(loan_id):
+    """Retrieve or update extra report fields for a loan."""
+    loan = LoanSummary.query.get_or_404(loan_id)
+    rf = ReportFields.query.filter_by(loan_id=loan_id).first()
+
+    if request.method == 'GET':
+        return jsonify(rf.to_dict() if rf else {})
+
+    data = request.get_json() or {}
+    if rf is None:
+        rf = ReportFields(loan_id=loan_id)
+        db.session.add(rf)
+
+    rf.property_address = data.get('property_address')
+    rf.debenture = data.get('debenture')
+    rf.corporate_guarantor = data.get('corporate_guarantor')
+    rf.broker_name = data.get('broker_name')
+    rf.brokerage = data.get('brokerage')
+    rf.max_ltv = data.get('max_ltv')
+    rf.exit_fee_percent = data.get('exit_fee_percent')
+    rf.commitment_fee = data.get('commitment_fee')
+
+    db.session.commit()
+    return jsonify({'success': True})
+
+
 @app.route('/loan/<int:loan_id>/summary-docx', methods=['GET', 'POST'])
 def download_loan_summary_docx(loan_id):
     """Download saved loan summary as DOCX report."""
     loan = LoanSummary.query.get_or_404(loan_id)
-    extra_fields = request.get_json() if request.method == 'POST' else {}
+
+    if request.method == 'POST':
+        extra_fields = request.get_json() or {}
+    else:
+        rf = ReportFields.query.filter_by(loan_id=loan_id).first()
+        extra_fields = rf.to_dict() if rf else {}
+
     docx_content = generate_loan_summary_docx(loan, extra_fields)
     if not docx_content:
         app.logger.error('Loan summary DOCX generation failed - missing python-docx dependency')
