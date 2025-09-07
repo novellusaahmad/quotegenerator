@@ -228,6 +228,36 @@ def sync_data_to_snowflake(table: str, rows):
         conn.close()
 
 
+def delete_from_snowflake(table: str, column: str, value) -> None:
+    """Delete rows from a Snowflake table matching ``column`` = ``value``.
+
+    Parameters
+    ----------
+    table: str
+        Name of the table to delete from.
+    column: str
+        Column name to filter by.
+    value:
+        Value to match for deletion. It will be JSON-encoded to work with
+        ``VARIANT`` columns.
+    """
+
+    conn = _get_snowflake_connection()
+    if conn is None:
+        raise RuntimeError("Snowflake connection is not configured")
+
+    cs = conn.cursor()
+    try:
+        cs.execute(
+            f"delete from {table} where {column} = parse_json(%s)",
+            [json.dumps(value)],
+        )
+        conn.commit()
+    finally:
+        cs.close()
+        conn.close()
+
+
 def model_to_dict(model) -> dict:
     """Convert a SQLAlchemy model to a plain dict suitable for Snowflake."""
     result = {}
