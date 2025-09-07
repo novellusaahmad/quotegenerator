@@ -30,6 +30,7 @@ from snowflake_utils import (
     sync_data_to_snowflake,
     test_snowflake_connection,
     model_to_dict,
+    delete_from_snowflake,
 )
 
 # Import Power BI and Scenario Comparison modules
@@ -2061,6 +2062,9 @@ def save_loan():
             # load data. If the connection test fails, the sync will be
             # skipped and logged.
             test_snowflake_connection()
+            if existing_loan:
+                delete_from_snowflake('payment_schedule', 'loan_summary_id', loan_summary.id)
+                delete_from_snowflake('loan_summary', 'id', loan_summary.id)
             sync_data_to_snowflake('loan_summary', model_to_dict(loan_summary))
             if snowflake_payments:
                 sync_data_to_snowflake('payment_schedule', snowflake_payments)
@@ -2427,7 +2431,14 @@ def delete_loan(loan_id):
         # Delete the loan (cascade will handle payment schedule)
         db.session.delete(loan)
         db.session.commit()
-        
+
+        try:
+            test_snowflake_connection()
+            delete_from_snowflake('payment_schedule', 'loan_summary_id', loan_id)
+            delete_from_snowflake('loan_summary', 'id', loan_id)
+        except Exception as se:
+            app.logger.warning(f"Snowflake delete failed: {se}")
+
         return jsonify({
             'success': True,
             'message': f'Loan "{loan_name}" has been deleted successfully'
