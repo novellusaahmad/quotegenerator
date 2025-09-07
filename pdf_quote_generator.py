@@ -101,9 +101,15 @@ def generate_quote_pdf(quote_data, application_data=None):
 
 def generate_professional_quote_docx(quote_data, application_data=None):
     """Generate professional DOCX quote document"""
-    from docx import Document
-    from docx.shared import Inches
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    try:
+        from docx import Document
+        from docx.shared import Inches
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+    except ModuleNotFoundError:
+        # Required dependency is missing. Return ``None`` so callers can
+        # provide a helpful error message rather than raising an
+        # unhandled exception which results in a generic 500 response.
+        return None
 
     doc = Document()
     _apply_brother_font(doc)
@@ -175,9 +181,12 @@ def generate_professional_quote_docx(quote_data, application_data=None):
 
 def generate_loan_summary_docx(loan):
     """Generate DOCX loan summary report."""
-    from docx import Document
-    from docx.shared import Inches
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    try:
+        from docx import Document
+        from docx.shared import Inches
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+    except ModuleNotFoundError:
+        return None
     import tempfile
 
     doc = Document()

@@ -1,3 +1,5 @@
 # Minimal requirements for running tests in constrained environments
 selenium>=4.34.2
 chromedriver-autoinstaller>=0.6.2
+flask>=3.1.1
+python-docx>=1.2.0
