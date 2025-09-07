@@ -226,6 +226,10 @@ class LoanCalculator {
             }
         });
 
+        document.addEventListener('currencyChanged', () => {
+            this.populateBreakdownModal();
+        });
+
         // Sync radio toggle inputs with hidden fields
         document.querySelectorAll('input[name="loanTypeToggle"]').forEach(radio => {
             radio.addEventListener('change', () => {
@@ -2832,11 +2836,12 @@ class LoanCalculator {
         return `<div class="row g-3 mb-4">${cardsHtml}</div>`;
     }
 
-    getBreakdownData(r) {
-        const currency = this.getCurrencySymbol(r.currency);
+    getBreakdownData(r, currencyCode) {
         const formatMoney = (val) => {
             const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[,£€]/g, '')) || 0;
-            return currency + num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const symbol = this.getCurrencySymbol(currencyCode);
+            return `<span class="currency-symbol">${symbol}</span>` +
+                num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
 
         const amountType = r.amount_input_type || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross';
@@ -3069,7 +3074,7 @@ class LoanCalculator {
         }
 
         const r = this.currentResults;
-        const currencyCode = r.currency || 'GBP';
+        const currencyCode = document.getElementById('currency')?.value || r.currency || 'GBP';
         if (modalHeader) modalHeader.setAttribute('data-currency', currencyCode);
 
         const amountType = r.amount_input_type || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross';
@@ -3082,7 +3087,7 @@ class LoanCalculator {
             modalTitle.textContent = `${loanType} | ${interestType} | ${netGross} | ${paymentTiming} | ${paymentFrequency}`;
         }
 
-        const data = this.getBreakdownData(r);
+        const data = this.getBreakdownData(r, currencyCode);
 
         const renderSection = (title, items) => {
             if (!items || items.length === 0) return '';
@@ -3102,6 +3107,8 @@ class LoanCalculator {
             renderSection('Mandatory Inputs', data.mandatory) +
             renderSection('Calculated Components', data.calculated) +
             renderSection('Outputs', data.outputs);
+
+        this.updateCurrencySymbols();
     }
 
     // Load existing results from session storage or page data
