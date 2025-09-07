@@ -316,3 +316,43 @@ class PaymentSchedule(db.Model):
     
     def __repr__(self):
         return f'<PaymentSchedule Period {self.period_number} for Loan {self.loan_summary_id}>'
+
+
+class ReportFields(db.Model):
+    __tablename__ = 'report_fields'
+
+    id = db.Column(db.Integer, primary_key=True)
+    loan_summary_id = db.Column(
+        db.Integer, db.ForeignKey('loan_summary.id'), nullable=False, unique=True
+    )
+    property_address = db.Column(db.String(500))
+    debenture = db.Column(db.String(500))
+    corporate_guarantor = db.Column(db.String(500))
+    broker_name = db.Column(db.String(255))
+    brokerage = db.Column(db.String(255))
+    max_ltv = db.Column(db.Numeric(15, 2))
+    exit_fee_percent = db.Column(db.Numeric(15, 2))
+    commitment_fee = db.Column(db.Numeric(15, 2))
+
+    loan_summary = db.relationship(
+        'LoanSummary', backref=db.backref('report_fields', uselist=False)
+    )
+
+    def to_dict(self):
+        return {
+            'property_address': self.property_address or '',
+            'debenture': self.debenture or '',
+            'corporate_guarantor': self.corporate_guarantor or '',
+            'broker_name': self.broker_name or '',
+            'brokerage': self.brokerage or '',
+            'max_ltv': float(self.max_ltv) if self.max_ltv is not None else None,
+            'exit_fee_percent': float(self.exit_fee_percent)
+            if self.exit_fee_percent is not None
+            else None,
+            'commitment_fee': float(self.commitment_fee)
+            if self.commitment_fee is not None
+            else None,
+        }
+
+    def __repr__(self):
+        return f'<ReportFields for Loan {self.loan_summary_id}>'
