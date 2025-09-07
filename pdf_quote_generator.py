@@ -15,6 +15,7 @@ message instead of causing an internal server error.  DOCX generation remains
 unaffected and can function without the PDF dependency.
 """
 
+import logging
 import os
 import tempfile
 from datetime import datetime
@@ -226,10 +227,10 @@ def generate_loan_summary_docx(loan):
     # Determine currency-specific logo
     currency = getattr(loan, 'currency', 'GBP')
     logo_map = {
-        'GBP': 'novellus_logo_gbp.svg',
-        'EUR': 'novellus_logo_eur.svg',
+        'GBP': 'novellus_logo.png',
+        'EUR': 'novellus_logo.png',
     }
-    logo_filename = logo_map.get(currency, 'novellus_logo_gbp.svg')
+    logo_filename = logo_map.get(currency, 'novellus_logo.png')
     logo_path = os.path.join(os.path.dirname(__file__), 'static', logo_filename)
 
     # Header with logo
@@ -238,7 +239,12 @@ def generate_loan_summary_docx(loan):
     header_para = header.paragraphs[0]
     header_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     if os.path.exists(logo_path):
-        header_para.add_run().add_picture(logo_path, width=Inches(1.3))
+        try:
+            header_para.add_run().add_picture(logo_path, width=Inches(1.3))
+        except Exception as exc:  # pragma: no cover - best effort logging
+            logging.getLogger(__name__).warning(
+                "Unable to load header logo %s: %s", logo_path, exc
+            )
 
     doc.add_paragraph("Dear [•],")
     doc.add_paragraph(
@@ -432,7 +438,12 @@ def generate_loan_summary_docx(loan):
     footer_para.text = ''
     footer_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     if os.path.exists(logo_path):
-        footer_para.add_run().add_picture(logo_path, width=Inches(1))
+        try:
+            footer_para.add_run().add_picture(logo_path, width=Inches(1))
+        except Exception as exc:  # pragma: no cover - best effort logging
+            logging.getLogger(__name__).warning(
+                "Unable to load footer logo %s: %s", logo_path, exc
+            )
 
     with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
         doc.save(tmp_file.name)
