@@ -1699,10 +1699,17 @@ def download_professional_quote():
         
         # Generate professional DOCX using the fresh calculation results
         docx_content = generate_professional_quote_docx(fresh_calculation)
-        
+
         if not docx_content:
-            app.logger.error('Professional DOCX generation returned empty content')
-            return jsonify({'error': 'Professional DOCX generation failed - empty content'}), 500
+            app.logger.error('Professional DOCX generation failed - missing python-docx dependency')
+            return (
+                jsonify(
+                    {
+                        'error': 'Professional DOCX generation failed: python-docx dependency is not installed'
+                    }
+                ),
+                500,
+            )
 
         # Create response with comprehensive headers
         response = make_response(docx_content)
@@ -1723,8 +1730,8 @@ def download_professional_quote():
         return response
         
     except Exception as e:
-        app.logger.error(f"Professional PDF generation error: {str(e)}")
-        return jsonify({'error': 'Professional PDF generation failed'}), 500
+        app.logger.error(f"Professional DOCX generation error: {str(e)}")
+        return jsonify({'error': 'Professional DOCX generation failed'}), 500
 
 
 
@@ -2099,6 +2106,16 @@ def download_loan_summary_docx(loan_id):
     """Download saved loan summary as DOCX report."""
     loan = LoanSummary.query.get_or_404(loan_id)
     docx_content = generate_loan_summary_docx(loan)
+    if not docx_content:
+        app.logger.error('Loan summary DOCX generation failed - missing python-docx dependency')
+        return (
+            jsonify(
+                {
+                    'error': 'Loan summary DOCX generation failed: python-docx dependency is not installed'
+                }
+            ),
+            500,
+        )
     response = make_response(docx_content)
     response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     response.headers['Content-Disposition'] = f'attachment; filename="{loan.loan_name}_Summary.docx"'
@@ -2510,7 +2527,14 @@ def generate_saved_quote(loan_id):
         if quote_type == 'professional':
             docx_content = generate_professional_quote_docx(calculation_data)
             if not docx_content:
-                return jsonify({'error': 'Professional quote generation failed'}), 500
+                return (
+                    jsonify(
+                        {
+                            'error': 'Professional quote generation failed: python-docx dependency is not installed'
+                        }
+                    ),
+                    500,
+                )
             
             response = make_response(docx_content)
             response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
