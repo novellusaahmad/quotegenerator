@@ -135,7 +135,7 @@ def generate_professional_quote_docx(quote_data, application_data=None):
     """Generate professional DOCX quote document"""
     try:
         from docx import Document
-        from docx.shared import Inches
+        from docx.shared import Inches, Pt
         from docx.enum.text import WD_ALIGN_PARAGRAPH
     except ModuleNotFoundError:
         # Required dependency is missing. Return ``None`` so callers can
@@ -196,6 +196,9 @@ def generate_professional_quote_docx(quote_data, application_data=None):
     if os.path.exists(logo_path):
         footer_para.add_run().add_picture(logo_path, width=Inches(1))
 
+    for run in footer_para.runs:
+        run.font.size = Pt(8)
+
     # Save to temporary file
     with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
         doc.save(tmp_file.name)
@@ -215,10 +218,12 @@ def generate_loan_summary_docx(loan):
     """Generate DOCX loan summary report."""
     try:
         from docx import Document
-        from docx.shared import Inches
+        from docx.shared import Inches, Pt
         from docx.enum.text import WD_ALIGN_PARAGRAPH
         from docx.oxml.shared import OxmlElement, qn
         from docx.opc.constants import RELATIONSHIP_TYPE as RT
+        from docx.oxml import parse_xml
+        from docx.oxml.ns import nsdecls
     except ModuleNotFoundError:
         return None
     import tempfile
@@ -248,6 +253,9 @@ def generate_loan_summary_docx(loan):
         rStyle = OxmlElement("w:rStyle")
         rStyle.set(qn("w:val"), "Hyperlink")
         rPr.append(rStyle)
+        sz = OxmlElement("w:sz")
+        sz.set(qn("w:val"), "16")  # 8pt font size
+        rPr.append(sz)
         new_run.append(rPr)
         w_text = OxmlElement("w:t")
         w_text.text = text
@@ -280,6 +288,8 @@ def generate_loan_summary_docx(loan):
 
     currency_symbol = '€' if getattr(loan, 'currency', 'GBP') == 'EUR' else '£'
     arr_fee_pct = f"{float(getattr(loan, 'arrangement_fee_percentage', 0) or 0):.2f}%"
+    arr_fee_amount = f"{float(getattr(loan, 'arrangement_fee', 0) or 0):,.2f}"
+    ltv_ratio = getattr(loan, 'ltv_ratio', getattr(loan, 'start_ltv', 0))
 
     rows = [
         ("Valuation", currency_symbol, f"{float(getattr(loan, 'property_value', 0) or 0):,.2f}"),
@@ -317,6 +327,13 @@ def generate_loan_summary_docx(loan):
         table.cell(i, 1).text = c2
         table.cell(i, 2).text = c3
 
+    for row_idx, row in enumerate(table.rows):
+        shade = "F8F9FA" if row_idx % 2 == 0 else "FFFFFF"
+        for cell in row.cells:
+            tc_pr = cell._tc.get_or_add_tcPr()
+            shd = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), shade))
+            tc_pr.append(shd)
+
     sections = [
         (
             "Security",
@@ -333,10 +350,10 @@ def generate_loan_summary_docx(loan):
             [
                 "*Legal Costs / Fees (including Title Insurance and site visit, if applicable) are estimated at this stage. The final net advance figures will need to be adjusted accordingly to reflect final costs including any other (as yet unquoted) deductions.",
                 "[if applicable] [Broker fees to be paid directly by the Borrower or can be added to the Arrangement Fee (tbc).]",
-                "The arrangement fee is €[•] i.e. 2.00% of the gross loan of which 50% is paid to the broker.[(of which 50% is paid to [Broker Name, Brokerage])],",
+                f"The arrangement fee is {currency_symbol}{arr_fee_amount} i.e. {arr_fee_pct} of the gross loan of which 50% is paid to the broker.",
                 f"The loan Term is {getattr(loan, 'loan_term', 0) or 0} months in total (the “Term”).",
                 f"Day 1 Net Advance of {currency_symbol}{float((getattr(loan, 'day_1_advance', None) or getattr(loan, 'net_advance', 0) or 0)):,.2f} to fund the purchase of/form part of the development tranche of the Property.",
-                "Breach of value condition, loan not to exceed [•]% LTV (gross) throughout the Term.",
+                f"Breach of value condition, the outstanding loan not to exceed {float(ltv_ratio or 0):.2f}% LTV (gross).",
                 "There is a [•]% exit fee in the sum of €[•] that is payable upon the redemption of this loan. This is in addition to the fee referred to at clause [facility fee clause number] below.",
                 "[If Term Loan] The following exit fees apply to the loan:",
                 "(a) a 3.00% exit fee (in the sum of €[•]) that applies if the loan redeems at any time in year 1 of the Term (subject always to the minimum interest period);",
@@ -488,6 +505,9 @@ def generate_loan_summary_docx(loan):
             footer_para.add_run(after)
         else:
             footer_para.add_run(line)
+
+    for run in footer_para.runs:
+        run.font.size = Pt(8)
 
 
     with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
