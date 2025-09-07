@@ -2112,11 +2112,12 @@ def save_loan():
         return jsonify({'error': f'Failed to save loan: {str(e)}'}), 500
 
 
-@app.route('/loan/<int:loan_id>/summary-docx')
+@app.route('/loan/<int:loan_id>/summary-docx', methods=['GET', 'POST'])
 def download_loan_summary_docx(loan_id):
     """Download saved loan summary as DOCX report."""
     loan = LoanSummary.query.get_or_404(loan_id)
-    docx_content = generate_loan_summary_docx(loan)
+    extra_fields = request.get_json() if request.method == 'POST' else {}
+    docx_content = generate_loan_summary_docx(loan, extra_fields)
     if not docx_content:
         app.logger.error('Loan summary DOCX generation failed - missing python-docx dependency')
         return (
