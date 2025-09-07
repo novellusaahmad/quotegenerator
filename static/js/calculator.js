@@ -3679,21 +3679,13 @@ class LoanCalculator {
             return 0;
         };
 
-        // Build running sums for interest accrued and retained
+        // Build running sum for interest accrued
         let cumulativeAccrued = 0;
         const interestAccruedData = schedule.map(entry => {
             const raw = entry.interest_accrued_raw ?? entry.interest_accrued ?? entry.interest_amount ?? entry.interest;
             const val = parseValue(raw);
             cumulativeAccrued += val;
             return cumulativeAccrued;
-        });
-
-        let cumulativeRetained = 0;
-        const interestRetainedData = schedule.map(entry => {
-            const raw = entry.interest_retained_raw ?? entry.interest_retained;
-            const val = parseValue(raw);
-            cumulativeRetained += val;
-            return cumulativeRetained;
         });
 
         const data = {
@@ -3724,21 +3716,6 @@ class LoanCalculator {
                     pointRadius: 3,
                     pointHoverRadius: 6,
                     pointBackgroundColor: 'rgba(70, 130, 180, 1)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    yAxisID: 'y1'
-                },
-                {
-                    label: 'Interest Retained',
-                    data: interestRetainedData,
-                    borderColor: 'rgba(220, 53, 69, 1)',
-                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.1,
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: 'rgba(220, 53, 69, 1)',
                     pointBorderColor: '#fff',
                     pointBorderWidth: 2,
                     yAxisID: 'y1'
