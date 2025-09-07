@@ -15,6 +15,7 @@ message instead of causing an internal server error.  DOCX generation remains
 unaffected and can function without the PDF dependency.
 """
 
+import logging
 import os
 import tempfile
 from datetime import datetime
@@ -216,6 +217,8 @@ def generate_loan_summary_docx(loan):
         from docx import Document
         from docx.shared import Inches
         from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.oxml.shared import OxmlElement, qn
+        from docx.opc.constants import RELATIONSHIP_TYPE as RT
     except ModuleNotFoundError:
         return None
     import tempfile
@@ -226,11 +229,29 @@ def generate_loan_summary_docx(loan):
     # Determine currency-specific logo
     currency = getattr(loan, 'currency', 'GBP')
     logo_map = {
-        'GBP': 'novellus_logo_gbp.svg',
-        'EUR': 'novellus_logo_eur.svg',
+        'GBP': 'novellus_logo_gbp.png',
+        'EUR': 'novellus_logo_eur.png',
     }
-    logo_filename = logo_map.get(currency, 'novellus_logo_gbp.svg')
+    logo_filename = logo_map.get(currency, 'novellus_logo_gbp.png')
     logo_path = os.path.join(os.path.dirname(__file__), 'static', logo_filename)
+
+    def _add_hyperlink(paragraph, url, text):
+        """Add a hyperlink to a docx paragraph."""
+        part = paragraph.part
+        r_id = part.relate_to(url, RT.HYPERLINK, is_external=True)
+        hyperlink = OxmlElement("w:hyperlink")
+        hyperlink.set(qn("r:id"), r_id)
+        new_run = OxmlElement("w:r")
+        rPr = OxmlElement("w:rPr")
+        rStyle = OxmlElement("w:rStyle")
+        rStyle.set(qn("w:val"), "Hyperlink")
+        rPr.append(rStyle)
+        new_run.append(rPr)
+        w_text = OxmlElement("w:t")
+        w_text.text = text
+        new_run.append(w_text)
+        hyperlink.append(new_run)
+        paragraph._p.append(hyperlink)
 
     # Header with logo
     section = doc.sections[0]
@@ -238,7 +259,12 @@ def generate_loan_summary_docx(loan):
     header_para = header.paragraphs[0]
     header_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     if os.path.exists(logo_path):
-        header_para.add_run().add_picture(logo_path, width=Inches(1.3))
+        try:
+            header_para.add_run().add_picture(logo_path, width=Inches(1.3))
+        except Exception as exc:  # pragma: no cover - best effort logging
+            logging.getLogger(__name__).warning(
+                "Unable to load header logo %s: %s", logo_path, exc
+            )
 
     doc.add_paragraph("Dear [•],")
     doc.add_paragraph(
@@ -426,13 +452,39 @@ def generate_loan_summary_docx(loan):
     doc.add_paragraph("For and on behalf of")
     doc.add_paragraph("Novellus Finance Limited")
 
-    # Footer with centered logo
+    # Footer with center aligned text and email link
     footer = section.footer
     footer_para = footer.paragraphs[0]
     footer_para.text = ''
     footer_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    if os.path.exists(logo_path):
-        footer_para.add_run().add_picture(logo_path, width=Inches(1))
+
+    if currency == 'EUR':
+        footer_lines = [
+            "Novellus Finance Limited trading as Novellus Finance is registered in Ireland. Company Reg. No 710946.",
+            "100 St Stephen’s Green, Dublin, D02 EP84 | +353 1531 4237 | info@novellusfinance.com |",
+            "Novellus Finance Limited is not regulated by the Central Bank of Ireland.",
+        ]
+    else:
+        footer_lines = [
+            "T Bromley, 15 London Road, Bromley, Kent BR1 1DE | 0203 397 4871  |  info@novellusfinance.com  | novellusfinance.com",
+            "Novellus Limited trading as Novellus Finance is registered in England & Wales Company Reg. No 10790634",
+            "Novellus Limited is not regulated by the Financial Conduct Authority",
+        ]
+
+    for i, line in enumerate(footer_lines):
+        if i:
+            footer_para.add_run().add_break()
+        if "info@novellusfinance.com" in line:
+            before, after = line.split("info@novellusfinance.com")
+            footer_para.add_run(before)
+            _add_hyperlink(
+                footer_para,
+                "mailto:info@novellusfinance.com",
+                "info@novellusfinance.com",
+            )
+            footer_para.add_run(after)
+        else:
+            footer_para.add_run(line)
 
     with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
         doc.save(tmp_file.name)
