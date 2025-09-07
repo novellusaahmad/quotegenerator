@@ -1228,12 +1228,16 @@ def generate_quote_document(id):
         
         # Generate quote document as PDF
         pdf_content = generate_quote_pdf(loan_data, borrower_data)
-        
+        if not pdf_content:
+            app.logger.error('PDF generation failed - missing reportlab dependency')
+            flash('PDF generation failed: reportlab dependency is not installed', 'error')
+            return redirect(url_for('quote_detail', id=id))
+
         # Create response
         response = make_response(pdf_content)
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = f'attachment; filename=quote_{quote.id}.pdf'
-        
+
         return response
         
     except Exception as e:
@@ -1274,12 +1278,15 @@ def api_generate_pdf_quote():
         
         # Generate PDF
         pdf_content = generate_quote_pdf(quote_data, application_data)
-        
+        if not pdf_content:
+            app.logger.error('PDF generation failed - missing reportlab dependency')
+            return jsonify({'error': 'PDF generation failed: reportlab dependency is not installed'}), 500
+
         # Create response
         response = make_response(pdf_content)
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = f'attachment; filename=novellus_quote_{quote_data["id"]}.pdf'
-        
+
         return response
         
     except Exception as e:
@@ -1403,12 +1410,16 @@ def download_quote_pdf(id):
         
         # Generate PDF
         pdf_content = generate_quote_pdf(quote_data, application_data)
-        
+        if not pdf_content:
+            app.logger.error('PDF generation failed - missing reportlab dependency')
+            flash('PDF generation failed: reportlab dependency is not installed', 'error')
+            return redirect(url_for('quote_detail', id=id))
+
         # Create response
         response = make_response(pdf_content)
         response.headers['Content-Type'] = 'application/pdf'
         response.headers['Content-Disposition'] = f'attachment; filename=novellus_quote_{quote.id}.pdf'
-        
+
         return response
         
     except Exception as e:
@@ -1782,10 +1793,10 @@ def download_pdf_quote():
         
         # Generate PDF with charts
         pdf_content = generate_quote_pdf(quote_data, application_data)
-        
+
         if not pdf_content:
-            app.logger.error('PDF generation returned empty content')
-            return jsonify({'error': 'PDF generation failed - empty content'}), 500
+            app.logger.error('PDF generation failed - missing reportlab dependency')
+            return jsonify({'error': 'PDF generation failed: reportlab dependency is not installed'}), 500
         
         # Create response with proper headers
         response = make_response(pdf_content)

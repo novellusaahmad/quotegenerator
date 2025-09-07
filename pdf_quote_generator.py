@@ -1,15 +1,40 @@
+"""PDF, DOCX and Excel quote generation utilities.
+
+Historically this module required the `reportlab` package at import time in
+order to support PDF generation.  The DOCX helpers however do not rely on
+`reportlab`, which meant simply importing this module would raise a
+``ModuleNotFoundError`` when the dependency was missing.  As a consequence any
+route that attempted to generate a Word document – such as the export feature
+from ``calculator.html`` – resulted in a 500 error before the request even
+reached the handler.
+
+To make the DOCX generation more robust we now import ``reportlab`` lazily and
+record whether it is available.  PDF helpers check this flag and return ``None``
+when the library is absent, allowing callers to respond with a helpful error
+message instead of causing an internal server error.  DOCX generation remains
+unaffected and can function without the PDF dependency.
 """
-PDF Quote Generator for Novellus Loan Management System
-"""
+
 import os
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 import tempfile
 from datetime import datetime
+
+try:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import (
+        SimpleDocTemplate,
+        Paragraph,
+        Spacer,
+        Table,
+        TableStyle,
+    )
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+    REPORTLAB_AVAILABLE = True
+except ModuleNotFoundError:  # pragma: no cover - optional dependency
+    REPORTLAB_AVAILABLE = False
 
 
 BROTHER_FONT = "Brother 1816 Light"
@@ -30,11 +55,17 @@ def _apply_brother_font(doc):
         style._element.rPr.rFonts.set(qn("w:eastAsia"), BROTHER_FONT)
 
 def generate_quote_pdf(quote_data, application_data=None):
-    """Generate PDF quote document"""
+    """Generate PDF quote document.
+
+    Returns ``None`` if the optional ``reportlab`` dependency is not available.
+    """
+    if not REPORTLAB_AVAILABLE:
+        return None
+
     # Create temporary file
     with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
         tmp_path = tmp_file.name
-    
+
     # Create PDF document
     doc = SimpleDocTemplate(tmp_path, pagesize=letter)
     story = []
