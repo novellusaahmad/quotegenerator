@@ -909,6 +909,9 @@
 <div class="card-header d-flex justify-content-center align-items-center position-relative bg-primary text-white fw-bold border border-dark" data-currency="GBP">
                     <span>Loan Summary</span>
                     <div class="position-absolute top-50 end-0 translate-middle-y d-flex">
+                        <a id="openLoanReport" class="btn btn-sm btn-light me-2" href="#" style="display:none;" target="_blank" title="Open Loan Report">
+                            <i class="fas fa-chart-column"></i>
+                        </a>
                         <button type="button" class="btn btn-sm btn-light me-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal">View Details</button>
                         <div class="dropdown">
                             <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="openReportsBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>Reports</button>
@@ -923,9 +926,6 @@
 <th class="px-3" style="color: #000 !important; border-right: 1px solid #000;"></th>
 <th class="px-3 text-end" style="color: #000 !important; border-right: 1px solid #000;"></th>
 <th class="px-3 text-end" style="color: #000 !important;">
-    <a id="openLoanReport" href="#" style="display:none;" target="_blank" title="Open Loan Report" class="me-2">
-        <i class="fas fa-chart-column"></i>
-    </a>
     <a id="downloadSummaryDocx" href="#" style="display:none;" title="Download Loan Summary"><i class="fas fa-file-word"></i></a>
 </th>
 </tr>
