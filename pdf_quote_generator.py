@@ -84,14 +84,24 @@ def generate_quote_pdf(quote_data, application_data=None):
 def generate_professional_quote_docx(quote_data, application_data=None):
     """Generate professional DOCX quote document"""
     from docx import Document
-    from docx.shared import Inches
-    
+    from docx.shared import Inches, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
     doc = Document()
-    
+
+    # Add header with logo
+    section = doc.sections[0]
+    header = section.header
+    header_para = header.paragraphs[0]
+    header_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    logo_path = os.path.join(os.path.dirname(__file__), 'static', 'novellus_logo.png')
+    if os.path.exists(logo_path):
+        header_para.add_run().add_picture(logo_path, width=Inches(1.3))
+
     # Add title
     title = doc.add_heading('Novellus Finance - Loan Quote', 0)
     title.alignment = 1  # Center alignment
-    
+
     # Add quote details
     doc.add_heading('Quote Details', level=1)
     
@@ -112,12 +122,30 @@ def generate_professional_quote_docx(quote_data, application_data=None):
     for i, (key, value) in enumerate(details):
         table.cell(i, 0).text = key
         table.cell(i, 1).text = value
-    
-    # Add footer
-    doc.add_paragraph()
-    footer = doc.add_paragraph('This quote is subject to credit approval and full underwriting. Terms and conditions apply.')
-    footer.alignment = 1  # Center alignment
-    
+
+    # Footer with company details
+    currency = quote_data.get('currency', 'GBP')
+    color_map = {
+        'GBP': RGBColor(0xAD, 0x96, 0x5F),
+        'EUR': RGBColor(0x50, 0x96, 0x64),
+    }
+    color = color_map.get(currency, color_map['GBP'])
+    footer = section.footer
+    footer_texts = [
+        'Novellus Finance Limited trading as Novellus Finance is registered in Ireland. Company Reg. No: 720946.',
+        '100 St Stephen\'s Green, Dublin, D02 EP40 | +353 1 531 4837 | info@novellusfinance.com',
+        'Novellus Finance Limited is not regulated by the Central Bank of Ireland.',
+    ]
+    footer.paragraphs[0].text = footer_texts[0]
+    for run in footer.paragraphs[0].runs:
+        run.font.color.rgb = color
+    footer.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for text in footer_texts[1:]:
+        p = footer.add_paragraph(text)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for run in p.runs:
+            run.font.color.rgb = color
+
     # Save to temporary file
     with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
         doc.save(tmp_file.name)
@@ -136,9 +164,20 @@ def generate_professional_quote_docx(quote_data, application_data=None):
 def generate_loan_summary_docx(loan):
     """Generate DOCX loan summary report."""
     from docx import Document
+    from docx.shared import Inches, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
     import tempfile
 
     doc = Document()
+
+    # Header with logo
+    section = doc.sections[0]
+    header = section.header
+    header_para = header.paragraphs[0]
+    header_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    logo_path = os.path.join(os.path.dirname(__file__), 'static', 'novellus_logo.png')
+    if os.path.exists(logo_path):
+        header_para.add_run().add_picture(logo_path, width=Inches(1.3))
 
     doc.add_paragraph("Dear [•],")
     doc.add_paragraph(
@@ -325,6 +364,29 @@ def generate_loan_summary_docx(loan):
     doc.add_paragraph("[•]")
     doc.add_paragraph("For and on behalf of")
     doc.add_paragraph("Novellus Finance Limited")
+
+    # Footer with company details and currency-based color
+    color_map = {
+        'GBP': RGBColor(0xAD, 0x96, 0x5F),
+        'EUR': RGBColor(0x50, 0x96, 0x64),
+    }
+    currency = getattr(loan, 'currency', 'GBP')
+    color = color_map.get(currency, color_map['GBP'])
+    footer = section.footer
+    footer_texts = [
+        'Novellus Finance Limited trading as Novellus Finance is registered in Ireland. Company Reg. No: 720946.',
+        "100 St Stephen's Green, Dublin, D02 EP40 | +353 1 531 4837 | info@novellusfinance.com",
+        'Novellus Finance Limited is not regulated by the Central Bank of Ireland.',
+    ]
+    footer.paragraphs[0].text = footer_texts[0]
+    for run in footer.paragraphs[0].runs:
+        run.font.color.rgb = color
+    footer.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for text in footer_texts[1:]:
+        p = footer.add_paragraph(text)
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for run in p.runs:
+            run.font.color.rgb = color
 
     with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
         doc.save(tmp_file.name)
