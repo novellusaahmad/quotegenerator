@@ -229,10 +229,12 @@ def generate_loan_summary_docx(loan):
     # Determine currency-specific logo
     currency = getattr(loan, 'currency', 'GBP')
     logo_map = {
+
         'GBP': 'novellus_logo_gbp.png',
         'EUR': 'novellus_logo_eur.png',
     }
     logo_filename = logo_map.get(currency, 'novellus_logo_gbp.png')
+
     logo_path = os.path.join(os.path.dirname(__file__), 'static', logo_filename)
 
     def _add_hyperlink(paragraph, url, text):
@@ -458,6 +460,7 @@ def generate_loan_summary_docx(loan):
     footer_para.text = ''
     footer_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+
     if currency == 'EUR':
         footer_lines = [
             "Novellus Finance Limited trading as Novellus Finance is registered in Ireland. Company Reg. No 710946.",
@@ -485,6 +488,7 @@ def generate_loan_summary_docx(loan):
             footer_para.add_run(after)
         else:
             footer_para.add_run(line)
+
 
     with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
         doc.save(tmp_file.name)
