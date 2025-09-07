@@ -202,18 +202,12 @@ class ChartManager {
             }
             return val || 0;
         };
-        // Build running sums for interest accrued and retained
+        // Build running sum for interest accrued
         let cumulativeAccrued = 0;
-        let cumulativeRetained = 0;
         const interestAccruedData = schedule.map(payment => {
             const val = parseValue(payment.interest_accrued_raw ?? payment.interest_accrued);
             cumulativeAccrued += val;
             return cumulativeAccrued;
-        });
-        const interestRetainedData = schedule.map(payment => {
-            const val = parseValue(payment.interest_retained_raw ?? payment.interest_retained);
-            cumulativeRetained += val;
-            return cumulativeRetained;
         });
 
         const config = {
@@ -243,20 +237,6 @@ class ChartManager {
                         fill: false,
                         tension: 0.4,
                         pointBackgroundColor: this.defaultColors.secondary,
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        yAxisID: 'y1'
-                    },
-                    {
-                        label: 'Interest Retained',
-                        data: interestRetainedData,
-                        backgroundColor: this.addTransparency(this.defaultColors.warning, 0.1),
-                        borderColor: this.defaultColors.warning,
-                        borderWidth: 3,
-                        fill: false,
-                        tension: 0.4,
-                        pointBackgroundColor: this.defaultColors.warning,
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2,
                         pointRadius: 4,
