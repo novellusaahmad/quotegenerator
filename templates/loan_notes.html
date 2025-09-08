@@ -11,6 +11,19 @@
         Loan Notes
     </div>
     <div class="card-body p-0">
+        <form method="get" class="p-3">
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Group</label>
+                    <select name="group" class="form-select" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        {% for g in group_options %}
+                        <option value="{{ g }}"{% if g == group_filter %} selected{% endif %}>{{ g }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </form>
         <table class="table" style="border: 1px solid #000; border-collapse: collapse;">
             <thead>
                 <tr style="border: 1px solid #000; background: #f8f9fa;">

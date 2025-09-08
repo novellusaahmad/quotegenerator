@@ -2383,46 +2383,48 @@ function retryLoanSave() {
 <div class="modal fade" id="loanSummaryFieldsModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header bg-primary text-white" id="loanSummaryFieldsHeader" data-currency="GBP">
-        <h5 class="modal-title">Report Fields</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-header bg-primary text-white justify-content-center position-relative" id="loanSummaryFieldsHeader" data-currency="GBP">
+        <h5 class="modal-title text-white w-100 text-center">Report Fields</h5>
+        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <div class="mb-3">
-          <label for="docxClientName" class="form-label">Client Name</label>
-          <input type="text" class="form-control" id="docxClientName">
-        </div>
-        <div class="mb-3">
-          <label for="docxPropertyAddress" class="form-label">Property Address</label>
-          <input type="text" class="form-control" id="docxPropertyAddress">
-        </div>
-        <div class="mb-3">
-          <label for="docxDebenture" class="form-label">Debenture</label>
-          <input type="text" class="form-control" id="docxDebenture">
-        </div>
-        <div class="mb-3">
-          <label for="docxGuarantor" class="form-label">Corporate Guarantor</label>
-          <input type="text" class="form-control" id="docxGuarantor">
-        </div>
-        <div class="mb-3">
-          <label for="docxBrokerName" class="form-label">Broker Name</label>
-          <input type="text" class="form-control" id="docxBrokerName">
-        </div>
-        <div class="mb-3">
-          <label for="docxBrokerage" class="form-label">Brokerage</label>
-          <input type="text" class="form-control" id="docxBrokerage">
-        </div>
-        <div class="mb-3">
-          <label for="docxMaxLtv" class="form-label">Max LTV (%)</label>
-          <input type="number" step="0.01" class="form-control" id="docxMaxLtv">
-        </div>
-        <div class="mb-3">
-          <label for="docxExitFee" class="form-label">Exit Fee (%)</label>
-          <input type="number" step="0.01" class="form-control" id="docxExitFee">
-        </div>
-        <div class="mb-3">
-          <label for="docxCommitmentFee" class="form-label">Commitment Fee</label>
-          <input type="number" step="0.01" class="form-control" id="docxCommitmentFee">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="docxClientName" class="form-label">Client Name</label>
+            <input type="text" class="form-control" id="docxClientName">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxPropertyAddress" class="form-label">Property Address</label>
+            <input type="text" class="form-control" id="docxPropertyAddress">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxDebenture" class="form-label">Debenture</label>
+            <input type="text" class="form-control" id="docxDebenture">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxGuarantor" class="form-label">Corporate Guarantor</label>
+            <input type="text" class="form-control" id="docxGuarantor">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxBrokerName" class="form-label">Broker Name</label>
+            <input type="text" class="form-control" id="docxBrokerName">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxBrokerage" class="form-label">Brokerage</label>
+            <input type="text" class="form-control" id="docxBrokerage">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxMaxLtv" class="form-label">Max LTV (%)</label>
+            <input type="number" step="0.01" class="form-control" id="docxMaxLtv">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxExitFee" class="form-label">Exit Fee (%)</label>
+            <input type="number" step="0.01" class="form-control" id="docxExitFee">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxCommitmentFee" class="form-label">Commitment Fee</label>
+            <input type="number" step="0.01" class="form-control" id="docxCommitmentFee">
+          </div>
         </div>
         <div id="loanNotesAccordion" class="accordion"></div>
       </div>

@@ -2939,11 +2939,23 @@ def snowflake_config():
 
 @app.route('/loan-notes')
 def loan_notes():
-    notes = (
-        LoanNote.query.filter_by(deleted_at=None)
-        .order_by(LoanNote.group, LoanNote.id)
-        .all()
-    )
+    group_filter = request.args.get("group", type=str)
+    query = LoanNote.query.filter_by(deleted_at=None)
+    if group_filter:
+        query = query.filter(LoanNote.group == group_filter)
+    notes = query.order_by(LoanNote.group, LoanNote.id).all()
+
+    group_options = [
+        g[0]
+        for g in (
+            LoanNote.query.with_entities(LoanNote.group)
+            .filter_by(deleted_at=None)
+            .distinct()
+            .order_by(LoanNote.group)
+            .all()
+        )
+    ]
+
     placeholder_options = []
     tables = [
         (
@@ -2967,7 +2979,11 @@ def loan_notes():
             f"{prefix}.{col.name}" for col in model.__table__.columns if col.name not in excluded
         )
     return render_template(
-        "loan_notes.html", notes=notes, placeholder_options=placeholder_options
+        "loan_notes.html",
+        notes=notes,
+        placeholder_options=placeholder_options,
+        group_filter=group_filter,
+        group_options=group_options,
     )
 
 
