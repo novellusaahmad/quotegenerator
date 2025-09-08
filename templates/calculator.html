@@ -1638,7 +1638,12 @@ function handleEditMode() {
                             const formatted = typeof value === 'boolean'
                                 ? value.toString().toLowerCase()
                                 : value;
+                            const snakeKey = key.replace(/[A-Z]/g, letter => '_' + letter.toLowerCase());
+                            paramsFromData.set(snakeKey, formatted);
                             paramsFromData.set(key, formatted);
+                            if (snakeKey === 'interest_rate') {
+                                paramsFromData.set('annual_rate', formatted);
+                            }
                         }
 
                         populateFormFromParams(paramsFromData);
@@ -1677,6 +1682,7 @@ function populateFormFromParams(params) {
         'gross_amount_percentage': 'grossAmountPercentage',
         'property_value': 'propertyValue',
         'annual_rate': 'annualRateValue',
+        'interest_rate': 'annualRateValue',
         'monthly_rate': 'monthlyRateValue',
         'loan_term': 'loanTerm',
         'start_date': 'startDate',
