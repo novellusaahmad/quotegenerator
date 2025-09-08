@@ -16,7 +16,7 @@
                 <tr style="border: 1px solid #000; background: #f8f9fa;">
                     <th class="px-3" style="color:#000!important; border-right:1px solid #000;">Group</th>
                     <th class="px-3" style="color:#000!important; border-right:1px solid #000;">Name</th>
-                    <th class="px-3" style="color:#000!important; border-right:1px solid #000;">Placeholder Map</th>
+                    <th class="px-3" style="color:#000!important; border-right:1px solid #000; width:500px;">Placeholder Map</th>
                     <th class="px-3 text-center" style="color:#000!important;">Actions</th>
                 </tr>
             </thead>
@@ -31,7 +31,7 @@
                         <span class="view">{{ note.name }}</span>
                         <textarea class="form-control edit d-none" name="name" form="edit-form-{{ note.id }}" rows="2" data-original="{{ note.name }}">{{ note.name }}</textarea>
                     </td>
-                    <td class="px-3" style="color:#000!important; border-right:1px solid #000;">
+                    <td class="px-3" style="color:#000!important; border-right:1px solid #000; width:500px;">
                         <span class="view">{{ note.placeholder_map|tojson }}</span>
                         <div class="edit placeholder-map d-none">
                             <div class="placeholder-row template d-none">
