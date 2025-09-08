@@ -124,6 +124,7 @@ def test_placeholder_map_report_fields_block():
     assert '[MAX_LTV]' not in text
 
 
+
 def test_placeholder_map_bracket_keys_with_prefix():
     loan = SimpleNamespace(
         currency='GBP',
@@ -160,3 +161,4 @@ def test_placeholder_map_bracket_keys_with_prefix():
     assert 'The arrangement fee is 1000 i.e. 5%' in text
     assert '[ARRANGEMENT_FEE]' not in text
     assert '[ARRANGEMENT_FEE_PER]' not in text
+
