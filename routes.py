@@ -2257,8 +2257,13 @@ def download_loan_summary_docx(loan_id):
             .all()
         )
     # Pass the selected note templates so that any tokens within the text can be
-    # substituted by ``generate_loan_summary_docx``.
-    extra_fields["note_templates"] = [note.name for note in notes]
+    # substituted by ``generate_loan_summary_docx``. Include each note's
+    # placeholder map so token mapping configured on the Loan Notes page is
+    # honoured during DOCX generation.
+    extra_fields["note_templates"] = [
+        {"text": note.name, "placeholder_map": note.placeholder_map or {}}
+        for note in notes
+    ]
 
 
     docx_content = generate_loan_summary_docx(loan, extra_fields)
