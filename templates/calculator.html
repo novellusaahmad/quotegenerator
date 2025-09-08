@@ -558,7 +558,7 @@
 <label class="form-label" for="propertyValue">Property Value</label>
 <div class="input-group">
 <span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="propertyValue" inputmode="decimal" min="0" name="property_value" pattern="[0-9.,]*" required="" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+<input class="form-control" id="propertyValue" inputmode="decimal" min="0.01" name="property_value" pattern="^(?=.*[1-9])[0-9.,]+$" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 </div>
 <!-- Amount Input Type -->
@@ -582,10 +582,10 @@
 </div>
 <div class="input-group" id="grossFixedInput">
 <span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0" name="gross_amount" pattern="[0-9.,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+<input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0.01" name="gross_amount" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 <div class="input-group" id="grossPercentageInput" style="display: none;">
-<input class="form-control" id="grossAmountPercentage" max="100" min="0" name="gross_amount_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<input class="form-control" id="grossAmountPercentage" max="100" min="0.0001" name="gross_amount_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
 <span class="input-group-text">%</span>
 </div>
 </div>
@@ -594,7 +594,7 @@
 <label class="form-label" for="netAmountInput">Net Amount</label>
 <div class="input-group">
 <span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="netAmountInput" inputmode="decimal" min="0" name="net_amount" pattern="[0-9.,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+<input class="form-control" id="netAmountInput" inputmode="decimal" min="0.01" name="net_amount" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 <small class="form-text text-muted">Total net amount required for the loan</small>
 </div>
@@ -617,11 +617,11 @@
 <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="annualRate">Annual Rate</label>
 </div>
 <div class="input-group" id="monthlyRateInput" style="display: none;">
-<input class="form-control" id="monthlyRateValue" max="10" min="0" name="monthly_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="1"/>
+<input class="form-control" id="monthlyRateValue" max="10" min="0.0001" name="monthly_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
 <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
 </div>
 <div class="input-group" id="annualRateInput">
-<input class="form-control" id="annualRateValue" max="50" min="0" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="12"/>
+<input class="form-control" id="annualRateValue" max="50" min="0.0001" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
 <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
 </div>
 <small id="rateEquivalenceNote" class="form-text text-muted"></small>
@@ -666,7 +666,7 @@
 </div>
 <div id="loanTermContainer" class="mt-2">
 <div class="input-group">
-<input class="form-control" id="loanTerm" max="600" min="3" name="loan_term" required="" step="0.01" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
+<input class="form-control" id="loanTerm" max="600" min="1" name="loan_term" required step="0.01" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
 <span class="input-group-text">months</span>
 </div>
 </div>
@@ -681,7 +681,7 @@
 <div class="">
 <label class="form-label" for="arrangementFeeRate">Arrangement Fee</label>
 <div class="input-group">
-<input class="form-control" id="arrangementFeeRate" max="10" min="0" name="arrangement_fee_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value="2"/>
+<input class="form-control" id="arrangementFeeRate" max="10" min="0.0001" name="arrangement_fee_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
 <span class="input-group-text">%</span>
 </div>
 </div>
@@ -689,20 +689,20 @@
 <label class="form-label" for="legalFees">Legal Fees</label>
 <div class="input-group">
 <span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="legalFees" inputmode="decimal" min="0" name="legal_fees" pattern="[0-9.,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+<input class="form-control" id="legalFees" inputmode="decimal" min="0.01" name="legal_fees" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 </div>
 <div class="">
 <label class="form-label" for="siteVisitFee">Site Visit Fee</label>
 <div class="input-group">
 <span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="siteVisitFee" inputmode="decimal" min="0" name="site_visit_fee" pattern="[0-9.,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+<input class="form-control" id="siteVisitFee" inputmode="decimal" min="0.01" name="site_visit_fee" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 </div>
 <div class="">
 <label class="form-label" for="titleInsuranceRate">Title Insurance</label>
 <div class="input-group">
-<input class="form-control" id="titleInsuranceRate" max="1" min="0" name="title_insurance_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
+<input class="form-control" id="titleInsuranceRate" max="1" min="0.0001" name="title_insurance_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
 <span class="input-group-text">%</span>
 </div>
 </div>
@@ -737,7 +737,7 @@
 <label class="form-label" for="capitalRepayment">Capital Repayment Amount</label>
 <div class="input-group">
 <span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="capitalRepayment" inputmode="decimal" min="0" name="capital_repayment" pattern="[0-9.,]*" placeholder="e.g. 10000" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="10000"/>
+<input class="form-control" id="capitalRepayment" inputmode="decimal" min="0.01" name="capital_repayment" pattern="^(?=.*[1-9])[0-9.,]+$" placeholder="e.g. 10000" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text"/>
 </div>
 <small class="form-text text-muted">Principal amount to repay each payment period (monthly/quarterly)</small>
 <small class="form-text text-muted">Enter the amount per selected payment period; no automatic conversion is applied.</small>
@@ -746,7 +746,7 @@
 <label class="form-label" for="flexiblePayment">Flexible Payment per Payment</label>
 <div class="input-group">
 <span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="flexiblePayment" inputmode="decimal" min="0" name="flexible_payment" pattern="[0-9.,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="20000"/>
+<input class="form-control" id="flexiblePayment" inputmode="decimal" min="0.01" name="flexible_payment" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text"/>
 </div>
 <small class="form-text text-muted">Enter the amount per selected payment period; no automatic conversion is applied.</small>
 </div>
@@ -760,7 +760,7 @@
     <div class="mb-2">
       <label class="form-label" for="targetLTVExit">Target LTV % on Exit</label>
       <div class="input-group">
-        <input class="form-control" id="targetLTVExit" min="0" max="100" step="0.01" type="number" placeholder="e.g. 40"/>
+<input class="form-control" id="targetLTVExit" min="0.0001" max="100" step="0.01" type="number" placeholder="e.g. 40"/>
         <span class="input-group-text">%</span>
       </div>
     </div>
