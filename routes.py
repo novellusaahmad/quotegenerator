@@ -1,7 +1,7 @@
 import os
 import json
 from datetime import datetime, timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 from dateutil.relativedelta import relativedelta
 from flask import render_template, request, redirect, url_for, flash, jsonify, session, send_file, make_response, current_app
 from flask_login import login_user, logout_user, login_required, current_user
@@ -2141,9 +2141,24 @@ def manage_report_fields(loan_id):
     rf.corporate_guarantor = data.get('corporate_guarantor')
     rf.broker_name = data.get('broker_name')
     rf.brokerage = data.get('brokerage')
-    rf.max_ltv = data.get('max_ltv')
-    rf.exit_fee_percent = data.get('exit_fee_percent')
-    rf.commitment_fee = data.get('commitment_fee')
+
+    try:
+        max_ltv_val = data.get('max_ltv')
+        rf.max_ltv = (
+            None if max_ltv_val in ("", None) else Decimal(str(max_ltv_val))
+        )
+        exit_fee_val = data.get('exit_fee_percent')
+        rf.exit_fee_percent = (
+            None if exit_fee_val in ("", None) else Decimal(str(exit_fee_val))
+        )
+        commitment_fee_val = data.get('commitment_fee')
+        rf.commitment_fee = (
+            None if commitment_fee_val in ("", None) else Decimal(str(commitment_fee_val))
+        )
+    except (ValueError, InvalidOperation) as exc:
+        db.session.rollback()
+        app.logger.error(f"Invalid numeric value in report fields: {exc}")
+        return jsonify({'error': 'Invalid numeric value provided'}), 400
 
     db.session.commit()
     return jsonify({'success': True})
