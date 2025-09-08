@@ -1275,6 +1275,11 @@ function calculateEndDate() {
     const loanTermEl = document.getElementById('loanTerm');
     const endDateEl = document.getElementById('endDate');
 
+    // Ensure users cannot pick an end date before the start date
+    if (endDateEl) {
+        endDateEl.min = startDate;
+    }
+
     if (mode === 'term') {
         const loanTerm = parseInt(loanTermEl.value);
         if (startDate && loanTerm && (document.activeElement === loanTermEl || document.activeElement === startDateEl || !endDateEl.value)) {
@@ -1304,8 +1309,18 @@ function calculateEndDate() {
     } else {
         const endDate = endDateEl.value;
         if (startDate && endDate && (document.activeElement === endDateEl || document.activeElement === startDateEl || !loanTermEl.value)) {
+            const startObj = new Date(startDate);
+            const endObj = new Date(endDate);
+
+            // Warn and correct if end date is before start date
+            if (endObj < startObj) {
+                Novellus.utils.showToast('Start date cannot be greater than end date', 'danger');
+                endDateEl.value = startDate;
+                endObj.setTime(startObj.getTime());
+            }
+
             const [sy, sm, sd] = startDate.split('-').map(Number);
-            const [ey, em, ed] = endDate.split('-').map(Number);
+            const [ey, em, ed] = endDateEl.value.split('-').map(Number);
 
             const startUTC = Date.UTC(sy, sm - 1, sd);
             const endUTC = Date.UTC(ey, em - 1, ed);
@@ -1371,6 +1386,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const startDateElement = document.getElementById('startDate');
         if (startDateElement) {
             startDateElement.value = todayStr;
+        }
+        const endDateElement = document.getElementById('endDate');
+        if (endDateElement) {
+            endDateElement.min = startDateElement ? startDateElement.value : todayStr;
         }
         
         // Ensure correct field visibility and initial calculation
