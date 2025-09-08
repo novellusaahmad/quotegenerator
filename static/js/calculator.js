@@ -4288,17 +4288,12 @@ LoanCalculator.prototype.calculateLTVSimulation = function(results) {
             // for LTV comparison makes the running LTV appear a month late.
             // Skip that payoff entry and look at the preceding month instead.
             let idx = t.month - 1;
-            if (detailedSchedule[idx]?.closing_balance === 0 && idx > 0) {
-                idx -= 1;  // use penultimate entry for LTV comparison
+            let bal = parseFloat(String(detailedSchedule[idx]?.opening_balance).replace(/[^0-9.-]/g, '')) || 0;
+            if (bal === 0 && idx > 0) {
+                idx -= 1;
+                bal = parseFloat(String(detailedSchedule[idx]?.opening_balance).replace(/[^0-9.-]/g, '')) || 0;
             }
-            const entry = detailedSchedule[idx];
-            if (!entry || !entry.closing_balance) {
-                inputEl?.classList.add('is-invalid');
-                return;
-            }
-
-            const closingBalance = parseFloat(String(entry.closing_balance).replace(/[^0-9.-]/g, '')) || 0;
-            const actualLTV = propertyValue ? (closingBalance / propertyValue) * 100 : 0;
+            const actualLTV = propertyValue ? (bal / propertyValue) * 100 : 0;
             const diff = actualLTV - t.ltv;
             const mismatch = Math.abs(diff) > tolerance;
             if (inputEl) {
