@@ -410,7 +410,17 @@ def generate_loan_summary_docx(loan, extra_fields=None):
                 "[if applicable] [Broker fees to be paid directly by the Borrower or can be added to the Arrangement Fee (tbc).]",
                 [("The arrangement fee is ", False), (f"{currency_symbol}{arr_fee_amount}", True), (" i.e. ", False), (arr_fee_pct, True), (" of the gross loan of which 50% is paid to the broker", False), (broker_info, True if broker_info else False), (".", False)],
                 f"The loan Term is {getattr(loan, 'loan_term', 0) or 0} months in total (the “Term”).",
-                f"Day 1 Net Advance of {currency_symbol}{float((getattr(loan, 'day_1_advance', None) or getattr(loan, 'net_advance', 0) or 0)):,.2f} to fund the purchase of/form part of the development tranche of the Property.",
+                [
+                    ("Day 1 Net Advance of ", False),
+                    (
+                        f"{currency_symbol}{float((getattr(loan, 'day_1_advance', None) or getattr(loan, 'net_advance', 0) or 0)):,.2f}",
+                        True,
+                    ),
+                    (
+                        " to fund the purchase of/form part of the development tranche of the Property.",
+                        False,
+                    ),
+                ],
                 [("Breach of value condition, loan not to exceed ", False), (f"{float(max_ltv):.2f}%", True), (" LTV (gross) throughout the Term.", False)],
                 [("There is a ", False), (f"{exit_fee_pct:.2f}%", True), (" exit fee in the sum of ", False), (f"{currency_symbol}{exit_fee_amount:,.2f}", True), (" that is payable upon the redemption of this loan. This is in addition to the fee referred to at clause [facility fee clause number] below.", False)],
                 "[If Term Loan] The following exit fees apply to the loan:",
