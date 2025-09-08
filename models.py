@@ -328,7 +328,11 @@ class ReportFields(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     loan_id = db.Column(
-        db.Integer, db.ForeignKey('loan_summary.id'), nullable=False, unique=True
+        'loan_summary_id',
+        db.Integer,
+        db.ForeignKey('loan_summary.id'),
+        nullable=False,
+        unique=True,
     )
     property_address = db.Column(db.Text)
     debenture = db.Column(db.Text)
