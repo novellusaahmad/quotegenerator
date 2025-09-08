@@ -2231,13 +2231,14 @@ def download_loan_summary_docx(loan_id):
         rf = ReportFields.query.filter_by(loan_id=loan_id).first()
         extra_fields = rf.to_dict() if rf else {}
 
-    # Include loan note texts marked for inclusion
-    loan_notes = (
-        LoanNote.query.filter_by(add_flag=True, deleted_at=None)
+
+    notes = (
+        LoanNote.query.filter_by(deleted_at=None, add_flag=True)
         .order_by(LoanNote.group, LoanNote.id)
         .all()
     )
-    extra_fields['loan_notes'] = [note.name for note in loan_notes]
+    extra_fields["notes"] = [note.name for note in notes]
+
 
     docx_content = generate_loan_summary_docx(loan, extra_fields)
     if not docx_content:

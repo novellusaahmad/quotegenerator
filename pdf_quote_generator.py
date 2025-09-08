@@ -393,6 +393,19 @@ def generate_loan_summary_docx(loan, extra_fields=None):
     )
     interest_rate = float(getattr(loan, 'interest_rate', 0) or 0)
 
+    replacements = {
+        "[CLIENT_NAME]": extra_fields.get("client_name", ""),
+        "[PROPERTY_ADDRESS]": extra_fields.get("property_address", ""),
+        "[MAX_LTV]": f"{extra_fields.get('max_ltv', '')}",
+        "[DEBENTURE]": extra_fields.get("debenture", ""),
+        "[CORPORATE_GUARANTOR]": extra_fields.get("corporate_guarantor", ""),
+    }
+
+    def _replace_tokens(text):
+        for token, value in replacements.items():
+            text = text.replace(token, str(value))
+        return text
+
     sections = [
         (
             "Security",
@@ -537,15 +550,25 @@ def generate_loan_summary_docx(loan, extra_fields=None):
         sections.insert(1, ("Additional Conditions", loan_notes))
 
     for heading, bullets in sections:
-        hp = doc.add_heading(heading, level=1)
+        hp = doc.add_heading(_replace_tokens(heading), level=1)
         for run in hp.runs:
             run.font.color.rgb = RGBColor(0, 0, 0)
         for bullet in bullets:
             if isinstance(bullet, list):
-                _add_bullet(bullet)
+                parts = [(_replace_tokens(text), bold) for text, bold in bullet]
+                _add_bullet(parts)
             else:
-                p = doc.add_paragraph(bullet)
+                p = doc.add_paragraph(_replace_tokens(bullet))
                 p.style = 'List Bullet'
+
+    note_texts = extra_fields.get('notes') or []
+    if note_texts:
+        hp = doc.add_heading('Notes', level=1)
+        for run in hp.runs:
+            run.font.color.rgb = RGBColor(0, 0, 0)
+        for note in note_texts:
+            p = doc.add_paragraph(_replace_tokens(note))
+            p.style = 'List Bullet'
 
     doc.add_paragraph("Yours sincerely, [or faithfully if Dear Sir],")
     doc.add_paragraph("[•]")
