@@ -1763,14 +1763,23 @@
             const loanTermContainer = document.getElementById('loanTermContainer');
             const endDateContainer = document.getElementById('endDateContainer');
             const endDate = document.getElementById('endDate');
+            const loanTerm = document.getElementById('loanTerm');
             if (mode === 'term') {
                 loanTermContainer.style.display = '';
                 endDateContainer.style.display = 'none';
-                if (endDate) endDate.setAttribute('readonly', '');
+                if (endDate) {
+                    endDate.setAttribute('readonly', '');
+                    endDate.required = false;
+                }
+                if (loanTerm) loanTerm.required = true;
             } else {
                 loanTermContainer.style.display = 'none';
                 endDateContainer.style.display = '';
-                if (endDate) endDate.removeAttribute('readonly');
+                if (endDate) {
+                    endDate.removeAttribute('readonly');
+                    endDate.required = true;
+                }
+                if (loanTerm) loanTerm.required = false;
             }
         }
 

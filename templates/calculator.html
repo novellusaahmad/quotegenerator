@@ -1339,8 +1339,22 @@ function calculateEndDate() {
 
 function toggleLoanEndInputs() {
     const mode = document.querySelector('input[name="loan_end_type"]:checked').value;
-    document.getElementById('loanTermContainer').style.display = mode === 'term' ? '' : 'none';
-    document.getElementById('endDateContainer').style.display = mode === 'term' ? 'none' : '';
+    const loanTermContainer = document.getElementById('loanTermContainer');
+    const endDateContainer = document.getElementById('endDateContainer');
+    const loanTermInput = document.getElementById('loanTerm');
+    const endDateInput = document.getElementById('endDate');
+
+    if (mode === 'term') {
+        loanTermContainer.style.display = '';
+        endDateContainer.style.display = 'none';
+        if (loanTermInput) loanTermInput.required = true;
+        if (endDateInput) endDateInput.required = false;
+    } else {
+        loanTermContainer.style.display = 'none';
+        endDateContainer.style.display = '';
+        if (loanTermInput) loanTermInput.required = false;
+        if (endDateInput) endDateInput.required = true;
+    }
 }
 
 // Helper function to trigger calculation update when dates change
