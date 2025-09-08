@@ -21,6 +21,7 @@ from models import (
     LoanSummary,
     PaymentSchedule,
     ReportFields,
+    LoanNote,
 )
 import sqlalchemy as sa
 from calculations import LoanCalculator
@@ -1681,6 +1682,11 @@ def inject_nav_routes():
                     "name": "User Manual",
                     "icon": "fas fa-book",
                 },
+                {
+                    "url": url_for('loan_notes'),
+                    "name": "Loan Notes",
+                    "icon": "fas fa-sticky-note",
+                },
             ],
         },
     ]
@@ -2867,6 +2873,46 @@ def powerbi_config():
 @app.route('/snowflake-config')
 def snowflake_config():
     return render_template('snowflake_config.html')
+
+
+@app.route('/loan-notes')
+def loan_notes():
+    notes = (
+        LoanNote.query.filter_by(deleted_at=None)
+        .order_by(LoanNote.group, LoanNote.id)
+        .all()
+    )
+    return render_template('loan_notes.html', notes=notes)
+
+
+@app.route('/loan-notes/add', methods=['POST'])
+def add_loan_note():
+    group = request.form.get('group', '').strip()
+    name = request.form.get('name', '').strip()
+    add_flag = bool(request.form.get('add_flag'))
+    if group and name:
+        note = LoanNote(group=group, name=name, add_flag=add_flag)
+        db.session.add(note)
+        db.session.commit()
+    return redirect(url_for('loan_notes'))
+
+
+@app.route('/loan-notes/<int:note_id>/update', methods=['POST'])
+def update_loan_note(note_id):
+    note = LoanNote.query.get_or_404(note_id)
+    note.group = request.form.get('group', note.group)
+    note.name = request.form.get('name', note.name)
+    note.add_flag = bool(request.form.get('add_flag'))
+    db.session.commit()
+    return redirect(url_for('loan_notes'))
+
+
+@app.route('/loan-notes/<int:note_id>/delete', methods=['POST'])
+def delete_loan_note(note_id):
+    note = LoanNote.query.get_or_404(note_id)
+    note.deleted_at = datetime.utcnow()
+    db.session.commit()
+    return redirect(url_for('loan_notes'))
 
 @app.route('/powerbi-scheduler')
 @login_required
