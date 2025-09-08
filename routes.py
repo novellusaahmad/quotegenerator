@@ -2236,11 +2236,26 @@ def download_loan_summary_docx(loan_id):
         extra_fields = rf.to_dict() if rf else {}
 
 
-    notes = (
-        LoanNote.query.filter_by(deleted_at=None, add_flag=True)
-        .order_by(LoanNote.group, LoanNote.id)
-        .all()
-    )
+    note_ids = extra_fields.get("note_ids")
+    if note_ids:
+        notes = (
+            LoanNote.query.filter(
+                LoanNote.id.in_(note_ids), LoanNote.deleted_at.is_(None)
+            )
+            .order_by(LoanNote.group, LoanNote.id)
+            .all()
+        )
+    elif loan.loan_notes:
+        notes = sorted(
+            (n for n in loan.loan_notes if n.deleted_at is None),
+            key=lambda n: (n.group, n.id),
+        )
+    else:
+        notes = (
+            LoanNote.query.filter_by(deleted_at=None, add_flag=True)
+            .order_by(LoanNote.group, LoanNote.id)
+            .all()
+        )
     # Pass the selected note templates so that any tokens within the text can be
     # substituted by ``generate_loan_summary_docx``.
     extra_fields["note_templates"] = [note.name for note in notes]
