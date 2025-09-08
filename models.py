@@ -334,6 +334,7 @@ class ReportFields(db.Model):
         nullable=False,
         unique=True,
     )
+    client_name = db.Column(db.String(200))
     property_address = db.Column(db.Text)
     debenture = db.Column(db.Text)
     corporate_guarantor = db.Column(db.Text)
@@ -349,6 +350,7 @@ class ReportFields(db.Model):
 
     def to_dict(self):
         return {
+            'client_name': self.client_name,
             'property_address': self.property_address,
             'debenture': self.debenture,
             'corporate_guarantor': self.corporate_guarantor,

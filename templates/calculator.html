@@ -1932,6 +1932,7 @@ async function handleReportFieldsClick(e) {
     if (!window.editMode || !window.editMode.loanId) return;
     const resp = await fetch(`/loan/${window.editMode.loanId}/report-fields`);
     const data = await resp.json();
+    document.getElementById('docxClientName').value = data.client_name || '';
     document.getElementById('docxPropertyAddress').value = data.property_address || '';
     document.getElementById('docxDebenture').value = data.debenture || '';
     document.getElementById('docxGuarantor').value = data.corporate_guarantor || '';
@@ -1985,6 +1986,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         saveFieldsBtn.addEventListener('click', async function() {
             if (!window.editMode || !window.editMode.loanId) return;
             const data = {
+                client_name: document.getElementById('docxClientName').value,
                 property_address: document.getElementById('docxPropertyAddress').value,
                 debenture: document.getElementById('docxDebenture').value,
                 corporate_guarantor: document.getElementById('docxGuarantor').value,
@@ -2269,6 +2271,10 @@ function retryLoanSave() {
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        <div class="mb-3">
+          <label for="docxClientName" class="form-label">Client Name</label>
+          <input type="text" class="form-control" id="docxClientName">
+        </div>
         <div class="mb-3">
           <label for="docxPropertyAddress" class="form-label">Property Address</label>
           <input type="text" class="form-control" id="docxPropertyAddress">

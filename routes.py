@@ -2145,6 +2145,12 @@ def manage_report_fields(loan_id):
     rf.debenture = data.get('debenture')
     rf.corporate_guarantor = data.get('corporate_guarantor')
 
+    client_name = data.get('client_name')
+    if client_name and len(client_name) > 200:
+        app.logger.error("Client name exceeds 200 characters")
+        return jsonify({'error': 'Client name exceeds maximum length'}), 400
+    rf.client_name = client_name
+
     broker_name = data.get('broker_name')
     if broker_name and len(broker_name) > 200:
         app.logger.error("Broker name exceeds 200 characters")

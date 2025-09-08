@@ -286,7 +286,8 @@ def generate_loan_summary_docx(loan, extra_fields=None):
                 "Unable to load header logo %s: %s", logo_path, exc
             )
 
-    doc.add_paragraph("Dear [•],")
+    client_name = extra_fields.get('client_name', '[•]')
+    doc.add_paragraph(f"Dear {client_name},")
     doc.add_paragraph(
         "Further to our correspondence, please see below our high-level terms subject to (i) valuation, (ii) planning appraisal, (iii) QS appraisal, (iv) due diligence and (v) legals:"
     )
