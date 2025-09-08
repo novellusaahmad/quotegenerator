@@ -2931,18 +2931,28 @@ def loan_notes():
         .order_by(LoanNote.group, LoanNote.id)
         .all()
     )
-    placeholder_options = [
-        f"report_fields.{col.name}"
-        for col in ReportFields.__table__.columns
-        if col.name
-        not in {
-            "id",
-            "loan_id",
-            "loan_summary_id",
-            "created_at",
-            "updated_at",
-        }
+    placeholder_options = []
+    tables = [
+        (
+            ReportFields,
+            "report_fields",
+            {"id", "loan_id", "loan_summary_id", "created_at", "updated_at"},
+        ),
+        (
+            LoanSummary,
+            "loan_summary",
+            {"id", "user_id", "created_at", "updated_at"},
+        ),
+        (
+            PaymentSchedule,
+            "payment_schedule",
+            {"id", "loan_summary_id", "created_at", "updated_at"},
+        ),
     ]
+    for model, prefix, excluded in tables:
+        placeholder_options.extend(
+            f"{prefix}.{col.name}" for col in model.__table__.columns if col.name not in excluded
+        )
     return render_template(
         "loan_notes.html", notes=notes, placeholder_options=placeholder_options
     )
