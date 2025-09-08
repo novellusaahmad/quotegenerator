@@ -2125,6 +2125,7 @@ def save_loan():
 @app.route('/loan/<int:loan_id>/report-fields', methods=['GET', 'POST'])
 def manage_report_fields(loan_id):
     """Retrieve or update extra report fields for a loan."""
+    ensure_loan_tables()
     loan = LoanSummary.query.get_or_404(loan_id)
     rf = ReportFields.query.filter_by(loan_id=loan_id).first()
 
@@ -2139,8 +2140,18 @@ def manage_report_fields(loan_id):
     rf.property_address = data.get('property_address')
     rf.debenture = data.get('debenture')
     rf.corporate_guarantor = data.get('corporate_guarantor')
-    rf.broker_name = data.get('broker_name')
-    rf.brokerage = data.get('brokerage')
+
+    broker_name = data.get('broker_name')
+    if broker_name and len(broker_name) > 200:
+        app.logger.error("Broker name exceeds 200 characters")
+        return jsonify({'error': 'Broker name exceeds maximum length'}), 400
+    rf.broker_name = broker_name
+
+    brokerage = data.get('brokerage')
+    if brokerage and len(brokerage) > 200:
+        app.logger.error("Brokerage exceeds 200 characters")
+        return jsonify({'error': 'Brokerage exceeds maximum length'}), 400
+    rf.brokerage = brokerage
 
     try:
         max_ltv_val = data.get('max_ltv')
@@ -2160,8 +2171,16 @@ def manage_report_fields(loan_id):
         app.logger.error(f"Invalid numeric value in report fields: {exc}")
         return jsonify({'error': 'Invalid numeric value provided'}), 400
 
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        db.session.commit()
+        app.logger.info("Report fields updated successfully for loan %s", loan_id)
+        return jsonify({'success': True})
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.error(
+            f"Failed to update report fields for loan {loan_id}: {exc}"
+        )
+        return jsonify({'error': f'Failed to update report fields: {exc}'}), 500
 
 
 @app.route('/loan/<int:loan_id>/summary-docx', methods=['GET', 'POST'])
