@@ -1338,8 +1338,7 @@ function triggerCalculationUpdate() {
         // Check if we have a calculator instance and the form has sufficient data
         const calculator = window.loanCalculator;
         if (calculator && (hasExistingResults || hasMinimumFormData())) {
-            console.log('Date changed - triggering automatic calculation update');
-            calculator.calculateLoan(true); // Skip validation for auto-calculation
+            console.log('Date changed - automatic calculation disabled. Use Calculate button.');
         }
     } catch (error) {
         console.log('Auto-calculation on date change not available:', error.message);
@@ -1617,10 +1616,7 @@ function handleEditMode() {
                             // Ensure repayment-specific sections are visible when editing
                             window.loanCalculator.updateRepaymentOptions();
                             window.loanCalculator.updateAdditionalParams();
-                            // Automatically recalculate to reflect loaded values
-                            if (typeof window.loanCalculator.calculateLoan === 'function') {
-                                window.loanCalculator.calculateLoan(true);
-                            }
+                            // Calculation will run when user clicks Calculate
                         } catch (err) {
                             console.error('Error toggling sections in edit mode:', err);
                         }

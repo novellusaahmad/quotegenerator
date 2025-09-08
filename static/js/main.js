@@ -206,35 +206,51 @@ Novellus.forms = {
     // Validate form
     validate: function(form) {
         let isValid = true;
+        const invalidFields = [];
         const requiredFields = form.querySelectorAll('[required]');
-        
+
         requiredFields.forEach(field => {
             if (!field.value.trim()) {
                 field.classList.add('is-invalid');
                 isValid = false;
+                const label = form.querySelector(`label[for="${field.id}"]`);
+                invalidFields.push(label ? label.textContent.trim() : field.name || field.id);
             } else {
                 field.classList.remove('is-invalid');
             }
         });
-        
+
         // Email validation
         const emailFields = form.querySelectorAll('input[type="email"]');
         emailFields.forEach(field => {
             if (field.value && !Novellus.utils.validateEmail(field.value)) {
                 field.classList.add('is-invalid');
                 isValid = false;
+                const label = form.querySelector(`label[for="${field.id}"]`);
+                invalidFields.push(label ? label.textContent.trim() : field.name || field.id);
             }
         });
-        
+
         // Phone validation
         const phoneFields = form.querySelectorAll('input[type="tel"]');
         phoneFields.forEach(field => {
             if (field.value && !Novellus.utils.validatePhone(field.value)) {
                 field.classList.add('is-invalid');
                 isValid = false;
+                const label = form.querySelector(`label[for="${field.id}"]`);
+                invalidFields.push(label ? label.textContent.trim() : field.name || field.id);
             }
         });
-        
+
+        if (!isValid) {
+            const message = 'Please correct: ' + invalidFields.join(', ');
+            if (window.notifications) {
+                window.notifications.error(message);
+            } else {
+                Novellus.utils.showToast(message, 'danger');
+            }
+        }
+
         return isValid;
     },
 
