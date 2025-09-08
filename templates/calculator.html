@@ -2020,6 +2020,25 @@ async function handleReportFieldsClick(e) {
             }
             body.appendChild(wrapper);
         });
+        const controls = document.createElement('div');
+        controls.className = 'mb-2';
+        controls.innerHTML = `
+            <button type="button" class="btn btn-sm btn-link p-0 me-2 select-all">Select All</button>
+            <button type="button" class="btn btn-sm btn-link p-0 clear-all">Clear All</button>
+        `;
+        const selectAllBtn = controls.querySelector('.select-all');
+        const clearAllBtn = controls.querySelector('.clear-all');
+        selectAllBtn.addEventListener('click', () => {
+            body.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+            });
+        });
+        clearAllBtn.addEventListener('click', () => {
+            body.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+        });
+        body.insertBefore(controls, body.firstChild);
         accordion.appendChild(item);
         idx++;
     }
