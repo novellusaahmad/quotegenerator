@@ -2946,11 +2946,20 @@ def add_loan_note():
     return redirect(url_for('loan_notes', toast='Loan note added'))
 
 
-@app.route('/loan-notes/<int:note_id>/update', methods=['POST'])
+@app.route('/loan-notes/<int:note_id>/update', methods=['POST', 'PUT'])
 def update_loan_note(note_id):
     note = LoanNote.query.get_or_404(note_id)
-    note.group = request.form.get('group', note.group)
-    note.name = request.form.get('name', note.name)
+
+    if request.is_json:
+        data = request.get_json() or {}
+        note.group = data.get('group', note.group).strip()
+        note.name = data.get('name', note.name).strip()
+        note.add_flag = bool(data.get('add_flag', note.add_flag))
+        db.session.commit()
+        return {"message": "Loan note updated"}, 200
+
+    note.group = request.form.get('group', note.group).strip()
+    note.name = request.form.get('name', note.name).strip()
     note.add_flag = bool(request.form.get('add_flag'))
     db.session.commit()
     return redirect(url_for('loan_notes', toast='Loan note updated'))
