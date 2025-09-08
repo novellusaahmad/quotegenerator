@@ -582,7 +582,7 @@
 </div>
 <div class="input-group" id="grossFixedInput">
 <span class="input-group-text currency-symbol">£</span>
-<input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0.01" name="gross_amount" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+<input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0.01" name="gross_amount" pattern="^(?=.*[1-9])[0-9.,]+$" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 <div class="input-group" id="grossPercentageInput" style="display: none;">
 <input class="form-control" id="grossAmountPercentage" max="100" min="0.0001" name="gross_amount_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
@@ -621,7 +621,7 @@
 <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
 </div>
 <div class="input-group" id="annualRateInput">
-<input class="form-control" id="annualRateValue" max="50" min="0.0001" name="annual_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<input class="form-control" id="annualRateValue" max="50" min="0.0001" name="annual_rate" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
 <span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
 </div>
 <small id="rateEquivalenceNote" class="form-text text-muted"></small>

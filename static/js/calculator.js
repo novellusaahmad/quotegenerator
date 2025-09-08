@@ -191,6 +191,15 @@ class LoanCalculator {
             field.addEventListener('input', toggleCalculate);
             field.addEventListener('change', toggleCalculate);
         });
+        // Also monitor fields that may become required dynamically
+        ['grossAmountFixed','grossAmountPercentage','netAmountInput','annualRateValue','monthlyRateValue']
+            .forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.addEventListener('input', toggleCalculate);
+                    field.addEventListener('change', toggleCalculate);
+                }
+            });
 
         // Loan type and repayment option changes with error handling
         document.getElementById('loanType').addEventListener('change', () => {
@@ -1969,17 +1978,25 @@ class LoanCalculator {
         const amountInputType = document.querySelector('input[name="amount_input_type"]:checked').value;
         const netAmountSection = document.getElementById('netAmountSection');
         const grossAmountSection = document.getElementById('grossAmountSection');
-        
+        const netInput = document.getElementById('netAmountInput');
+        const grossFixed = document.getElementById('grossAmountFixed');
+        const grossPercent = document.getElementById('grossAmountPercentage');
+
         if (netAmountSection && grossAmountSection) {
             if (amountInputType === 'net') {
                 netAmountSection.style.display = 'block';
                 grossAmountSection.style.display = 'none';
+                netInput?.setAttribute('required', '');
+                grossFixed?.removeAttribute('required');
+                grossPercent?.removeAttribute('required');
             } else {
                 netAmountSection.style.display = 'none';
                 grossAmountSection.style.display = 'block';
+                netInput?.removeAttribute('required');
                 this.toggleGrossAmountInputs();
             }
         }
+        Novellus.forms.validate(this.form, false);
     }
 
     toggleGrossAmountInputs() {
@@ -1989,21 +2006,28 @@ class LoanCalculator {
         const grossAmountType = grossAmountTypeRadio.value;
         const grossFixedInput = document.getElementById('grossFixedInput');
         const grossPercentageInput = document.getElementById('grossPercentageInput');
-        
+        const grossFixed = document.getElementById('grossAmountFixed');
+        const grossPercent = document.getElementById('grossAmountPercentage');
+
         console.log('Toggle gross amount inputs:', grossAmountType);
-        
+
         if (grossFixedInput && grossPercentageInput) {
             if (grossAmountType === 'fixed') {
                 grossFixedInput.style.setProperty('display', 'flex', 'important');
                 grossPercentageInput.style.setProperty('display', 'none', 'important');
                 console.log('Showing fixed input, hiding percentage input');
+                grossFixed?.setAttribute('required', '');
+                grossPercent?.removeAttribute('required');
             } else {
                 grossFixedInput.style.setProperty('display', 'none', 'important');
                 grossPercentageInput.style.setProperty('display', 'flex', 'important');
                 console.log('Hiding fixed input, showing percentage input');
+                grossPercent?.setAttribute('required', '');
+                grossFixed?.removeAttribute('required');
                 this.updateGrossAmountFromPercentage();
             }
         }
+        Novellus.forms.validate(this.form, false);
     }
 
     toggleRateInputs() {
@@ -2029,6 +2053,8 @@ class LoanCalculator {
                 monthlyRateInput.style.setProperty('display', 'flex', 'important');
                 annualRateInput.style.setProperty('display', 'none', 'important');
                 console.log('Showing monthly input, hiding annual input');
+                monthlyRateValue?.setAttribute('required', '');
+                annualRateValue?.removeAttribute('required');
             } else {
                 if (monthlyRateValue && annualRateValue) {
                     const monthly = parseFloat(monthlyRateValue.value);
@@ -2039,9 +2065,12 @@ class LoanCalculator {
                 monthlyRateInput.style.setProperty('display', 'none', 'important');
                 annualRateInput.style.setProperty('display', 'flex', 'important');
                 console.log('Hiding monthly input, showing annual input');
+                annualRateValue?.setAttribute('required', '');
+                monthlyRateValue?.removeAttribute('required');
             }
         }
         this.updateRateEquivalenceNote();
+        Novellus.forms.validate(this.form, false);
     }
 
     setDefaultDate() {
@@ -2320,27 +2349,32 @@ class LoanCalculator {
         const netSection = document.getElementById('netAmountSection');
         const grossRadio = document.getElementById('grossAmount');
         const netRadio = document.getElementById('netAmount');
-        
-        if (grossRadio && grossRadio.checked && grossSection) {
-            grossSection.style.display = 'block';
-            console.log('Showing gross amount section');
-        } else if (grossSection) {
-            grossSection.style.display = 'none';
+        const netInput = document.getElementById('netAmountInput');
+        const grossFixed = document.getElementById('grossAmountFixed');
+        const grossPercent = document.getElementById('grossAmountPercentage');
+
+        if (grossRadio && grossRadio.checked) {
+            if (grossSection) grossSection.style.display = 'block';
+            if (netSection) netSection.style.display = 'none';
+            if (netInput) netInput.removeAttribute('required');
+            this.toggleGrossAmountInputs();
+        } else if (netRadio && netRadio.checked) {
+            if (grossSection) grossSection.style.display = 'none';
+            if (netSection) netSection.style.display = 'block';
+            if (netInput) netInput.setAttribute('required', '');
+            if (grossFixed) grossFixed.removeAttribute('required');
+            if (grossPercent) grossPercent.removeAttribute('required');
         }
-        
-        if (netRadio && netRadio.checked && netSection) {
-            netSection.style.display = 'block';
-            console.log('Showing net amount section');
-        } else if (netSection) {
-            netSection.style.display = 'none';
-        }
+        Novellus.forms.validate(this.form, false);
     }
     
     toggleGrossAmountInputs() {
         const fixedInput = document.getElementById('grossFixedInput');
         const percentageInput = document.getElementById('grossPercentageInput');
         const fixedRadio = document.getElementById('grossFixed');
-        
+        const grossFixed = document.getElementById('grossAmountFixed');
+        const grossPercent = document.getElementById('grossAmountPercentage');
+
         if (fixedRadio && fixedRadio.checked) {
             console.log('Toggle gross amount inputs:', 'fixed');
             if (fixedInput) {
@@ -2350,6 +2384,8 @@ class LoanCalculator {
             if (percentageInput) {
                 percentageInput.style.setProperty('display', 'none', 'important');
             }
+            grossFixed?.setAttribute('required', '');
+            grossPercent?.removeAttribute('required');
         } else {
             console.log('Toggle gross amount inputs:', 'percentage');
             if (fixedInput) {
@@ -2359,7 +2395,11 @@ class LoanCalculator {
                 percentageInput.style.setProperty('display', 'flex', 'important');
                 console.log('Showing percentage input, hiding fixed input');
             }
+            grossPercent?.setAttribute('required', '');
+            grossFixed?.removeAttribute('required');
+            this.updateGrossAmountFromPercentage();
         }
+        Novellus.forms.validate(this.form, false);
     }
     
     toggleRateInputs() {
@@ -2384,6 +2424,8 @@ class LoanCalculator {
             if (annualInput) {
                 annualInput.style.setProperty('display', 'none', 'important');
             }
+            monthlyValue?.setAttribute('required', '');
+            annualValue?.removeAttribute('required');
         } else {
             console.log('Toggle rate inputs:', 'annual');
             if (monthlyValue && annualValue) {
@@ -2399,8 +2441,11 @@ class LoanCalculator {
                 annualInput.style.setProperty('display', 'flex', 'important');
                 console.log('Hiding monthly input, showing annual input');
             }
+            annualValue?.setAttribute('required', '');
+            monthlyValue?.removeAttribute('required');
         }
         this.updateRateEquivalenceNote();
+        Novellus.forms.validate(this.form, false);
     }
 
     updateRateEquivalenceNote() {
