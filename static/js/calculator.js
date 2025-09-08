@@ -179,6 +179,19 @@ class LoanCalculator {
             });
         }
 
+        // Live validation to toggle calculate button
+        const requiredFields = this.form.querySelectorAll('[required]');
+        const toggleCalculate = () => {
+            const valid = Novellus.forms.validate(this.form);
+            if (calcBtn) {
+                calcBtn.disabled = !valid;
+            }
+        };
+        requiredFields.forEach(field => {
+            field.addEventListener('input', toggleCalculate);
+            field.addEventListener('change', toggleCalculate);
+        });
+
         // Loan type and repayment option changes with error handling
         document.getElementById('loanType').addEventListener('change', () => {
             try {

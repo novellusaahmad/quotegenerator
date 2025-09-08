@@ -209,14 +209,29 @@ Novellus.forms = {
         const invalidFields = [];
         const requiredFields = form.querySelectorAll('[required]');
 
+        // Helper to remove tooltip
+        const removeTooltip = (field) => {
+            const tooltip = bootstrap.Tooltip.getInstance(field);
+            if (tooltip) tooltip.dispose();
+            field.removeAttribute('data-bs-toggle');
+            field.removeAttribute('title');
+        };
+
         requiredFields.forEach(field => {
+            const label = form.querySelector(`label[for="${field.id}"]`);
+            const labelText = label ? label.textContent.trim() : field.name || field.id;
             if (!field.value.trim()) {
                 field.classList.add('is-invalid');
+                field.dataset.bsToggle = 'tooltip';
+                field.title = `${labelText} is required`;
+                if (!bootstrap.Tooltip.getInstance(field)) {
+                    new bootstrap.Tooltip(field);
+                }
                 isValid = false;
-                const label = form.querySelector(`label[for="${field.id}"]`);
-                invalidFields.push(label ? label.textContent.trim() : field.name || field.id);
+                invalidFields.push(labelText);
             } else {
                 field.classList.remove('is-invalid');
+                removeTooltip(field);
             }
         });
 
@@ -225,9 +240,17 @@ Novellus.forms = {
         emailFields.forEach(field => {
             if (field.value && !Novellus.utils.validateEmail(field.value)) {
                 field.classList.add('is-invalid');
+                field.dataset.bsToggle = 'tooltip';
+                field.title = 'Invalid email address';
+                if (!bootstrap.Tooltip.getInstance(field)) {
+                    new bootstrap.Tooltip(field);
+                }
                 isValid = false;
                 const label = form.querySelector(`label[for="${field.id}"]`);
                 invalidFields.push(label ? label.textContent.trim() : field.name || field.id);
+            } else {
+                field.classList.remove('is-invalid');
+                removeTooltip(field);
             }
         });
 
@@ -236,9 +259,17 @@ Novellus.forms = {
         phoneFields.forEach(field => {
             if (field.value && !Novellus.utils.validatePhone(field.value)) {
                 field.classList.add('is-invalid');
+                field.dataset.bsToggle = 'tooltip';
+                field.title = 'Invalid phone number';
+                if (!bootstrap.Tooltip.getInstance(field)) {
+                    new bootstrap.Tooltip(field);
+                }
                 isValid = false;
                 const label = form.querySelector(`label[for="${field.id}"]`);
                 invalidFields.push(label ? label.textContent.trim() : field.name || field.id);
+            } else {
+                field.classList.remove('is-invalid');
+                removeTooltip(field);
             }
         });
 
@@ -259,6 +290,10 @@ Novellus.forms = {
         const invalidFields = form.querySelectorAll('.is-invalid');
         invalidFields.forEach(field => {
             field.classList.remove('is-invalid');
+            const tooltip = bootstrap.Tooltip.getInstance(field);
+            if (tooltip) tooltip.dispose();
+            field.removeAttribute('data-bs-toggle');
+            field.removeAttribute('title');
         });
     }
 };
