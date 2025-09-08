@@ -2135,7 +2135,11 @@ def get_loan_notes():
     notes = LoanNote.query.filter_by(deleted_at=None).all()
     grouped = defaultdict(list)
     for n in notes:
-        grouped[n.group].append({'id': n.id, 'text': n.name})
+        grouped[n.group].append({
+            'id': n.id,
+            'text': n.name,
+            'add_flag': n.add_flag,
+        })
     return jsonify(grouped)
 
 
