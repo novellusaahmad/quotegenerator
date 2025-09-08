@@ -2844,10 +2844,10 @@ class LoanCalculator {
     }
 
     getBreakdownData(r) {
-        const currency = this.getCurrencySymbol(r.currency);
+        const symbol = this.getCurrencySymbol(r.currency);
         const formatMoney = (val) => {
             const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[,£€]/g, '')) || 0;
-            return currency + num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            return symbol + num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         };
 
         const amountType = r.amount_input_type || document.querySelector('input[name="amount_input_type"]:checked')?.value || 'gross';
@@ -2898,10 +2898,10 @@ class LoanCalculator {
         }
 
         const baseMandatory = [
-            { label: amountType === 'gross' ? 'Gross Loan (£)' : 'Net Loan (£)', value: amountType === 'gross' ? gross : net },
+            { label: amountType === 'gross' ? `Gross Loan (${symbol})` : `Net Loan (${symbol})`, value: amountType === 'gross' ? gross : net },
             { label: 'Arrangement Fee %', value: arrangementPctText },
-            { label: 'Legal Fees (£)', value: legal },
-            { label: 'Site Visit Fee (£)', value: site },
+            { label: `Legal Fees (${symbol})`, value: legal },
+            { label: `Site Visit Fee (${symbol})`, value: site },
             { label: 'Title Insurance %', value: titlePctText },
             { label: 'Interest Rate (% p.a.)', value: rateText },
             { label: loanTermDays ? 'Loan Term (days)' : 'Loan Term (months)', value: loanTermDays || loanTerm }
@@ -2941,7 +2941,7 @@ class LoanCalculator {
                     { label: `Retained Interest = ${rateText} × ${loanTermDays || loanTerm} ÷ ${loanTermDays ? daysPerYear : 12} × Gross`, value: interest }
                 ];
                 outputs = [
-                    { label: 'Net Loan (£)', value: net },
+                    { label: `Net Loan (${symbol})`, value: net },
                     { label: 'Repayment Method', value: 'Retained Interest' }
                 ];
                 formulaValues = `${net} = ${gross} − ${arrangement} − ${legal} − ${site} − ${title} − ${interest}`;
@@ -2951,13 +2951,13 @@ class LoanCalculator {
                     ? 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance % − (Interest Rate × Loan Term Days ÷ Days in Year))'
                     : 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance % − (Interest Rate × Loan Term ÷ 12))';
                 calculated = [
-                    { label: 'Gross Loan (£)', value: gross },
+                    { label: `Gross Loan (${symbol})`, value: gross },
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
                     { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
                     { label: `Retained Interest = ${rateText} × ${loanTermDays || loanTerm} ÷ ${loanTermDays ? daysPerYear : 12} × Gross`, value: interest }
                 ];
                 outputs = [
-                    { label: 'Net Loan validation (£)', value: net },
+                    { label: `Net Loan validation (${symbol})`, value: net },
                     { label: 'Repayment Method', value: 'Retained Interest' }
                 ];
                 formulaValues = loanTermDays
@@ -2969,10 +2969,10 @@ class LoanCalculator {
                 calculated = [
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
                     { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
-                    { label: 'Interest Serviced (£)', value: interest }
+                    { label: `Interest Serviced (${symbol})`, value: interest }
                 ];
                 outputs = [
-                    { label: 'Net Loan (£)', value: net },
+                    { label: `Net Loan (${symbol})`, value: net },
                     { label: 'Repayment Method', value: 'Serviced Interest' }
                 ];
                 formulaValues = `${net} = ${gross} − ${arrangement} − ${legal} − ${site} − ${title}`;
@@ -2980,13 +2980,13 @@ class LoanCalculator {
             case 'net_to_gross_serviced':
                 formula = 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance %)';
                 calculated = [
-                    { label: 'Gross Loan (£)', value: gross },
+                    { label: `Gross Loan (${symbol})`, value: gross },
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
                     { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
-                    { label: 'Total Interest Serviced (£)', value: interest }
+                    { label: `Total Interest Serviced (${symbol})`, value: interest }
                 ];
                 outputs = [
-                    { label: 'Net Loan validation (£)', value: net },
+                    { label: `Net Loan validation (${symbol})`, value: net },
                     { label: 'Repayment Method', value: 'Serviced Interest' }
                 ];
                 formulaValues = `${gross} = (${net} + ${legal} + ${site}) / (1 − ${arrangementPctText} − ${titlePctText})`;
@@ -3000,7 +3000,7 @@ class LoanCalculator {
                     { label: 'Capital Repayments Schedule', value: 'See schedule' }
                 ];
                 outputs = [
-                    { label: 'Net Loan (£)', value: net },
+                    { label: `Net Loan (${symbol})`, value: net },
                     { label: 'Repayment Method', value: 'Serviced Interest + Capital Repayments' }
                 ];
                 formulaValues = `${net} = ${gross} − ${arrangement} − ${legal} − ${site} − ${title}`;
@@ -3008,14 +3008,14 @@ class LoanCalculator {
             case 'net_to_gross_service_capital':
                 formula = 'Gross = (Net + Legal Fees + Site Visit Fee) / (1 − Arrangement Fee % − Title Insurance %)';
                 calculated = [
-                    { label: 'Gross Loan (£)', value: gross },
+                    { label: `Gross Loan (${symbol})`, value: gross },
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
                     { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
-                    { label: 'Total Interest Serviced (£)', value: interest },
+                    { label: `Total Interest Serviced (${symbol})`, value: interest },
                     { label: 'Capital Repayment Schedule', value: 'See schedule' }
                 ];
                 outputs = [
-                    { label: 'Net Loan validation (£)', value: net },
+                    { label: `Net Loan validation (${symbol})`, value: net },
                     { label: 'Repayment Method', value: 'Serviced Interest + Capital Repayments' }
                 ];
                 formulaValues = `${gross} = (${net} + ${legal} + ${site}) / (1 − ${arrangementPctText} − ${titlePctText})`;
@@ -3025,17 +3025,17 @@ class LoanCalculator {
                     ? 'Net = Gross − Arrangement Fee − Legal Fees − Site Visit Fee − Title Insurance − Retained Interest'
                     : 'Gross = Net + Arrangement Fee + Legal Fees + Site Visit Fee + Title Insurance + Retained Interest';
                 mandatory = baseMandatory.slice();
-                mandatory.unshift({ label: 'Property Value (£)', value: propertyValue });
+                mandatory.unshift({ label: `Property Value (${symbol})`, value: propertyValue });
                 calculated = [
                     { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
                     { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
-                    { label: 'Retained Interest (£)', value: interest },
+                    { label: `Retained Interest (${symbol})`, value: interest },
                     { label: 'Capital Repayment Schedule', value: 'See schedule' },
                     { label: 'LTV at start (%)', value: `${startLTV}%` },
                     { label: 'LTV at exit (%)', value: `${endLTV}%` }
                 ];
                 outputs = [
-                    { label: amountType === 'gross' ? 'Net Loan (£)' : 'Gross Loan (£)', value: amountType === 'gross' ? net : gross },
+                    { label: amountType === 'gross' ? `Net Loan (${symbol})` : `Gross Loan (${symbol})`, value: amountType === 'gross' ? net : gross },
                     { label: 'LTV start (%)', value: `${startLTV}%` },
                     { label: 'LTV at exit (%)', value: `${endLTV}%` },
                     { label: 'Repayment Method', value: interestDeducted ? 'Retained Interest + Capital Repayments' : 'Serviced Interest + Capital Repayments' }
