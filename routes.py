@@ -2922,7 +2922,7 @@ def add_loan_note():
         note = LoanNote(group=group, name=name, add_flag=add_flag)
         db.session.add(note)
         db.session.commit()
-    return redirect(url_for('loan_notes'))
+    return redirect(url_for('loan_notes', toast='Loan note added'))
 
 
 @app.route('/loan-notes/<int:note_id>/update', methods=['POST'])
@@ -2932,7 +2932,7 @@ def update_loan_note(note_id):
     note.name = request.form.get('name', note.name)
     note.add_flag = bool(request.form.get('add_flag'))
     db.session.commit()
-    return redirect(url_for('loan_notes'))
+    return redirect(url_for('loan_notes', toast='Loan note updated'))
 
 
 @app.route('/loan-notes/<int:note_id>/delete', methods=['POST'])
@@ -2940,7 +2940,7 @@ def delete_loan_note(note_id):
     note = LoanNote.query.get_or_404(note_id)
     note.deleted_at = datetime.utcnow()
     db.session.commit()
-    return redirect(url_for('loan_notes'))
+    return redirect(url_for('loan_notes', toast='Loan note deleted'))
 
 @app.route('/powerbi-scheduler')
 @login_required
