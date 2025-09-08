@@ -20,6 +20,7 @@
                 </tr>
             </thead>
             <tbody>
+                {% set modals = '' %}
                 {% for note in notes %}
                 <tr style="border:1px solid #000;">
                     <td class="px-3" style="color:#000!important; border-right:1px solid #000;">{{ note.group }}</td>
@@ -31,8 +32,9 @@
                         </form>
                     </td>
                 </tr>
+                {% set modal %}
                 <div class="modal fade" id="editNote{{note.id}}" tabindex="-1">
-                    <div class="modal-dialog">
+                    <div class="modal-dialog modal-dialog-centered">
                         <form class="modal-content" method="post" action="{{ url_for('update_loan_note', note_id=note.id) }}">
                             <div class="modal-header">
                                 <h5 class="modal-title">Edit Note</h5>
@@ -59,9 +61,12 @@
                         </form>
                     </div>
                 </div>
+                {% endset %}
+                {% set modals = modals + modal %}
                 {% endfor %}
             </tbody>
         </table>
+        {{ modals|safe }}
     </div>
 </div>
 
