@@ -545,6 +545,10 @@ def generate_loan_summary_docx(loan, extra_fields=None):
         ),
     ]
 
+    loan_notes = extra_fields.get('loan_notes', [])
+    if loan_notes:
+        sections.insert(1, ("Additional Conditions", loan_notes))
+
     for heading, bullets in sections:
         hp = doc.add_heading(_replace_tokens(heading), level=1)
         for run in hp.runs:

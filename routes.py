@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 from dateutil.relativedelta import relativedelta
+from collections import defaultdict
 from flask import render_template, request, redirect, url_for, flash, jsonify, session, send_file, make_response, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_cors import cross_origin
@@ -22,6 +23,7 @@ from models import (
     PaymentSchedule,
     ReportFields,
     LoanNote,
+    LoanSummaryNote,
 )
 import sqlalchemy as sa
 from calculations import LoanCalculator
@@ -179,7 +181,7 @@ def ensure_loan_tables():
     """Create loan-related tables and ensure they contain required columns."""
     inspector = sa.inspect(db.engine)
 
-    models_to_check = [LoanSummary, PaymentSchedule, ReportFields]
+    models_to_check = [LoanSummary, PaymentSchedule, ReportFields, LoanNote, LoanSummaryNote]
 
     # Create missing tables if necessary
     for model in models_to_check:
@@ -2128,6 +2130,15 @@ def save_loan():
         return jsonify({'error': f'Failed to save loan: {str(e)}'}), 500
 
 
+@app.route('/api/loan-notes', methods=['GET'])
+def get_loan_notes():
+    notes = LoanNote.query.filter_by(deleted_at=None).all()
+    grouped = defaultdict(list)
+    for n in notes:
+        grouped[n.group].append({'id': n.id, 'text': n.name})
+    return jsonify(grouped)
+
+
 @app.route('/loan/<int:loan_id>/report-fields', methods=['GET', 'POST', 'PUT'])
 def manage_report_fields(loan_id):
     """Retrieve or update extra report fields for a loan."""
@@ -2136,7 +2147,9 @@ def manage_report_fields(loan_id):
     rf = ReportFields.query.filter_by(loan_id=loan_id).first()
 
     if request.method == 'GET':
-        return jsonify(rf.to_dict() if rf else {})
+        response = rf.to_dict() if rf else {}
+        response['note_ids'] = [n.id for n in loan.loan_notes]
+        return jsonify(response)
 
     data = request.get_json() or {}
     if rf is None:
@@ -2187,6 +2200,12 @@ def manage_report_fields(loan_id):
         app.logger.error(f"Invalid numeric value in report fields: {exc}")
         return jsonify({'error': 'Invalid numeric value provided'}), 400
 
+    note_ids = data.get('note_ids', [])
+    if note_ids:
+        loan.loan_notes = LoanNote.query.filter(LoanNote.id.in_(note_ids)).all()
+    else:
+        loan.loan_notes = []
+
     try:
         db.session.commit()
         app.logger.info("Report fields updated successfully for loan %s", loan_id)
@@ -2212,12 +2231,14 @@ def download_loan_summary_docx(loan_id):
         rf = ReportFields.query.filter_by(loan_id=loan_id).first()
         extra_fields = rf.to_dict() if rf else {}
 
+
     notes = (
         LoanNote.query.filter_by(deleted_at=None, add_flag=True)
         .order_by(LoanNote.group, LoanNote.id)
         .all()
     )
     extra_fields["notes"] = [note.name for note in notes]
+
 
     docx_content = generate_loan_summary_docx(loan, extra_fields)
     if not docx_content:
