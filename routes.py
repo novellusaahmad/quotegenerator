@@ -2180,7 +2180,9 @@ def manage_report_fields(loan_id):
         app.logger.error(
             f"Failed to update report fields for loan {loan_id}: {exc}"
         )
+
         return jsonify({'error': f'Failed to update report fields: {exc}'}), 500
+
 
 
 @app.route('/loan/<int:loan_id>/summary-docx', methods=['GET', 'POST'])
