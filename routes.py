@@ -2159,9 +2159,16 @@ def manage_report_fields(loan_id):
         db.session.rollback()
         app.logger.error(f"Invalid numeric value in report fields: {exc}")
         return jsonify({'error': 'Invalid numeric value provided'}), 400
-
-    db.session.commit()
-    return jsonify({'success': True})
+    try:
+        db.session.commit()
+        app.logger.info("Report fields updated successfully for loan %s", loan_id)
+        return jsonify({'success': True})
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.error(
+            f"Failed to update report fields for loan {loan_id}: {exc}"
+        )
+        return jsonify({'error': 'Failed to update report fields'}), 500
 
 
 @app.route('/loan/<int:loan_id>/summary-docx', methods=['GET', 'POST'])
