@@ -429,11 +429,23 @@ def generate_loan_summary_docx(loan, extra_fields=None):
     token_pattern = re.compile(r"\[([^\]]+)\]", re.IGNORECASE)
 
     def _replace_tokens(text, placeholder_map=None):
-        placeholder_map = {k.lower(): v for k, v in (placeholder_map or {}).items()}
+        cleaned_map = {}
+        for key, value in (placeholder_map or {}).items():
+            norm_key = str(key).strip().strip("[]").lower()
+            if isinstance(value, str):
+                norm_val = value.strip()
+                if norm_val.lower().startswith("loan_summary."):
+                    norm_val = norm_val.split(".", 1)[1]
+                norm_val = norm_val.lower()
+            else:
+                norm_val = value
+            cleaned_map[norm_key] = norm_val
 
         def repl(match):
             token_name = match.group(1)
-            ctx_key = placeholder_map.get(token_name.lower(), token_name)
+            ctx_key = cleaned_map.get(token_name.lower(), token_name)
+            if isinstance(ctx_key, str) and ctx_key.lower().startswith("loan_summary."):
+                ctx_key = ctx_key.split(".", 1)[1]
             value = _resolve_path(context, ctx_key)
             if value in (None, ""):
                 logger.warning("Missing value for placeholder %s", token_name)

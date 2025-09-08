@@ -122,3 +122,43 @@ def test_placeholder_map_report_fields_block():
 
     assert 'Financial Covenants Maximum LTV 55%' in text
     assert '[MAX_LTV]' not in text
+
+
+
+def test_placeholder_map_bracket_keys_with_prefix():
+    loan = SimpleNamespace(
+        currency='GBP',
+        arrangement_fee_percentage=5,
+        arrangement_fee=1000,
+        property_value=0,
+        gross_amount=0,
+        loan_term=0,
+        legal_costs=0,
+        title_insurance=0,
+        total_interest=0,
+        day_1_advance=0,
+        net_advance=0,
+        total_net_advance=0,
+        ltv_ratio=0,
+        start_ltv=0,
+    )
+
+    extra_fields = {
+        'note_templates': [
+            {
+                'text': 'The arrangement fee is [ARRANGEMENT_FEE] i.e. [ARRANGEMENT_FEE_PER]% of the gross loan',
+                'placeholder_map': {
+                    '[ARRANGEMENT_FEE]': 'loan_summary.arrangement_fee',
+                    '[ARRANGEMENT_FEE_PER]': 'loan_summary.arrangement_fee_percentage',
+                },
+            }
+        ]
+    }
+
+    doc_bytes = generate_loan_summary_docx(loan, extra_fields)
+    text = extract_text(doc_bytes)
+
+    assert 'The arrangement fee is 1000 i.e. 5%' in text
+    assert '[ARRANGEMENT_FEE]' not in text
+    assert '[ARRANGEMENT_FEE_PER]' not in text
+
