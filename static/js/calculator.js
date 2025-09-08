@@ -97,6 +97,8 @@ class LoanCalculator {
             this.initializeEventListeners();
             // Enable blur-based comma formatting on monetary fields
             this.setupImprovedInputFormatting();
+            // Prevent entry of negative numbers in all numeric fields
+            this.preventNegativeValues();
             this.setDefaultDate();
             this.updateCurrencySymbols();
             this.updateGBPQuoteButtonVisibility();
@@ -1704,7 +1706,7 @@ class LoanCalculator {
         // List of monetary input field IDs that need comma formatting
         const monetaryFields = [
             'propertyValue',
-            'grossAmountFixed', 
+            'grossAmountFixed',
             'grossAmountPercentage',
             'netAmountInput',
             'day1Advance',
@@ -1726,33 +1728,55 @@ class LoanCalculator {
         });
     }
 
+    preventNegativeValues() {
+        const numberInputs = this.form.querySelectorAll('input[type="number"]');
+        numberInputs.forEach(input => {
+            input.addEventListener('input', () => {
+                const minAttr = parseFloat(input.getAttribute('min'));
+                const min = isNaN(minAttr) ? 0 : minAttr;
+                const val = parseFloat(input.value);
+                if (!isNaN(val) && val < min) {
+                    input.value = '';
+                    if (window.notifications && window.notifications.error) {
+                        window.notifications.error('Value cannot be negative');
+                    }
+                }
+            });
+        });
+    }
+
     safeFormatInputValue(input) {
         const originalValue = input.value;
-        
+
         // Only proceed if there's actually a value
         if (!originalValue || originalValue.trim() === '') {
             return;
         }
-        
+
         // Remove existing commas and parse
         const cleanValue = originalValue.replace(/,/g, '');
         const numericValue = parseFloat(cleanValue);
-        
-        // Only format if it's a valid positive number
-        if (!isNaN(numericValue) && numericValue > 0) {
-            try {
-                const formattedValue = numericValue.toLocaleString('en-GB', {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 4
-                });
-                input.value = formattedValue;
-            } catch (error) {
-                // If formatting fails, keep original value
-                console.warn('Number formatting failed:', error);
-                input.value = originalValue;
+
+        // Disallow negative numbers
+        if (isNaN(numericValue) || numericValue < 0) {
+            input.value = '';
+            if (window.notifications && window.notifications.error) {
+                window.notifications.error('Value cannot be negative');
             }
+            return;
         }
-        // For zero, negative, or invalid numbers, leave as typed
+
+        try {
+            const formattedValue = numericValue.toLocaleString('en-GB', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 4
+            });
+            input.value = formattedValue;
+        } catch (error) {
+            // If formatting fails, keep original value
+            console.warn('Number formatting failed:', error);
+            input.value = originalValue;
+        }
     }
 
     updateAutoTotalAmount() {
