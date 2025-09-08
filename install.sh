@@ -257,9 +257,27 @@ fi
 mkdir -p uploads
 mkdir -p reports_output
 
+# Backup existing loan_notes table if present
+print_status "Backing up existing loan_notes table if present..."
+if sudo -u postgres psql -d novellus_loans -tAc "SELECT to_regclass('public.loan_notes')" | grep -q loan_notes; then
+    sudo -u postgres pg_dump --data-only --table=loan_notes novellus_loans > loan_notes_backup.sql
+    print_status "loan_notes table backed up to loan_notes_backup.sql"
+else
+    print_warning "loan_notes table not found; skipping backup"
+fi
+
 # Initialize database
 print_status "Initializing database..."
 python database_init.py
+
+# Restore loan_notes table from backup if available
+if [ -f loan_notes_backup.sql ]; then
+    print_status "Restoring loan_notes table from backup..."
+    sudo -u postgres psql -d novellus_loans -f loan_notes_backup.sql
+    rm loan_notes_backup.sql
+else
+    print_warning "No loan_notes backup found; table remains empty"
+fi
 
 # Test installation
 print_status "Testing installation..."
