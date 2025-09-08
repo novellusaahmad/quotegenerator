@@ -1994,14 +1994,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 exit_fee_percent: document.getElementById('docxExitFee').value,
                 commitment_fee: document.getElementById('docxCommitmentFee').value
             };
-            await fetch(`/loan/${window.editMode.loanId}/report-fields`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            const modalEl = document.getElementById('loanSummaryFieldsModal');
-            const modalInstance = bootstrap.Modal.getInstance(modalEl);
-            if (modalInstance) modalInstance.hide();
+            try {
+                const response = await fetch(`/loan/${window.editMode.loanId}/report-fields`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    Novellus.utils.showToast('Report fields saved', 'success');
+                    const modalEl = document.getElementById('loanSummaryFieldsModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                } else {
+                    Novellus.utils.showToast(result.error || 'Failed to save report fields', 'danger');
+                }
+            } catch (error) {
+                Novellus.utils.showToast('Failed to save report fields', 'danger');
+            }
         });
     }
 
