@@ -220,10 +220,16 @@ Novellus.forms = {
         requiredFields.forEach(field => {
             const label = form.querySelector(`label[for="${field.id}"]`);
             const labelText = label ? label.textContent.trim() : field.name || field.id;
-            if (!field.value.trim()) {
+            const valueMissing = !field.value.trim();
+            const validityFailed = !field.checkValidity();
+            if (valueMissing || validityFailed) {
                 field.classList.add('is-invalid');
                 field.dataset.bsToggle = 'tooltip';
-                field.title = `${labelText} is required`;
+                if (valueMissing) {
+                    field.title = `${labelText} is required`;
+                } else {
+                    field.title = field.validationMessage || `${labelText} is invalid`;
+                }
                 if (!bootstrap.Tooltip.getInstance(field)) {
                     new bootstrap.Tooltip(field);
                 }
