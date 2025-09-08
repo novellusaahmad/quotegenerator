@@ -2122,7 +2122,7 @@ def save_loan():
         return jsonify({'error': f'Failed to save loan: {str(e)}'}), 500
 
 
-@app.route('/loan/<int:loan_id>/report-fields', methods=['GET', 'POST'])
+@app.route('/loan/<int:loan_id>/report-fields', methods=['GET', 'POST', 'PUT'])
 def manage_report_fields(loan_id):
     """Retrieve or update extra report fields for a loan."""
     ensure_loan_tables()
@@ -2136,6 +2136,10 @@ def manage_report_fields(loan_id):
     if rf is None:
         rf = ReportFields(loan_id=loan_id)
         db.session.add(rf)
+    else:
+        # Ensure the legacy column is populated if it existed without a
+        # corresponding loan_summary_id value.
+        rf.loan_id = loan_id
 
     rf.property_address = data.get('property_address')
     rf.debenture = data.get('debenture')
