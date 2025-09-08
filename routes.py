@@ -2236,13 +2236,9 @@ def download_loan_summary_docx(loan_id):
         extra_fields = rf.to_dict() if rf else {}
 
 
-    notes = (
-        LoanNote.query.filter_by(deleted_at=None, add_flag=True)
-        .order_by(LoanNote.group, LoanNote.id)
-        .all()
-    )
+    notes = [n for n in loan.loan_notes if n.deleted_at is None]
+    notes.sort(key=lambda n: (n.group, n.id))
     extra_fields["notes"] = [note.name for note in notes]
-
 
     docx_content = generate_loan_summary_docx(loan, extra_fields)
     if not docx_content:
