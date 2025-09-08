@@ -1980,9 +1980,9 @@ def save_loan():
                 'flexiblePayment', data.get('flexible_payment', 0)
             )
             loan_summary.arrangement_fee = fresh_calculation.get('arrangementFee', 0)
-            loan_summary.arrangement_fee_percentage = data.get(
-                'arrangementFeePercentage',
-                data.get('arrangement_fee_percentage', 2.0)
+            loan_summary.arrangement_fee_percentage = safe_float(
+                data.get('arrangementFeePercentage', data.get('arrangement_fee_percentage', 2.0)),
+                0.0
             )
             loan_summary.legal_costs = data.get(
                 'legalFees',
@@ -2036,9 +2036,9 @@ def save_loan():
                     'flexiblePayment', data.get('flexible_payment', 0)
                 ),
                 arrangement_fee=fresh_calculation.get('arrangementFee', 0),
-                arrangement_fee_percentage=data.get(
-                    'arrangementFeePercentage',
-                    data.get('arrangement_fee_percentage', 2.0)
+                arrangement_fee_percentage=safe_float(
+                    data.get('arrangementFeePercentage', data.get('arrangement_fee_percentage', 2.0)),
+                    0.0
                 ),
                 legal_costs=data.get(
                     'legalFees',
