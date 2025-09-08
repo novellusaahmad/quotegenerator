@@ -49,7 +49,7 @@ def test_editing_populates_all_fields(live_server):
             lambda d: d.find_element(By.ID, "loanName").get_attribute("value") == "Edit Loan"
         )
 
-        assert driver.find_element(By.ID, "arrangementFeePercentage").get_attribute("value") == "3"
+        assert driver.find_element(By.ID, "arrangementFeeRate").get_attribute("value") == "3"
         assert driver.find_element(By.ID, "legalFees").get_attribute("value") == "1000"
         assert driver.find_element(By.ID, "siteVisitFee").get_attribute("value") == "200"
         assert driver.find_element(By.ID, "titleInsuranceRate").get_attribute("value") == "0.02"

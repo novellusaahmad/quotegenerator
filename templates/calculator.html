@@ -1646,6 +1646,13 @@ function handleEditMode() {
                             }
                         }
 
+                        // Ensure end date is always passed and toggle set to date mode
+                        const endDateValue = source.end_date || source.endDate || (data.loan ? (data.loan.end_date || data.loan.endDate) : null);
+                        if (endDateValue) {
+                            paramsFromData.set('end_date', endDateValue);
+                        }
+                        paramsFromData.set('loan_end_type', 'date');
+
                         populateFormFromParams(paramsFromData);
                     }
                 })
@@ -1689,7 +1696,7 @@ function populateFormFromParams(params) {
         'start_date': 'startDate',
         'end_date': 'endDate',
         'repayment_option': 'repaymentOption',
-        'arrangement_fee_percentage': 'arrangementFeePercentage',
+        'arrangement_fee_percentage': 'arrangementFeeRate',
         'legal_fees': 'legalFees',
         'site_visit_fee': 'siteVisitFee',
         'title_insurance_rate': 'titleInsuranceRate',
@@ -1708,12 +1715,13 @@ function populateFormFromParams(params) {
                 field.value = value;
                 // Trigger change for any dependent logic
                 field.dispatchEvent(new Event('change'));
+                field.dispatchEvent(new Event('input'));
             }
         }
     }
 
     // Handle radio/button groups separately
-    const radioParams = ['amount_input_type', 'gross_amount_type', 'rate_input_type', 'payment_timing', 'payment_frequency', 'tranche_mode', 'currency'];
+    const radioParams = ['amount_input_type', 'gross_amount_type', 'rate_input_type', 'payment_timing', 'payment_frequency', 'tranche_mode', 'currency', 'loan_end_type'];
     radioParams.forEach(name => {
         const value = params.get(name);
         if (value !== null) {
