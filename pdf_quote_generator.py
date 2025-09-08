@@ -17,8 +17,10 @@ unaffected and can function without the PDF dependency.
 
 import logging
 import os
+import re
 import tempfile
 from datetime import datetime
+from decimal import Decimal
 
 try:
     from reportlab.lib.pagesizes import letter
@@ -40,6 +42,9 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency
 
 BROTHER_FONT = "Brother 1816 Light"
 BROTHER_STYLES = ["Normal", "Heading 1", "Heading 2", "Heading 3", "Title", "List Bullet"]
+
+
+logger = logging.getLogger(__name__)
 
 
 def _apply_brother_font(doc):
@@ -222,12 +227,14 @@ def generate_loan_summary_docx(loan, extra_fields=None):
     loan: LoanSummary
         Database loan summary instance containing core data.
     extra_fields: dict, optional
-        Additional user supplied fields gathered from the modal form. These
-        are used to populate specific placeholders within the report.  The
+        Additional user supplied fields gathered from the modal form.  The
         dictionary may include a list of ``note_templates`` (or legacy
-        ``notes``) whose text can contain tokens such as ``[PROPERTY_ADDRESS]``
-        or ``[CLIENT_NAME]``.  Any token matching a key in ``extra_fields`` will
-        be substituted before writing the note to the document.
+        ``notes``).  Each note may specify a ``placeholder_map`` used to map
+        tokens in the note text to keys within a unified context built from the
+        loan and the extra fields.  Any tokens without corresponding values are
+        replaced with an empty string and a warning is logged.  Legacy behaviour
+        where tokens were substituted directly from ``extra_fields`` keys is
+        deprecated.
     """
     extra_fields = extra_fields or {}
     try:
@@ -377,29 +384,41 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             shd = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), shade))
             tc_pr.append(shd)
 
-    # Extract extra field values for later token replacement
+    # Build a unified context from the loan attributes and any additional
+    # ``extra_fields``.  Values are stored using lower-case keys to allow
+    # case-insensitive lookups.
+    def _flatten(value):
+        return float(value) if isinstance(value, Decimal) else value
+
+    context = {}
+    for attr, value in vars(loan).items():
+        if attr.startswith('_'):
+            continue
+        context[attr.lower()] = _flatten(value)
+    for key, value in extra_fields.items():
+        if isinstance(value, (list, dict)):
+            continue
+        context[key.lower()] = _flatten(value)
+
     max_ltv = extra_fields.get('max_ltv') or float(ltv_ratio or 0)
+    context.setdefault('max_ltv', max_ltv)
+    context.setdefault('ltv', max_ltv)
 
-    # Build replacement map from the provided extra fields so that tokens within
-    # note templates (e.g. ``[PROPERTY_ADDRESS]``) can be populated
-    # automatically.
-    replacements = {
-        f"[{key.upper()}]": ("" if value is None else value)
-        for key, value in extra_fields.items()
-        if not isinstance(value, (list, dict))
-    }
-    # Ensure common tokens have sensible defaults
-    replacements.setdefault('[CLIENT_NAME]', extra_fields.get('client_name', ''))
-    replacements.setdefault('[PROPERTY_ADDRESS]', extra_fields.get('property_address', ''))
-    replacements.setdefault('[MAX_LTV]', f"{max_ltv}")
-    replacements.setdefault('[LTV]', f"{max_ltv}")
-    replacements.setdefault('[DEBENTURE]', extra_fields.get('debenture', ''))
-    replacements.setdefault('[CORPORATE_GUARANTOR]', extra_fields.get('corporate_guarantor', ''))
+    token_pattern = re.compile(r"\[([^\]]+)\]", re.IGNORECASE)
 
-    def _replace_tokens(text):
-        for token, value in replacements.items():
-            text = text.replace(token, str(value))
-        return text
+    def _replace_tokens(text, placeholder_map=None):
+        placeholder_map = {k.lower(): v for k, v in (placeholder_map or {}).items()}
+
+        def repl(match):
+            token_name = match.group(1)
+            ctx_key = placeholder_map.get(token_name.lower(), token_name.lower())
+            value = context.get(ctx_key.lower())
+            if value in (None, ""):
+                logger.warning("Missing value for placeholder %s", token_name)
+                return ""
+            return str(value)
+
+        return token_pattern.sub(repl, text)
 
     sections = []
     note_texts = (
@@ -415,11 +434,24 @@ def generate_loan_summary_docx(loan, extra_fields=None):
         for run in hp.runs:
             run.font.color.rgb = RGBColor(0, 0, 0)
         for bullet in bullets:
-            if isinstance(bullet, list):
+            # Support legacy list format as well as dictionaries containing a
+            # ``placeholder_map``.
+            if isinstance(bullet, list) and not isinstance(bullet, dict):
                 parts = [(_replace_tokens(text), bold) for text, bold in bullet]
                 _add_bullet(parts)
+                continue
+
+            placeholder_map = {}
+            text = bullet
+            if isinstance(bullet, dict):
+                placeholder_map = bullet.get('placeholder_map') or {}
+                text = bullet.get('text', '')
+
+            if isinstance(text, list):
+                parts = [(_replace_tokens(t, placeholder_map), b) for t, b in text]
+                _add_bullet(parts)
             else:
-                p = doc.add_paragraph(_replace_tokens(bullet))
+                p = doc.add_paragraph(_replace_tokens(text, placeholder_map))
                 p.style = 'List Bullet'
 
     doc.add_paragraph("Yours sincerely, [or faithfully if Dear Sir],")
