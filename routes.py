@@ -2931,7 +2931,21 @@ def loan_notes():
         .order_by(LoanNote.group, LoanNote.id)
         .all()
     )
-    return render_template('loan_notes.html', notes=notes)
+    placeholder_options = [
+        f"report_fields.{col.name}"
+        for col in ReportFields.__table__.columns
+        if col.name
+        not in {
+            "id",
+            "loan_id",
+            "loan_summary_id",
+            "created_at",
+            "updated_at",
+        }
+    ]
+    return render_template(
+        "loan_notes.html", notes=notes, placeholder_options=placeholder_options
+    )
 
 
 @app.route('/loan-notes/add', methods=['POST'])
