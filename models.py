@@ -367,3 +367,19 @@ class ReportFields(db.Model):
 
     def __repr__(self):
         return f'<ReportFields for Loan {self.loan_id}>'
+
+
+class LoanNote(db.Model):
+    """Stores standard loan notes grouped by category."""
+
+    __tablename__ = 'loan_notes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    group = db.Column('group', db.String(100), nullable=False)
+    name = db.Column(db.Text, nullable=False)
+    add_flag = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    deleted_at = db.Column(db.DateTime)
+
+    def __repr__(self) -> str:
+        return f'<LoanNote {self.group}: {self.name[:20]}>'
