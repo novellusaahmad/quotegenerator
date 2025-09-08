@@ -38,7 +38,7 @@
                 </tr>
                 {% set modal %}
                 <div class="modal fade" id="editNote{{note.id}}" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+                    <div class="modal-dialog">
                         <div class="modal-content">
                             <form method="post" action="{{ url_for('update_loan_note', note_id=note.id) }}">
                                 <div class="modal-header bg-primary text-white">
@@ -88,7 +88,6 @@
                 {% endfor %}
             </tbody>
         </table>
-        {{ ns.modals|safe }}
     </div>
 </div>
 
@@ -142,6 +141,8 @@
     <option value="{{ opt }}"></option>
     {% endfor %}
 </datalist>
+
+{{ ns.modals|safe }}
 
 <!-- Toast notifications -->
 <div class="toast-container position-fixed top-0 end-0 p-3">
