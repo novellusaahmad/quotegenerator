@@ -286,7 +286,13 @@ class LoanSummary(db.Model):
     report_fields = db.relationship(
         'ReportFields', backref='loan', uselist=False, cascade='all, delete-orphan'
     )
-    
+
+    loan_notes = db.relationship(
+        'LoanNote',
+        secondary='loan_summary_notes',
+        backref='loan_summaries',
+    )
+
     def __repr__(self):
         return f'<LoanSummary {self.loan_name} v{self.version}>'
 
@@ -383,3 +389,14 @@ class LoanNote(db.Model):
 
     def __repr__(self) -> str:
         return f'<LoanNote {self.group}: {self.name[:20]}>'
+
+
+class LoanSummaryNote(db.Model):
+    __tablename__ = 'loan_summary_notes'
+
+    loan_summary_id = db.Column(
+        db.Integer, db.ForeignKey('loan_summary.id'), primary_key=True
+    )
+    loan_note_id = db.Column(
+        db.Integer, db.ForeignKey('loan_notes.id'), primary_key=True
+    )
