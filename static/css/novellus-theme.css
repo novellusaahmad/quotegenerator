@@ -1073,3 +1073,17 @@ h4, h5, h6 {
     background-color: #fff !important;
     color: #000 !important;
 }
+
+/* Loan note action buttons */
+.loan-note-actions .btn {
+    background-color: #fff;
+    color: #000;
+    border-color: #000;
+}
+
+.loan-note-actions .btn:hover,
+.loan-note-actions .btn:focus {
+    background-color: #fff;
+    color: #000;
+    border-color: #000;
+}
