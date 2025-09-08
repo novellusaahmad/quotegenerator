@@ -223,7 +223,11 @@ def generate_loan_summary_docx(loan, extra_fields=None):
         Database loan summary instance containing core data.
     extra_fields: dict, optional
         Additional user supplied fields gathered from the modal form. These
-        are used to populate specific placeholders within the report.
+        are used to populate specific placeholders within the report.  The
+        dictionary may include a list of ``note_templates`` (or legacy
+        ``notes``) whose text can contain tokens such as ``[PROPERTY_ADDRESS]``
+        or ``[CLIENT_NAME]``.  Any token matching a key in ``extra_fields`` will
+        be substituted before writing the note to the document.
     """
     extra_fields = extra_fields or {}
     try:
@@ -373,33 +377,24 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             shd = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), shade))
             tc_pr.append(shd)
 
-    # Extract extra fields
-    property_address = extra_fields.get('property_address', '[•]')
-    debenture = extra_fields.get('debenture', '[•]')
-    corporate_guarantor = extra_fields.get('corporate_guarantor', '[•]')
-    broker_name = extra_fields.get('broker_name')
-    brokerage = extra_fields.get('brokerage')
-    broker_info = ''
-    if broker_name and brokerage:
-        broker_info = f" (of which 50% is paid to {broker_name}, {brokerage})"
+    # Extract extra field values for later token replacement
     max_ltv = extra_fields.get('max_ltv') or float(ltv_ratio or 0)
-    exit_fee_pct = float(extra_fields.get('exit_fee_percent') or 0)
-    exit_fee_amount = (exit_fee_pct / 100) * float(getattr(loan, 'gross_amount', 0) or 0)
-    commitment_fee = float(extra_fields.get('commitment_fee') or 0)
-    first_interest = float(
-        getattr(loan, 'monthly_payment', 0)
-        if getattr(loan, 'payment_frequency', 'monthly') == 'monthly'
-        else getattr(loan, 'quarterly_payment', 0)
-    )
-    interest_rate = float(getattr(loan, 'interest_rate', 0) or 0)
 
+    # Build replacement map from the provided extra fields so that tokens within
+    # note templates (e.g. ``[PROPERTY_ADDRESS]``) can be populated
+    # automatically.
     replacements = {
-        "[CLIENT_NAME]": extra_fields.get("client_name", ""),
-        "[PROPERTY_ADDRESS]": extra_fields.get("property_address", ""),
-        "[MAX_LTV]": f"{extra_fields.get('max_ltv', '')}",
-        "[DEBENTURE]": extra_fields.get("debenture", ""),
-        "[CORPORATE_GUARANTOR]": extra_fields.get("corporate_guarantor", ""),
+        f"[{key.upper()}]": ("" if value is None else value)
+        for key, value in extra_fields.items()
+        if not isinstance(value, (list, dict))
     }
+    # Ensure common tokens have sensible defaults
+    replacements.setdefault('[CLIENT_NAME]', extra_fields.get('client_name', ''))
+    replacements.setdefault('[PROPERTY_ADDRESS]', extra_fields.get('property_address', ''))
+    replacements.setdefault('[MAX_LTV]', f"{max_ltv}")
+    replacements.setdefault('[LTV]', f"{max_ltv}")
+    replacements.setdefault('[DEBENTURE]', extra_fields.get('debenture', ''))
+    replacements.setdefault('[CORPORATE_GUARANTOR]', extra_fields.get('corporate_guarantor', ''))
 
     def _replace_tokens(text):
         for token, value in replacements.items():
@@ -407,7 +402,11 @@ def generate_loan_summary_docx(loan, extra_fields=None):
         return text
 
     sections = []
-    note_texts = extra_fields.get('notes') or []
+    note_texts = (
+        extra_fields.get('note_templates')
+        or extra_fields.get('notes')
+        or []
+    )
     if note_texts:
         sections.append(("Conditions", note_texts))
 
