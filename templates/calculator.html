@@ -1331,7 +1331,16 @@ function calculateEndDate() {
                 window.loanCalculator.update360DayVisibility();
             }
 
-            // Do not map end date back to a loan term to avoid incorrect month calculations
+            // Derive loan term (months) from start/end dates
+            const endPlusOne = new Date(endObj);
+            endPlusOne.setUTCDate(endPlusOne.getUTCDate() + 1);
+            let months = (endPlusOne.getUTCFullYear() - startObj.getUTCFullYear()) * 12 +
+                         (endPlusOne.getUTCMonth() - startObj.getUTCMonth());
+            if (endPlusOne.getUTCDate() < startObj.getUTCDate()) {
+                months -= 1;
+            }
+            loanTermEl.value = months > 0 ? months : '';
+
             triggerCalculationUpdate();
         }
     }

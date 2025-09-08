@@ -1799,8 +1799,23 @@
                     endDateEl.value = end.toISOString().split('T')[0];
                 }
             } else {
-                // In end date mode, avoid deriving a loan term from the end date
-                // to prevent incorrect month mappings during editing.
+                const endDate = endDateEl.value;
+                if (startDate && endDate) {
+                    const startObj = new Date(startDate);
+                    const endObj = new Date(endDate);
+                    if (endObj < startObj) {
+                        endDateEl.value = startDate;
+                        endObj.setTime(startObj.getTime());
+                    }
+                    const endPlusOne = new Date(endObj);
+                    endPlusOne.setUTCDate(endPlusOne.getUTCDate() + 1);
+                    let months = (endPlusOne.getUTCFullYear() - startObj.getUTCFullYear()) * 12 +
+                                 (endPlusOne.getUTCMonth() - startObj.getUTCMonth());
+                    if (endPlusOne.getUTCDate() < startObj.getUTCDate()) {
+                        months -= 1;
+                    }
+                    loanTermEl.value = months > 0 ? months : '';
+                }
             }
         }
     </script>
