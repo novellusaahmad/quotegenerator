@@ -532,6 +532,21 @@ class Quote(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 ```
 
+#### LoanNote Model
+```python
+class LoanNote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    group = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.Text, nullable=False)
+    add_flag = db.Column(db.Boolean, default=False)
+    placeholder_map = db.Column(db.JSON, default=dict)  # {"CLIENT_NAME": "report_fields.client_name"}
+```
+
+`placeholder_map` defines how placeholders in `name` are replaced with values
+from related models. Values should reference associated models such as
+`report_fields.client_name`, `loan_summary.term`, or `payment_schedule.due_date`.
+Links to the `loan_notes`/`LoanNote` model itself are invalid and ignored.
+
 ### Database Operations
 
 #### Adding New Fields

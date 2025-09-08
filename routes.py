@@ -2939,8 +2939,25 @@ def add_loan_note():
     group = request.form.get('group', '').strip()
     name = request.form.get('name', '').strip()
     add_flag = bool(request.form.get('add_flag'))
+    placeholder_raw = request.form.get('placeholder_map', '').strip()
+    placeholder_map = {}
+    if placeholder_raw:
+        try:
+            candidate = json.loads(placeholder_raw)
+            placeholder_map = {
+                k: v
+                for k, v in candidate.items()
+                if isinstance(v, str) and 'loan_note' not in v.lower()
+            }
+        except json.JSONDecodeError:
+            placeholder_map = {}
     if group and name:
-        note = LoanNote(group=group, name=name, add_flag=add_flag)
+        note = LoanNote(
+            group=group,
+            name=name,
+            add_flag=add_flag,
+            placeholder_map=placeholder_map,
+        )
         db.session.add(note)
         db.session.commit()
     return redirect(url_for('loan_notes', toast='Loan note added'))
@@ -2955,12 +2972,32 @@ def update_loan_note(note_id):
         note.group = data.get('group', note.group).strip()
         note.name = data.get('name', note.name).strip()
         note.add_flag = bool(data.get('add_flag', note.add_flag))
+        if 'placeholder_map' in data:
+            candidate = data.get('placeholder_map') or {}
+            note.placeholder_map = {
+                k: v
+                for k, v in candidate.items()
+                if isinstance(v, str) and 'loan_note' not in v.lower()
+            }
         db.session.commit()
         return {"message": "Loan note updated"}, 200
 
     note.group = request.form.get('group', note.group).strip()
     note.name = request.form.get('name', note.name).strip()
     note.add_flag = bool(request.form.get('add_flag'))
+    placeholder_raw = request.form.get('placeholder_map', '').strip()
+    if placeholder_raw:
+        try:
+            candidate = json.loads(placeholder_raw)
+        except json.JSONDecodeError:
+            candidate = {}
+    else:
+        candidate = {}
+    note.placeholder_map = {
+        k: v
+        for k, v in candidate.items()
+        if isinstance(v, str) and 'loan_note' not in v.lower()
+    }
     db.session.commit()
     return redirect(url_for('loan_notes', toast='Loan note updated'))
 
