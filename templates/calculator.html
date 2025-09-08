@@ -1990,7 +1990,7 @@ async function handleReportFieldsClick(e) {
     const accordion = document.getElementById('loanNotesAccordion');
     accordion.innerHTML = '';
     let idx = 0;
-    const selectedNotes = data.note_ids || [];
+    const selectedNotes = (data.note_ids || []).map(id => parseInt(id, 10));
     for (const [group, notes] of Object.entries(notesData)) {
         const item = document.createElement('div');
         item.className = 'accordion-item';
@@ -2014,7 +2014,8 @@ async function handleReportFieldsClick(e) {
                 <input class="form-check-input" type="checkbox" id="note-${note.id}" data-note-id="${note.id}">
                 <label class="form-check-label" for="note-${note.id}">${note.text}</label>
             `;
-            if (selectedNotes.includes(note.id)) {
+            const shouldCheck = selectedNotes.length ? selectedNotes.includes(note.id) : note.add_flag;
+            if (shouldCheck) {
                 wrapper.querySelector('input').checked = true;
             }
             body.appendChild(wrapper);
@@ -2066,7 +2067,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (saveFieldsBtn) {
         saveFieldsBtn.addEventListener('click', async function() {
             if (!window.editMode || !window.editMode.loanId) return;
-            const selectedNoteIds = Array.from(document.querySelectorAll('#loanNotesAccordion input[type="checkbox"]:checked')).map(cb => parseInt(cb.dataset.noteId));
+            const selectedNoteIds = Array.from(
+                document.querySelectorAll('#loanNotesAccordion input[type="checkbox"]:checked')
+            )
+            .map(cb => parseInt(cb.dataset.noteId, 10))
+            .filter(id => !isNaN(id));
             const data = {
                 client_name: document.getElementById('docxClientName').value,
                 property_address: document.getElementById('docxPropertyAddress').value,
@@ -2347,7 +2352,7 @@ function retryLoanSave() {
 </style>
 <!-- Database Info Modal -->
 <div class="modal fade" id="loanSummaryFieldsModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-fullscreen modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white" id="loanSummaryFieldsHeader" data-currency="GBP">
         <h5 class="modal-title">Report Fields</h5>
