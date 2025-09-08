@@ -27,7 +27,7 @@
                     <td class="px-3" style="color:#000!important; border-right:1px solid #000;">{{ note.name }}</td>
                     <td class="px-3 text-center">
                         <div class="loan-note-actions">
-                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editNote{{note.id}}">Edit</button>
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editNote{{note.id}}">Edit</button>
                             <form method="post" action="{{ url_for('delete_loan_note', note_id=note.id) }}" style="display:inline;" onsubmit="return confirm('Delete this note?');">
                                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                             </form>
@@ -100,4 +100,33 @@
         </form>
     </div>
 </div>
+
+<!-- Toast notifications -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showNotification(message) {
+    const toast = document.getElementById('notificationToast');
+    const toastMessage = document.getElementById('toastMessage');
+    toastMessage.textContent = message;
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const message = {{ request.args.get('toast')|tojson }};
+    if (message) {
+        showNotification(message);
+    }
+});
+</script>
 {% endblock %}
