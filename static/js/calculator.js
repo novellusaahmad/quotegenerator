@@ -334,23 +334,27 @@ class LoanCalculator {
         // Start/end date or term changes - update loan end synchronization
         document.getElementById('startDate').addEventListener('change', () => {
             calculateEndDate();
+            toggleCalculate();
         });
         const endDateField = document.getElementById('endDate');
         if (endDateField) {
             endDateField.addEventListener('change', () => {
                 calculateEndDate();
+                toggleCalculate();
             });
         }
         const loanTermField = document.getElementById('loanTerm');
         if (loanTermField) {
             loanTermField.addEventListener('input', () => {
                 calculateEndDate();
+                toggleCalculate();
             });
         }
         const loanEndRadios = document.querySelectorAll('input[name="loan_end_type"]');
         if (loanEndRadios.length > 0) {
             loanEndRadios.forEach(radio => radio.addEventListener('change', () => {
                 calculateEndDate();
+                toggleCalculate();
             }));
         }
 
