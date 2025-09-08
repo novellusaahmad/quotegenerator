@@ -926,7 +926,7 @@
 <th class="px-3" style="color: #000 !important; border-right: 1px solid #000;"></th>
 <th class="px-3 text-end" style="color: #000 !important; border-right: 1px solid #000;"></th>
 <th class="px-3 text-end" style="color: #000 !important;">
-    <a id="openReportFields" href="#" style="display:none;" class="me-2 report-fields-link" title="Edit Report Fields"><i class="fas fa-list"></i></a>
+    <a id="openReportFields" href="#" class="me-2 report-fields-link" title="Edit Report Fields"><i class="fas fa-list"></i></a>
     <a id="downloadSummaryDocx" href="#" style="display:none;" title="Download Loan Summary"><i class="fas fa-file-word"></i></a>
 </th>
 </tr>
@@ -1875,7 +1875,6 @@ function generateReportDropdownItems(loan) {
     const items = [];
     const loanId = window.editMode && window.editMode.loanId;
     if (loanId) {
-        items.push(`<li><a class="dropdown-item report-fields-link" href="#" data-loan-id="${loanId}"><i class="fas fa-list me-2"></i>Edit Report Fields</a></li>`);
         items.push(`<li><a class="dropdown-item" href="/loan/${loanId}/summary-docx" target="_blank"><i class="fas fa-file-word me-2"></i>Loan Summary (DOCX)</a></li>`);
         if (Object.keys(reports).length) {
             items.push('<li><hr class="dropdown-divider"></li>');
@@ -1964,7 +1963,6 @@ function updateReportsButton(loan) {
     }
     btn.disabled = false;
     menu.innerHTML = generateReportDropdownItems(loan);
-    initializeReportFieldsLinks();
 }
 
 // Initialize everything when page loads
