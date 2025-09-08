@@ -383,6 +383,7 @@ class LoanNote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     group = db.Column('group', db.String(100), nullable=False)
     name = db.Column(db.Text, nullable=False)
+    placeholder_map = db.Column(db.JSON, default=dict)
     add_flag = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     deleted_at = db.Column(db.DateTime)

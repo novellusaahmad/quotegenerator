@@ -16,6 +16,7 @@
                 <tr style="border: 1px solid #000; background: #f8f9fa;">
                     <th class="px-3" style="color:#000!important; border-right:1px solid #000;">Group</th>
                     <th class="px-3" style="color:#000!important; border-right:1px solid #000;">Name</th>
+                    <th class="px-3" style="color:#000!important; border-right:1px solid #000;">Placeholder Map</th>
                     <th class="px-3 text-center" style="color:#000!important;">Actions</th>
                 </tr>
             </thead>
@@ -25,6 +26,7 @@
                 <tr style="border:1px solid #000;">
                     <td class="px-3" style="color:#000!important; border-right:1px solid #000;">{{ note.group }}</td>
                     <td class="px-3" style="color:#000!important; border-right:1px solid #000;">{{ note.name }}</td>
+                    <td class="px-3" style="color:#000!important; border-right:1px solid #000;">{{ note.placeholder_map|tojson }}</td>
                     <td class="px-3 text-center">
                         <div class="loan-note-actions">
                             <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editNote{{note.id}}">Edit</button>
@@ -50,6 +52,11 @@
                                 <div class="mb-3">
                                     <label class="form-label">Name</label>
                                     <textarea class="form-control" name="name" rows="4" required>{{ note.name }}</textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Placeholder Map (JSON)</label>
+                                    <textarea class="form-control" name="placeholder_map" rows="2">{{ note.placeholder_map|tojson }}</textarea>
+                                    <div class="form-text">e.g. {"CLIENT_NAME": "report_fields.client_name"}</div>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="add_flag" id="addFlag{{note.id}}" {% if note.add_flag %}checked{% endif %}>
@@ -87,6 +94,11 @@
                     <div class="mb-3">
                         <label class="form-label">Name</label>
                         <textarea class="form-control" name="name" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Placeholder Map (JSON)</label>
+                        <textarea class="form-control" name="placeholder_map" rows="2"></textarea>
+                        <div class="form-text">e.g. {"CLIENT_NAME": "report_fields.client_name"}</div>
                     </div>
                 </div>
                 <div class="col-md-2">
