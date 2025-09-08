@@ -332,15 +332,12 @@ class LoanCalculator {
             }));
         }
 
-        // 360-day checkbox changes - trigger automatic recalculation
+        // 360-day checkbox changes
         const use360DaysCheckbox = document.getElementById('use360Days');
         if (use360DaysCheckbox) {
             use360DaysCheckbox.addEventListener('change', () => {
                 console.log('360-day calculation method changed');
-                // If we have existing results, automatically recalculate
-                if (this.currentResults) {
-                    this.calculateLoan();
-                }
+                // calculation will run when user clicks Calculate
             });
         }
 
@@ -355,10 +352,7 @@ class LoanCalculator {
                 }
                 try {
                     console.log('Interest calculation type changed');
-                    // Recalculate automatically if we already have results
-                    if (this.currentResults) {
-                        this.calculateLoan(true);
-                    }
+                    // calculation will run when user clicks Calculate
                 } catch (error) {
                     console.error('Error handling interest type change:', error);
                 }
@@ -460,7 +454,11 @@ class LoanCalculator {
         }
         
         const submitButton = this.form.querySelector('button[type="submit"]');
-        
+
+        if (!skipValidation && !Novellus.forms.validate(this.form)) {
+            return;
+        }
+
         // Show loading state
         submitButton.disabled = true;
         const originalText = submitButton.innerHTML;
@@ -635,10 +633,10 @@ class LoanCalculator {
                     const descriptionVal = descriptionInput?.value.trim();
                     const dateVal = dateInput?.value;
 
-                    if (amountVal < 0) trancheErrors.push('Tranche amount cannot be negative');
-                    if (rateVal < 0) trancheErrors.push('Tranche rate cannot be negative');
+                    if (amountVal < 0) trancheErrors.push(`Tranche ${index + 1} amount cannot be negative`);
+                    if (rateVal < 0) trancheErrors.push(`Tranche ${index + 1} rate cannot be negative`);
                     if (dateVal && startDateValue && new Date(dateVal) < new Date(startDateValue)) {
-                        trancheErrors.push('Tranche release date cannot be before loan start date');
+                        trancheErrors.push(`Tranche ${index + 1} release date cannot be before loan start date`);
                     }
 
                     if (amountInput && dateInput && amountVal > 0) {
@@ -1732,18 +1730,20 @@ class LoanCalculator {
         const numberInputs = this.form.querySelectorAll('input[type="number"]');
         numberInputs.forEach(input => {
             input.addEventListener('input', () => {
-                const minAttr = parseFloat(input.getAttribute('min'));
-                const min = isNaN(minAttr) ? 0 : minAttr;
-                const val = parseFloat(input.value);
-                if (!isNaN(val) && val < min) {
-                    input.value = '';
-                    if (window.notifications && window.notifications.error) {
-                        window.notifications.error('Value cannot be negative');
+                    const minAttr = parseFloat(input.getAttribute('min'));
+                    const min = isNaN(minAttr) ? 0 : minAttr;
+                    const val = parseFloat(input.value);
+                    if (!isNaN(val) && val < min) {
+                        input.value = '';
+                        if (window.notifications && window.notifications.error) {
+                            const label = this.form.querySelector(`label[for="${input.id}"]`);
+                            const fieldName = label ? label.textContent.trim() : input.name || input.id;
+                            window.notifications.error(`${fieldName} cannot be negative`);
+                        }
                     }
-                }
+                });
             });
-        });
-    }
+        }
 
     safeFormatInputValue(input) {
         const originalValue = input.value;
@@ -1761,7 +1761,9 @@ class LoanCalculator {
         if (isNaN(numericValue) || numericValue < 0) {
             input.value = '';
             if (window.notifications && window.notifications.error) {
-                window.notifications.error('Value cannot be negative');
+                const label = this.form.querySelector(`label[for="${input.id}"]`);
+                const fieldName = label ? label.textContent.trim() : input.name || input.id;
+                window.notifications.error(`${fieldName} cannot be negative`);
             }
             return;
         }
