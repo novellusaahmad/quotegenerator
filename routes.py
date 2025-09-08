@@ -2229,11 +2229,19 @@ def download_loan_summary_docx(loan_id):
     """Download saved loan summary as DOCX report."""
     loan = LoanSummary.query.get_or_404(loan_id)
 
+    # Ensure relationship is loaded so ``generate_loan_summary_docx`` can
+    # resolve paths against ``loan.report_fields`` if required.
+    _ = loan.report_fields
+
     if request.method == 'POST':
         extra_fields = request.get_json() or {}
     else:
         rf = ReportFields.query.filter_by(loan_id=loan_id).first()
-        extra_fields = rf.to_dict() if rf else {}
+        if rf:
+            rf_dict = rf.to_dict()
+            extra_fields = {**rf_dict, "report_fields": rf_dict}
+        else:
+            extra_fields = {}
 
 
     note_ids = extra_fields.get("note_ids")
