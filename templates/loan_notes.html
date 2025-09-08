@@ -21,7 +21,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% set modals = '' %}
+                {% set ns = namespace(modals='') %}
                 {% for note in notes %}
                 <tr style="border:1px solid #000;">
                     <td class="px-3" style="color:#000!important; border-right:1px solid #000;">{{ note.group }}</td>
@@ -54,9 +54,20 @@
                                     <textarea class="form-control" name="name" rows="4" required>{{ note.name }}</textarea>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Placeholder Map (JSON)</label>
-                                    <textarea class="form-control" name="placeholder_map" rows="2">{{ note.placeholder_map|tojson }}</textarea>
-                                    <div class="form-text">e.g. {"CLIENT_NAME": "report_fields.client_name"}</div>
+                                    <label class="form-label">Placeholder Map</label>
+                                    <div class="placeholder-map">
+                                        <div class="placeholder-row template d-none">
+                                            <div class="input-group mb-2">
+                                                <input type="text" class="form-control placeholder-key" placeholder="Placeholder e.g. CLIENT_NAME">
+                                                <input type="text" class="form-control placeholder-value" list="placeholderOptions" placeholder="Mapping e.g. report_fields.client_name">
+                                                <button type="button" class="btn btn-outline-danger remove-placeholder">&times;</button>
+                                            </div>
+                                        </div>
+                                        <div class="placeholder-list"></div>
+                                        <button type="button" class="btn btn-sm btn-secondary add-placeholder mt-2">Add Mapping</button>
+                                        <input type="hidden" name="placeholder_map" value='{{ note.placeholder_map|tojson }}'>
+                                    </div>
+                                    <div class="form-text">Map placeholders to report fields</div>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="add_flag" id="addFlag{{note.id}}" {% if note.add_flag %}checked{% endif %}>
@@ -71,11 +82,11 @@
                     </div>
                 </div>
                 {% endset %}
-                {% set modals = modals + modal %}
+                {% set ns.modals = ns.modals + modal %}
                 {% endfor %}
             </tbody>
         </table>
-        {{ modals|safe }}
+        {{ ns.modals|safe }}
     </div>
 </div>
 
@@ -96,9 +107,20 @@
                         <textarea class="form-control" name="name" rows="2" required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Placeholder Map (JSON)</label>
-                        <textarea class="form-control" name="placeholder_map" rows="2"></textarea>
-                        <div class="form-text">e.g. {"CLIENT_NAME": "report_fields.client_name"}</div>
+                        <label class="form-label">Placeholder Map</label>
+                        <div class="placeholder-map">
+                            <div class="placeholder-row template d-none">
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control placeholder-key" placeholder="Placeholder e.g. CLIENT_NAME">
+                                    <input type="text" class="form-control placeholder-value" list="placeholderOptions" placeholder="Mapping e.g. report_fields.client_name">
+                                    <button type="button" class="btn btn-outline-danger remove-placeholder">&times;</button>
+                                </div>
+                            </div>
+                            <div class="placeholder-list"></div>
+                            <button type="button" class="btn btn-sm btn-secondary add-placeholder mt-2">Add Mapping</button>
+                            <input type="hidden" name="placeholder_map" value='{}'>
+                        </div>
+                        <div class="form-text">Map placeholders to report fields</div>
                     </div>
                 </div>
                 <div class="col-md-2">
@@ -112,6 +134,12 @@
         </form>
     </div>
 </div>
+
+<datalist id="placeholderOptions">
+    {% for opt in placeholder_options %}
+    <option value="{{ opt }}"></option>
+    {% endfor %}
+</datalist>
 
 <!-- Toast notifications -->
 <div class="toast-container position-fixed top-0 end-0 p-3">
@@ -139,6 +167,52 @@ document.addEventListener('DOMContentLoaded', () => {
     if (message) {
         showNotification(message);
     }
+    initPlaceholderMaps();
 });
+
+function initPlaceholderMaps() {
+    document.querySelectorAll('.placeholder-map').forEach(wrapper => {
+        const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+        const list = wrapper.querySelector('.placeholder-list');
+        const template = wrapper.querySelector('.placeholder-row.template');
+        const addBtn = wrapper.querySelector('.add-placeholder');
+
+        function sync() {
+            const data = {};
+            list.querySelectorAll('.placeholder-row').forEach(row => {
+                const key = row.querySelector('.placeholder-key').value.trim();
+                const val = row.querySelector('.placeholder-value').value.trim();
+                if (key && val) {
+                    data[key] = val;
+                }
+            });
+            hiddenInput.value = JSON.stringify(data);
+        }
+
+        function renderRow(key = '', val = '') {
+            const row = template.cloneNode(true);
+            row.classList.remove('template', 'd-none');
+            row.querySelector('.placeholder-key').value = key;
+            row.querySelector('.placeholder-value').value = val;
+            row.querySelector('.remove-placeholder').addEventListener('click', () => {
+                row.remove();
+                sync();
+            });
+            row.addEventListener('input', sync);
+            list.appendChild(row);
+        }
+
+        addBtn.addEventListener('click', () => {
+            renderRow();
+        });
+
+        try {
+            const data = JSON.parse(hiddenInput.value || '{}');
+            Object.entries(data).forEach(([k, v]) => renderRow(k, v));
+        } catch (e) {
+            // ignore invalid JSON
+        }
+    });
+}
 </script>
 {% endblock %}

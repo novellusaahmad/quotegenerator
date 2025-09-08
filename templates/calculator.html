@@ -1663,7 +1663,8 @@ function handleEditMode() {
                             // Ensure repayment-specific sections are visible when editing
                             window.loanCalculator.updateRepaymentOptions();
                             window.loanCalculator.updateAdditionalParams();
-                            // Calculation will run when user clicks Calculate
+                            // Automatically calculate to populate results and visualisation
+                            window.loanCalculator.calculateLoan(true);
                         } catch (err) {
                             console.error('Error toggling sections in edit mode:', err);
                         }
@@ -2014,7 +2015,8 @@ async function handleReportFieldsClick(e) {
                 <input class="form-check-input" type="checkbox" id="note-${note.id}" data-note-id="${note.id}">
                 <label class="form-check-label" for="note-${note.id}">${note.text}</label>
             `;
-            const shouldCheck = selectedNotes.includes(note.id) || note.add_flag;
+            const shouldCheck = selectedNotes.length ?
+                selectedNotes.includes(note.id) : note.add_flag;
             if (shouldCheck) {
                 wrapper.querySelector('input').checked = true;
             }
