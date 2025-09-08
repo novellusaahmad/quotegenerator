@@ -2212,6 +2212,14 @@ def download_loan_summary_docx(loan_id):
         rf = ReportFields.query.filter_by(loan_id=loan_id).first()
         extra_fields = rf.to_dict() if rf else {}
 
+    # Include loan note texts marked for inclusion
+    loan_notes = (
+        LoanNote.query.filter_by(add_flag=True, deleted_at=None)
+        .order_by(LoanNote.group, LoanNote.id)
+        .all()
+    )
+    extra_fields['loan_notes'] = [note.name for note in loan_notes]
+
     docx_content = generate_loan_summary_docx(loan, extra_fields)
     if not docx_content:
         app.logger.error('Loan summary DOCX generation failed - missing python-docx dependency')
