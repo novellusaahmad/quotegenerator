@@ -38,7 +38,9 @@
                 </tr>
                 {% set modal %}
                 <div class="modal fade" id="editNote{{note.id}}" tabindex="-1" aria-hidden="true">
+
                     <div class="modal-dialog">
+
                         <div class="modal-content">
                             <form method="post" action="{{ url_for('update_loan_note', note_id=note.id) }}">
                                 <div class="modal-header bg-primary text-white">
