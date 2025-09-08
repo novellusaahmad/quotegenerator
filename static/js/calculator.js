@@ -182,7 +182,7 @@ class LoanCalculator {
         // Live validation to toggle calculate button
         const requiredFields = this.form.querySelectorAll('[required]');
         const toggleCalculate = () => {
-            const valid = Novellus.forms.validate(this.form);
+            const valid = Novellus.forms.validate(this.form, false);
             if (calcBtn) {
                 calcBtn.disabled = !valid;
             }
