@@ -386,9 +386,31 @@ def generate_loan_summary_docx(loan, extra_fields=None):
 
     # Build a unified context from the loan attributes and any additional
     # ``extra_fields``.  Values are stored using lower-case keys to allow
-    # case-insensitive lookups.
+    # case-insensitive lookups.  Nested dictionaries or objects are stored
+    # directly so they can be traversed via ``_resolve_path`` when
+    # substituting tokens.
     def _flatten(value):
         return float(value) if isinstance(value, Decimal) else value
+
+    def _resolve_path(obj, path):
+        """Resolve a dotted ``path`` against ``obj``.
+
+        Each segment in the path is looked up case-insensitively on either
+        dictionaries or object attributes.  ``None`` is returned if any segment
+        is missing."""
+
+        current = obj
+        for segment in path.split('.'):
+            if isinstance(current, dict):
+                if segment in current:
+                    current = current[segment]
+                else:
+                    current = current.get(segment.lower())
+            else:
+                current = getattr(current, segment, getattr(current, segment.lower(), None))
+            if current is None:
+                return None
+        return _flatten(current)
 
     context = {}
     for attr, value in vars(loan).items():
@@ -396,7 +418,7 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             continue
         context[attr.lower()] = _flatten(value)
     for key, value in extra_fields.items():
-        if isinstance(value, (list, dict)):
+        if isinstance(value, list):
             continue
         context[key.lower()] = _flatten(value)
 
@@ -411,8 +433,8 @@ def generate_loan_summary_docx(loan, extra_fields=None):
 
         def repl(match):
             token_name = match.group(1)
-            ctx_key = placeholder_map.get(token_name.lower(), token_name.lower())
-            value = context.get(ctx_key.lower())
+            ctx_key = placeholder_map.get(token_name.lower(), token_name)
+            value = _resolve_path(context, ctx_key)
             if value in (None, ""):
                 logger.warning("Missing value for placeholder %s", token_name)
                 return ""
