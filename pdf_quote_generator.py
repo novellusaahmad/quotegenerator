@@ -406,10 +406,10 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             text = text.replace(token, str(value))
         return text
 
-   
-    loan_notes = extra_fields.get('loan_notes', [])
-    if loan_notes:
-        sections.insert(1, ("Additional Conditions", loan_notes))
+    sections = []
+    note_texts = extra_fields.get('notes') or []
+    if note_texts:
+        sections.append(("Conditions", note_texts))
 
     for heading, bullets in sections:
         hp = doc.add_heading(_replace_tokens(heading), level=1)
@@ -422,15 +422,6 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             else:
                 p = doc.add_paragraph(_replace_tokens(bullet))
                 p.style = 'List Bullet'
-
-    note_texts = extra_fields.get('notes') or []
-    if note_texts:
-        hp = doc.add_heading('Notes', level=1)
-        for run in hp.runs:
-            run.font.color.rgb = RGBColor(0, 0, 0)
-        for note in note_texts:
-            p = doc.add_paragraph(_replace_tokens(note))
-            p.style = 'List Bullet'
 
     doc.add_paragraph("Yours sincerely, [or faithfully if Dear Sir],")
     doc.add_paragraph("[•]")
