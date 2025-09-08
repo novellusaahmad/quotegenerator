@@ -204,7 +204,7 @@ Novellus.forms = {
     },
 
     // Validate form
-    validate: function(form) {
+    validate: function(form, showToast = true) {
         let isValid = true;
         const invalidFields = [];
         const requiredFields = form.querySelectorAll('[required]');
@@ -273,7 +273,7 @@ Novellus.forms = {
             }
         });
 
-        if (!isValid) {
+        if (!isValid && showToast) {
             const message = 'Please correct: ' + invalidFields.join(', ');
             if (window.notifications) {
                 window.notifications.error(message);
