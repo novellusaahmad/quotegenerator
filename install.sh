@@ -47,6 +47,21 @@ fi
 
 print_status "Pip found: $(pip3 --version)"
 
+# Backup existing novellus_loans database if present
+print_status "Checking for existing PostgreSQL database to back up..."
+DB_BACKUP_EXISTS=false
+if command -v pg_dump &> /dev/null; then
+    if sudo -u postgres psql -lqt 2>/dev/null | cut -d \| -f 1 | tr -d ' ' | grep -qw novellus_loans; then
+        print_status "Backing up existing novellus_loans database..."
+        sudo -u postgres pg_dump novellus_loans > novellus_loans_backup.sql
+        DB_BACKUP_EXISTS=true
+    else
+        print_warning "novellus_loans database not found; skipping backup"
+    fi
+else
+    print_warning "pg_dump not found; skipping database backup"
+fi
+
 # Create virtual environment
 print_status "Creating virtual environment..."
 python3 -m venv venv
@@ -128,11 +143,20 @@ if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='novellus_
 fi
 
 # Create database only if it doesn't already exist
-if sudo -u postgres psql -lqt | cut -d \| -f 1 | tr -d ' ' | grep -qw novellus_loans; then
-    print_status "Existing novellus_loans database found; preserving data"
+  if sudo -u postgres psql -lqt | cut -d \| -f 1 | tr -d ' ' | grep -qw novellus_loans; then
+      print_status "Existing novellus_loans database found; preserving data"
+  else
+      sudo -u postgres psql -c "CREATE DATABASE novellus_loans OWNER novellus_user;"
+      sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE novellus_loans TO novellus_user;"
+  fi
+
+# Restore database from backup if available
+if [ "$DB_BACKUP_EXISTS" = true ] && [ -f novellus_loans_backup.sql ]; then
+    print_status "Restoring novellus_loans database from backup..."
+    sudo -u postgres psql -d novellus_loans < novellus_loans_backup.sql
+    rm novellus_loans_backup.sql
 else
-    sudo -u postgres psql -c "CREATE DATABASE novellus_loans OWNER novellus_user;"
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE novellus_loans TO novellus_user;"
+    print_warning "No novellus_loans backup found; continuing with new database"
 fi
 
 # Configure SSL certificate for PostgreSQL
@@ -257,28 +281,9 @@ fi
 mkdir -p uploads
 mkdir -p reports_output
 
-# Backup existing loan_notes table if present
-print_status "Backing up existing loan_notes table if present..."
-if sudo -u postgres psql -d novellus_loans -tAc "SELECT to_regclass('public.loan_notes')" | grep -q loan_notes; then
-    sudo -u postgres pg_dump --data-only --table=loan_notes novellus_loans > loan_notes_backup.sql
-    print_status "loan_notes table backed up to loan_notes_backup.sql"
-else
-    print_warning "loan_notes table not found; skipping backup"
-fi
-
 # Initialize database
 print_status "Initializing database..."
 python database_init.py
-
-# Restore loan_notes table from backup if available
-if [ -f loan_notes_backup.sql ]; then
-    print_status "Restoring loan_notes table from backup..."
-    sudo -u postgres psql -d novellus_loans -f loan_notes_backup.sql
-    rm loan_notes_backup.sql
-else
-    print_warning "No loan_notes backup found; table remains empty"
-fi
-
 # Test installation
 print_status "Testing installation..."
 if python -c "import flask, psycopg2, pandas, numpy, requests, scipy, webdriver_manager, snowflake.connector; from app import app; print('All dependencies imported successfully')"; then
