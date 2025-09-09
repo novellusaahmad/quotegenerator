@@ -80,17 +80,6 @@
             <!-- Loans Table -->
             <div id="loansTable" class="d-none">
                 <div class="card">
-                    <div class="card-header bg-novellus-navy text-white">
-                        <div class="row align-items-center">
-                            <div class="col">
-                                <h5 class="mb-0">Saved Loans</h5>
-                            </div>
-                            <div class="col-auto">
-                                <span id="totalCount" class="badge bg-novellus-gold text-dark">0 loans</span>
-                                <small class="text-light ms-2">Last updated: <span id="updateTime">-</span></small>
-                            </div>
-                        </div>
-                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
@@ -408,8 +397,10 @@ class LoanHistoryManager {
     renderLoansTable() {
         const tbody = document.getElementById('loansTableBody');
         const totalCount = document.getElementById('totalCount');
-        
-        totalCount.textContent = `${this.filteredLoans.length} loan${this.filteredLoans.length === 1 ? '' : 's'}`;
+
+        if (totalCount) {
+            totalCount.textContent = `${this.filteredLoans.length} loan${this.filteredLoans.length === 1 ? '' : 's'}`;
+        }
         
         if (this.filteredLoans.length === 0) {
             tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No loans match your filters</td></tr>';
