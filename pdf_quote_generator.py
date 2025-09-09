@@ -317,37 +317,40 @@ def generate_loan_summary_docx(loan, extra_fields=None):
 
     currency_symbol = '€' if getattr(loan, 'currency', 'GBP') == 'EUR' else '£'
     arr_fee_pct = f"{float(getattr(loan, 'arrangement_fee_percentage', 0) or 0):.2f}%"
-    arr_fee_amount = f"{float(getattr(loan, 'arrangement_fee', 0) or 0):,.2f}"
     ltv_ratio = getattr(loan, 'ltv_ratio', getattr(loan, 'start_ltv', 0))
 
+    term_val = getattr(loan, 'loan_term', 0) or 0
+    term_text = str(term_val)
+    interest_term_text = f"{term_val} Month{'s' if term_val != 1 else ''}"
+
     rows = [
-        ("Valuation", currency_symbol, f"{float(getattr(loan, 'property_value', 0) or 0):,.2f}"),
-        ("Gross Amount", currency_symbol, f"{float(getattr(loan, 'gross_amount', 0) or 0):,.2f}"),
-        ("Term (Months)", "", str(getattr(loan, 'loan_term', 0) or 0)),
+        ("Valuation", "", f"{currency_symbol}{float(getattr(loan, 'property_value', 0) or 0):,.2f}"),
+        ("Gross Amount", "", f"{currency_symbol}{float(getattr(loan, 'gross_amount', 0) or 0):,.2f}"),
+        ("Term (Months)", term_text, ""),
         (
             "Arrangement Fee",
-            f"{arr_fee_pct} {currency_symbol}",
-            f"{float(getattr(loan, 'arrangement_fee', 0) or 0):,.2f}",
+            arr_fee_pct,
+            f"{currency_symbol}{float(getattr(loan, 'arrangement_fee', 0) or 0):,.2f}",
         ),
         (
             "Legal Costs & Title Insurance*",
-            currency_symbol,
-            f"{float((getattr(loan, 'legal_costs', 0) or 0) + (getattr(loan, 'title_insurance', 0) or 0)):,.2f}",
+            "",
+            f"{currency_symbol}{float((getattr(loan, 'legal_costs', 0) or 0) + (getattr(loan, 'title_insurance', 0) or 0)):,.2f}",
         ),
         (
             "Number Months (Interest)",
-            str(getattr(loan, 'loan_term', 0) or 0),
+            interest_term_text,
             f"{currency_symbol}{float(getattr(loan, 'total_interest', 0) or 0):,.2f}",
         ),
         (
             "Day 1 Net Advance",
-            currency_symbol,
-            f"{float((getattr(loan, 'day_1_advance', None) or getattr(loan, 'net_advance', 0) or 0)):,.2f}",
+            "",
+            f"{currency_symbol}{float((getattr(loan, 'day_1_advance', None) or getattr(loan, 'net_advance', 0) or 0)):,.2f}",
         ),
         (
             "Total Net Advance",
-            currency_symbol,
-            f"{float(getattr(loan, 'total_net_advance', 0) or 0):,.2f}",
+            "",
+            f"{currency_symbol}{float(getattr(loan, 'total_net_advance', 0) or 0):,.2f}",
         ),
     ]
 
