@@ -47,6 +47,7 @@ from utils import (
     parse_currency_amount,
     generate_application_reference,
     validate_email,
+    get_currency_symbol,
 )
 from report_utils import generate_report_schedule, generate_tranche_schedule
 from snowflake_utils import (
@@ -2102,6 +2103,7 @@ def save_loan():
                 or fresh_calculation.get('currencySymbol')
                 or data.get('currency_symbol')
                 or fresh_calculation.get('currency_symbol')
+                or get_currency_symbol(loan_summary.currency or 'GBP')
             )
             loan_summary.gross_amount_percentage = safe_float(
                 data.get('grossAmountPercentage', data.get('gross_amount_percentage', 0.0)),
@@ -2181,6 +2183,7 @@ def save_loan():
                     or fresh_calculation.get('currencySymbol')
                     or data.get('currency_symbol')
                     or fresh_calculation.get('currency_symbol')
+                    or get_currency_symbol(data.get('currency', 'GBP'))
                 ),
                 gross_amount_percentage=safe_float(
                     data.get('grossAmountPercentage', data.get('gross_amount_percentage', 0.0)),
@@ -3078,6 +3081,7 @@ def snowflake_config():
 
 @app.route('/loan-notes')
 def loan_notes():
+    ensure_loan_tables()
     group_filter = request.args.get("group", type=str)
     query = LoanNote.query.filter_by(deleted_at=None)
     if group_filter:
