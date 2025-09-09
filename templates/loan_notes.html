@@ -47,7 +47,12 @@
                             <div class="placeholder-row template d-none">
                                 <div class="input-group mb-2">
                                     <input type="text" class="form-control placeholder-key" placeholder="Placeholder e.g. CLIENT_NAME">
-                                    <input type="text" class="form-control placeholder-value" list="placeholderOptions" placeholder="Mapping e.g. loan_data.gross_amount">
+                                    <select class="form-select placeholder-value">
+                                        <option value="" disabled selected>Mapping e.g. loan_data.gross_amount</option>
+                                        {% for opt in placeholder_options %}
+                                        <option value="{{ opt }}">{{ opt }}</option>
+                                        {% endfor %}
+                                    </select>
                                     <button type="button" class="btn btn-outline-danger remove-placeholder">&times;</button>
                                 </div>
                             </div>
@@ -102,7 +107,12 @@
                             <div class="placeholder-row template d-none">
                                 <div class="input-group mb-2">
                                     <input type="text" class="form-control placeholder-key" placeholder="Placeholder e.g. CLIENT_NAME">
-                                    <input type="text" class="form-control placeholder-value" list="placeholderOptions" placeholder="Mapping e.g. loan_data.gross_amount">
+                                    <select class="form-select placeholder-value">
+                                        <option value="" disabled selected>Mapping e.g. loan_data.gross_amount</option>
+                                        {% for opt in placeholder_options %}
+                                        <option value="{{ opt }}">{{ opt }}</option>
+                                        {% endfor %}
+                                    </select>
                                     <button type="button" class="btn btn-outline-danger remove-placeholder">&times;</button>
                                 </div>
                             </div>
@@ -124,12 +134,6 @@
         </form>
     </div>
 </div>
-
-<datalist id="placeholderOptions">
-    {% for opt in placeholder_options %}
-    <option value="{{ opt }}"></option>
-    {% endfor %}
-</datalist>
 
 {% endblock %}
 
@@ -172,6 +176,7 @@ function initPlaceholderMap(wrapper) {
             sync();
         });
         row.addEventListener('input', sync);
+        row.addEventListener('change', sync);
         list.appendChild(row);
     }
 
