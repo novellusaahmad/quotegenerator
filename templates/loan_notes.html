@@ -26,8 +26,8 @@
                 <tr style="border: 1px solid #000; background: #f8f9fa;">
                     <th class="px-3" style="color:#fff!important; font-weight:bold; border-right:1px solid #000;">Group</th>
                     <th class="px-3" style="color:#fff!important; font-weight:bold; border-right:1px solid #000;">Name</th>
-                    <th class="px-3" style="color:#fff!important; font-weight:bold; border-right:1px solid #000; width:500px;">Placeholder Map</th>
-                    <th class="px-3 text-center" style="color:#fff!important; font-weight:bold;">Actions</th>
+                    <th class="px-3" style="color:#fff!important; font-weight:bold; border-right:1px solid #000; width:470px;">Placeholder Map</th>
+                    <th class="px-3 text-center" style="color:#fff!important; font-weight:bold; width:130px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -41,7 +41,7 @@
                         <span class="view">{{ note.name }}</span>
                         <textarea class="form-control edit d-none" name="name" form="edit-form-{{ note.id }}" rows="2" data-original="{{ note.name }}">{{ note.name }}</textarea>
                     </td>
-                    <td class="px-3" style="color:#000!important; border-right:1px solid #000; width:500px;">
+                    <td class="px-3" style="color:#000!important; border-right:1px solid #000; width:470px;">
                         <span class="view">{{ note.placeholder_map|tojson }}</span>
                         <div class="edit placeholder-map d-none">
                             <div class="placeholder-row template d-none">
@@ -56,7 +56,7 @@
                             <input type="hidden" name="placeholder_map" form="edit-form-{{ note.id }}" value='{{ note.placeholder_map|tojson }}' data-original='{{ note.placeholder_map|tojson }}'>
                         </div>
                     </td>
-                    <td class="px-3 text-center">
+                    <td class="px-3 text-center" style="width:130px;">
                         <div class="view loan-note-actions">
                             <button type="button" class="btn btn-sm btn-primary edit-note">Edit</button>
                             <form method="post" action="{{ url_for('delete_loan_note', note_id=note.id) }}" style="display:inline;" onsubmit="return confirm('Delete this note?');">

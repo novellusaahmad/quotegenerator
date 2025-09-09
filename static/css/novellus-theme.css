@@ -1075,6 +1075,11 @@ h4, h5, h6 {
 }
 
 /* Loan note action buttons */
+.loan-note-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+}
 .loan-note-actions .btn {
     background-color: #fff;
     color: #000;
