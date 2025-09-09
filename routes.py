@@ -2095,6 +2095,22 @@ def save_loan():
             loan_summary.total_net_advance = fresh_calculation.get('totalNetAdvance', 0)
             loan_summary.monthly_payment = fresh_calculation.get('monthlyPayment', 0)
             loan_summary.quarterly_payment = fresh_calculation.get('quarterlyPayment', 0)
+            loan_summary.monthly_interest_payment = fresh_calculation.get('monthlyInterestPayment', 0)
+            loan_summary.quarterly_interest_payment = fresh_calculation.get('quarterlyInterestPayment', 0)
+            loan_summary.currency_symbol = (
+                data.get('currencySymbol')
+                or fresh_calculation.get('currencySymbol')
+                or data.get('currency_symbol')
+                or fresh_calculation.get('currency_symbol')
+            )
+            loan_summary.gross_amount_percentage = safe_float(
+                data.get('grossAmountPercentage', data.get('gross_amount_percentage', 0.0)),
+                0.0,
+            )
+            loan_summary.ltv_target = safe_float(
+                data.get('ltvTarget', data.get('ltv_target', 0.0)),
+                0.0,
+            )
             loan_summary.start_ltv = fresh_calculation.get('startLtv', 0)
             loan_summary.end_ltv = fresh_calculation.get('endLtv', 0)
             loan_summary.interest_only_total = fresh_calculation.get('interestOnlyTotal', 0)
@@ -2158,6 +2174,22 @@ def save_loan():
                 total_net_advance=fresh_calculation.get('totalNetAdvance', 0),
                 monthly_payment=fresh_calculation.get('monthlyPayment', 0),
                 quarterly_payment=fresh_calculation.get('quarterlyPayment', 0),
+                monthly_interest_payment=fresh_calculation.get('monthlyInterestPayment', 0),
+                quarterly_interest_payment=fresh_calculation.get('quarterlyInterestPayment', 0),
+                currency_symbol=(
+                    data.get('currencySymbol')
+                    or fresh_calculation.get('currencySymbol')
+                    or data.get('currency_symbol')
+                    or fresh_calculation.get('currency_symbol')
+                ),
+                gross_amount_percentage=safe_float(
+                    data.get('grossAmountPercentage', data.get('gross_amount_percentage', 0.0)),
+                    0.0,
+                ),
+                ltv_target=safe_float(
+                    data.get('ltvTarget', data.get('ltv_target', 0.0)),
+                    0.0,
+                ),
                 start_ltv=fresh_calculation.get('startLtv', 0),
                 end_ltv=fresh_calculation.get('endLtv', 0),
                 interest_only_total=fresh_calculation.get('interestOnlyTotal', 0),

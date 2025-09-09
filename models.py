@@ -222,12 +222,14 @@ class LoanSummary(db.Model):
     # Loan basic details
     loan_type = db.Column(db.String(50), nullable=False)  # bridge, term, development
     currency = db.Column(db.String(10), default='GBP')
-    
+    currency_symbol = db.Column(db.String(5))
+
     # Input parameters
     amount_input_type = db.Column(db.String(20))  # gross, net
     gross_amount = db.Column(db.Numeric(15, 2))
     net_amount = db.Column(db.Numeric(15, 2))
     property_value = db.Column(db.Numeric(15, 2))
+    gross_amount_percentage = db.Column(db.Numeric(15, 4))
     
     # Interest and term details
     # Use a wider precision for percentage-based fields to avoid
@@ -260,10 +262,13 @@ class LoanSummary(db.Model):
     total_net_advance = db.Column(db.Numeric(15, 2))
     monthly_payment = db.Column(db.Numeric(15, 2))
     quarterly_payment = db.Column(db.Numeric(15, 2))
-    
+    monthly_interest_payment = db.Column(db.Numeric(15, 2))
+    quarterly_interest_payment = db.Column(db.Numeric(15, 2))
+
     # LTV calculations
     start_ltv = db.Column(db.Numeric(15, 4))
     end_ltv = db.Column(db.Numeric(15, 4))
+    ltv_target = db.Column(db.Numeric(15, 4))
     
     # Interest savings (for flexible payments)
     interest_only_total = db.Column(db.Numeric(15, 2))
