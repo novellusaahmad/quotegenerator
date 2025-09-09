@@ -549,6 +549,11 @@ footer {
     }
 }
 
+/* Loan summary modal sizing */
+#loanSummaryFieldsModal .modal-dialog {
+    max-width: 800px;
+}
+
 /* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
     *,
