@@ -911,7 +911,7 @@
                             <i class="fas fa-file-word"></i>
                         </a>
                         <button type="button" class="btn btn-sm btn-light me-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal" title="View Details"><i class="fas fa-eye"></i></button>
-                        <button class="btn btn-sm btn-light" data-currency="GBP" disabled id="saveLoanBtn" type="button"><i class="fas fa-save me-2"></i><span id="saveLoanText">Save Loan</span></button>
+                        <button class="btn btn-sm btn-light text-black" data-currency="GBP" disabled id="saveLoanBtn" type="button"><i class="fas fa-save me-2"></i><span id="saveLoanText">Save Loan</span></button>
                     </div>
                 </div>
 <div class="card-body p-0">
@@ -2082,6 +2082,20 @@ function updateReportsButton(loan) {
 
 // Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', async function() {
+    const navActions = document.querySelector('.navbar .d-flex.ms-auto');
+    if (navActions) {
+        const stepEl = document.createElement('span');
+        stepEl.id = 'workflowStep';
+        stepEl.className = 'text-white me-2';
+        navActions.insertBefore(stepEl, navActions.firstChild);
+    }
+    window.updateNextStep = function(step) {
+        const el = document.getElementById('workflowStep');
+        if (el) {
+            el.textContent = `Next: ${step}`;
+        }
+    };
+    window.updateNextStep('Calculate');
     await loadPowerBIReports();
     // Initialize edit mode
     initializeEditMode();
@@ -2126,6 +2140,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (saveBtn) saveBtn.disabled = false;
                 isLoanSaved = false;
                 updateLoanReportLink();
+                if (window.updateNextStep) window.updateNextStep('Save Loan');
                 return;
             }
             try {
@@ -2145,6 +2160,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (saveBtn) saveBtn.disabled = false;
                     isLoanSaved = false;
                     updateLoanReportLink();
+                    if (window.updateNextStep) window.updateNextStep('Save Loan');
                 } else {
                     Novellus.utils.showToast(result.error || 'Failed to save report fields', 'danger');
                 }
@@ -2277,6 +2293,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 alert(`Success! ${result.message}`);
             }
             updateReportsButton(getLoanForReport());
+            if (window.updateNextStep) window.updateNextStep('Generate Report');
             if (window.pendingReportFields) {
                 try {
                     const rfResp = await fetch(`/loan/${result.loan_id}/report-fields`, {
