@@ -1646,6 +1646,27 @@ function handleEditMode() {
                             }
                         }
 
+                        // Derive missing amount parameters for proper display
+                        if (!paramsFromData.has('gross_amount_percentage')) {
+                            const gross = parseFloat(paramsFromData.get('gross_amount'));
+                            const property = parseFloat(paramsFromData.get('property_value'));
+                            if (!isNaN(gross) && !isNaN(property) && property !== 0) {
+                                paramsFromData.set('gross_amount_percentage', ((gross / property) * 100).toFixed(4));
+                            }
+                        }
+                        if (!paramsFromData.has('amount_input_type')) {
+                            const net = parseFloat(paramsFromData.get('net_amount'));
+                            if (!isNaN(net) && net > 0) {
+                                paramsFromData.set('amount_input_type', 'net');
+                            } else {
+                                paramsFromData.set('amount_input_type', 'gross');
+                            }
+                        }
+                        if (paramsFromData.get('amount_input_type') === 'gross') {
+                            const perc = paramsFromData.get('gross_amount_percentage');
+                            paramsFromData.set('gross_amount_type', perc && parseFloat(perc) > 0 ? 'percentage' : 'fixed');
+                        }
+
                         // Ensure end date is always passed and toggle set to date mode
                         const endDateValue = source.end_date || source.endDate || (data.loan ? (data.loan.end_date || data.loan.endDate) : null);
                         if (endDateValue) {
