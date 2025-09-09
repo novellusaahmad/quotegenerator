@@ -1402,16 +1402,18 @@ function hasMinimumFormData() {
 // Initialize end date calculation and loan calculator
 document.addEventListener('DOMContentLoaded', function() {
     try {
-        // Set default start date to today without timezone shifts
+        // Set default start date to today without timezone shifts unless editing
         const today = new Date();
         const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         const startDateElement = document.getElementById('startDate');
-        if (startDateElement) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isEditMode = urlParams.get('edit') === 'true';
+        if (startDateElement && !isEditMode && !startDateElement.value) {
             startDateElement.value = todayStr;
         }
         const endDateElement = document.getElementById('endDate');
         if (endDateElement) {
-            endDateElement.min = startDateElement ? startDateElement.value : todayStr;
+            endDateElement.min = startDateElement ? (startDateElement.value || todayStr) : todayStr;
         }
         
         // Ensure correct field visibility and initial calculation

@@ -2081,13 +2081,17 @@ class LoanCalculator {
         const startDateInput = document.getElementById('startDate');
         const autoStartDateInput = document.getElementById('autoStartDate');
         const today = new Date().toISOString().split('T')[0];
-        
-        if (startDateInput && !startDateInput.value) {
-            startDateInput.value = today;
-        }
-        
-        if (autoStartDateInput && !autoStartDateInput.value) {
-            autoStartDateInput.value = today;
+        const urlParams = new URLSearchParams(window.location.search);
+        const isEditMode = urlParams.get('edit') === 'true';
+
+        if (!isEditMode) {
+            if (startDateInput && !startDateInput.value) {
+                startDateInput.value = today;
+            }
+
+            if (autoStartDateInput && !autoStartDateInput.value) {
+                autoStartDateInput.value = today;
+            }
         }
     }
 
@@ -2538,7 +2542,9 @@ class LoanCalculator {
 
     setDefaultDate() {
         const startDateInput = document.getElementById('startDate');
-        if (startDateInput && !startDateInput.value) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isEditMode = urlParams.get('edit') === 'true';
+        if (!isEditMode && startDateInput && !startDateInput.value) {
             const today = new Date().toISOString().split('T')[0];
             startDateInput.value = today;
             // Calculate end date after setting default start date
