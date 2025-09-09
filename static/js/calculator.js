@@ -736,6 +736,9 @@ class LoanCalculator {
             if (reportLink) {
                 reportLink.style.display = 'inline';
             }
+            if (window.updateNextStep) {
+                window.updateNextStep('Report Fields');
+            }
             
             // Show download options
             const downloadOptionsCard = document.getElementById('downloadOptionsCard');
