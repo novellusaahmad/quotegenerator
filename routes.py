@@ -2058,8 +2058,9 @@ def save_loan():
             loan_summary.loan_term = max(1, safe_int(data.get('loanTerm'), 12))
             loan_summary.loan_term_days = fresh_calculation.get('loanTermDays', 365)
             loan_summary.start_date = datetime.strptime(
-                data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d'
-            ).date() if data.get('startDate') else datetime.now().date()
+                data.get('startDate') or data.get('start_date') or datetime.now().strftime('%Y-%m-%d'),
+                '%Y-%m-%d'
+            ).date()
             loan_summary.end_date = end_date
             loan_summary.repayment_option = data.get('repaymentOption', 'none')
             loan_summary.payment_timing = data.get('paymentTiming') or data.get('payment_timing', 'advance')
@@ -2116,8 +2117,9 @@ def save_loan():
                 loan_term=data.get('loanTerm', 12),
                 loan_term_days=fresh_calculation.get('loanTermDays', 365),
                 start_date=datetime.strptime(
-                    data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d'
-                ).date() if data.get('startDate') else datetime.now().date(),
+                    data.get('startDate') or data.get('start_date') or datetime.now().strftime('%Y-%m-%d'),
+                    '%Y-%m-%d'
+                ).date(),
                 end_date=end_date,
                 repayment_option=data.get('repaymentOption', 'none'),
                 payment_timing=data.get('paymentTiming') or data.get('payment_timing', 'advance'),
