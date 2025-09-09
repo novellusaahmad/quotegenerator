@@ -107,7 +107,7 @@ Novellus.utils = {
     },
 
     // Show toast notification
-    showToast: function(message, type = 'info') {
+    showToast: function(message, type = 'info', options = {}) {
         // Create toast container if it doesn't exist
         let toastContainer = document.querySelector('.toast-container');
         if (!toastContainer) {
@@ -115,12 +115,24 @@ Novellus.utils = {
             toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
             document.body.appendChild(toastContainer);
         }
-        
+
+        // Setup options
+        const { autohide = true, delay = 5000, id } = options;
+
         // Create toast element
-        const toastId = 'toast-' + Date.now();
+        const toastId = id || 'toast-' + Date.now();
         const toast = document.createElement('div');
         toast.id = toastId;
-        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.className = 'toast align-items-center text-white border-0';
+
+        const typeColors = {
+            success: '#198754', // green
+            warning: '#fd7e14', // orange
+            danger: '#dc3545',  // red
+            info: '#0d6efd'
+        };
+        toast.style.backgroundColor = typeColors[type] || typeColors.info;
+
         toast.setAttribute('role', 'alert');
         toast.innerHTML = `
             <div class="d-flex">
@@ -128,20 +140,22 @@ Novellus.utils = {
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
         `;
-        
+
         toastContainer.appendChild(toast);
-        
+
         // Initialize and show toast
         const bsToast = new bootstrap.Toast(toast, {
-            autohide: true,
-            delay: 5000
+            autohide: autohide,
+            delay: delay
         });
         bsToast.show();
-        
+
         // Remove toast element after it's hidden
         toast.addEventListener('hidden.bs.toast', () => {
             toast.remove();
         });
+
+        return toast;
     },
 
     // Validate email format

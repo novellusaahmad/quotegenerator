@@ -690,52 +690,9 @@ class PowerBIConfigManager {
     }
 
     showNotification(message, type = 'info') {
-        // Create golden notification with white text
-        const notification = document.createElement('div');
-        notification.className = `alert alert-${this.getBootstrapType(type)} alert-dismissible fade show position-fixed`;
-        notification.style.cssText = `
-            top: 20px;
-            right: 20px;
-            z-index: 10001;
-            max-width: 450px;
-            min-width: 350px;
-            background: linear-gradient(135deg, #B8860B 0%, #DAA520 100%) !important;
-            border: 2px solid #FFD700 !important;
-            border-left: 6px solid #FFF !important;
-            color: #FFFFFF !important;
-            font-weight: 500 !important;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3) !important;
-            box-shadow: 0 6px 20px rgba(184, 134, 11, 0.4) !important;
-            border-radius: 8px;
-        `;
-        
-        notification.innerHTML = `
-            <div class="d-flex align-items-center">
-                <i class="fas ${this.getNotificationIcon(type)} me-2" style="color: #FFF; font-size: 18px;"></i>
-                <div class="flex-grow-1" style="color: #FFF; font-weight: 500;">${message}</div>
-                <button type="button" class="btn-close btn-close-white" onclick="this.parentElement.parentElement.remove()" style="filter: brightness(100%) saturate(100%) invert(1);"></button>
-            </div>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Add animation class
-        setTimeout(() => {
-            notification.style.transform = 'translateX(0)';
-        }, 100);
-        
-        // Auto-remove after 10 seconds
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.style.transform = 'translateX(100%)';
-                notification.style.opacity = '0';
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.remove();
-                    }
-                }, 300);
-            }
-        }, 10000);
+        if (Novellus?.utils?.showToast) {
+            Novellus.utils.showToast(message, this.getBootstrapType(type));
+        }
     }
     
     getBootstrapType(type) {
@@ -748,15 +705,6 @@ class PowerBIConfigManager {
         }
     }
 
-    getNotificationIcon(type) {
-        switch(type) {
-            case 'success': return 'fa-check-circle';
-            case 'error': return 'fa-exclamation-triangle';
-            case 'warning': return 'fa-exclamation-circle';
-            case 'info': 
-            default: return 'fa-info-circle';
-        }
-    }
 }
 
 // Initialize the manager
@@ -2244,23 +2192,9 @@ function updateRefreshHistory(newStatus) {
 
 // Show notification
 function showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
+    if (Novellus?.utils?.showToast) {
+        Novellus.utils.showToast(message, type === 'error' ? 'danger' : type);
+    }
 }
 
 // This function was moved to the enhanced DOMContentLoaded below
