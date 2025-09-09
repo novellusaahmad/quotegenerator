@@ -927,7 +927,7 @@
                                 <th class="px-3" style="color: #000 !important; border-right: 1px solid #000;"></th>
                                 <th class="px-3 text-end" style="color: #000 !important; border-right: 1px solid #000;"></th>
                                 <th class="px-3 text-end" style="color: #000 !important;">
-                                    <a id="downloadSummaryDocx" href="#" style="display:none;" title="Download Loan Summary"><i class="fas fa-file-word"></i></a>
+                                    <a id="downloadSummaryDocx" style="display:none;" title="Download Loan Summary"><i class="fas fa-file-word"></i></a>
                                 </th>
                             </tr>
                         </thead>
@@ -1983,11 +1983,9 @@ function updateSummaryDocxIcon() {
     if (isLoanSaved && window.editMode && window.editMode.loanId) {
         configLink.style.display = 'inline';
         link.style.display = 'inline';
-        link.href = `/loan/${window.editMode.loanId}/summary-docx`;
     } else {
         configLink.style.display = 'none';
         link.style.display = 'none';
-        link.removeAttribute('href');
     }
 }
 
@@ -2003,11 +2001,18 @@ function updateLoanReportLink() {
     }
 }
 
+async function fetchReportFields() {
+    if (!window.editMode || !window.editMode.loanId) return {};
+    const resp = await fetch(`/loan/${window.editMode.loanId}/report-fields`);
+    const data = await resp.json();
+    window.currentReportFields = data;
+    return data;
+}
+
 async function handleReportFieldsClick(e) {
     e.preventDefault();
     if (!window.editMode || !window.editMode.loanId) return;
-    const resp = await fetch(`/loan/${window.editMode.loanId}/report-fields`);
-    const data = await resp.json();
+    const data = await fetchReportFields();
     document.getElementById('docxClientName').value = data.client_name || '';
     document.getElementById('docxPropertyAddress').value = data.property_address || '';
     document.getElementById('docxDebenture').value = data.debenture || '';
@@ -2087,6 +2092,35 @@ function initializeReportFieldsLinks() {
     });
 }
 
+async function downloadSummaryDocx(e) {
+    e.preventDefault();
+    if (!window.editMode || !window.editMode.loanId) return;
+    try {
+        const data = await fetchReportFields();
+        const response = await fetch(`/loan/${window.editMode.loanId}/summary-docx`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error();
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'loan_summary.docx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    } catch (err) {
+        if (Novellus && Novellus.utils && Novellus.utils.showToast) {
+            Novellus.utils.showToast('Failed to download summary', 'danger');
+        } else {
+            alert('Failed to download summary');
+        }
+    }
+}
+
 function updateReportsButton(loan) {
     const btn = document.getElementById('openReportsBtn');
     const menu = document.getElementById('reportDropdownMenu');
@@ -2114,6 +2148,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateSummaryDocxIcon();
     updateLoanReportLink();
     initializeReportFieldsLinks();
+
+    const downloadLink = document.getElementById('downloadSummaryDocx');
+    if (downloadLink) {
+        downloadLink.addEventListener('click', downloadSummaryDocx);
+    }
 
     const saveFieldsBtn = document.getElementById('saveReportFields');
     if (saveFieldsBtn) {
@@ -2145,6 +2184,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const result = await response.json();
                 if (response.ok && result.success) {
                     Novellus.utils.showToast('Report fields saved', 'success');
+                    await fetchReportFields();
                     const modalEl = document.getElementById('loanSummaryFieldsModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
                     if (modalInstance) modalInstance.hide();
