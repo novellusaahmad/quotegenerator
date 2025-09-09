@@ -154,8 +154,8 @@
                             <div class="col-md-6 mb-3">
                                 <label for="loan_term" class="form-label">Loan Term *</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" id="loan_term" name="loan_term" 
-                                           min="3" max="600" required value="{{ application.loan_term if application else '' }}">
+                                    <input type="number" class="form-control" id="loan_term" name="loan_term"
+                                           min="1" step="1" required value="{{ application.loan_term if application else '' }}">
                                     <span class="input-group-text">months</span>
                                 </div>
                             </div>
