@@ -20,6 +20,7 @@ from models import (
     Payment,
     Communication,
     LoanSummary,
+    LoanData,
     PaymentSchedule,
     ReportFields,
     LoanNote,
@@ -181,7 +182,14 @@ def ensure_loan_tables():
     """Create loan-related tables and ensure they contain required columns."""
     inspector = sa.inspect(db.engine)
 
-    models_to_check = [LoanSummary, PaymentSchedule, ReportFields, LoanNote, LoanSummaryNote]
+    models_to_check = [
+        LoanSummary,
+        LoanData,
+        PaymentSchedule,
+        ReportFields,
+        LoanNote,
+        LoanSummaryNote,
+    ]
 
     # Create missing tables if necessary
     for model in models_to_check:
@@ -228,6 +236,43 @@ def is_table_structure_valid(model):
     except Exception as e:
         app.logger.error(f"Could not inspect table {model.__tablename__}: {e}")
         return False
+
+
+def snapshot_loan_data(loan_summary):
+    """Persist a string-formatted snapshot of all loan fields.
+
+    Creates or updates a ``LoanData`` record where every field from
+    ``LoanSummary`` is stored as a string with appropriate formatting.
+    Monetary values include currency symbols and thousand separators, while
+    percentage/ratio fields are stored as plain numbers."""
+
+    currency = getattr(loan_summary, 'currency', 'GBP')
+    percentage_keys = ('rate', 'percentage', 'ltv')
+    no_currency = {'loan_term', 'loan_term_days', 'version'}
+
+    data = {}
+    for column in LoanSummary.__table__.columns:
+        if column.name == 'id':
+            continue
+        value = getattr(loan_summary, column.name)
+        if value is None:
+            data[column.name] = None
+            continue
+        if isinstance(value, (Decimal, int, float)):
+            name = column.name.lower()
+            if name in no_currency or any(k in name for k in percentage_keys):
+                data[column.name] = f"{float(value):.4f}".rstrip('0').rstrip('.')
+            else:
+                data[column.name] = format_currency(float(value), currency)
+        else:
+            data[column.name] = str(value)
+
+    record = LoanData.query.get(loan_summary.id)
+    if not record:
+        record = LoanData(loan_summary_id=loan_summary.id)
+    for key, val in data.items():
+        setattr(record, key, val)
+    db.session.merge(record)
 
 # Initialize calculator and quote generator
 calculator = LoanCalculator()
@@ -2115,6 +2160,9 @@ def save_loan():
                     app.logger.warning(f"Error saving payment {i+1}: {pe}")
                     continue
 
+        # Save formatted snapshot of all loan data for use in loan notes mapping
+        snapshot_loan_data(loan_summary)
+
         db.session.commit()
 
         try:
@@ -2976,28 +3024,11 @@ def loan_notes():
         )
     ]
 
-    placeholder_options = []
-    tables = [
-        (
-            ReportFields,
-            "report_fields",
-            {"id", "loan_id", "loan_summary_id", "created_at", "updated_at"},
-        ),
-        (
-            LoanSummary,
-            "loan_summary",
-            {"id", "user_id", "created_at", "updated_at"},
-        ),
-        (
-            PaymentSchedule,
-            "payment_schedule",
-            {"id", "loan_summary_id", "created_at", "updated_at"},
-        ),
+    placeholder_options = [
+        f"loan_data.{col.name}"
+        for col in LoanData.__table__.columns
+        if col.name != 'loan_summary_id'
     ]
-    for model, prefix, excluded in tables:
-        placeholder_options.extend(
-            f"{prefix}.{col.name}" for col in model.__table__.columns if col.name not in excluded
-        )
     return render_template(
         "loan_notes.html",
         notes=notes,

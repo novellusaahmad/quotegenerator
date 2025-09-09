@@ -42,6 +42,9 @@ def build_context(loan_summary: Any) -> Dict[str, Any]:
     # Core loan summary fields
     _add_model_attrs(context, loan_summary)
 
+    # Include formatted string snapshot for mapping (loan_data table)
+    _add_model_attrs(context, getattr(loan_summary, 'loan_data', None), prefix='loan_data')
+
     # Related report fields
     rf = getattr(loan_summary, "report_fields", None)
     if rf:

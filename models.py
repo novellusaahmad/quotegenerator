@@ -297,6 +297,40 @@ class LoanSummary(db.Model):
         return f'<LoanSummary {self.loan_name} v{self.version}>'
 
 
+def _create_loan_data_model():
+    """Dynamically create a table mirroring ``LoanSummary`` columns as strings.
+
+    The table stores a snapshot of all loan fields formatted as user facing
+    strings (e.g. currency symbols and thousand separators).  Columns are
+    generated at import time to keep them in sync with ``LoanSummary`` without
+    having to manually duplicate the full schema."""
+
+    attrs = {
+        '__tablename__': 'loan_data',
+        'loan_summary_id': db.Column(
+            db.Integer,
+            db.ForeignKey('loan_summary.id'),
+            primary_key=True,
+        ),
+        # Relationship back to ``LoanSummary`` so the snapshot can be accessed
+        # via ``loan.loan_data`` and cascades on delete.
+        'loan': db.relationship(
+            'LoanSummary',
+            backref=db.backref('loan_data', uselist=False, cascade='all, delete-orphan'),
+        ),
+    }
+
+    for column in LoanSummary.__table__.columns:
+        if column.name == 'id':
+            continue
+        attrs[column.name] = db.Column(db.String)
+
+    return type('LoanData', (db.Model,), attrs)
+
+
+LoanData = _create_loan_data_model()
+
+
 class PaymentSchedule(db.Model):
     __tablename__ = 'payment_schedule'
     
