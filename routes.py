@@ -2054,14 +2054,17 @@ def save_loan():
             loan_summary.gross_amount = fresh_calculation.get('grossAmount', 0)
             loan_summary.net_amount = fresh_calculation.get('netAmount', 0)
             loan_summary.property_value = fresh_calculation.get('propertyValue', 0)
+
             loan_summary.interest_rate = data.get('interestRate', 0)
             loan_summary.loan_term = max(
                 1, safe_int(data.get('loanTerm') or data.get('loan_term'), 12)
             )
+
             loan_summary.loan_term_days = fresh_calculation.get('loanTermDays', 365)
             loan_summary.start_date = datetime.strptime(
-                data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d'
-            ).date() if data.get('startDate') else datetime.now().date()
+                data.get('startDate') or data.get('start_date') or datetime.now().strftime('%Y-%m-%d'),
+                '%Y-%m-%d'
+            ).date()
             loan_summary.end_date = end_date
             loan_summary.repayment_option = data.get('repaymentOption', 'none')
             loan_summary.payment_timing = data.get('paymentTiming') or data.get('payment_timing', 'advance')
@@ -2114,14 +2117,17 @@ def save_loan():
                 gross_amount=fresh_calculation.get('grossAmount', 0),
                 net_amount=fresh_calculation.get('netAmount', 0),
                 property_value=fresh_calculation.get('propertyValue', 0),
+
                 interest_rate=data.get('interestRate', 0),
                 loan_term=max(
                     1, safe_int(data.get('loanTerm') or data.get('loan_term'), 12)
                 ),
+
                 loan_term_days=fresh_calculation.get('loanTermDays', 365),
                 start_date=datetime.strptime(
-                    data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d'
-                ).date() if data.get('startDate') else datetime.now().date(),
+                    data.get('startDate') or data.get('start_date') or datetime.now().strftime('%Y-%m-%d'),
+                    '%Y-%m-%d'
+                ).date(),
                 end_date=end_date,
                 repayment_option=data.get('repaymentOption', 'none'),
                 payment_timing=data.get('paymentTiming') or data.get('payment_timing', 'advance'),
