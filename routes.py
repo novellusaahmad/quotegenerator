@@ -2054,7 +2054,9 @@ def save_loan():
             loan_summary.gross_amount = fresh_calculation.get('grossAmount', 0)
             loan_summary.net_amount = fresh_calculation.get('netAmount', 0)
             loan_summary.property_value = fresh_calculation.get('propertyValue', 0)
-            loan_summary.interest_rate = data.get('interestRate', 0)
+            loan_summary.interest_rate = safe_float(
+                data.get('interestRate') or data.get('interest_rate'), 0
+            )
             loan_summary.loan_term = max(1, safe_int(data.get('loanTerm'), 12))
             loan_summary.loan_term_days = fresh_calculation.get('loanTermDays', 365)
             loan_summary.start_date = datetime.strptime(
@@ -2113,7 +2115,9 @@ def save_loan():
                 gross_amount=fresh_calculation.get('grossAmount', 0),
                 net_amount=fresh_calculation.get('netAmount', 0),
                 property_value=fresh_calculation.get('propertyValue', 0),
-                interest_rate=data.get('interestRate', 0),
+                interest_rate=safe_float(
+                    data.get('interestRate') or data.get('interest_rate'), 0
+                ),
                 loan_term=data.get('loanTerm', 12),
                 loan_term_days=fresh_calculation.get('loanTermDays', 365),
                 start_date=datetime.strptime(
