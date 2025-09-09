@@ -1756,6 +1756,11 @@ class LoanCalculator {
         const numberInputs = this.form.querySelectorAll('input[type="number"]');
         numberInputs.forEach(input => {
             input.addEventListener('input', () => {
+                // Ensure values like ".23" are normalised to "0.23" before validation
+                if (input.value.startsWith('.')) {
+                    input.value = '0' + input.value;
+                }
+
                 const val = parseFloat(input.value);
                 if (!isNaN(val) && val < 0) {
                     input.value = '';
@@ -1797,7 +1802,8 @@ class LoanCalculator {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 4
             });
-            input.value = formattedValue;
+            // Prefix a leading zero if locale formatting drops it (e.g. .23)
+            input.value = formattedValue.startsWith('.') ? `0${formattedValue}` : formattedValue;
         } catch (error) {
             // If formatting fails, keep original value
             console.warn('Number formatting failed:', error);
