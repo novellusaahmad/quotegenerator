@@ -247,7 +247,7 @@ def snapshot_loan_data(loan_summary):
     percentage/ratio fields are stored as plain numbers."""
 
     currency = getattr(loan_summary, 'currency', 'GBP')
-    percentage_keys = ('rate', 'percentage', 'ltv')
+    percentage_keys = ('rate', 'percentage', 'ltv', 'percent')
     no_currency = {'loan_term', 'loan_term_days', 'version'}
 
     data = {}
@@ -266,6 +266,24 @@ def snapshot_loan_data(loan_summary):
                 data[column.name] = format_currency(float(value), currency)
         else:
             data[column.name] = str(value)
+
+    report_fields = getattr(loan_summary, 'report_fields', None)
+    if report_fields:
+        for column in ReportFields.__table__.columns:
+            if column.name in {'id', 'loan_summary_id'}:
+                continue
+            value = getattr(report_fields, column.name)
+            if value is None:
+                data[column.name] = None
+                continue
+            if isinstance(value, (Decimal, int, float)):
+                name = column.name.lower()
+                if name in no_currency or any(k in name for k in percentage_keys):
+                    data[column.name] = f"{float(value):.4f}".rstrip('0').rstrip('.')
+                else:
+                    data[column.name] = format_currency(float(value), currency)
+            else:
+                data[column.name] = str(value)
 
     record = LoanData.query.get(loan_summary.id)
     if not record:

@@ -325,10 +325,15 @@ def _create_loan_data_model():
             continue
         attrs[column.name] = db.Column(db.String)
 
+    # Include report field columns as plain strings
+    for column in ReportFields.__table__.columns:
+        if column.name in {'id', 'loan_summary_id'}:
+            continue
+        # Avoid overriding columns that may already exist
+        if column.name not in attrs:
+            attrs[column.name] = db.Column(db.String)
+
     return type('LoanData', (db.Model,), attrs)
-
-
-LoanData = _create_loan_data_model()
 
 
 class PaymentSchedule(db.Model):
@@ -407,6 +412,9 @@ class ReportFields(db.Model):
 
     def __repr__(self):
         return f'<ReportFields for Loan {self.loan_id}>'
+
+
+LoanData = _create_loan_data_model()
 
 
 class LoanNote(db.Model):
