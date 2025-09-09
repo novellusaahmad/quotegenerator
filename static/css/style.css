@@ -564,3 +564,17 @@ footer {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Save/Update Loan button styling */
+#saveLoanBtn {
+    background-color: #fff !important;
+    color: #000 !important;
+    border: 1px solid #000 !important;
+}
+
+#saveLoanBtn:hover,
+#saveLoanBtn:focus,
+#saveLoanBtn:disabled {
+    background-color: #fff !important;
+    color: #000 !important;
+}
