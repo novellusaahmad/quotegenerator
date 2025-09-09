@@ -1756,20 +1756,18 @@ class LoanCalculator {
         const numberInputs = this.form.querySelectorAll('input[type="number"]');
         numberInputs.forEach(input => {
             input.addEventListener('input', () => {
-                    const minAttr = parseFloat(input.getAttribute('min'));
-                    const min = isNaN(minAttr) ? 0 : minAttr;
-                    const val = parseFloat(input.value);
-                    if (!isNaN(val) && val < min) {
-                        input.value = '';
-                        if (window.notifications && window.notifications.error) {
-                            const label = this.form.querySelector(`label[for="${input.id}"]`);
-                            const fieldName = label ? label.textContent.trim() : input.name || input.id;
-                            window.notifications.error(`${fieldName} cannot be negative`);
-                        }
+                const val = parseFloat(input.value);
+                if (!isNaN(val) && val < 0) {
+                    input.value = '';
+                    if (window.notifications && window.notifications.error) {
+                        const label = this.form.querySelector(`label[for="${input.id}"]`);
+                        const fieldName = label ? label.textContent.trim() : input.name || input.id;
+                        window.notifications.error(`${fieldName} cannot be negative`);
                     }
-                });
+                }
             });
-        }
+        });
+    }
 
     safeFormatInputValue(input) {
         const originalValue = input.value;
