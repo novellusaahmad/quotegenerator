@@ -1972,8 +1972,13 @@ function updateLoanReportLink() {
     }
 }
 
+window.pendingReportFields = window.pendingReportFields || null;
+
 async function fetchReportFields() {
-    if (!window.editMode || !window.editMode.loanId) return {};
+    if (!window.editMode || !window.editMode.loanId) {
+        window.currentReportFields = window.pendingReportFields || {};
+        return window.currentReportFields;
+    }
     const resp = await fetch(`/loan/${window.editMode.loanId}/report-fields`);
     const data = await resp.json();
     window.currentReportFields = data;
@@ -2092,12 +2097,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     const saveFieldsBtn = document.getElementById('saveReportFields');
     if (saveFieldsBtn) {
         saveFieldsBtn.addEventListener('click', async function() {
-            if (!window.editMode || !window.editMode.loanId) {
-                if (Novellus?.utils?.showToast) {
-                    Novellus.utils.showToast('Save the loan before editing report fields', 'warning');
-                }
-                return;
-            }
             const selectedNoteIds = Array.from(
                 document.querySelectorAll('#loanNotesAccordion input[type="checkbox"]:checked')
             )
@@ -2115,6 +2114,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                 commitment_fee: document.getElementById('docxCommitmentFee').value,
                 note_ids: selectedNoteIds
             };
+            if (!window.editMode || !window.editMode.loanId) {
+                window.pendingReportFields = data;
+                if (Novellus?.utils?.showToast) {
+                    Novellus.utils.showToast('Report fields saved', 'success');
+                }
+                const modalEl = document.getElementById('loanSummaryFieldsModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) modalInstance.hide();
+                const saveBtn = document.getElementById('saveLoanBtn');
+                if (saveBtn) saveBtn.disabled = false;
+                return;
+            }
             try {
                 const response = await fetch(`/loan/${window.editMode.loanId}/report-fields`, {
                     method: 'POST',
@@ -2262,10 +2273,33 @@ document.addEventListener('DOMContentLoaded', async function() {
                 alert(`Success! ${result.message}`);
             }
             updateReportsButton(getLoanForReport());
-            
+            if (window.pendingReportFields) {
+                try {
+                    const rfResp = await fetch(`/loan/${result.loan_id}/report-fields`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(window.pendingReportFields)
+                    });
+                    const rfResult = await rfResp.json();
+                    if (rfResp.ok && rfResult.success) {
+                        if (Novellus?.utils?.showToast) {
+                            Novellus.utils.showToast('Report fields saved', 'success');
+                        }
+                        window.pendingReportFields = null;
+                        await fetchReportFields();
+                    } else if (Novellus?.utils?.showToast) {
+                        Novellus.utils.showToast(rfResult.error || 'Failed to save report fields', 'danger');
+                    }
+                } catch (err) {
+                    if (Novellus?.utils?.showToast) {
+                        Novellus.utils.showToast('Failed to save report fields', 'danger');
+                    }
+                }
+            }
+
         } catch (error) {
             console.error('Save loan error:', error);
-            
+
             // Show error notification
             if (window.notifications) {
                 window.notifications.show('Failed to save loan: ' + error.message, 'error');
