@@ -443,14 +443,14 @@ class LoanHistoryManager {
                     <div class="small text-muted mt-1">${loan.currency}</div>
                 </td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="loanHistory.viewLoanDetails(${loan.id})" title="View Details">
+                    <button class="btn btn-sm btn-outline-secondary bg-white text-dark me-1" onclick="loanHistory.viewLoanDetails(${loan.id})" title="View Details">
                         <i class="fas fa-eye"></i>
                     </button>
                     <div class="btn-group me-1">
-                        <button type="button" class="btn btn-sm btn-novellus-gold" onclick="loanHistory.editLoanFromTable(${loan.id})" title="Edit Loan">
+                        <button type="button" class="btn btn-sm btn-outline-secondary bg-white text-dark" onclick="loanHistory.editLoanFromTable(${loan.id})" title="Edit Loan">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="loanHistory.deleteLoan(${loan.id}, '${loan.loan_name.replace(/'/g, '\\\'')}')" title="Delete Loan">
+                        <button class="btn btn-sm btn-outline-secondary bg-white text-dark" onclick="loanHistory.deleteLoan(${loan.id}, '${loan.loan_name.replace(/'/g, '\\\'')}')" title="Delete Loan">
                             <i class="fas fa-trash"></i>
                         </button>
                 </td>
