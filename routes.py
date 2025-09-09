@@ -1564,6 +1564,7 @@ def perform_fresh_calculation_for_download(form_data):
             'annual_rate': annual_rate,
             'loan_term': loan_term,
             'start_date': start_date_str,
+            'end_date': form_data.get('endDate') or form_data.get('end_date'),
             'arrangement_fee_rate': arrangement_fee_rate,
             'legal_fees': legal_fees,
             'site_visit_fee': site_visit_fee,
@@ -1943,7 +1944,22 @@ def save_loan():
         
         # Perform fresh calculation
         fresh_calculation = perform_fresh_calculation_for_download(data)
-        
+
+        # Determine end date from calculation results, falling back if missing
+        end_date_str = fresh_calculation.get('endDate') or fresh_calculation.get('end_date')
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                end_date = (datetime.now() + timedelta(days=365)).date()
+                end_date_str = end_date.strftime('%Y-%m-%d')
+        else:
+            end_date = (datetime.now() + timedelta(days=365)).date()
+
+        # Keep stored inputs consistent with calculation result
+        if end_date_str:
+            data['endDate'] = end_date_str
+
         if not fresh_calculation:
             return jsonify({'error': 'Failed to calculate loan data'}), 500
         
@@ -1967,8 +1983,10 @@ def save_loan():
             loan_summary.interest_rate = data.get('interestRate', 0)
             loan_summary.loan_term = max(1, safe_int(data.get('loanTerm'), 12))
             loan_summary.loan_term_days = fresh_calculation.get('loanTermDays', 365)
-            loan_summary.start_date = datetime.strptime(data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('startDate') else datetime.now().date()
-            loan_summary.end_date = datetime.strptime(data.get('endDate', (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('endDate') else (datetime.now() + timedelta(days=365)).date()
+            loan_summary.start_date = datetime.strptime(
+                data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d'
+            ).date() if data.get('startDate') else datetime.now().date()
+            loan_summary.end_date = end_date
             loan_summary.repayment_option = data.get('repaymentOption', 'none')
             loan_summary.payment_timing = data.get('paymentTiming') or data.get('payment_timing', 'advance')
             loan_summary.payment_frequency = data.get('paymentFrequency') or data.get('payment_frequency', 'monthly')
@@ -2023,8 +2041,10 @@ def save_loan():
                 interest_rate=data.get('interestRate', 0),
                 loan_term=data.get('loanTerm', 12),
                 loan_term_days=fresh_calculation.get('loanTermDays', 365),
-                start_date=datetime.strptime(data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('startDate') else datetime.now().date(),
-                end_date=datetime.strptime(data.get('endDate', (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')), '%Y-%m-%d').date() if data.get('endDate') else (datetime.now() + timedelta(days=365)).date(),
+                start_date=datetime.strptime(
+                    data.get('startDate', datetime.now().strftime('%Y-%m-%d')), '%Y-%m-%d'
+                ).date() if data.get('startDate') else datetime.now().date(),
+                end_date=end_date,
                 repayment_option=data.get('repaymentOption', 'none'),
                 payment_timing=data.get('paymentTiming') or data.get('payment_timing', 'advance'),
                 payment_frequency=data.get('paymentFrequency') or data.get('payment_frequency', 'monthly'),
