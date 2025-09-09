@@ -2066,7 +2066,7 @@ def save_loan():
                 '%Y-%m-%d'
             ).date()
             loan_summary.end_date = end_date
-            loan_summary.repayment_option = data.get('repaymentOption', 'none')
+            loan_summary.repayment_option = data.get('repaymentOption') or data.get('repayment_option', 'none')
             loan_summary.payment_timing = data.get('paymentTiming') or data.get('payment_timing', 'advance')
             loan_summary.payment_frequency = data.get('paymentFrequency') or data.get('payment_frequency', 'monthly')
             # Support both camelCase and snake_case field names from the form
@@ -2129,7 +2129,7 @@ def save_loan():
                     '%Y-%m-%d'
                 ).date(),
                 end_date=end_date,
-                repayment_option=data.get('repaymentOption', 'none'),
+                repayment_option=data.get('repaymentOption') or data.get('repayment_option', 'none'),
                 payment_timing=data.get('paymentTiming') or data.get('payment_timing', 'advance'),
                 payment_frequency=data.get('paymentFrequency') or data.get('payment_frequency', 'monthly'),
                 # Support both camelCase and snake_case field names from the form
