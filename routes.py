@@ -3056,7 +3056,6 @@ def loan_notes():
     placeholder_options = [
         f"loan_data.{col.name}"
         for col in LoanData.__table__.columns
-        if col.name != 'loan_summary_id'
     ]
     return render_template(
         "loan_notes.html",
