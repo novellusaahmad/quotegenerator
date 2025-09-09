@@ -412,11 +412,17 @@ def generate_loan_summary_docx(loan, extra_fields=None):
                 return None
         return _flatten(current)
 
+    # Ensure the formatted snapshot is loaded so fields can be referenced via
+    # ``loan_data`` in placeholder mappings.
+    loan_data_obj = getattr(loan, 'loan_data', None)
+
     context = {}
     for attr, value in vars(loan).items():
         if attr.startswith('_'):
             continue
         context[attr.lower()] = _flatten(value)
+    if loan_data_obj is not None:
+        context['loan_data'] = loan_data_obj
     for key, value in extra_fields.items():
         if isinstance(value, list):
             continue
