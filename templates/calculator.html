@@ -1982,7 +1982,6 @@ async function fetchReportFields() {
 
 async function handleReportFieldsClick(e) {
     e.preventDefault();
-    if (!window.editMode || !window.editMode.loanId) return;
     const data = await fetchReportFields();
     document.getElementById('docxClientName').value = data.client_name || '';
     document.getElementById('docxPropertyAddress').value = data.property_address || '';
@@ -2093,7 +2092,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     const saveFieldsBtn = document.getElementById('saveReportFields');
     if (saveFieldsBtn) {
         saveFieldsBtn.addEventListener('click', async function() {
-            if (!window.editMode || !window.editMode.loanId) return;
+            if (!window.editMode || !window.editMode.loanId) {
+                if (Novellus?.utils?.showToast) {
+                    Novellus.utils.showToast('Save the loan before editing report fields', 'warning');
+                }
+                return;
+            }
             const selectedNoteIds = Array.from(
                 document.querySelectorAll('#loanNotesAccordion input[type="checkbox"]:checked')
             )
