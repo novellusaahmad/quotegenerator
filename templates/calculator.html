@@ -880,9 +880,6 @@
 <button class="btn btn-primary btn-lg calculate-button" data-currency="GBP" type="submit" disabled>
     <i class="fas fa-calculator me-2"></i>Calculate
                     </button>
-<button class="btn btn-success" data-currency="GBP" disabled="" id="saveLoanBtn" type="button">
-<i class="fas fa-save me-2"></i><span id="saveLoanText">Save Loan</span>
-</button>
 <button class="btn btn-outline-secondary" id="cancelEditBtn" style="display: none;" type="button">
 <i class="fas fa-times me-2"></i>Cancel Edit
                     </button>
@@ -913,24 +910,12 @@
                         <a id="openLoanReport" class="btn btn-sm btn-light me-2" href="#" style="display:none;" target="_blank" title="Open Loan Report">
                             <i class="fas fa-chart-column"></i>
                         </a>
-                        <button type="button" class="btn btn-sm btn-light me-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal">View Details</button>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" id="openReportsBtn" data-bs-toggle="dropdown" aria-expanded="false" disabled>Reports</button>
-                            <ul class="dropdown-menu" aria-labelledby="openReportsBtn" id="reportDropdownMenu"></ul>
-                        </div>
+                        <button type="button" class="btn btn-sm btn-light me-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal" title="View Details"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-sm btn-light" data-currency="GBP" disabled id="saveLoanBtn" type="button"><i class="fas fa-save me-2"></i><span id="saveLoanText">Save Loan</span></button>
                     </div>
                 </div>
 <div class="card-body p-0">
 <table class="table" style="border: 1px solid #000; border-collapse: collapse;">
-<thead>
-                            <tr style="border: 1px solid #000; background: #f8f9fa;">
-                                <th class="px-3" style="color: #000 !important; border-right: 1px solid #000;"></th>
-                                <th class="px-3 text-end" style="color: #000 !important; border-right: 1px solid #000;"></th>
-                                <th class="px-3 text-end" style="color: #000 !important;">
-                                    <a id="downloadSummaryDocx" style="display:none;" title="Download Loan Summary"><i class="fas fa-file-word"></i></a>
-                                </th>
-                            </tr>
-                        </thead>
                         <tbody>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Valuation</td>
@@ -1975,20 +1960,6 @@ function getLoanForReport() {
     };
 }
 
-function updateSummaryDocxIcon() {
-    const link = document.getElementById('downloadSummaryDocx');
-    const configLink = document.getElementById('openReportFields');
-    if (!link || !configLink) return;
-
-    if (isLoanSaved && window.editMode && window.editMode.loanId) {
-        configLink.style.display = 'inline';
-        link.style.display = 'inline';
-    } else {
-        configLink.style.display = 'none';
-        link.style.display = 'none';
-    }
-}
-
 function updateLoanReportLink() {
     const link = document.getElementById('openLoanReport');
     if (!link) return;
@@ -2092,35 +2063,6 @@ function initializeReportFieldsLinks() {
     });
 }
 
-async function downloadSummaryDocx(e) {
-    e.preventDefault();
-    if (!window.editMode || !window.editMode.loanId) return;
-    try {
-        const data = await fetchReportFields();
-        const response = await fetch(`/loan/${window.editMode.loanId}/summary-docx`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error();
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'loan_summary.docx';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    } catch (err) {
-        if (Novellus && Novellus.utils && Novellus.utils.showToast) {
-            Novellus.utils.showToast('Failed to download summary', 'danger');
-        } else {
-            alert('Failed to download summary');
-        }
-    }
-}
-
 function updateReportsButton(loan) {
     const btn = document.getElementById('openReportsBtn');
     const menu = document.getElementById('reportDropdownMenu');
@@ -2145,14 +2087,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     } else {
         updateReportsButton(null);
     }
-    updateSummaryDocxIcon();
     updateLoanReportLink();
     initializeReportFieldsLinks();
-
-    const downloadLink = document.getElementById('downloadSummaryDocx');
-    if (downloadLink) {
-        downloadLink.addEventListener('click', downloadSummaryDocx);
-    }
 
     const saveFieldsBtn = document.getElementById('saveReportFields');
     if (saveFieldsBtn) {
@@ -2188,6 +2124,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const modalEl = document.getElementById('loanSummaryFieldsModal');
                     const modalInstance = bootstrap.Modal.getInstance(modalEl);
                     if (modalInstance) modalInstance.hide();
+                    const saveBtn = document.getElementById('saveLoanBtn');
+                    if (saveBtn) saveBtn.disabled = false;
                 } else {
                     Novellus.utils.showToast(result.error || 'Failed to save report fields', 'danger');
                 }
@@ -2312,7 +2250,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Mark loan as saved and enable reports
             isLoanSaved = true;
             window.editMode = { loanId: result.loan_id, loanName: loanName };
-            updateSummaryDocxIcon();
             updateLoanReportLink();
             // Show success notification
             if (window.notifications) {

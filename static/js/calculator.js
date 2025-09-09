@@ -730,6 +730,12 @@ class LoanCalculator {
             if (this.noResults) {
                 this.noResults.style.display = 'none';
             }
+
+            // Show report fields link once results are available
+            const reportLink = document.getElementById('openReportFields');
+            if (reportLink) {
+                reportLink.style.display = 'inline';
+            }
             
             // Show download options
             const downloadOptionsCard = document.getElementById('downloadOptionsCard');
@@ -769,14 +775,6 @@ class LoanCalculator {
             throw error;  // Re-throw so the main catch block can handle it
         }
         
-        // Enable save button after successful calculation
-        const saveLoanBtn = document.getElementById('saveLoanBtn');
-        if (saveLoanBtn) {
-            saveLoanBtn.disabled = false;
-            saveLoanBtn.classList.remove('btn-secondary');
-            saveLoanBtn.classList.add('btn-success');
-            console.log('Save button enabled after successful calculation');
-        }
     }
 
     updateCalculationResults(results) {
