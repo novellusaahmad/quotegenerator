@@ -65,12 +65,6 @@
             border: none;
         }
 
-        .notification-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1050;
-        }
     </style>
 {% endblock %}
 
@@ -400,20 +394,6 @@
                     </div>
                 </div>
     </div>
-<!-- Notification Toast -->
-    <div class="toast-container position-fixed top-0 end-0 p-3">
-        <div id="notificationToast" class="toast" role="alert">
-            <div class="toast-header">
-                <i class="fas fa-bell text-primary me-2"></i>
-                <strong class="me-auto">Notification</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-            </div>
-            <div class="toast-body" id="toastMessage">
-                <!-- Notification message will be inserted here -->
-            </div>
-        </div>
-    </div>
-
     <!-- Interest Rate Comparison Modal -->
     <div class="modal fade" id="interestRateModal" tabindex="-1">
         <div class="modal-dialog">
@@ -745,15 +725,6 @@
             document.getElementById('loadingSpinner').style.display = 'none';
         }
 
-        function showNotification(message, type = 'info') {
-            const toast = document.getElementById('notificationToast');
-            const toastMessage = document.getElementById('toastMessage');
-            toastMessage.textContent = message;
-            
-            const bsToast = new bootstrap.Toast(toast);
-            bsToast.show();
-        }
-
         function getBaseParameters() {
             // Get parameters from URL first (if navigated from calculator)
             const urlParams = new URLSearchParams(window.location.search);
@@ -914,7 +885,7 @@
                 
             } catch (error) {
                 console.error('Template generation failed:', error);
-                showNotification('Failed to generate template: ' + error.message, 'error');
+                showNotification('Failed to generate template: ' + error.message, 'danger');
             } finally {
                 hideLoading();
             }
@@ -942,7 +913,7 @@
                 
             } catch (error) {
                 console.error('Scenario comparison failed:', error);
-                showNotification('Failed to create comparison: ' + error.message, 'error');
+                showNotification('Failed to create comparison: ' + error.message, 'danger');
             }
         }
 
@@ -1095,7 +1066,7 @@
                 
             } catch (error) {
                 console.error('Export failed:', error);
-                showNotification('Failed to export comparison: ' + error.message, 'error');
+                showNotification('Failed to export comparison: ' + error.message, 'danger');
             }
         }
 
@@ -1663,7 +1634,7 @@
                 
             } catch (error) {
                 console.error('Custom scenario generation failed:', error);
-                showNotification('Failed to generate custom scenarios: ' + error.message, 'error');
+                showNotification('Failed to generate custom scenarios: ' + error.message, 'danger');
             } finally {
                 hideLoading();
             }

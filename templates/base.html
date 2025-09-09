@@ -143,37 +143,29 @@
     
     <!-- Rollback functionality -->
     <script>
-    // Rollback confirmation function
     function confirmRollback() {
-        if (window.notifications) {
-            // Create a custom confirmation notification
+        if (Novellus?.utils?.showToast) {
+            const toastId = 'rollback-toast';
             const confirmMessage = `
                 <div style="margin-top: 8px;">
                     <button class="btn btn-sm btn-warning me-2" onclick="performRollback()" style="font-size: 0.8rem;">Yes, Rollback</button>
-                    <button class="btn btn-sm btn-secondary" onclick="this.closest('.notification').remove()" style="font-size: 0.8rem;">Cancel</button>
+                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('${toastId}').remove()" style="font-size:0.8rem;">Cancel</button>
                 </div>
             `;
-            window.notifications.show(
-                'Are you sure you want to rollback? This will undo recent changes.' + confirmMessage,
-                'warning',
-                15000
-            );
-        } else {
-            if (confirm('Are you sure you want to rollback? This will undo recent changes.')) {
-                performRollback();
-            }
+            Novellus.utils.showToast('Are you sure you want to rollback? This will undo recent changes.' + confirmMessage, 'warning', { autohide: false, id: toastId });
+        } else if (confirm('Are you sure you want to rollback? This will undo recent changes.')) {
+            performRollback();
         }
     }
-    
+
     function performRollback() {
-        // Close any open notifications
-        const notifications = document.querySelectorAll('.notification');
-        notifications.forEach(n => n.remove());
-        
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach(t => t.remove());
+
         window.history.back();
-        if (window.notifications) {
+        if (Novellus?.utils?.showToast) {
             setTimeout(() => {
-                window.notifications.info('Navigated back to previous page');
+                Novellus.utils.showToast('Navigated back to previous page', 'info');
             }, 500);
         }
     }
