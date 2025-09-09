@@ -2420,10 +2420,20 @@ function retryLoanSave() {
     border-color: #9A7209 !important;
     color: white !important;
 }
+
+#loanNotesAccordion {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+#loanNotesAccordion .accordion-item {
+    flex: 1 1 calc(50% - 1rem);
+}
 </style>
-<!-- Database Info Modal -->
+<!-- Report Fields Modal -->
 <div class="modal fade" id="loanSummaryFieldsModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
+  <div class="modal-dialog modal-fullscreen">
     <div class="modal-content">
       <div class="modal-header bg-primary text-white justify-content-center position-relative" id="loanSummaryFieldsHeader" data-currency="GBP">
         <h5 class="modal-title text-white w-100 text-center">Report Fields</h5>
@@ -2469,15 +2479,15 @@ function retryLoanSave() {
           </div>
         </div>
         <div id="loanNotesAccordion" class="accordion"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" id="saveReportFields">Save</button>
-      </div>
-    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    <button type="button" class="btn btn-primary" id="saveReportFields">Save</button>
   </div>
 </div>
-
+</div>
+</div>
+<!-- Database Info Modal -->
 <div aria-hidden="true" aria-labelledby="databaseInfoModalLabel" class="modal fade" id="databaseInfoModal" tabindex="-1">
 <div class="modal-dialog modal-lg">
 <div class="modal-content">
