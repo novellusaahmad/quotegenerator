@@ -69,7 +69,7 @@
                                 <label for="loan_term" class="form-label">Loan Term *</label>
                                 <div class="input-group">
                                     <input type="number" class="form-control" id="loan_term" name="loan_term"
-                                           min="3" max="600" required
+                                           min="1" step="1" required
                                            value="{{ quote.loan_term if quote else application.loan_term }}">
                                     <span class="input-group-text">months</span>
                                 </div>
