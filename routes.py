@@ -37,9 +37,16 @@ from pdf_quote_generator import (
 from excel_generator import NovellussExcelGenerator
 # BIRT integration removed for simplified on-premise deployment
 from utils import (
-    allowed_file, secure_upload_filename, validate_loan_application_data,
-    validate_quote_data, generate_payment_schedule_csv, format_currency,
-    parse_currency_amount, generate_application_reference, validate_email
+    allowed_file,
+    secure_upload_filename,
+    validate_loan_application_data,
+    validate_quote_data,
+    generate_payment_schedule_csv,
+    format_currency,
+    format_percentage,
+    parse_currency_amount,
+    generate_application_reference,
+    validate_email,
 )
 from report_utils import generate_report_schedule, generate_tranche_schedule
 from snowflake_utils import (
@@ -247,12 +254,12 @@ def snapshot_loan_data(loan_summary):
     percentage/ratio fields are stored as plain numbers."""
 
     currency = getattr(loan_summary, 'currency', 'GBP')
-    percentage_keys = ('rate', 'percentage', 'ltv')
-    no_currency = {'loan_term', 'loan_term_days', 'version'}
+    percentage_keys = ("rate", "percentage", "ltv")
+    no_currency = {"loan_term", "loan_term_days", "version"}
 
     data = {}
     for column in LoanSummary.__table__.columns:
-        if column.name == 'id':
+        if column.name == "id":
             continue
         value = getattr(loan_summary, column.name)
         if value is None:
@@ -260,8 +267,10 @@ def snapshot_loan_data(loan_summary):
             continue
         if isinstance(value, (Decimal, int, float)):
             name = column.name.lower()
-            if name in no_currency or any(k in name for k in percentage_keys):
-                data[column.name] = f"{float(value):.4f}".rstrip('0').rstrip('.')
+            if any(k in name for k in percentage_keys):
+                data[column.name] = format_percentage(float(value))
+            elif name in no_currency:
+                data[column.name] = f"{int(value):,}"
             else:
                 data[column.name] = format_currency(float(value), currency)
         else:

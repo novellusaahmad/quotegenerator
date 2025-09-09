@@ -48,8 +48,9 @@ def format_currency(amount: float, currency: str = 'GBP') -> str:
     return f"{symbol}{amount:,.2f}"
 
 def format_percentage(value: float, decimal_places: int = 2) -> str:
-    """Format percentage value"""
-    return f"{value:.{decimal_places}f}%"
+    """Format percentage value with stripped trailing zeros."""
+    formatted = f"{value:.{decimal_places}f}".rstrip("0").rstrip(".")
+    return f"{formatted}%"
 
 def validate_loan_application_data(data: Dict[str, Any]) -> List[str]:
     """Validate loan application data and return list of errors"""
