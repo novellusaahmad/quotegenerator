@@ -905,7 +905,8 @@
 <div class="card">
 <div class="card-header d-flex justify-content-center align-items-center position-relative bg-primary text-white fw-bold border border-dark" data-currency="GBP">
                     <span>Loan Summary</span>
-                    <div class="position-absolute top-50 end-0 translate-middle-y d-flex">
+                    <div class="position-absolute top-50 end-0 translate-middle-y d-flex align-items-center">
+                        <span id="workflowStep" class="badge bg-warning text-dark fs-6 px-3 py-1 me-2"><i class="fas fa-arrow-right me-1"></i>Next: Generate Report</span>
                         <a id="openReportFields" href="#" class="btn btn-sm btn-light me-2 report-fields-link" style="display:none;" title="Edit Report Fields"><i class="fas fa-list"></i></a>
                         <a id="openLoanReport" class="btn btn-sm btn-light me-2" href="#" style="display:none;" target="_blank" title="Open Loan Report">
                             <i class="fas fa-file-word"></i>
@@ -2082,14 +2083,6 @@ function updateReportsButton(loan) {
 
 // Initialize everything when page loads
 document.addEventListener('DOMContentLoaded', async function() {
-    const banner = document.getElementById('nextStepBanner');
-    if (banner) {
-        const stepEl = document.createElement('span');
-        stepEl.id = 'workflowStep';
-        stepEl.className = 'badge bg-warning text-dark fs-6 px-3 py-1 me-2';
-        banner.appendChild(stepEl);
-        banner.classList.remove('d-none');
-    }
     window.updateNextStep = function(step) {
         const el = document.getElementById('workflowStep');
         if (el) {
