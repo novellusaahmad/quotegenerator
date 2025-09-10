@@ -2310,6 +2310,11 @@ def manage_report_fields(loan_id):
         # corresponding loan_summary_id value.
         rf.loan_id = loan_id
 
+    # Ensure the relationship is populated so ``snapshot_loan_data``
+    # can access the latest report field values without requiring a
+    # database round-trip.
+    loan.report_fields = rf
+
     rf.property_address = data.get('property_address')
     rf.debenture = data.get('debenture')
     rf.corporate_guarantor = data.get('corporate_guarantor')
@@ -2355,6 +2360,11 @@ def manage_report_fields(loan_id):
         loan.loan_notes = LoanNote.query.filter(LoanNote.id.in_(note_ids)).all()
     else:
         loan.loan_notes = []
+
+    # Refresh the cached ``LoanData`` snapshot so newly saved report fields
+    # (e.g. ``max_ltv``) are immediately available for placeholder
+    # substitution in generated documents.
+    snapshot_loan_data(loan)
 
     try:
         db.session.commit()
