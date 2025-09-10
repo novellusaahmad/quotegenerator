@@ -2223,7 +2223,8 @@ function updateReportsButton(loan) {
             formData.loanName = loanName;
             
             // Perform fresh calculation to get current results
-            const calcResponse = await fetch('/api/calculate', {
+            // Use window.fetch to ensure the global fetch function is invoked with the proper context
+            const calcResponse = await window.fetch('/api/calculate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2246,7 +2247,8 @@ function updateReportsButton(loan) {
             console.log('Saving loan with data:', saveData);
             
             // Send to save endpoint
-            const response = await fetch('/save-loan', {
+            // Use window.fetch for compatibility across browsers (e.g., older Safari)
+            const response = await window.fetch('/save-loan', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
