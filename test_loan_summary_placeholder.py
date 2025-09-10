@@ -190,9 +190,9 @@ def test_table_alignment_and_borders():
     assert table.cell(3, 1).paragraphs[0].alignment == WD_ALIGN_PARAGRAPH.RIGHT
     assert table.cell(4, 1).paragraphs[0].alignment == WD_ALIGN_PARAGRAPH.RIGHT
     assert table.cell(1, 2).paragraphs[0].alignment == WD_ALIGN_PARAGRAPH.RIGHT
+    assert table.cell(6, 1).paragraphs[0].alignment == WD_ALIGN_PARAGRAPH.RIGHT
     # Text fields left aligned
     assert table.cell(1, 0).paragraphs[0].alignment == WD_ALIGN_PARAGRAPH.LEFT
-    assert table.cell(6, 1).paragraphs[0].alignment == WD_ALIGN_PARAGRAPH.LEFT
 
     tbl_pr = table._tbl.tblPr
     tbl_borders = tbl_pr.first_child_found_in("w:tblBorders")
