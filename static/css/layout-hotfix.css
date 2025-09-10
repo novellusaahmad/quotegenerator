@@ -17,22 +17,3 @@
 .chart-container canvas {
     min-height: 200px;
 }
-
-/* Fullscreen modal compatibility for Bootstrap 5.1 */
-
-.modal-fullscreen {
-    width: 100vw;
-    max-width: none;
-    height: 100%;
-    margin: 0;
-}
-
-.modal-fullscreen .modal-content {
-    height: 100%;
-    border: 0;
-    border-radius: 0;
-}
-
-.modal-fullscreen .modal-body {
-    overflow-y: auto;
-}

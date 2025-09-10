@@ -873,13 +873,8 @@ class LoanHistoryManager {
                 return;
             }
 
-            // Only pass basic identifiers; calculator will fetch full details
-            const query = new URLSearchParams({
-                edit: 'true',
-                loanId: this.currentLoanId,
-                loanName: loan.loan_name
-            }).toString();
-            window.location.href = `/calculator?${query}`;
+            // Navigate to calculator with loan ID; details loaded from server
+            window.location.href = `/calculator?edit=true&loanId=${this.currentLoanId}&loanName=${encodeURIComponent(loan.loan_name)}`;
 
         } catch (error) {
             console.error('Edit loan error:', error);
@@ -892,6 +887,85 @@ class LoanHistoryManager {
     editLoanFromTable(loanId) {
         this.currentLoanId = loanId;
         this.editLoan();
+    }
+
+    buildEditParams(loan) {
+        const formatRate = (rate) => {
+            if (rate === undefined || rate === null || rate === '') return '';
+            let num = parseFloat(rate);
+            if (isNaN(num)) return '';
+            num = parseFloat(num.toFixed(4));
+            if (Math.abs(num - Math.round(num)) < 0.0005) {
+                num = Math.round(num);
+            }
+            return num.toString();
+        };
+
+        const params = {
+            // Core loan parameters
+            loan_type: loan.loan_type ?? 'bridge',
+            amount_input_type: loan.amountInputType ?? loan.amount_input_type ?? 'gross',
+            gross_amount_type: loan.grossAmountType ?? loan.gross_amount_type ?? 'fixed',
+            rate_input_type: loan.rateInputType ?? loan.rate_input_type ?? 'annual',
+            gross_amount: loan.grossAmount ?? loan.gross_amount ?? '',
+            net_amount: loan.netAmount ?? loan.net_amount ?? '',
+            gross_amount_percentage: loan.grossAmountPercentage ?? loan.gross_amount_percentage ?? '',
+            property_value: loan.propertyValue ?? loan.property_value ?? '',
+            annual_rate: formatRate(loan.interestRate ?? loan.interest_rate ?? ''),
+            monthly_rate: formatRate(loan.monthlyRate ?? loan.monthly_rate ?? ''),
+            loan_term: loan.loanTerm ?? loan.loan_term ?? '',
+            start_date: loan.startDate ?? loan.start_date ?? '',
+            end_date: loan.endDate ?? loan.end_date ?? '',
+
+            // Repayment and fee parameters
+            repayment_option: loan.repaymentOption ?? loan.repayment_option ?? 'none',
+            arrangement_fee_percentage: loan.arrangementFeePercentage ?? loan.arrangement_fee_percentage ?? '2',
+            legal_fees: loan.legalFees ?? loan.legal_fees ?? '1500',
+            site_visit_fee: loan.siteVisitFee ?? loan.site_visit_fee ?? '500',
+            title_insurance_rate: loan.titleInsuranceRate ?? loan.title_insurance_rate ?? '0.01',
+
+            // Payment parameters
+            payment_timing: loan.paymentTiming ?? loan.payment_timing ?? 'advance',
+            payment_frequency: loan.paymentFrequency ?? loan.payment_frequency ?? 'monthly',
+            capital_repayment: loan.capitalRepayment ?? loan.capital_repayment ?? '',
+            flexible_payment: loan.flexiblePayment ?? loan.flexible_payment ?? '',
+
+            // Development loan parameters
+            day1_advance: loan.day1Advance ?? loan.day1_advance ?? '',
+            tranche_mode: loan.trancheMode ?? loan.tranche_mode ?? 'manual',
+
+            // Currency
+            currency: loan.currency ?? 'GBP'
+        };
+
+        // Derive additional parameters when not explicitly stored
+        if (!params.monthly_rate && params.annual_rate) {
+            const annual = parseFloat(params.annual_rate);
+            if (!isNaN(annual)) {
+                params.monthly_rate = formatRate(annual / 12);
+            }
+        }
+
+        if (!params.gross_amount_percentage && params.gross_amount && params.property_value) {
+            const gross = parseFloat(params.gross_amount);
+            const property = parseFloat(params.property_value);
+            if (!isNaN(gross) && !isNaN(property) && property !== 0) {
+                params.gross_amount_percentage = ((gross / property) * 100).toFixed(4);
+            }
+        }
+        
+        // Handle tranches for development loans (both development and development2)
+        if ((loan.loan_type === 'development' || loan.loan_type === 'development2') && loan.tranches && Array.isArray(loan.tranches)) {
+            loan.tranches.forEach((tranche, index) => {
+                params[`tranche_amounts[${index}]`] = tranche.amount ?? '';
+                params[`tranche_dates[${index}]`] = tranche.date ?? '';
+                params[`tranche_rates[${index}]`] = tranche.rate ?? '';
+                params[`tranche_descriptions[${index}]`] = tranche.description ?? '';
+            });
+        }
+        
+        console.log('Edit params built:', params);
+        return params;
     }
 
     showState(state) {
