@@ -2071,11 +2071,13 @@ def save_loan():
             loan_summary.payment_timing = data.get('paymentTiming') or data.get('payment_timing', 'advance')
             loan_summary.payment_frequency = data.get('paymentFrequency') or data.get('payment_frequency', 'monthly')
             # Support both camelCase and snake_case field names from the form
-            loan_summary.capital_repayment = data.get(
-                'capitalRepayment', data.get('capital_repayment', 0)
+            loan_summary.capital_repayment = safe_float(
+                data.get('capitalRepayment', data.get('capital_repayment', 0)),
+                0,
             )
-            loan_summary.flexible_payment = data.get(
-                'flexiblePayment', data.get('flexible_payment', 0)
+            loan_summary.flexible_payment = safe_float(
+                data.get('flexiblePayment', data.get('flexible_payment', 0)),
+                0,
             )
             loan_summary.arrangement_fee = fresh_calculation.get('arrangementFee', 0)
             loan_summary.arrangement_fee_percentage = safe_float(
@@ -2151,11 +2153,13 @@ def save_loan():
                 payment_timing=data.get('paymentTiming') or data.get('payment_timing', 'advance'),
                 payment_frequency=data.get('paymentFrequency') or data.get('payment_frequency', 'monthly'),
                 # Support both camelCase and snake_case field names from the form
-                capital_repayment=data.get(
-                    'capitalRepayment', data.get('capital_repayment', 0)
+                capital_repayment=safe_float(
+                    data.get('capitalRepayment', data.get('capital_repayment', 0)),
+                    0,
                 ),
-                flexible_payment=data.get(
-                    'flexiblePayment', data.get('flexible_payment', 0)
+                flexible_payment=safe_float(
+                    data.get('flexiblePayment', data.get('flexible_payment', 0)),
+                    0,
                 ),
                 arrangement_fee=fresh_calculation.get('arrangementFee', 0),
                 arrangement_fee_percentage=safe_float(
