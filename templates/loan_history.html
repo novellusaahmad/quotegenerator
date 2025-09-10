@@ -873,8 +873,14 @@ class LoanHistoryManager {
                 return;
             }
 
-            // Navigate to calculator with loan ID; details loaded from server
-            window.location.href = `/calculator?edit=true&loanId=${this.currentLoanId}&loanName=${encodeURIComponent(loan.loan_name)}`;
+            // Build full parameter list so calculator page can populate fields
+            const params = this.buildEditParams(loan);
+            params.edit = 'true';
+            params.loanId = this.currentLoanId;
+            params.loanName = loan.loan_name;
+
+            const query = new URLSearchParams(params).toString();
+            window.location.href = `/calculator?${query}`;
 
         } catch (error) {
             console.error('Edit loan error:', error);
