@@ -2089,23 +2089,24 @@ function updateReportsButton(loan) {
 }
 
 // Initialize everything when page loads
-document.addEventListener('DOMContentLoaded', async function() {
-    const navActions = document.querySelector('.navbar .d-flex.ms-auto');
-    if (navActions) {
-        const stepEl = document.createElement('span');
-        stepEl.id = 'workflowStep';
-        stepEl.className = 'text-white me-2';
-        navActions.insertBefore(stepEl, navActions.firstChild);
-    }
-    window.updateNextStep = function(step) {
-        const el = document.getElementById('workflowStep');
-        if (el) {
-            el.textContent = `Next: ${step}`;
+    document.addEventListener('DOMContentLoaded', async function() {
+        const banner = document.getElementById('nextStepBanner');
+        if (banner) {
+            const stepEl = document.createElement('span');
+            stepEl.id = 'workflowStep';
+            stepEl.className = 'badge bg-warning text-dark fs-6 px-3 py-1 me-2';
+            banner.appendChild(stepEl);
+            banner.classList.remove('d-none');
         }
-    };
-    window.updateNextStep('Calculate');
-    await loadPowerBIReports();
-    // Initialize edit mode
+        window.updateNextStep = function(step) {
+            const el = document.getElementById('workflowStep');
+            if (el) {
+                el.innerHTML = `<i class="fas fa-arrow-right me-1"></i>Next: ${step}`;
+            }
+        };
+        window.updateNextStep('Calculate');
+        await loadPowerBIReports();
+        // Initialize edit mode
     initializeEditMode();
     isLoanSaved = !!(window.editMode && window.editMode.loanId);
     if (isLoanSaved) {
