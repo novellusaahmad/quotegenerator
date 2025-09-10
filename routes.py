@@ -2376,7 +2376,8 @@ def download_loan_summary_docx(loan_id):
     _ = loan.report_fields
 
     if request.method == 'POST':
-        extra_fields = request.get_json() or {}
+        payload = request.get_json() or {}
+        extra_fields = {**payload, "report_fields": payload}
     else:
         rf = ReportFields.query.filter_by(loan_id=loan_id).first()
         if rf:
