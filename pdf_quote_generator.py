@@ -315,6 +315,34 @@ def generate_loan_summary_docx(loan, extra_fields=None):
     table = doc.add_table(rows=9, cols=3)
     table.style = 'Table Grid'
 
+    # Remove inner borders, keeping only the outer grid
+    tbl = table._tbl
+    tbl_pr = tbl.tblPr
+    if tbl_pr is None:
+        tbl_pr = OxmlElement("w:tblPr")
+        tbl.append(tbl_pr)
+    tbl_borders = tbl_pr.first_child_found_in("w:tblBorders")
+    if tbl_borders is None:
+        tbl_borders = OxmlElement("w:tblBorders")
+        tbl_pr.append(tbl_borders)
+    # Ensure outer borders exist
+    for edge in ("top", "left", "bottom", "right"):
+        element = tbl_borders.find(qn(f"w:{edge}"))
+        if element is None:
+            element = OxmlElement(f"w:{edge}")
+            tbl_borders.append(element)
+        element.set(qn("w:val"), "single")
+        element.set(qn("w:sz"), "4")
+        element.set(qn("w:space"), "0")
+        element.set(qn("w:color"), "000000")
+    # Remove inside borders
+    for edge in ("insideH", "insideV"):
+        element = tbl_borders.find(qn(f"w:{edge}"))
+        if element is None:
+            element = OxmlElement(f"w:{edge}")
+            tbl_borders.append(element)
+        element.set(qn("w:val"), "none")
+
     currency_symbol = '€' if getattr(loan, 'currency', 'GBP') == 'EUR' else '£'
     arr_fee_pct = f"{float(getattr(loan, 'arrangement_fee_percentage', 0) or 0):.2f}%"
     ltv_ratio = getattr(loan, 'ltv_ratio', getattr(loan, 'start_ltv', 0))
@@ -354,6 +382,20 @@ def generate_loan_summary_docx(loan, extra_fields=None):
         ),
     ]
 
+    def _is_numeric(text):
+        """Return True if ``text`` represents a number, currency or percentage."""
+        if text is None:
+            return False
+        cleaned = str(text).strip()
+        if cleaned == "":
+            return False
+        cleaned = cleaned.replace(",", "").replace("£", "").replace("€", "").replace("%", "")
+        try:
+            float(cleaned)
+            return True
+        except ValueError:
+            return False
+
     # Create heading row
     heading_cell = table.cell(0, 0)
     heading_cell.text = "Loan Summary"
@@ -370,11 +412,20 @@ def generate_loan_summary_docx(loan, extra_fields=None):
     shd = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), header_color))
     tc_pr.append(shd)
 
-    # Populate remaining rows
+    # Populate remaining rows with alignment based on content type
     for i, (c1, c2, c3) in enumerate(rows, start=1):
         table.cell(i, 0).text = c1
+        p0 = table.cell(i, 0).paragraphs[0]
+        p0.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
         table.cell(i, 1).text = c2
+        p1 = table.cell(i, 1).paragraphs[0]
+        p1.alignment = WD_ALIGN_PARAGRAPH.RIGHT if _is_numeric(c2) else WD_ALIGN_PARAGRAPH.LEFT
+
         table.cell(i, 2).text = c3
+        p2 = table.cell(i, 2).paragraphs[0]
+        p2.alignment = WD_ALIGN_PARAGRAPH.RIGHT if _is_numeric(c3) else WD_ALIGN_PARAGRAPH.LEFT
+
         for col in (1, 2):
             for run in table.cell(i, col).paragraphs[0].runs:
                 run.font.bold = True
