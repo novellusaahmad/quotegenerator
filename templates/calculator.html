@@ -1606,7 +1606,7 @@ function handleEditMode() {
             populateFormFromParams(urlParams);
 
             // Fetch full loan details from server and populate form
-            fetch(`/api/loan/${loanId}`)
+            window.fetch(`/api/loan/${loanId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data && data.success) {
@@ -1855,7 +1855,7 @@ let isLoanSaved = false;
 
 async function loadPowerBIReports() {
     try {
-        const response = await fetch('/api/powerbi/reports');
+        const response = await window.fetch('/api/powerbi/reports');
         const data = await response.json();
         if (response.ok && data.reports) {
             powerBIReports = data.reports;
@@ -1987,7 +1987,7 @@ async function fetchReportFields() {
         window.currentReportFields = window.pendingReportFields || {};
         return window.currentReportFields;
     }
-    const resp = await fetch(`/loan/${window.editMode.loanId}/report-fields`);
+    const resp = await window.fetch(`/loan/${window.editMode.loanId}/report-fields`);
     const data = await resp.json();
     window.currentReportFields = data;
     return data;
@@ -2005,7 +2005,7 @@ async function handleReportFieldsClick(e) {
     document.getElementById('docxMaxLtv').value = data.max_ltv || '';
     document.getElementById('docxExitFee').value = data.exit_fee_percent || '';
     document.getElementById('docxCommitmentFee').value = data.commitment_fee || '';
-    const notesResp = await fetch('/api/loan-notes');
+    const notesResp = await window.fetch('/api/loan-notes');
     const notesData = await notesResp.json();
     const accordion = document.getElementById('loanNotesAccordion');
     accordion.innerHTML = '';
@@ -2153,7 +2153,7 @@ function updateReportsButton(loan) {
                 return;
             }
             try {
-                const response = await fetch(`/loan/${window.editMode.loanId}/report-fields`, {
+                const response = await window.fetch(`/loan/${window.editMode.loanId}/report-fields`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -2313,7 +2313,7 @@ function updateReportsButton(loan) {
             if (window.updateNextStep) window.updateNextStep('Generate Report');
             if (window.pendingReportFields) {
                 try {
-                    const rfResp = await fetch(`/loan/${result.loan_id}/report-fields`, {
+                const rfResp = await window.fetch(`/loan/${result.loan_id}/report-fields`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(window.pendingReportFields)
@@ -2568,7 +2568,7 @@ function showDatabaseInfo() {
 }
 
 function loadDatabaseInfo() {
-    fetch('/api/database-info')
+    window.fetch('/api/database-info')
         .then(response => response.json())
         .then(data => {
             displayDatabaseInfo(data);
