@@ -2234,9 +2234,6 @@ def save_loan():
                     app.logger.warning(f"Error saving payment {i+1}: {pe}")
                     continue
 
-        # Save formatted snapshot of all loan data for use in loan notes mapping
-        snapshot_loan_data(loan_summary)
-
         db.session.commit()
 
         try:
@@ -2354,7 +2351,13 @@ def manage_report_fields(loan_id):
 
     try:
         db.session.commit()
-        app.logger.info("Report fields updated successfully for loan %s", loan_id)
+        loan = LoanSummary.query.get(loan_id)
+        snapshot_loan_data(loan)
+        db.session.commit()
+        app.logger.info(
+            "Report fields and loan data updated successfully for loan %s",
+            loan_id,
+        )
         return jsonify({'success': True})
     except Exception as exc:
         db.session.rollback()
