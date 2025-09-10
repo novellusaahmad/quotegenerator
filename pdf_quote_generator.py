@@ -394,7 +394,8 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             float(cleaned)
             return True
         except ValueError:
-            return False
+            match = re.match(r"^[+-]?\d+(?:\.\d+)?", cleaned)
+            return bool(match)
 
     # Create heading row
     heading_cell = table.cell(0, 0)
