@@ -8,7 +8,7 @@ from app import app, db
 from models import LoanSummary, ReportFields, LoanNote
 
 
-def _setup_loan_and_note():
+def _setup_loan_and_note(placeholder_map=None):
     """Reset DB and create a loan with a note using MAX_LTV placeholder."""
     with app.app_context():
         db.drop_all()
@@ -18,7 +18,8 @@ def _setup_loan_and_note():
         note = LoanNote(
             group="General",
             name="Max LTV is [MAX_LTV]%",
-            placeholder_map={"MAX_LTV": "report_fields.max_ltv"},
+            placeholder_map=placeholder_map
+            or {"MAX_LTV": "report_fields.max_ltv"},
             add_flag=True,
         )
         db.session.add(note)
@@ -61,4 +62,20 @@ def test_download_summary_docx_get_uses_saved_report_fields():
     assert res.status_code == 200
     text = _extract_text(res.data)
     assert "Max LTV is 55.0%" in text
+    assert "[MAX_LTV]" not in text
+
+
+def test_report_fields_post_updates_snapshot():
+    """Report fields save should refresh LoanData snapshot for placeholders."""
+    loan_id = _setup_loan_and_note({"MAX_LTV": "max_ltv"})
+    with app.app_context():
+        note_id = LoanNote.query.first().id
+    client = app.test_client()
+    payload = {"max_ltv": 72, "note_ids": [note_id]}
+    res = client.post(f"/loan/{loan_id}/report-fields", json=payload)
+    assert res.status_code == 200
+    res = client.get(f"/loan/{loan_id}/summary-docx")
+    assert res.status_code == 200
+    text = _extract_text(res.data)
+    assert "Max LTV is 72.0%" in text
     assert "[MAX_LTV]" not in text
