@@ -911,7 +911,7 @@
                             <i class="fas fa-file-word"></i>
                         </a>
                         <button type="button" class="btn btn-sm btn-light me-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal" title="View Details"><i class="fas fa-eye"></i></button>
-                        <button class="btn btn-sm btn-light" data-currency="GBP" disabled id="saveLoanBtn" type="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Save Loan" aria-label="Save Loan"><i class="fas fa-save text-black"></i></button>
+                        <button class="btn btn-sm btn-light text-black" data-currency="GBP" disabled id="saveLoanBtn" type="button"><i class="fas fa-save me-2"></i><span id="saveLoanText">Save Loan</span></button>
                     </div>
                 </div>
 <div class="card-body p-0">
@@ -1578,15 +1578,7 @@ function handleEditMode() {
             // Show edit mode notice
             document.getElementById('editModeNotice').style.display = 'block';
             document.getElementById('editingLoanName').textContent = decodeURIComponent(loanName);
-            const saveBtn = document.getElementById('saveLoanBtn');
-            if (saveBtn) {
-                saveBtn.setAttribute('title', 'Update Loan');
-                saveBtn.setAttribute('aria-label', 'Update Loan');
-                const tooltip = bootstrap?.Tooltip?.getInstance(saveBtn);
-                if (tooltip) {
-                    tooltip.setContent({ '.tooltip-inner': 'Update Loan' });
-                }
-            }
+            document.getElementById('saveLoanText').textContent = 'Update Loan';
             document.getElementById('cancelEditBtn').style.display = 'inline-block';
             
             // Store edit mode data
@@ -1606,7 +1598,7 @@ function handleEditMode() {
             populateFormFromParams(urlParams);
 
             // Fetch full loan details from server and populate form
-            window.fetch(`/api/loan/${loanId}`)
+            fetch(`/api/loan/${loanId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data && data.success) {
@@ -1855,7 +1847,7 @@ let isLoanSaved = false;
 
 async function loadPowerBIReports() {
     try {
-        const response = await window.fetch('/api/powerbi/reports');
+        const response = await fetch('/api/powerbi/reports');
         const data = await response.json();
         if (response.ok && data.reports) {
             powerBIReports = data.reports;
@@ -1987,7 +1979,7 @@ async function fetchReportFields() {
         window.currentReportFields = window.pendingReportFields || {};
         return window.currentReportFields;
     }
-    const resp = await window.fetch(`/loan/${window.editMode.loanId}/report-fields`);
+    const resp = await fetch(`/loan/${window.editMode.loanId}/report-fields`);
     const data = await resp.json();
     window.currentReportFields = data;
     return data;
@@ -2005,7 +1997,7 @@ async function handleReportFieldsClick(e) {
     document.getElementById('docxMaxLtv').value = data.max_ltv || '';
     document.getElementById('docxExitFee').value = data.exit_fee_percent || '';
     document.getElementById('docxCommitmentFee').value = data.commitment_fee || '';
-    const notesResp = await window.fetch('/api/loan-notes');
+    const notesResp = await fetch('/api/loan-notes');
     const notesData = await notesResp.json();
     const accordion = document.getElementById('loanNotesAccordion');
     accordion.innerHTML = '';
@@ -2089,24 +2081,23 @@ function updateReportsButton(loan) {
 }
 
 // Initialize everything when page loads
-    document.addEventListener('DOMContentLoaded', async function() {
-        const banner = document.getElementById('nextStepBanner');
-        if (banner) {
-            const stepEl = document.createElement('span');
-            stepEl.id = 'workflowStep';
-            stepEl.className = 'badge bg-warning text-dark fs-6 px-3 py-1 me-2';
-            banner.appendChild(stepEl);
-            banner.classList.remove('d-none');
+document.addEventListener('DOMContentLoaded', async function() {
+    const navActions = document.querySelector('.navbar .d-flex.ms-auto');
+    if (navActions) {
+        const stepEl = document.createElement('span');
+        stepEl.id = 'workflowStep';
+        stepEl.className = 'text-white me-2';
+        navActions.insertBefore(stepEl, navActions.firstChild);
+    }
+    window.updateNextStep = function(step) {
+        const el = document.getElementById('workflowStep');
+        if (el) {
+            el.textContent = `Next: ${step}`;
         }
-        window.updateNextStep = function(step) {
-            const el = document.getElementById('workflowStep');
-            if (el) {
-                el.innerHTML = `<i class="fas fa-arrow-right me-1"></i>Next: ${step}`;
-            }
-        };
-        window.updateNextStep('Calculate');
-        await loadPowerBIReports();
-        // Initialize edit mode
+    };
+    window.updateNextStep('Calculate');
+    await loadPowerBIReports();
+    // Initialize edit mode
     initializeEditMode();
     isLoanSaved = !!(window.editMode && window.editMode.loanId);
     if (isLoanSaved) {
@@ -2153,7 +2144,7 @@ function updateReportsButton(loan) {
                 return;
             }
             try {
-                const response = await window.fetch(`/loan/${window.editMode.loanId}/report-fields`, {
+                const response = await fetch(`/loan/${window.editMode.loanId}/report-fields`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -2199,8 +2190,7 @@ function updateReportsButton(loan) {
 
             // Check if results section is visible (calculation completed)
             const resultsSection = document.getElementById('resultsSection');
-            const resultsVisible = resultsSection && getComputedStyle(resultsSection).display !== 'none';
-            if (!resultsVisible) {
+            if (!resultsSection || resultsSection.style.display === 'none') {
                 if (window.notifications) {
                     window.notifications.show('Please calculate the loan first before saving.', 'warning');
                 } else {
@@ -2211,20 +2201,14 @@ function updateReportsButton(loan) {
             
             // Disable button during save
             saveLoanBtn.disabled = true;
-            saveLoanBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-black"></i>';
-            saveLoanBtn.setAttribute('title', 'Saving...');
-            const savingTooltip = bootstrap?.Tooltip?.getInstance(saveLoanBtn);
-            if (savingTooltip) {
-                savingTooltip.setContent({ '.tooltip-inner': 'Saving...' });
-            }
+            saveLoanBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
             
             // Collect form data
             const formData = window.loanCalculator.collectFormData();
             formData.loanName = loanName;
             
             // Perform fresh calculation to get current results
-            // Use window.fetch to ensure the global fetch function is invoked with the proper context
-            const calcResponse = await window.fetch('/api/calculate', {
+            const calcResponse = await fetch('/api/calculate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2247,8 +2231,7 @@ function updateReportsButton(loan) {
             console.log('Saving loan with data:', saveData);
             
             // Send to save endpoint
-            // Use window.fetch for compatibility across browsers (e.g., older Safari)
-            const response = await window.fetch('/save-loan', {
+            const response = await fetch('/save-loan', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2313,7 +2296,7 @@ function updateReportsButton(loan) {
             if (window.updateNextStep) window.updateNextStep('Generate Report');
             if (window.pendingReportFields) {
                 try {
-                const rfResp = await window.fetch(`/loan/${result.loan_id}/report-fields`, {
+                    const rfResp = await fetch(`/loan/${result.loan_id}/report-fields`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(window.pendingReportFields)
@@ -2347,14 +2330,8 @@ function updateReportsButton(loan) {
         } finally {
             // Re-enable button
             saveLoanBtn.disabled = false;
-            const tooltipText = window.editMode && window.editMode.loanId ? 'Update Loan' : 'Save Loan';
-            saveLoanBtn.innerHTML = '<i class="fas fa-save text-black"></i>';
-            saveLoanBtn.setAttribute('title', tooltipText);
-            saveLoanBtn.setAttribute('aria-label', tooltipText);
-            const tooltip = bootstrap?.Tooltip?.getInstance(saveLoanBtn);
-            if (tooltip) {
-                tooltip.setContent({ '.tooltip-inner': tooltipText });
-            }
+            const btnText = window.editMode && window.editMode.loanId ? 'Update Loan' : 'Save Loan';
+            saveLoanBtn.innerHTML = `<i class="fas fa-save me-2"></i>${btnText}`;
         }
     });
 });
@@ -2568,7 +2545,7 @@ function showDatabaseInfo() {
 }
 
 function loadDatabaseInfo() {
-    window.fetch('/api/database-info')
+    fetch('/api/database-info')
         .then(response => response.json())
         .then(data => {
             displayDatabaseInfo(data);

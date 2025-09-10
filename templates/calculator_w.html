@@ -1476,7 +1476,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.loanName = loanName;
             
             // Perform fresh calculation to get current results
-            const calcResponse = await window.fetch('/api/calculate', {
+            const calcResponse = await fetch('/api/calculate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1496,7 +1496,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Saving loan with data:', saveData);
             
             // Send to save endpoint
-            const response = await window.fetch('/save-loan', {
+            const response = await fetch('/save-loan', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1750,7 +1750,7 @@ function showDatabaseInfo() {
 }
 
 function loadDatabaseInfo() {
-    window.fetch('/api/database-info')
+    fetch('/api/database-info')
         .then(response => response.json())
         .then(data => {
             displayDatabaseInfo(data);
