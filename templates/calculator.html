@@ -911,7 +911,7 @@
                             <i class="fas fa-file-word"></i>
                         </a>
                         <button type="button" class="btn btn-sm btn-light me-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal" title="View Details"><i class="fas fa-eye"></i></button>
-                        <button class="btn btn-sm btn-light text-black" data-currency="GBP" disabled id="saveLoanBtn" type="button"><i class="fas fa-save me-2"></i><span id="saveLoanText">Save Loan</span></button>
+                        <button class="btn btn-sm btn-light" data-currency="GBP" disabled id="saveLoanBtn" type="button" data-bs-toggle="tooltip" data-bs-placement="top" title="Save Loan" aria-label="Save Loan"><i class="fas fa-save text-black"></i></button>
                     </div>
                 </div>
 <div class="card-body p-0">
@@ -1578,7 +1578,15 @@ function handleEditMode() {
             // Show edit mode notice
             document.getElementById('editModeNotice').style.display = 'block';
             document.getElementById('editingLoanName').textContent = decodeURIComponent(loanName);
-            document.getElementById('saveLoanText').textContent = 'Update Loan';
+            const saveBtn = document.getElementById('saveLoanBtn');
+            if (saveBtn) {
+                saveBtn.setAttribute('title', 'Update Loan');
+                saveBtn.setAttribute('aria-label', 'Update Loan');
+                const tooltip = bootstrap?.Tooltip?.getInstance(saveBtn);
+                if (tooltip) {
+                    tooltip.setContent({ '.tooltip-inner': 'Update Loan' });
+                }
+            }
             document.getElementById('cancelEditBtn').style.display = 'inline-block';
             
             // Store edit mode data
@@ -2201,7 +2209,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Disable button during save
             saveLoanBtn.disabled = true;
-            saveLoanBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            saveLoanBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-black"></i>';
+            saveLoanBtn.setAttribute('title', 'Saving...');
+            const savingTooltip = bootstrap?.Tooltip?.getInstance(saveLoanBtn);
+            if (savingTooltip) {
+                savingTooltip.setContent({ '.tooltip-inner': 'Saving...' });
+            }
             
             // Collect form data
             const formData = window.loanCalculator.collectFormData();
@@ -2330,8 +2343,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         } finally {
             // Re-enable button
             saveLoanBtn.disabled = false;
-            const btnText = window.editMode && window.editMode.loanId ? 'Update Loan' : 'Save Loan';
-            saveLoanBtn.innerHTML = `<i class="fas fa-save me-2"></i>${btnText}`;
+            const tooltipText = window.editMode && window.editMode.loanId ? 'Update Loan' : 'Save Loan';
+            saveLoanBtn.innerHTML = '<i class="fas fa-save text-black"></i>';
+            saveLoanBtn.setAttribute('title', tooltipText);
+            saveLoanBtn.setAttribute('aria-label', tooltipText);
+            const tooltip = bootstrap?.Tooltip?.getInstance(saveLoanBtn);
+            if (tooltip) {
+                tooltip.setContent({ '.tooltip-inner': tooltipText });
+            }
         }
     });
 });
