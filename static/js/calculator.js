@@ -1956,7 +1956,11 @@ class LoanCalculator {
                 // Enable interest calculation type selection for non-development loans
                 interestTypeRadios.forEach(r => r.disabled = false);
             }
-            
+
+            // Ensure required attributes align with the selected amount input
+            // so validation and calculate button state are updated correctly
+            this.toggleAmountInputSections();
+
             // Show/hide additional params container
             if (additionalParamsContainer) {
                 if (showAdditionalParams || loanType === 'development' || loanType === 'development2') {
