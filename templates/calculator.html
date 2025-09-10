@@ -2198,7 +2198,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             // Check if results section is visible (calculation completed)
             const resultsSection = document.getElementById('resultsSection');
-            if (!resultsSection || resultsSection.style.display === 'none') {
+            const resultsVisible = resultsSection && getComputedStyle(resultsSection).display !== 'none';
+            if (!resultsVisible) {
                 if (window.notifications) {
                     window.notifications.show('Please calculate the loan first before saving.', 'warning');
                 } else {
