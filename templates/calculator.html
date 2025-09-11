@@ -639,21 +639,7 @@
         <div class="accordion-body">
 <!-- Repayment Option -->
 <div class="">
-<label class="form-label">Interest Calculation Type</label>
-<div class="btn-group w-100 flex-wrap interest-toggle" role="group" aria-label="Interest Calculation Type">
-    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentNone" value="none" checked>
-    <label class="btn btn-outline-primary" for="repaymentNone">Retained</label>
-    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceOnly" value="service_only">
-    <label class="btn btn-outline-primary" for="repaymentServiceOnly">Service</label>
-    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceCapital" value="service_and_capital">
-    <label class="btn btn-outline-primary" for="repaymentServiceCapital">Service + Capital</label>
-    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentCapitalOnly" value="capital_payment_only">
-    <label class="btn btn-outline-primary" for="repaymentCapitalOnly">Capital</label>
-    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentFlexible" value="flexible_payment">
-    <label class="btn btn-outline-primary" for="repaymentFlexible">Flexible</label>
-</div>
-<input type="hidden" id="repaymentOption" name="repayment_option" value="none">
-</div>
+
 <!-- Interest Rate -->
 <div class="">
 <label class="form-label">Interest Rate</label>
@@ -741,6 +727,22 @@
       <div id="collapseRepayment" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
         <div class="accordion-body">
 <div class="" id="additionalParams" style="display: none;">
+<!-- REPAYMENT PROFILE -->    
+<label class="form-label">Interest Calculation Type</label>
+<div class="btn-group w-100 flex-wrap interest-toggle" role="group" aria-label="Interest Calculation Type">
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentNone" value="none" checked>
+    <label class="btn btn-outline-primary" for="repaymentNone">Retained</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceOnly" value="service_only">
+    <label class="btn btn-outline-primary" for="repaymentServiceOnly">Service</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceCapital" value="service_and_capital">
+    <label class="btn btn-outline-primary" for="repaymentServiceCapital">Service + Capital</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentCapitalOnly" value="capital_payment_only">
+    <label class="btn btn-outline-primary" for="repaymentCapitalOnly">Capital</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentFlexible" value="flexible_payment">
+    <label class="btn btn-outline-primary" for="repaymentFlexible">Flexible</label>
+</div>
+<input type="hidden" id="repaymentOption" name="repayment_option" value="none">
+</div>
 <!-- Payment Timing Options -->
 <div class="" id="paymentTimingSection" style="display: none;">
 <div class="row">
