@@ -192,7 +192,16 @@ class NovellussExcelGenerator:
 
         for r, payment in enumerate(payment_schedule, start=2):
             pay_ws.cell(row=r, column=1, value=r - 1)
-            pay_ws.cell(row=r, column=2, value=payment.get("date"))
+            date_str = payment.get("date")
+            if date_str:
+                try:
+                    dt_val = datetime.strptime(date_str, "%Y-%m-%d")
+                except Exception:
+                    dt_val = date_str
+            else:
+                dt_val = None
+            date_cell = pay_ws.cell(row=r, column=2, value=dt_val)
+            date_cell.number_format = "dd/mm/yyyy"
             pay_ws.cell(row=r, column=3, value=self._to_float(payment.get("opening_balance", 0)))
             pay_ws.cell(row=r, column=4, value=self._to_float(payment.get("payment_amount", 0)))
             pay_ws.cell(row=r, column=5, value=self._to_float(payment.get("interest_amount", 0)))
@@ -237,19 +246,21 @@ class NovellussExcelGenerator:
         for r, tranche in enumerate(tranche_schedule, start=2):
             release = tranche.get("release_date") or tranche.get("date")
             days_outstanding = 0
+            dt_release = None
             if release:
                 try:
-                    rel_dt = datetime.strptime(release, "%Y-%m-%d")
-                    days_outstanding = (loan_end_dt - rel_dt).days
+                    dt_release = datetime.strptime(release, "%Y-%m-%d")
+                    days_outstanding = (loan_end_dt - dt_release).days
                 except Exception:
-                    release = tranche.get("release_date", "")
+                    dt_release = release
 
             amount = self._to_float(tranche.get("amount", 0))
             rate = self._to_float(tranche.get("interest_rate", params.get("annual_rate", 0))) / 100.0
             interest = amount * rate * days_outstanding / days_in_year if days_outstanding else 0
 
             tranche_ws.cell(row=r, column=1, value=tranche.get("tranche_number", r - 1))
-            tranche_ws.cell(row=r, column=2, value=release)
+            date_cell = tranche_ws.cell(row=r, column=2, value=dt_release)
+            date_cell.number_format = "dd/mm/yyyy"
             tranche_ws.cell(row=r, column=3, value=amount)
             tranche_ws.cell(row=r, column=4, value=days_outstanding)
             tranche_ws.cell(row=r, column=5, value=rate)
@@ -272,7 +283,7 @@ class NovellussExcelGenerator:
             tranche_form_ws.cell(row=r, column=1, value="=ROW()-1")
             tranche_form_ws.cell(row=r, column=2, value=f"='Tranche Schedule'!B{r}")
             tranche_form_ws.cell(row=r, column=3, value=f"='Tranche Schedule'!C{r}")
-            tranche_form_ws.cell(row=r, column=4, value="=Parameters!$B$6-B{r}")
+            tranche_form_ws.cell(row=r, column=4, value=f"=Parameters!$B$6-B{r}")
             tranche_form_ws.cell(row=r, column=5, value=f"='Tranche Schedule'!E{r}")
             tranche_form_ws.cell(row=r, column=6, value=f"=C{r}*E{r}*D{r}/Parameters!$B$3")
 
