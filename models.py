@@ -393,6 +393,11 @@ class ReportFields(db.Model):
     max_ltv = db.Column(db.Numeric(15, 4))
     exit_fee_percent = db.Column(db.Numeric(5, 2))
     commitment_fee = db.Column(db.Numeric(15, 2))
+    include_valuation = db.Column(db.Boolean, default=True)
+    include_planning_appraisal = db.Column(db.Boolean, default=True)
+    include_qs_appraisal = db.Column(db.Boolean, default=True)
+    include_due_diligence = db.Column(db.Boolean, default=True)
+    include_legals = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -413,6 +418,11 @@ class ReportFields(db.Model):
             'commitment_fee': float(self.commitment_fee)
             if self.commitment_fee is not None
             else None,
+            'include_valuation': self.include_valuation,
+            'include_planning_appraisal': self.include_planning_appraisal,
+            'include_qs_appraisal': self.include_qs_appraisal,
+            'include_due_diligence': self.include_due_diligence,
+            'include_legals': self.include_legals,
         }
 
     def __repr__(self):
