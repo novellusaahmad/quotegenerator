@@ -506,12 +506,12 @@
 <form id="calculatorForm" autocomplete="off">
 <!-- Currency -->
 <div class="">
-<label class="form-label">Currency</label>
+<!--<label class="form-label">Currency</label>-->
 <div class="btn-group w-100" role="group" aria-label="Currency">
     <input type="radio" class="btn-check" name="currency" id="currencyGBP" value="GBP" checked>
-    <label class="btn btn-outline-primary" for="currencyGBP">GBP (£)</label>
+    <label class="btn btn-outline-primary" for="currencyGBP">GBP (Â£)</label>
     <input type="radio" class="btn-check" name="currency" id="currencyEUR" value="EUR">
-    <label class="btn btn-outline-primary" for="currencyEUR">EUR (€)</label>
+    <label class="btn btn-outline-primary" for="currencyEUR">EUR (â‚¬)</label>
 </div>
 <input type="hidden" id="currency" value="GBP">
 </div>
@@ -551,7 +551,7 @@
 <div class="">
 <label class="form-label" for="propertyValue">Property Value</label>
 <div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
+<span class="input-group-text currency-symbol">Â£</span>
 <input class="form-control" id="propertyValue" inputmode="decimal" min="0.01" name="property_value" pattern="^(?=.*[1-9])[0-9.,]+$" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 </div>
@@ -575,7 +575,7 @@
 <label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossPercentage">% of Property Value</label>
 </div>
 <div class="input-group" id="grossFixedInput">
-<span class="input-group-text currency-symbol">£</span>
+<span class="input-group-text currency-symbol">Â£</span>
 <input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0.01" name="gross_amount" pattern="^(?=.*[1-9])[0-9.,]+$" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 <div class="input-group" id="grossPercentageInput" style="display: none;">
@@ -587,7 +587,7 @@
 <div class="" id="netAmountSection" style="display: none;">
 <label class="form-label" for="netAmountInput">Net Amount</label>
 <div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
+<span class="input-group-text currency-symbol">Â£</span>
 <input class="form-control" id="netAmountInput" inputmode="decimal" min="0.01" name="net_amount" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 <small class="form-text text-muted">Total net amount required for the loan</small>
@@ -596,7 +596,7 @@
 <div class="" id="day1AdvanceSection" style="display: none;">
 <label class="form-label" for="day1Advance">Day 1 Advance (Optional)</label>
 <div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
+<span class="input-group-text currency-symbol">Â£</span>
 <input class="form-control" id="day1Advance" inputmode="decimal" min="0" name="day1_advance" pattern="[0-9.,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="0"/>
 </div>
 <small class="form-text text-muted">Initial advance on first day (will be included in first tranche)</small>
@@ -639,7 +639,21 @@
         <div class="accordion-body">
 <!-- Repayment Option -->
 <div class="">
-
+<label class="form-label">Interest Calculation Type</label>
+<div class="btn-group w-100 flex-wrap interest-toggle" role="group" aria-label="Interest Calculation Type">
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentNone" value="none" checked>
+    <label class="btn btn-outline-primary" for="repaymentNone">Retained</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceOnly" value="service_only">
+    <label class="btn btn-outline-primary" for="repaymentServiceOnly">Service</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceCapital" value="service_and_capital">
+    <label class="btn btn-outline-primary" for="repaymentServiceCapital">Service + Capital</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentCapitalOnly" value="capital_payment_only">
+    <label class="btn btn-outline-primary" for="repaymentCapitalOnly">Capital</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentFlexible" value="flexible_payment">
+    <label class="btn btn-outline-primary" for="repaymentFlexible">Flexible</label>
+</div>
+<input type="hidden" id="repaymentOption" name="repayment_option" value="none">
+</div>
 <!-- Interest Rate -->
 <div class="">
 <label class="form-label">Interest Rate</label>
@@ -695,7 +709,7 @@
 <div class="">
 <label class="form-label" for="legalFees">Legal Fees</label>
 <div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
+<span class="input-group-text currency-symbol">Â£</span>
 <input class="form-control" id="legalFees" inputmode="decimal" min="0.01" name="legal_fees" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 </div>
@@ -703,7 +717,7 @@
 <div class="">
 <label class="form-label" for="siteVisitFee">Site Visit Fee</label>
 <div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
+<span class="input-group-text currency-symbol">Â£</span>
 <input class="form-control" id="siteVisitFee" inputmode="decimal" min="0.01" name="site_visit_fee" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 </div>
@@ -727,22 +741,6 @@
       <div id="collapseRepayment" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
         <div class="accordion-body">
 <div class="" id="additionalParams" style="display: none;">
-<!-- REPAYMENT PROFILE -->    
-<label class="form-label">Interest Calculation Type</label>
-<div class="btn-group w-100 flex-wrap interest-toggle" role="group" aria-label="Interest Calculation Type">
-    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentNone" value="none" checked>
-    <label class="btn btn-outline-primary" for="repaymentNone">Retained</label>
-    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceOnly" value="service_only">
-    <label class="btn btn-outline-primary" for="repaymentServiceOnly">Service</label>
-    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceCapital" value="service_and_capital">
-    <label class="btn btn-outline-primary" for="repaymentServiceCapital">Service + Capital</label>
-    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentCapitalOnly" value="capital_payment_only">
-    <label class="btn btn-outline-primary" for="repaymentCapitalOnly">Capital</label>
-    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentFlexible" value="flexible_payment">
-    <label class="btn btn-outline-primary" for="repaymentFlexible">Flexible</label>
-</div>
-<input type="hidden" id="repaymentOption" name="repayment_option" value="none">
-</div>
 <!-- Payment Timing Options -->
 <div class="" id="paymentTimingSection" style="display: none;">
 <div class="row">
@@ -769,7 +767,7 @@
 <div class="" id="capitalRepaymentSection" style="display: none;">
 <label class="form-label" for="capitalRepayment">Capital Repayment Amount</label>
 <div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
+<span class="input-group-text currency-symbol">Â£</span>
 <input class="form-control" id="capitalRepayment" inputmode="decimal" min="0.01" name="capital_repayment" pattern="^(?=.*[1-9])[0-9.,]+$" placeholder="e.g. 10000" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text"/>
 </div>
 <small class="form-text text-muted">Principal amount to repay each payment period (monthly/quarterly)</small>
@@ -778,7 +776,7 @@
 <div class="" id="flexiblePaymentSection" style="display: none;">
 <label class="form-label" for="flexiblePayment">Flexible Payment per Payment</label>
 <div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
+<span class="input-group-text currency-symbol">Â£</span>
 <input class="form-control" id="flexiblePayment" inputmode="decimal" min="0.01" name="flexible_payment" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text"/>
 </div>
 <small class="form-text text-muted">Enter the amount per selected payment period; no automatic conversion is applied.</small>
@@ -803,7 +801,7 @@
       <button type="button" class="btn btn-sm btn-outline-secondary" id="addLTVTarget">Add Target</button>
     </div>
     <div class="mt-2">
-      <strong>Total Capital Needed:</strong> <span id="ltvTotalCapital">£0</span>
+      <strong>Total Capital Needed:</strong> <span id="ltvTotalCapital">Â£0</span>
       <div id="ltvCapitalSchedule" class="mt-2"></div>
     </div>
   </div>
@@ -837,7 +835,7 @@
 <div class="col-md-6">
 <label class="form-label">Total Development Tranche</label>
 <div class="input-group">
-<span class="input-group-text currency-symbol">£</span>
+<span class="input-group-text currency-symbol">Â£</span>
 <input class="form-control" id="autoTotalAmount" inputmode="decimal" min="0" step="0.0001" type="number" value="0"/>
 </div>
 </div>
@@ -889,7 +887,7 @@
     <tr class="tranche-item" data-tranche="1">
       <td class="tranche-number">1</td>
       <td class="text-end">
-        <span class="currency-symbol">£</span><span class="tranche-amount-display">0.00</span>
+        <span class="currency-symbol">Â£</span><span class="tranche-amount-display">0.00</span>
         <input type="hidden" name="tranche_amounts[]" class="tranche-amount" value="0">
       </td>
       <td>
@@ -957,12 +955,12 @@
                         <tbody>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Valuation</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Â£</td>
 <td class="fw-bold px-3 text-end" id="propertyValueResult" style="color: #000 !important; background: #f8f9fa;">-</td>
 </tr>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Gross Amount</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">Â£</td>
 <td class="fw-bold px-3 text-end" id="grossAmountResult" style="color: #000 !important; background: white;">-</td>
 </tr>
 <tr style="border: 1px solid #000;">
@@ -987,42 +985,42 @@
 </tr>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Arrangement Fee</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="arrangementFeePercentageDisplay">0.00%</span> <span class="currency-symbol">£</span></td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="arrangementFeePercentageDisplay">0.00%</span> <span class="currency-symbol">Â£</span></td>
 <td class="fw-bold px-3 text-end" id="arrangementFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
 </tr>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Legal Costs</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">Â£</td>
 <td class="fw-bold px-3 text-end" id="legalCostsResult" style="color: #000 !important; background: white;">-</td>
 </tr>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Site Visit Fee</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Â£</td>
 <td class="fw-bold px-3 text-end" id="siteVisitFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
 </tr>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Title Insurance</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"><span id="titleInsurancePercentageDisplay">0.000%</span> <span class="currency-symbol">£</span></td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"><span id="titleInsurancePercentageDisplay">0.000%</span> <span class="currency-symbol">Â£</span></td>
 <td class="fw-bold px-3 text-end" id="titleInsuranceResult" style="color: #000 !important; background: white;">-</td>
 </tr>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest</td>
-<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="interestRatePercentageDisplay">12.00%</span> <span class="currency-symbol">£</span></td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="interestRatePercentageDisplay">12.00%</span> <span class="currency-symbol">Â£</span></td>
 <td class="fw-bold px-3 text-end" id="totalInterestResult" style="color: #000 !important; background: #f8f9fa;">-</td>
 </tr>
 <tr id="retainedInterestRow" style="border: 1px solid #000; display: none;">
   <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Retained Interest</td>
-  <td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+  <td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">Â£</td>
   <td class="fw-bold px-3 text-end" id="retainedInterestResult" style="color: #000 !important; background: white;">-</td>
 </tr>
 <tr id="interestRefundRow" style="border: 1px solid #000; display: none;">
   <td class="px-3" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest Refund</td>
-  <td class="text-end px-3 currency-symbol" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+  <td class="text-end px-3 currency-symbol" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;">Â£</td>
   <td class="fw-bold px-3 text-end" id="interestRefundResult" style="color: #28a745 !important; background: #f8f9fa;">-</td>
 </tr>
 <tr id="interestOnlyTotalRow" style="border: 1px solid #000; display: none;">
 <td class="px-3" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">Interest-Only Total</td>
-<td class="text-end px-3 currency-symbol" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">£</td>
+<td class="text-end px-3 currency-symbol" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">Â£</td>
 <td class="fw-bold px-3 text-end" id="interestOnlyTotalResult" style="color: #6c757d !important; background: white;">-</td>
 </tr>
 <tr id="interestSavingsRow" style="border: 1px solid #000; display: none;">
@@ -1034,7 +1032,7 @@
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">
 <span id="periodicInterestLabel">Monthly Interest Payment</span>
 </td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">Â£</td>
 <td class="fw-bold px-3 text-end" id="periodicInterestResult" style="color: #000 !important; background: white;">-</td>
 </tr>
 <tr id="interestPaymentTimingRow" style="border: 1px solid #000; display: none;">
@@ -1044,7 +1042,7 @@
 </tr>
 <tr style="border: 1px solid #000;">
 <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Net Day 1 Advance</td>
-<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Â£</td>
 <td class="fw-bold px-3 text-end" id="netDay1AdvanceResult" style="color: #000 !important; background: #f8f9fa;">-</td>
 </tr>
 <tr style="border: 1px solid #000;">
@@ -1059,7 +1057,7 @@
 </tr>
 <tr style="border: 2px solid #000; background: #f0f0f0;">
 <td class="fw-bold px-3" style="color: #000 !important; border-right: 1px solid #000;">Total Net Advance</td>
-<td class="fw-bold text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000;">£</td>
+<td class="fw-bold text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000;">Â£</td>
 <td class="fw-bold px-3 text-end" id="totalNetAdvanceResult" style="color: #000 !important; font-size: 1.1rem;">-</td>
 </tr>
 </tbody>
