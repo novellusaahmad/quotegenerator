@@ -551,41 +551,57 @@ def generate_loan_summary_docx(loan, extra_fields=None):
 
         return token_pattern.sub(repl, text)
 
-    sections = []
-    note_texts = (
+
+    note_templates = (
         extra_fields.get('note_templates')
         or extra_fields.get('notes')
         or []
     )
-    if note_texts:
-        sections.append(("Conditions", note_texts))
+
+    security_notes, salient_notes, other_notes = [], [], []
+    for nt in note_templates:
+        group = ''
+        if isinstance(nt, dict):
+            group = (nt.get('group') or '').lower()
+        if group == 'security':
+            security_notes.append(nt)
+        elif group in ('salient point', 'salient points'):
+            salient_notes.append(nt)
+        else:
+            other_notes.append(nt)
+
+    sections = []
+    if security_notes:
+        sections.append(('Security', security_notes))
+    if salient_notes:
+        sections.append(('Salient Point', salient_notes))
+    if other_notes:
+        sections.append(('Conditions', other_notes))
 
     for heading, bullets in sections:
         hp = doc.add_heading(_replace_tokens(heading), level=1)
         for run in hp.runs:
             run.font.color.rgb = RGBColor(0, 0, 0)
-        for bullet in bullets:
-            # Support legacy list format as well as dictionaries containing a
-            # ``placeholder_map``.
-            if isinstance(bullet, list) and not isinstance(bullet, dict):
-                parts = [(_replace_tokens(text), bold) for text, bold in bullet]
-                _add_numbered(parts)
-                continue
-
+        for idx, bullet in enumerate(bullets, 1):
             placeholder_map = {}
             text = bullet
             if isinstance(bullet, dict):
                 placeholder_map = bullet.get('placeholder_map') or {}
                 text = bullet.get('text', '')
-
             if isinstance(text, list):
                 parts = [(_replace_tokens(t, placeholder_map), b) for t, b in text]
-                _add_numbered(parts)
             else:
-                text_replaced = _replace_tokens(text, placeholder_map)
-                if text_replaced.strip():
-                    p = doc.add_paragraph(text_replaced)
-                    p.style = 'List Number'
+                parts = [(_replace_tokens(text, placeholder_map), False)]
+            if not any(t.strip() for t, _ in parts):
+                continue
+            p = doc.add_paragraph()
+            p.paragraph_format.left_indent = Inches(0.25)
+            num_run = p.add_run(f"{idx}. ")
+            num_run.font.color.rgb = RGBColor(0, 0, 0)
+            for t, b in parts:
+                run = p.add_run(t)
+                run.bold = b
+                run.font.color.rgb = RGBColor(0, 0, 0)
 
     doc.add_paragraph("Yours sincerely, [or faithfully if Dear Sir],")
     doc.add_paragraph("[•]")

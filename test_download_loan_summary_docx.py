@@ -79,3 +79,32 @@ def test_report_fields_post_updates_snapshot():
     text = _extract_text(res.data)
     assert "Max LTV is 72.0%" in text
     assert "[MAX_LTV]" not in text
+
+
+def test_loan_notes_grouped_headings_and_numbering():
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        loan = LoanSummary(loan_name="TestLoan", loan_type="bridge")
+        db.session.add(loan)
+        notes = [
+            LoanNote(group="Security", name="Security note", add_flag=True),
+            LoanNote(group="Salient Point", name="Salient note", add_flag=True),
+            LoanNote(group="General", name="General note", add_flag=True),
+        ]
+        db.session.add_all(notes)
+        db.session.commit()
+        loan_id = loan.id
+    client = app.test_client()
+    res = client.get(f"/loan/{loan_id}/summary-docx")
+    assert res.status_code == 200
+    text_lines = _extract_text(res.data).splitlines()
+    assert "Security" in text_lines
+    assert "Salient Point" in text_lines
+    assert "Conditions" in text_lines
+    sec_idx = text_lines.index("Security")
+    assert text_lines[sec_idx + 1].startswith("1. ")
+    sal_idx = text_lines.index("Salient Point")
+    assert text_lines[sal_idx + 1].startswith("1. ")
+    cond_idx = text_lines.index("Conditions")
+    assert text_lines[cond_idx + 1].startswith("1. ")
