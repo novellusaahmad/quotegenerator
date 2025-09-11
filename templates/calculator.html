@@ -504,6 +504,17 @@
 <div class="col-lg-4 user-input-col">
 <div class="calculator-section">
 <form id="calculatorForm" autocomplete="off">
+<!-- Currency -->
+<div class="">
+<label class="form-label">Currency</label>
+<div class="btn-group w-100" role="group" aria-label="Currency">
+    <input type="radio" class="btn-check" name="currency" id="currencyGBP" value="GBP" checked>
+    <label class="btn btn-outline-primary" for="currencyGBP">GBP (£)</label>
+    <input type="radio" class="btn-check" name="currency" id="currencyEUR" value="EUR">
+    <label class="btn btn-outline-primary" for="currencyEUR">EUR (€)</label>
+</div>
+<input type="hidden" id="currency" value="GBP">
+</div>
 <!-- Loan Name -->
 <div class="">
 <label class="form-label" for="loanName">
@@ -542,17 +553,7 @@
 <input type="hidden" id="repaymentOption" name="repayment_option" value="none">
 </div>
 
-<!-- Currency -->
-<div class="">
-<label class="form-label">Currency</label>
-<div class="btn-group w-100" role="group" aria-label="Currency">
-    <input type="radio" class="btn-check" name="currency" id="currencyGBP" value="GBP" checked>
-    <label class="btn btn-outline-primary" for="currencyGBP">GBP (£)</label>
-    <input type="radio" class="btn-check" name="currency" id="currencyEUR" value="EUR">
-    <label class="btn btn-outline-primary" for="currencyEUR">EUR (€)</label>
-</div>
-<input type="hidden" id="currency" value="GBP">
-</div>
+
 <!-- Property Value -->
 <div class="">
 <label class="form-label" for="propertyValue">Property Value</label>
