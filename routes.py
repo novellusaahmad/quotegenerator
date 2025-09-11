@@ -2435,9 +2435,15 @@ def download_loan_summary_docx(loan_id):
     # Pass the selected note templates so that any tokens within the text can be
     # substituted by ``generate_loan_summary_docx``. Include each note's
     # placeholder map so token mapping configured on the Loan Notes page is
-    # honoured during DOCX generation.
+    # honoured during DOCX generation. Include the note's group so
+    # ``generate_loan_summary_docx`` can organise notes under the appropriate
+    # headings (e.g. Security, Salient Point, Conditions).
     extra_fields["note_templates"] = [
-        {"text": note.name, "placeholder_map": note.placeholder_map or {}}
+        {
+            "text": note.name,
+            "group": note.group,
+            "placeholder_map": note.placeholder_map or {},
+        }
         for note in notes
     ]
 
