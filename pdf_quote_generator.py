@@ -56,17 +56,29 @@ logger = logging.getLogger(__name__)
 
 
 def _apply_brother_font(doc):
-    """Apply the Brother font to common Word styles."""
+    """Apply the Brother font and tightened spacing to common Word styles."""
     from docx.oxml.ns import qn
+    from docx.shared import Pt
+    from docx.enum.text import WD_LINE_SPACING
 
     for style_name in BROTHER_STYLES:
         try:
             style = doc.styles[style_name]
         except KeyError:
+            # Skip any styles that do not exist in this document
             continue
+
+        # Apply Brother font across different script categories
         font = style.font
         font.name = BROTHER_FONT
-        style._element.rPr.rFonts.set(qn("w:eastAsia"), BROTHER_FONT)
+        r_fonts = style._element.rPr.rFonts
+        r_fonts.set(qn("w:eastAsia"), BROTHER_FONT)
+        r_fonts.set(qn("w:cs"), BROTHER_FONT)
+
+        # Tighten line spacing to match design spec
+        pf = style.paragraph_format
+        pf.line_spacing_rule = WD_LINE_SPACING.SINGLE
+        pf.space_after = Pt(0)
 
 def generate_quote_pdf(quote_data, application_data=None):
     """Generate PDF quote document.
@@ -364,6 +376,12 @@ def generate_loan_summary_docx(loan, extra_fields=None):
     # Table with header row whose color depends on currency
     table = doc.add_table(rows=9, cols=3)
     table.style = 'Table Grid'
+    table.autofit = False
+    col_widths = (Inches(3.5), Inches(1.2), Inches(2.3))
+    for width, column in zip(col_widths, table.columns):
+        column.width = width
+        for cell in column.cells:
+            cell.width = width
 
     # Remove inner borders, keeping only the outer grid
     tbl = table._tbl
