@@ -504,6 +504,15 @@
 <div class="col-lg-4 user-input-col">
 <div class="calculator-section">
 <form id="calculatorForm" autocomplete="off">
+  <div class="accordion" id="calculatorAccordion">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingParameters">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseParameters" aria-expanded="true" aria-controls="collapseParameters">
+          Loan Parameters
+        </button>
+      </h2>
+      <div id="collapseParameters" class="accordion-collapse collapse show" data-bs-parent="#calculatorAccordion">
+        <div class="accordion-body">
 <!-- Currency -->
 <div class="">
 <label class="form-label">Currency</label>
@@ -608,6 +617,42 @@
 </div>
 <small class="form-text text-muted">Initial advance on first day (will be included in first tranche)</small>
 </div>
+<!-- Start Date -->
+<div class="">
+<label class="form-label" for="startDate">Start Date</label>
+<input class="form-control" id="startDate" name="start_date" required="" style="min-height: 38px; font-size: 1rem;" type="date"/>
+</div>
+<!-- Loan End Selection -->
+<div class="">
+<label class="form-label">Loan End</label>
+<div class="btn-group w-100" role="group">
+<input class="btn-check" id="loanTermOption" name="loan_end_type" type="radio" value="term" checked>
+<label class="btn btn-outline-secondary btn-sm" for="loanTermOption">Term (months)</label>
+<input class="btn-check" id="loanEndDateOption" name="loan_end_type" type="radio" value="date">
+<label class="btn btn-outline-secondary btn-sm" for="loanEndDateOption">End Date</label>
+</div>
+<div id="loanTermContainer" class="mt-2">
+<div class="input-group">
+<input class="form-control" id="loanTerm" min="1" step="1" name="loan_term" required style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
+<span class="input-group-text">months</span>
+</div>
+</div>
+<div id="endDateContainer" class="mt-2" style="display:none;">
+<input class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;" type="date"/>
+<small class="form-text text-muted">Select start and end dates to calculate the loan term in days.</small>
+</div>
+</div>
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingFees">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFees" aria-expanded="false" aria-controls="collapseFees">
+          Fees Section
+        </button>
+      </h2>
+      <div id="collapseFees" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
+        <div class="accordion-body">
 <!-- Interest Rate -->
 <div class="">
 <label class="form-label">Interest Rate</label>
@@ -651,34 +696,7 @@
     </div>
     <input type="hidden" id="interestType" name="interest_type" value="simple">
 </div>
-<!-- Start Date -->
-<div class="">
-<label class="form-label" for="startDate">Start Date</label>
-<input class="form-control" id="startDate" name="start_date" required="" style="min-height: 38px; font-size: 1rem;" type="date"/>
-</div>
-<!-- Loan End Selection -->
-<div class="">
-<label class="form-label">Loan End</label>
-<div class="btn-group w-100" role="group">
-<input class="btn-check" id="loanTermOption" name="loan_end_type" type="radio" value="term" checked>
-<label class="btn btn-outline-secondary btn-sm" for="loanTermOption">Term (months)</label>
-<input class="btn-check" id="loanEndDateOption" name="loan_end_type" type="radio" value="date">
-<label class="btn btn-outline-secondary btn-sm" for="loanEndDateOption">End Date</label>
-</div>
-<div id="loanTermContainer" class="mt-2">
-<div class="input-group">
-<input class="form-control" id="loanTerm" min="1" step="1" name="loan_term" required style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
-<span class="input-group-text">months</span>
-</div>
-</div>
-<div id="endDateContainer" class="mt-2" style="display:none;">
-<input class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;" type="date"/>
-<small class="form-text text-muted">Select start and end dates to calculate the loan term in days.</small>
-</div>
-</div>
-<!-- Fees Section -->
-<div class="">
-<h6 class="">Fees &amp; Charges</h6>
+<!-- Arrangement Fee -->
 <div class="">
 <label class="form-label" for="arrangementFeeRate">Arrangement Fee</label>
 <div class="input-group">
@@ -686,6 +704,7 @@
 <span class="input-group-text">%</span>
 </div>
 </div>
+<!-- Legal Fees -->
 <div class="">
 <label class="form-label" for="legalFees">Legal Fees</label>
 <div class="input-group">
@@ -693,6 +712,7 @@
 <input class="form-control" id="legalFees" inputmode="decimal" min="0.01" name="legal_fees" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 </div>
+<!-- Site Visit Fee -->
 <div class="">
 <label class="form-label" for="siteVisitFee">Site Visit Fee</label>
 <div class="input-group">
@@ -700,6 +720,7 @@
 <input class="form-control" id="siteVisitFee" inputmode="decimal" min="0.01" name="site_visit_fee" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
 </div>
 </div>
+<!-- Title Insurance -->
 <div class="">
 <label class="form-label" for="titleInsuranceRate">Title Insurance</label>
 <div class="input-group">
@@ -707,10 +728,18 @@
 <span class="input-group-text">%</span>
 </div>
 </div>
-</div>
-<!-- Additional Parameters -->
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingRepayment">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRepayment" aria-expanded="false" aria-controls="collapseRepayment">
+          Repayment Profile
+        </button>
+      </h2>
+      <div id="collapseRepayment" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
+        <div class="accordion-body">
 <div class="" id="additionalParams" style="display: none;">
-<h6 class="">Additional Parameters</h6>
 <!-- Payment Timing Options -->
 <div class="" id="paymentTimingSection" style="display: none;">
 <div class="row">
@@ -777,6 +806,10 @@
   </div>
 </div>
 </div>
+        </div>
+      </div>
+    </div>
+  </div>
 <!-- Development Loan Tranches -->
 <div class="" id="developmentTrancheSection" style="display: none;">
 <h6 class="">Development Loan Tranches</h6>
