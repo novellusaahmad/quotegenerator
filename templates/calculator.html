@@ -630,14 +630,13 @@
       </div>
     </div>
     <div class="accordion-item">
-      <h2 class="accordion-header" id="headingFees">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFees" aria-expanded="false" aria-controls="collapseFees">
-          Fees Section
-        </button>
-      </h2>
-      <div id="collapseFees" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
-        <div class="accordion-body">
-<!-- Repayment Option -->
+        <h2 class="accordion-header" id="headingRepayment">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRepayment" aria-expanded="false" aria-controls="collapseRepayment">
+            Repayment Profile
+          </button>
+        </h2>
+        <div id="collapseRepayment" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
+          <div class="accordion-body">
 <div class="">
 <label class="form-label">Interest Calculation Type</label>
 <div class="btn-group w-100 flex-wrap interest-toggle" role="group" aria-label="Interest Calculation Type">
@@ -654,34 +653,6 @@
 </div>
 <input type="hidden" id="repaymentOption" name="repayment_option" value="none">
 </div>
-<!-- Interest Rate -->
-<div class="">
-<label class="form-label">Interest Rate</label>
-<div class="btn-group w-100" role="group">
-<input class="btn-check" id="monthlyRate" name="rate_input_type" type="radio" value="monthly"/>
-<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="monthlyRate">Monthly Rate</label>
-<input checked="" class="btn-check" id="annualRate" name="rate_input_type" type="radio" value="annual"/>
-<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="annualRate">Annual Rate</label>
-</div>
-<div class="input-group" id="monthlyRateInput" style="display: none;">
-<input class="form-control" id="monthlyRateValue" max="10" min="0.0001" name="monthly_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
-<span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
-</div>
-<div class="input-group" id="annualRateInput">
-<input class="form-control" id="annualRateValue" max="50" min="0.0001" name="annual_rate" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
-<span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
-</div>
-<small id="rateEquivalenceNote" class="form-text text-muted"></small>
-</div>
-<!-- Daily Rate Calculation Method -->
-<div class="" id="use360DaysSection">
-<div class="form-check">
-<input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
-<label class="form-check-label" for="use360Days">
-                            Use 360-day calculation for daily rate
-                        </label>
-</div>
-</div>
 <!-- Interest Type -->
 <div class="">
     <label class="form-label">Interest Calculation</label>
@@ -697,49 +668,6 @@
     </div>
     <input type="hidden" id="interestType" name="interest_type" value="simple">
 </div>
-<!-- Arrangement Fee -->
-<div class="">
-<label class="form-label" for="arrangementFeeRate">Arrangement Fee</label>
-<div class="input-group">
-<input class="form-control" id="arrangementFeeRate" max="10" min="0.0001" name="arrangement_fee_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
-<span class="input-group-text">%</span>
-</div>
-</div>
-<!-- Legal Fees -->
-<div class="">
-<label class="form-label" for="legalFees">Legal Fees</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">Â£</span>
-<input class="form-control" id="legalFees" inputmode="decimal" min="0.01" name="legal_fees" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-</div>
-</div>
-<!-- Site Visit Fee -->
-<div class="">
-<label class="form-label" for="siteVisitFee">Site Visit Fee</label>
-<div class="input-group">
-<span class="input-group-text currency-symbol">Â£</span>
-<input class="form-control" id="siteVisitFee" inputmode="decimal" min="0.01" name="site_visit_fee" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
-</div>
-</div>
-<!-- Title Insurance -->
-<div class="">
-<label class="form-label" for="titleInsuranceRate">Title Insurance</label>
-<div class="input-group">
-<input class="form-control" id="titleInsuranceRate" max="1" min="0.0001" name="title_insurance_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
-<span class="input-group-text">%</span>
-</div>
-</div>
-        </div>
-      </div>
-    </div>
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="headingRepayment">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRepayment" aria-expanded="false" aria-controls="collapseRepayment">
-          Repayment Profile
-        </button>
-      </h2>
-      <div id="collapseRepayment" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
-        <div class="accordion-body">
 <div class="" id="additionalParams" style="display: none;">
 <!-- Payment Timing Options -->
 <div class="" id="paymentTimingSection" style="display: none;">
@@ -805,10 +733,81 @@
       <div id="ltvCapitalSchedule" class="mt-2"></div>
     </div>
   </div>
-</div>
-</div>
+          </div>
         </div>
       </div>
+<div class="accordion-item">
+        <h2 class="accordion-header" id="headingFees">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFees" aria-expanded="false" aria-controls="collapseFees">
+            Fees Section
+          </button>
+        </h2>
+        <div id="collapseFees" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
+          <div class="accordion-body">
+<!-- Interest Rate -->
+<div class="">
+<label class="form-label">Interest Rate</label>
+<div class="btn-group w-100" role="group">
+<input class="btn-check" id="monthlyRate" name="rate_input_type" type="radio" value="monthly"/>
+<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="monthlyRate">Monthly Rate</label>
+<input checked="" class="btn-check" id="annualRate" name="rate_input_type" type="radio" value="annual"/>
+<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="annualRate">Annual Rate</label>
+</div>
+<div class="input-group" id="monthlyRateInput" style="display: none;">
+<input class="form-control" id="monthlyRateValue" max="10" min="0.0001" name="monthly_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
+</div>
+<div class="input-group" id="annualRateInput">
+<input class="form-control" id="annualRateValue" max="50" min="0.0001" name="annual_rate" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
+</div>
+<small id="rateEquivalenceNote" class="form-text text-muted"></small>
+</div>
+<!-- Daily Rate Calculation Method -->
+<div class="" id="use360DaysSection">
+<div class="form-check">
+<input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
+<label class="form-check-label" for="use360Days">
+                            Use 360-day calculation for daily rate
+                        </label>
+</div>
+</div>
+<!-- Arrangement Fee -->
+<div class="">
+<label class="form-label" for="arrangementFeeRate">Arrangement Fee</label>
+<div class="input-group">
+<input class="form-control" id="arrangementFeeRate" max="10" min="0.0001" name="arrangement_fee_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<span class="input-group-text">%</span>
+</div>
+</div>
+<!-- Legal Fees -->
+<div class="">
+<label class="form-label" for="legalFees">Legal Fees</label>
+<div class="input-group">
+<span class="input-group-text currency-symbol">Â£</span>
+<input class="form-control" id="legalFees" inputmode="decimal" min="0.01" name="legal_fees" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+</div>
+</div>
+<!-- Site Visit Fee -->
+<div class="">
+<label class="form-label" for="siteVisitFee">Site Visit Fee</label>
+<div class="input-group">
+<span class="input-group-text currency-symbol">Â£</span>
+<input class="form-control" id="siteVisitFee" inputmode="decimal" min="0.01" name="site_visit_fee" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+</div>
+</div>
+<!-- Title Insurance -->
+<div class="">
+<label class="form-label" for="titleInsuranceRate">Title Insurance</label>
+<div class="input-group">
+<input class="form-control" id="titleInsuranceRate" max="1" min="0.0001" name="title_insurance_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<span class="input-group-text">%</span>
+</div>
+</div>
+          </div>
+        </div>
+      </div>
+</div>
     </div>
   </div>
 <!-- Development Loan Tranches -->
