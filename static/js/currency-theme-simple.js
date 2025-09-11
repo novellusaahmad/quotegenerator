@@ -71,15 +71,20 @@ class SimpleCurrencyTheme {
     }
 
     updateLogo(currency) {
-        const logo = document.getElementById('navbarLogo');
-        if (logo) {
-            // For now, use the same logo for both currencies
-            // TODO: Create teal version of logo for EUR currency
+        const logos = document.querySelectorAll('#navbarLogo, #footerLogo');
+        logos.forEach(logo => {
+            // Use the same base logo file for both navbar and footer
             logo.src = '/static/novellus_logo.png';
-            logo.style.height = '32px';
             logo.style.width = 'auto';
             logo.style.objectFit = 'contain';
-            
+
+            // Maintain individual heights defined in HTML
+            if (logo.id === 'navbarLogo') {
+                logo.style.height = '32px';
+            } else if (logo.id === 'footerLogo') {
+                logo.style.height = '24px';
+            }
+
             if (currency === 'EUR') {
                 // Apply green hue while keeping full brightness and saturation
                 logo.style.filter = 'hue-rotate(90deg) saturate(100%) brightness(100%)';
@@ -87,7 +92,7 @@ class SimpleCurrencyTheme {
                 // Keep original coloring with full brightness and saturation for GBP
                 logo.style.filter = 'brightness(100%) saturate(100%)';
             }
-        }
+        });
     }
 
     updateSymbols(currency) {
