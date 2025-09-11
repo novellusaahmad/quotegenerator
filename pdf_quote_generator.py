@@ -41,7 +41,15 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency
 
 
 BROTHER_FONT = "Brother 1816 Light"
-BROTHER_STYLES = ["Normal", "Heading 1", "Heading 2", "Heading 3", "Title", "List Bullet"]
+BROTHER_STYLES = [
+    "Normal",
+    "Heading 1",
+    "Heading 2",
+    "Heading 3",
+    "Title",
+    "List Bullet",
+    "List Number",
+]
 
 
 logger = logging.getLogger(__name__)
@@ -299,13 +307,41 @@ def generate_loan_summary_docx(loan, extra_fields=None):
 
     client_name = extra_fields.get('client_name', '[•]')
     doc.add_paragraph(f"Dear {client_name},")
-    doc.add_paragraph(
-        "Further to our correspondence, please see below our high-level terms subject to (i) valuation, (ii) planning appraisal, (iii) QS appraisal, (iv) due diligence and (v) legals:"
-    )
+    subjects = []
+    if extra_fields.get('include_valuation', True):
+        subjects.append('valuation')
+    if extra_fields.get('include_planning_appraisal', True):
+        subjects.append('planning appraisal')
+    if extra_fields.get('include_qs_appraisal', True):
+        subjects.append('QS appraisal')
+    if extra_fields.get('include_due_diligence', True):
+        subjects.append('due diligence')
+    if extra_fields.get('include_legals', True):
+        subjects.append('legals')
+
+    def _roman(n):
+        numerals = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x']
+        return numerals[n - 1]
+
+    if subjects:
+        parts = [f"({_roman(i + 1)}) {text}" for i, text in enumerate(subjects)]
+        if len(parts) > 1:
+            clause = ', '.join(parts[:-1]) + ' and ' + parts[-1]
+        else:
+            clause = parts[0]
+        doc.add_paragraph(
+            f"Further to our correspondence, please see below our high-level terms subject to {clause}:"
+        )
+    else:
+        doc.add_paragraph(
+            "Further to our correspondence, please see below our high-level terms:"
+        )
 
     # Helper to add bullet paragraphs with optional bold segments
-    def _add_bullet(parts):
-        p = doc.add_paragraph(style='List Bullet')
+    def _add_numbered(parts):
+        if not any(t.strip() for t, _ in parts):
+            return
+        p = doc.add_paragraph(style='List Number')
         for text, bold in parts:
             run = p.add_run(text)
             run.bold = bold
@@ -533,7 +569,7 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             # ``placeholder_map``.
             if isinstance(bullet, list) and not isinstance(bullet, dict):
                 parts = [(_replace_tokens(text), bold) for text, bold in bullet]
-                _add_bullet(parts)
+                _add_numbered(parts)
                 continue
 
             placeholder_map = {}
@@ -544,10 +580,12 @@ def generate_loan_summary_docx(loan, extra_fields=None):
 
             if isinstance(text, list):
                 parts = [(_replace_tokens(t, placeholder_map), b) for t, b in text]
-                _add_bullet(parts)
+                _add_numbered(parts)
             else:
-                p = doc.add_paragraph(_replace_tokens(text, placeholder_map))
-                p.style = 'List Bullet'
+                text_replaced = _replace_tokens(text, placeholder_map)
+                if text_replaced.strip():
+                    p = doc.add_paragraph(text_replaced)
+                    p.style = 'List Number'
 
     doc.add_paragraph("Yours sincerely, [or faithfully if Dear Sir],")
     doc.add_paragraph("[•]")

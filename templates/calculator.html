@@ -2010,13 +2010,23 @@ async function handleReportFieldsClick(e) {
     document.getElementById('docxMaxLtv').value = data.max_ltv || '';
     document.getElementById('docxExitFee').value = data.exit_fee_percent || '';
     document.getElementById('docxCommitmentFee').value = data.commitment_fee || '';
+    document.getElementById('includeValuation').checked = data.include_valuation !== false;
+    document.getElementById('includePlanningAppraisal').checked = data.include_planning_appraisal !== false;
+    document.getElementById('includeQsAppraisal').checked = data.include_qs_appraisal !== false;
+    document.getElementById('includeDueDiligence').checked = data.include_due_diligence !== false;
+    document.getElementById('includeLegals').checked = data.include_legals !== false;
     const notesResp = await fetch('/api/loan-notes');
     const notesData = await notesResp.json();
     const accordion = document.getElementById('loanNotesAccordion');
     accordion.innerHTML = '';
     let idx = 0;
     const selectedNotes = (data.note_ids || []).map(id => parseInt(id, 10));
+    const loanType = document.getElementById('loanType')?.value || '';
     for (const [group, notes] of Object.entries(notesData)) {
+        if ((group === 'Development Conditions' && !['development', 'development2'].includes(loanType)) ||
+            (group === 'Financial Covenants' && loanType !== 'term')) {
+            continue;
+        }
         const item = document.createElement('div');
         item.className = 'accordion-item';
         const headingId = `loanNotesHeading${idx}`;
@@ -2114,6 +2124,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateLoanReportLink();
     initializeReportFieldsLinks();
 
+    const reportModal = document.getElementById('loanSummaryFieldsModal');
+    if (reportModal && reportModal.parentElement !== document.body) {
+        document.body.appendChild(reportModal);
+    }
+
     const addAddressBtn = document.getElementById('addPropertyAddress');
     if (addAddressBtn) {
         addAddressBtn.addEventListener('click', () => addPropertyAddressField());
@@ -2148,6 +2163,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 max_ltv: document.getElementById('docxMaxLtv').value,
                 exit_fee_percent: document.getElementById('docxExitFee').value,
                 commitment_fee: document.getElementById('docxCommitmentFee').value,
+                include_valuation: document.getElementById('includeValuation').checked,
+                include_planning_appraisal: document.getElementById('includePlanningAppraisal').checked,
+                include_qs_appraisal: document.getElementById('includeQsAppraisal').checked,
+                include_due_diligence: document.getElementById('includeDueDiligence').checked,
+                include_legals: document.getElementById('includeLegals').checked,
                 note_ids: selectedNoteIds
             };
             if (!window.editMode || !window.editMode.loanId) {
@@ -2516,6 +2536,29 @@ function retryLoanSave() {
           <div class="col-md-4 mb-3">
             <label for="docxCommitmentFee" class="form-label">Commitment Fee</label>
             <input type="number" step="0.01" class="form-control" id="docxCommitmentFee">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Report Inclusions</label>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includeValuation" checked>
+            <label class="form-check-label" for="includeValuation">Valuation</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includePlanningAppraisal" checked>
+            <label class="form-check-label" for="includePlanningAppraisal">Planning Appraisal</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includeQsAppraisal" checked>
+            <label class="form-check-label" for="includeQsAppraisal">QS Appraisal</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includeDueDiligence" checked>
+            <label class="form-check-label" for="includeDueDiligence">Due Diligence</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includeLegals" checked>
+            <label class="form-check-label" for="includeLegals">Legals</label>
           </div>
         </div>
         <div id="loanNotesAccordion" class="accordion"></div>

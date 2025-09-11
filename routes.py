@@ -2355,6 +2355,12 @@ def manage_report_fields(loan_id):
         app.logger.error(f"Invalid numeric value in report fields: {exc}")
         return jsonify({'error': 'Invalid numeric value provided'}), 400
 
+    rf.include_valuation = bool(data.get('include_valuation', True))
+    rf.include_planning_appraisal = bool(data.get('include_planning_appraisal', True))
+    rf.include_qs_appraisal = bool(data.get('include_qs_appraisal', True))
+    rf.include_due_diligence = bool(data.get('include_due_diligence', True))
+    rf.include_legals = bool(data.get('include_legals', True))
+
     note_ids = data.get('note_ids', [])
     if note_ids:
         loan.loan_notes = LoanNote.query.filter(LoanNote.id.in_(note_ids)).all()
@@ -2421,6 +2427,11 @@ def download_loan_summary_docx(loan_id):
             .order_by(LoanNote.group, LoanNote.id)
             .all()
         )
+
+    if loan.loan_type not in ('development', 'development2'):
+        notes = [n for n in notes if n.group.lower() != 'development conditions']
+    if loan.loan_type != 'term':
+        notes = [n for n in notes if n.group.lower() != 'financial covenants']
     # Pass the selected note templates so that any tokens within the text can be
     # substituted by ``generate_loan_summary_docx``. Include each note's
     # placeholder map so token mapping configured on the Loan Notes page is
