@@ -444,7 +444,7 @@ def generate_loan_summary_docx(loan, extra_fields=None):
     heading_run.font.color.rgb = RGBColor(0, 0, 0)
 
     # Apply currency-specific color to header
-    header_color = "509664" if currency == 'EUR' else "AD965F"
+    header_color = "509664" if currency == 'EUR' else "#D1BE5D"
     tc_pr = heading_cell._tc.get_or_add_tcPr()
     shd = parse_xml(r'<w:shd {} w:fill="{}"/>'.format(nsdecls('w'), header_color))
     tc_pr.append(shd)
