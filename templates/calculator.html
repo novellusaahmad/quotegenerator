@@ -504,15 +504,6 @@
 <div class="col-lg-4 user-input-col">
 <div class="calculator-section">
 <form id="calculatorForm" autocomplete="off">
-  <div class="accordion" id="calculatorAccordion">
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="headingParameters">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseParameters" aria-expanded="true" aria-controls="collapseParameters">
-          Loan Parameters
-        </button>
-      </h2>
-      <div id="collapseParameters" class="accordion-collapse collapse show" data-bs-parent="#calculatorAccordion">
-        <div class="accordion-body">
 <!-- Currency -->
 <div class="">
 <label class="form-label">Currency</label>
@@ -524,6 +515,15 @@
 </div>
 <input type="hidden" id="currency" value="GBP">
 </div>
+  <div class="accordion" id="calculatorAccordion">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingParameters">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseParameters" aria-expanded="true" aria-controls="collapseParameters">
+          Loan Parameters
+        </button>
+      </h2>
+      <div id="collapseParameters" class="accordion-collapse collapse show" data-bs-parent="#calculatorAccordion">
+        <div class="accordion-body">
 <!-- Loan Name -->
 <div class="">
 <label class="form-label" for="loanName">
