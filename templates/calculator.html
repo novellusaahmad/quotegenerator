@@ -1986,11 +1986,23 @@ async function fetchReportFields() {
     return data;
 }
 
+function addPropertyAddressField(value = '') {
+    const container = document.getElementById('docxPropertyAddressContainer');
+    const div = document.createElement('div');
+    div.className = 'input-group mb-2 property-address-item';
+    div.innerHTML = `<input type="text" class="form-control property-address-input" value="${value}">` +
+        `<button class="btn btn-outline-secondary remove-property-address" type="button"><i class="fas fa-minus"></i></button>`;
+    container.appendChild(div);
+}
+
 async function handleReportFieldsClick(e) {
     e.preventDefault();
     const data = await fetchReportFields();
     document.getElementById('docxClientName').value = data.client_name || '';
-    document.getElementById('docxPropertyAddress').value = data.property_address || '';
+    const addresses = data.property_address ? data.property_address.split(/;|\n/).map(a => a.trim()).filter(a => a) : [''];
+    const container = document.getElementById('docxPropertyAddressContainer');
+    container.innerHTML = '';
+    addresses.forEach(addr => addPropertyAddressField(addr));
     document.getElementById('docxDebenture').value = data.debenture || '';
     document.getElementById('docxGuarantor').value = data.corporate_guarantor || '';
     document.getElementById('docxBrokerName').value = data.broker_name || '';
@@ -2102,6 +2114,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateLoanReportLink();
     initializeReportFieldsLinks();
 
+    const addAddressBtn = document.getElementById('addPropertyAddress');
+    if (addAddressBtn) {
+        addAddressBtn.addEventListener('click', () => addPropertyAddressField());
+    }
+    const addressContainer = document.getElementById('docxPropertyAddressContainer');
+    if (addressContainer) {
+        addressContainer.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-property-address')) {
+                e.target.closest('.property-address-item').remove();
+            }
+        });
+    }
+
     const saveFieldsBtn = document.getElementById('saveReportFields');
     if (saveFieldsBtn) {
         saveFieldsBtn.addEventListener('click', async function() {
@@ -2112,7 +2137,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             .filter(id => !isNaN(id));
             const data = {
                 client_name: document.getElementById('docxClientName').value,
-                property_address: document.getElementById('docxPropertyAddress').value,
+                property_address: Array.from(document.querySelectorAll('.property-address-input'))
+                    .map(input => input.value.trim())
+                    .filter(v => v)
+                    .join('; '),
                 debenture: document.getElementById('docxDebenture').value,
                 corporate_guarantor: document.getElementById('docxGuarantor').value,
                 broker_name: document.getElementById('docxBrokerName').value,
@@ -2453,15 +2481,16 @@ function retryLoanSave() {
       <div class="modal-body">
         <div class="row">
           <div class="col-md-4 mb-3">
-            <label for="docxClientName" class="form-label">Client Name</label>
+            <label for="docxClientName" class="form-label">Client/Broker</label>
             <input type="text" class="form-control" id="docxClientName">
           </div>
           <div class="col-md-4 mb-3">
-            <label for="docxPropertyAddress" class="form-label">Property Address</label>
-            <input type="text" class="form-control" id="docxPropertyAddress">
+            <label class="form-label">Property Address</label>
+            <div id="docxPropertyAddressContainer"></div>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="addPropertyAddress"><i class="fas fa-plus me-1"></i>Add Address</button>
           </div>
           <div class="col-md-4 mb-3">
-            <label for="docxDebenture" class="form-label">Debenture</label>
+            <label for="docxDebenture" class="form-label">Company Name</label>
             <input type="text" class="form-control" id="docxDebenture">
           </div>
           <div class="col-md-4 mb-3">
