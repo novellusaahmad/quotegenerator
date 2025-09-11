@@ -361,7 +361,11 @@ def generate_loan_summary_docx(loan, extra_fields=None):
 
     property_address = extra_fields.get('property_address')
     if property_address:
-        addresses = [a.strip() for a in re.split(r';|\n', property_address) if a.strip()]
+        addresses = [
+            re.sub(r'^\d+\.\s*', '', a.strip())
+            for a in re.split(r';|\n', property_address)
+            if a.strip()
+        ]
         if len(addresses) > 1:
             doc.add_paragraph("Property Addresses:")
             for idx, addr in enumerate(addresses, 1):

@@ -2036,7 +2036,12 @@ async function handleReportFieldsClick(e) {
     e.preventDefault();
     const data = await fetchReportFields();
     document.getElementById('docxClientName').value = data.client_name || '';
-    const addresses = data.property_address ? data.property_address.split(/;|\n/).map(a => a.trim()).filter(a => a) : [''];
+    const addresses = data.property_address
+        ? data.property_address
+            .split(/;|\n/)
+            .map(a => a.replace(/^\d+\.\s*/, '').trim())
+            .filter(a => a)
+        : [''];
     const container = document.getElementById('docxPropertyAddressContainer');
     container.innerHTML = '';
     addresses.forEach(addr => addPropertyAddressField(addr));
@@ -2189,10 +2194,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             .filter(id => !isNaN(id));
             const data = {
                 client_name: document.getElementById('docxClientName').value,
-                property_address: Array.from(document.querySelectorAll('.property-address-input'))
-                    .map(input => input.value.trim())
-                    .filter(v => v)
-                    .join('; '),
+                property_address: (() => {
+                    const addrList = Array.from(document.querySelectorAll('.property-address-input'))
+                        .map(input => input.value.trim())
+                        .filter(v => v);
+                    if (addrList.length > 1) {
+                        return addrList.map((addr, idx) => `${idx + 1}. ${addr}`).join('\n');
+                    }
+                    return addrList[0] || '';
+                })(),
                 debenture: document.getElementById('docxDebenture').value,
                 corporate_guarantor: document.getElementById('docxGuarantor').value,
                 broker_name: document.getElementById('docxBrokerName').value,

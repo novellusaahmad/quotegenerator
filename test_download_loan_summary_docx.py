@@ -128,3 +128,27 @@ def test_multiple_property_addresses_numbered():
     text_lines = _extract_text(res.data).splitlines()
     assert "1. 123 Example Street" in text_lines
     assert "2. 456 Another Ave" in text_lines
+
+
+def test_pre_numbered_property_addresses_not_double_numbered():
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        loan = LoanSummary(loan_name="TestLoan", loan_type="bridge")
+        db.session.add(loan)
+        db.session.commit()
+        loan_id = loan.id
+
+    client = app.test_client()
+    payload = {
+        "property_address": "1. 123 Example Street\n2. 456 Another Ave",
+    }
+    res = client.post(f"/loan/{loan_id}/summary-docx", json=payload)
+    assert res.status_code == 200
+    text_lines = _extract_text(res.data).splitlines()
+    assert "1. 123 Example Street" in text_lines
+    assert "2. 456 Another Ave" in text_lines
+    assert all(
+        not line.startswith("1. 1.") and not line.startswith("2. 2.")
+        for line in text_lines
+    )
