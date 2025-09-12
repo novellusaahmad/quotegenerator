@@ -110,7 +110,8 @@ def test_loan_notes_grouped_headings_and_numbering():
     assert text_lines[cond_idx + 1].startswith("1. ")
 
 
-def test_multiple_property_addresses_numbered():
+def test_property_addresses_ignored():
+    """Property addresses provided by the client should not appear in the report."""
     with app.app_context():
         db.drop_all()
         db.create_all()
@@ -125,12 +126,14 @@ def test_multiple_property_addresses_numbered():
     }
     res = client.post(f"/loan/{loan_id}/summary-docx", json=payload)
     assert res.status_code == 200
-    text_lines = _extract_text(res.data).splitlines()
-    assert "1. 123 Example Street" in text_lines
-    assert "2. 456 Another Ave" in text_lines
+    text = _extract_text(res.data)
+    assert "123 Example Street" not in text
+    assert "456 Another Ave" not in text
+    assert "Property Address" not in text
 
 
-def test_pre_numbered_property_addresses_not_double_numbered():
+def test_pre_numbered_property_addresses_ignored():
+    """Pre-numbered property addresses should also be omitted from the report."""
     with app.app_context():
         db.drop_all()
         db.create_all()
@@ -145,10 +148,7 @@ def test_pre_numbered_property_addresses_not_double_numbered():
     }
     res = client.post(f"/loan/{loan_id}/summary-docx", json=payload)
     assert res.status_code == 200
-    text_lines = _extract_text(res.data).splitlines()
-    assert "1. 123 Example Street" in text_lines
-    assert "2. 456 Another Ave" in text_lines
-    assert all(
-        not line.startswith("1. 1.") and not line.startswith("2. 2.")
-        for line in text_lines
-    )
+    text = _extract_text(res.data)
+    assert "123 Example Street" not in text
+    assert "456 Another Ave" not in text
+    assert "Property Address" not in text
