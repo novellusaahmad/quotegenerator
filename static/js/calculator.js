@@ -3746,21 +3746,7 @@ class LoanCalculator {
             return;
         }
 
-        const labels = schedule.map(entry => {
-            // Use actual payment dates from the schedule
-            const dateStr = entry.payment_date || '';
-            if (dateStr) {
-                // Parse the date format (e.g., "22/07/2025") and format it nicely
-                const parts = dateStr.split('/');
-                if (parts.length === 3) {
-                    const day = parts[0];
-                    const month = parts[1];
-                    const year = parts[2].slice(-2); // Last 2 digits of year
-                    return `${day}/${month}/${year}`;
-                }
-            }
-            return dateStr || `Month ${schedule.indexOf(entry) + 1}`;
-        });
+        const labels = schedule.map((_, index) => index + 1);
         const balanceData = schedule.map(entry => {
             const balanceRaw = entry.closing_balance || 0;
             if (typeof balanceRaw === 'number') {
@@ -3797,20 +3783,16 @@ class LoanCalculator {
                 {
                     label: 'Remaining Balance',
                     data: balanceData,
-                    borderColor: 'rgba(184, 134, 11, 1)', // Novellus gold
-                    backgroundColor: 'rgba(184, 134, 11, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.1,
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: 'rgba(184, 134, 11, 1)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2
+                    type: 'bar',
+                    backgroundColor: 'rgba(184, 134, 11, 0.6)',
+                    borderColor: 'rgba(184, 134, 11, 1)',
+                    borderWidth: 1,
+                    yAxisID: 'y'
                 },
                 {
                     label: 'Interest Accrued',
                     data: interestAccruedData,
+                    type: 'line',
                     borderColor: 'rgba(70, 130, 180, 1)',
                     backgroundColor: 'rgba(70, 130, 180, 0.1)',
                     borderWidth: 2,
@@ -3836,7 +3818,7 @@ class LoanCalculator {
                 ctx.parentElement.style.display = 'block';
                 
                 let chartConfig = {
-                    type: 'line',
+                    type: 'bar',
                     data: data,
                     options: {
                         responsive: true,
@@ -3893,7 +3875,7 @@ class LoanCalculator {
 
                 // Add data labels if ChartEnhancer is available
                 if (typeof window.ChartEnhancer !== 'undefined') {
-                    chartConfig = window.ChartEnhancer.enhanceLineChart(chartConfig, results);
+                    chartConfig = window.ChartEnhancer.enhanceBarChart(chartConfig, results);
                 }
 
                 this.charts.balanceOverTime = new Chart(ctx, chartConfig);

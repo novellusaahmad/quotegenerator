@@ -30,7 +30,7 @@ class ChartManager {
             this.charts.get(canvasId).destroy();
         }
 
-        const labels = schedule.map(payment => `Month ${payment.month}`);
+        const labels = schedule.map((_, index) => index + 1);
         const principalData = schedule.map(payment => payment.principal || 0);
         const interestData = schedule.map(payment => payment.interest || 0);
         const balanceData = schedule.map(payment => payment.balance || 0);
@@ -192,7 +192,7 @@ class ChartManager {
             this.charts.get(canvasId).destroy();
         }
 
-        const labels = schedule.map(payment => `Month ${payment.month}`);
+        const labels = schedule.map((_, index) => index + 1);
         const balanceData = schedule.map(payment => payment.balance || 0);
         // Helper to parse currency strings or numbers
         const parseValue = (val) => {
@@ -211,26 +211,23 @@ class ChartManager {
         });
 
         const config = {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: labels,
                 datasets: [
                     {
                         label: 'Outstanding Balance',
                         data: balanceData,
-                        backgroundColor: this.addTransparency(this.defaultColors.primary, 0.1),
+                        type: 'bar',
+                        backgroundColor: this.addTransparency(this.defaultColors.primary, 0.6),
                         borderColor: this.defaultColors.primary,
-                        borderWidth: 3,
-                        fill: false,
-                        tension: 0.4,
-                        pointBackgroundColor: this.defaultColors.primary,
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4
+                        borderWidth: 1,
+                        yAxisID: 'y'
                     },
                     {
                         label: 'Interest Accrued',
                         data: interestAccruedData,
+                        type: 'line',
                         backgroundColor: this.addTransparency(this.defaultColors.secondary, 0.1),
                         borderColor: this.defaultColors.secondary,
                         borderWidth: 3,
