@@ -161,6 +161,15 @@
         overflow: hidden;
     }
 
+    .calculation-details ul {
+        list-style: disc;
+        margin-left: 1.25rem;
+    }
+
+    .calculation-details li {
+        margin-bottom: 0.25rem;
+    }
+
     .bg-purple {
         background-color: #6f42c1 !important;
     }
@@ -1217,7 +1226,7 @@
                 <h5 class="modal-title" id="calculationBreakdownLabel"></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="calculationBreakdownContent">
+            <div class="modal-body calculation-details" id="calculationBreakdownContent">
                 <!-- Content injected by calculator.js -->
             </div>
             <div class="modal-footer">

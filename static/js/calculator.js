@@ -2961,6 +2961,10 @@ class LoanCalculator {
         const endDate = r.endDate || r.end_date || '';
         const use360 = r.use_360_days || document.getElementById('use360Days')?.checked || false;
         const daysPerYear = use360 ? 360 : 365;
+        const loanType = r.loan_type || r.loanType || document.getElementById('loanType')?.value || 'Loan';
+        const interestType = r.interest_type || document.getElementById('interestType')?.value || 'simple';
+        const paymentTiming = (r.payment_timing || document.getElementById('paymentTiming')?.value || 'advance').replace('in_', '');
+        const paymentFrequency = r.payment_frequency || document.getElementById('paymentFrequency')?.value || 'monthly';
 
         const arrangementPctText = document.getElementById('arrangementFeePercentageDisplay')?.textContent.trim() || `${r.arrangementFeePercentage || r.arrangement_fee_percentage || 0}%`;
         const titlePctText = document.getElementById('titleInsurancePercentageDisplay')?.textContent.trim() || `${r.titleInsurancePercentage || r.title_insurance_percentage || 0}%`;
@@ -2988,7 +2992,6 @@ class LoanCalculator {
         const dailyInterest = formatMoney(dailyInterestNum);
         const periodicInterestNum = parseFloat(String(r.periodicInterest || r.monthlyInterestPayment || r.quarterlyInterestPayment || 0).replace(/[,£€]/g, '')) || 0;
         const periodicInterest = formatMoney(periodicInterestNum);
-        const paymentFrequency = r.payment_frequency || 'monthly';
 
         const propertyValueNum = parseFloat(r.propertyValue || 0);
         const propertyValue = formatMoney(propertyValueNum);
@@ -2998,6 +3001,23 @@ class LoanCalculator {
             const last = r.detailed_payment_schedule[r.detailed_payment_schedule.length - 1];
             const closing = parseFloat(String(last.closing_balance || '').replace(/[,£€]/g, '')) || 0;
             endLTV = ((closing / propertyValueNum) * 100).toFixed(2);
+        }
+
+        const repaymentAmountNum = parseFloat(r.repaymentAmount || r.repayment_amount || 0);
+        const flexibleAmountNum = parseFloat(r.flexiblePayment || r.flexible_payment || 0);
+        const repaymentAmount = formatMoney(repaymentAmountNum);
+        const flexibleAmount = formatMoney(flexibleAmountNum);
+
+        let trancheCount = 0;
+        let trancheValue = '';
+        if (loanType === 'development') {
+            const tranches = r.tranche_breakdown || r.tranches || [];
+            trancheCount = tranches.length;
+            if (trancheCount > 0) {
+                const first = tranches[0];
+                const amt = typeof first.amount === 'number' ? first.amount : parseFloat(first.amount || 0);
+                trancheValue = formatMoney(amt);
+            }
         }
 
         const baseMandatory = [
@@ -3167,7 +3187,39 @@ class LoanCalculator {
         if (startDate) addIfMissing('Start Date', startDate);
         if (endDate) addIfMissing('End Date', endDate);
 
-        return { formula, formulaValues, mandatory, calculated, outputs };
+        return {
+            formula,
+            formulaValues,
+            mandatory,
+            calculated,
+            outputs,
+            gross,
+            net,
+            arrangement,
+            legal,
+            site,
+            title,
+            interest,
+            arrangementPctText,
+            titlePctText,
+            rateText,
+            loanTerm,
+            loanTermDays,
+            daysPerYear,
+            interestDeducted,
+            repayment,
+            startDate,
+            endDate,
+            paymentTiming,
+            paymentFrequency,
+            interestType,
+            loanType,
+            amountType,
+            trancheCount,
+            trancheValue,
+            repaymentAmount: repaymentAmountNum ? repaymentAmount : '',
+            flexibleAmount: flexibleAmountNum ? flexibleAmount : ''
+        };
     }
 
     populateBreakdownModal() {
@@ -3197,25 +3249,36 @@ class LoanCalculator {
         }
 
         const data = this.getBreakdownData(r);
+        const repaymentDisplay = data.outputs.find(o => o.label === 'Repayment Method')?.value || '';
+        const description = `${netGross.toLowerCase()} ${loanType.toLowerCase()} loan with ${repaymentDisplay.toLowerCase()}`;
 
-        const renderSection = (title, items) => {
-            if (!items || items.length === 0) return '';
-            const cards = items.map(i => `
-                <div class="col-lg-2 col-md-3 col-sm-4 col-6">
-                    <div class="summary-card" data-currency="${currencyCode}">
-                        <div class="summary-value">${i.value}</div>
-                        <div class="summary-label">${i.label}</div>
-                    </div>
-                </div>`).join('');
-            return `<h6 class="mt-2">${title}</h6><div class="row g-1 mb-1">${cards}</div>`;
-        };
+        const lines = [];
+        lines.push(`${amountType === 'gross' ? 'Gross' : 'Net'} = ${amountType === 'gross' ? data.gross : data.net}`);
+        data.calculated.forEach(c => {
+            lines.push(`${c.label}${c.value ? ' = ' + c.value : ''}`);
+        });
+        lines.push(`Interest Rate = ${data.rateText}`);
+        lines.push(`Loan Term = ${data.loanTermDays ? data.loanTermDays + ' Days' : data.loanTerm + ' Months'}`);
+        lines.push(`Days in Year = ${data.daysPerYear}`);
+        if (data.interestDeducted) lines.push(`Retained Interest = ${data.interest}`);
+        lines.push(data.formulaValues);
+        if (data.trancheCount > 0 && data.trancheValue) lines.push(`Tranches: ${data.trancheCount} × ${data.trancheValue}`);
+        if (data.repaymentAmount) lines.push(`Repayment Amount = ${data.repaymentAmount}`);
+        if (data.flexibleAmount) lines.push(`Flexible Amount = ${data.flexibleAmount}`);
+        lines.push(`Repayment Method: ${repaymentDisplay}`);
+        lines.push(`Interest Calculation Type: ${data.interestType}`);
+        lines.push(`Payment Timing: ${data.paymentTiming}`);
+        lines.push(`Payment Frequency: ${data.paymentFrequency}`);
+        if (data.startDate) lines.push(`Start Date: ${data.startDate}`);
+        if (data.endDate) lines.push(`End Date: ${data.endDate}`);
+
+        const formatLine = (t) => `<li>${t}</li>`;
 
         modalBody.innerHTML =
-            `<p><strong>Formula:</strong> ${data.formula}</p>` +
-            (data.formulaValues ? `<p><strong>Values:</strong> ${data.formulaValues}</p>` : '') +
-            renderSection('Mandatory Inputs', data.mandatory) +
-            renderSection('Calculated Components', data.calculated) +
-            renderSection('Outputs', data.outputs);
+            `<p><strong>${netGross} Calculation:</strong> The formula for a ${description} is as follows:</p>` +
+            `<ul><li>${amountType === 'gross' ? 'Gross = Defined by User' : 'Net = Defined by User'}</li><li>${data.formula}</li></ul>` +
+            `<p><strong>${amountType === 'gross' ? 'Net' : 'Gross'} Loan Calculation Step by Step:</strong></p>` +
+            `<ul>${lines.map(formatLine).join('')}</ul>`;
     }
 
     // Load existing results from session storage or page data
