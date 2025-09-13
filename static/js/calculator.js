@@ -3010,13 +3010,16 @@ class LoanCalculator {
 
         let trancheCount = 0;
         let trancheValue = '';
+        let trancheAmounts = [];
         if (loanType === 'development' || loanType === 'development2') {
             const tranches = r.tranche_breakdown || r.tranches || [];
             trancheCount = tranches.length;
             if (trancheCount > 0) {
-                const first = tranches[0];
-                const amt = typeof first.amount === 'number' ? first.amount : parseFloat(first.amount || 0);
-                trancheValue = formatMoney(amt);
+                trancheAmounts = tranches.map(t => {
+                    const amt = typeof t.amount === 'number' ? t.amount : parseFloat(t.amount || 0);
+                    return formatMoney(amt);
+                });
+                trancheValue = trancheAmounts[0];
             }
         }
 
@@ -3243,6 +3246,7 @@ class LoanCalculator {
             amountType,
             trancheCount,
             trancheValue,
+            trancheAmounts,
             repaymentAmount: repaymentAmountNum ? repaymentAmount : '',
             flexibleAmount: flexibleAmountNum ? flexibleAmount : ''
         };
@@ -3300,7 +3304,10 @@ class LoanCalculator {
         if (data.loanTermDays) details.push(`Loan Term (days): ${data.loanTermDays}`);
         else if (data.loanTerm) details.push(`Loan Term (months): ${data.loanTerm}`);
         if (data.endDate) details.push(`End Date: ${data.endDate}`);
-        if (data.trancheCount > 0 && data.trancheValue) details.push(`Tranche Setup: ${data.trancheCount} × ${data.trancheValue}`);
+        if (data.trancheAmounts && data.trancheAmounts.length > 0) {
+            const trancheText = data.trancheCount > 0 ? `${data.trancheCount} tranches (${data.trancheAmounts.join(', ')})` : data.trancheAmounts.join(', ');
+            details.push(`Tranche Setup: ${trancheText}`);
+        }
 
         const lines = [];
         lines.push(`${amountType === 'gross' ? 'Gross' : 'Net'} = ${amountType === 'gross' ? data.gross : data.net}`);
@@ -3313,7 +3320,9 @@ class LoanCalculator {
         if (data.interestDeducted) lines.push(`Retained Interest = ${data.interest}`);
         lines.push(data.formulaValues);
         if (data.interestFormula) lines.push(data.interestFormula);
-        if (data.trancheCount > 0 && data.trancheValue) lines.push(`Tranches: ${data.trancheCount} × ${data.trancheValue}`);
+        if (data.trancheAmounts && data.trancheAmounts.length > 0) {
+            lines.push(`Tranches: ${data.trancheAmounts.join(' + ')}`);
+        }
         if (data.repaymentAmount) lines.push(`Repayment Amount = ${data.repaymentAmount}`);
         if (data.flexibleAmount) lines.push(`Flexible Amount = ${data.flexibleAmount}`);
 
