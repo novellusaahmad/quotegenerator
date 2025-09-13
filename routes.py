@@ -4108,6 +4108,8 @@ def get_scenario_templates(template_type):
         elif template_type == 'loan_amounts':
             amounts = [500000, 750000, 1000000, 1500000]
             scenarios = ScenarioTemplates.loan_amount_comparison(base_params, amounts)
+        elif template_type == 'interest_types':
+            scenarios = ScenarioTemplates.interest_type_comparison(base_params)
         else:
             return jsonify({
                 'success': False,
