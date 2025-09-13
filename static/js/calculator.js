@@ -3010,7 +3010,7 @@ class LoanCalculator {
 
         let trancheCount = 0;
         let trancheValue = '';
-        if (loanType === 'development') {
+        if (loanType === 'development' || loanType === 'development2') {
             const tranches = r.tranche_breakdown || r.tranches || [];
             trancheCount = tranches.length;
             if (trancheCount > 0) {
@@ -3039,7 +3039,7 @@ class LoanCalculator {
             ];
         }
 
-        const scenario = (() => {
+        let scenario = (() => {
             if (['none', 'retained', 'capital_payment_only'].includes(repayment)) {
                 return amountType === 'gross' ? 'gross_to_net_retained' : 'net_to_gross_retained';
             } else if (repayment === 'service_only') {
@@ -3049,6 +3049,18 @@ class LoanCalculator {
             }
             return 'generic';
         })();
+        if (loanType === 'development2') {
+            scenario = 'development2';
+        }
+
+        let interestFormula = '';
+        if (loanType === 'development2') {
+            interestFormula = `Total Interest = Σ (Outstanding Balance + Tranche) × ((1 + ${rateText} ÷ ${daysPerYear})^Days − 1)`;
+        } else if (interestType.includes('compound')) {
+            interestFormula = `Interest = Principal × ((1 + ${rateText} ÷ ${daysPerYear})^Days − 1)`;
+        } else {
+            interestFormula = `Interest = Principal × ${rateText} × Days ÷ ${daysPerYear}`;
+        }
 
         let formula = '';
         let formulaValues = '';
@@ -3143,6 +3155,19 @@ class LoanCalculator {
                 ];
                 formulaValues = `${gross} = (${net} + ${legal} + ${site}) / (1 − ${arrangementPctText} − ${titlePctText})`;
                 break;
+            case 'development2':
+                formula = 'Gross = Net + Arrangement Fee + Legal Fees + Site Visit Fee + Title Insurance + Total Interest';
+                calculated = [
+                    { label: `Arrangement Fee = ${arrangementPctText} × Gross`, value: arrangement },
+                    { label: `Title Insurance = ${titlePctText} × Gross`, value: title },
+                    { label: `Total Interest = Σ (Outstanding Balance + Tranche) × ((1 + ${rateText} ÷ ${daysPerYear})^Days − 1)`, value: interest }
+                ];
+                outputs = [
+                    { label: `Gross Loan (${symbol})`, value: gross },
+                    { label: 'Repayment Method', value: 'Retained Compound Interest' }
+                ];
+                formulaValues = `${gross} = ${net} + ${arrangement} + ${legal} + ${site} + ${title} + ${interest}`;
+                break;
             default:
                 formula = amountType === 'gross'
                     ? 'Net = Gross − Arrangement Fee − Legal Fees − Site Visit Fee − Title Insurance − Retained Interest'
@@ -3190,6 +3215,7 @@ class LoanCalculator {
         return {
             formula,
             formulaValues,
+            interestFormula,
             mandatory,
             calculated,
             outputs,
@@ -3286,6 +3312,7 @@ class LoanCalculator {
         lines.push(`Days in Year = ${data.daysPerYear}`);
         if (data.interestDeducted) lines.push(`Retained Interest = ${data.interest}`);
         lines.push(data.formulaValues);
+        if (data.interestFormula) lines.push(data.interestFormula);
         if (data.trancheCount > 0 && data.trancheValue) lines.push(`Tranches: ${data.trancheCount} × ${data.trancheValue}`);
         if (data.repaymentAmount) lines.push(`Repayment Amount = ${data.repaymentAmount}`);
         if (data.flexibleAmount) lines.push(`Flexible Amount = ${data.flexibleAmount}`);
