@@ -1118,25 +1118,28 @@
             if (comparisonTable.length === 0) return;
             
             // Add scenario columns to header
-            const scenarios = comparisonTable[0].scenarios;
-            scenarios.forEach(scenario => {
-                thead.innerHTML += `<th class="text-center">${scenario.name}</th>`;
-            });
-            
-            // Add comparison rows
-            comparisonTable.forEach(row => {
-                let rowHtml = `<td><strong>${row.metric}</strong></td>`;
-                
-                row.scenarios.forEach(scenario => {
-                    const valueClass = scenario.value.includes('£') && scenario.value.includes('-') ? 'metric-negative' : 
-                                     scenario.value.includes('savings') ? 'metric-positive' : 'metric-value';
-                    rowHtml += `<td class="text-center ${valueClass}">${scenario.value}</td>`;
+            if (Array.isArray(comparisonTable) && comparisonTable.length > 0) {
+                const scenarios = comparisonTable[0].scenarios || [];
+                scenarios.forEach(scenario => {
+                    thead.innerHTML += `<th class="text-center">${scenario.name}</th>`;
                 });
-                
-                const tableRow = document.createElement('tr');
-                tableRow.innerHTML = rowHtml;
-                tbody.appendChild(tableRow);
-            });
+
+                // Add comparison rows
+                comparisonTable.forEach(row => {
+                    let rowHtml = `<td><strong>${row.metric}</strong></td>`;
+
+                    (row.scenarios || []).forEach(scenario => {
+                        const valueStr = String(scenario.value);
+                        const valueClass = valueStr.includes('£') && valueStr.includes('-') ? 'metric-negative'
+                                          : valueStr.includes('savings') ? 'metric-positive' : 'metric-value';
+                        rowHtml += `<td class="text-center ${valueClass}">${scenario.value}</td>`;
+                    });
+
+                    const tableRow = document.createElement('tr');
+                    tableRow.innerHTML = rowHtml;
+                    tbody.appendChild(tableRow);
+                });
+            }
         }
 
         function displayLoanSummaryColumns(comparisonTable) {
@@ -1144,7 +1147,11 @@
             if (!container) return;
             container.innerHTML = '';
 
-            if (comparisonTable.length === 0) return;
+            if (!Array.isArray(comparisonTable) || comparisonTable.length === 0 ||
+                !comparisonTable[0].scenarios || comparisonTable[0].scenarios.length === 0) {
+                container.innerHTML = '<p class="text-muted">No comparison data available</p>';
+                return;
+            }
 
             const scenarios = comparisonTable[0].scenarios.map(s => s.name);
             const colWidth = Math.floor(12 / scenarios.length);
@@ -1154,7 +1161,8 @@
                 html += `<div class="col-md-${colWidth} mb-3">`;
                 html += `<table class="table table-bordered table-sm"><thead><tr><th colspan="2" class="text-center">${name}</th></tr></thead><tbody>`;
                 comparisonTable.forEach(row => {
-                    const value = row.scenarios[index].value;
+                    const scenarioData = row.scenarios[index];
+                    const value = scenarioData ? scenarioData.value : 'N/A';
                     html += `<tr><td>${row.metric}</td><td class="text-end">${value}</td></tr>`;
                 });
                 html += '</tbody></table></div>';
