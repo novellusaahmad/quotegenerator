@@ -3222,6 +3222,7 @@ class LoanCalculator {
         };
     }
 
+
     populateBreakdownModal() {
         const modalBody = document.getElementById('calculationBreakdownContent');
         const modalHeader = document.getElementById('calculationBreakdownHeader');
@@ -3252,6 +3253,29 @@ class LoanCalculator {
         const repaymentDisplay = data.outputs.find(o => o.label === 'Repayment Method')?.value || '';
         const description = `${netGross.toLowerCase()} ${loanType.toLowerCase()} loan with ${repaymentDisplay.toLowerCase()}`;
 
+        const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+        const cleanLoanType = loanType.replace(/2$/, '');
+        const loanTypeDisplay = cap(cleanLoanType);
+        const amountInputDisplay = cap(amountType);
+        const paymentTimingDisplay = cap(data.paymentTiming);
+        const paymentFrequencyDisplay = cap(data.paymentFrequency);
+        const interestTypeDisplay = data.interestType.split('_').map(w => cap(w)).join(' ');
+
+        const details = [];
+        details.push(`Loan Type: ${loanTypeDisplay}`);
+        details.push(`Amount Input: ${amountInputDisplay}`);
+        details.push(`${amountInputDisplay} Amount: ${amountType === 'gross' ? data.gross : data.net}`);
+        details.push(`Calculated ${amountType === 'gross' ? 'Net' : 'Gross'} Amount: ${amountType === 'gross' ? data.net : data.gross}`);
+        details.push(`Interest Calculation Type: ${repaymentDisplay}`);
+        details.push(`Payment Timing: ${paymentTimingDisplay}`);
+        details.push(`Payment Frequency: ${paymentFrequencyDisplay}`);
+        details.push(`Interest Calculation: ${interestTypeDisplay}`);
+        if (data.startDate) details.push(`Start Date: ${data.startDate}`);
+        if (data.loanTermDays) details.push(`Loan Term (days): ${data.loanTermDays}`);
+        else if (data.loanTerm) details.push(`Loan Term (months): ${data.loanTerm}`);
+        if (data.endDate) details.push(`End Date: ${data.endDate}`);
+        if (data.trancheCount > 0 && data.trancheValue) details.push(`Tranche Setup: ${data.trancheCount} × ${data.trancheValue}`);
+
         const lines = [];
         lines.push(`${amountType === 'gross' ? 'Gross' : 'Net'} = ${amountType === 'gross' ? data.gross : data.net}`);
         data.calculated.forEach(c => {
@@ -3265,22 +3289,17 @@ class LoanCalculator {
         if (data.trancheCount > 0 && data.trancheValue) lines.push(`Tranches: ${data.trancheCount} × ${data.trancheValue}`);
         if (data.repaymentAmount) lines.push(`Repayment Amount = ${data.repaymentAmount}`);
         if (data.flexibleAmount) lines.push(`Flexible Amount = ${data.flexibleAmount}`);
-        lines.push(`Repayment Method: ${repaymentDisplay}`);
-        lines.push(`Interest Calculation Type: ${data.interestType}`);
-        lines.push(`Payment Timing: ${data.paymentTiming}`);
-        lines.push(`Payment Frequency: ${data.paymentFrequency}`);
-        if (data.startDate) lines.push(`Start Date: ${data.startDate}`);
-        if (data.endDate) lines.push(`End Date: ${data.endDate}`);
 
         const formatLine = (t) => `<li>${t}</li>`;
 
         modalBody.innerHTML =
+            `<p><strong>Loan Details:</strong></p>` +
+            `<ul>${details.map(formatLine).join('')}</ul>` +
             `<p><strong>${netGross} Calculation:</strong> The formula for a ${description} is as follows:</p>` +
             `<ul><li>${amountType === 'gross' ? 'Gross = Defined by User' : 'Net = Defined by User'}</li><li>${data.formula}</li></ul>` +
             `<p><strong>${amountType === 'gross' ? 'Net' : 'Gross'} Loan Calculation Step by Step:</strong></p>` +
             `<ul>${lines.map(formatLine).join('')}</ul>`;
     }
-
     // Load existing results from session storage or page data
     loadExistingResults() {
         console.log('Checking for existing calculation results on page load');
