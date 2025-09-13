@@ -23,7 +23,12 @@ class ScenarioComparison:
     # These aliases ensure the comparison table can find the relevant
     # value regardless of which variant is present.
     METRIC_ALIASES = {
+        'propertyValue': ['propertyValue', 'property_value'],
         'grossAmount': ['grossAmount', 'gross_amount'],
+        'startDate': ['start_date', 'startDate'],
+        'endDate': ['end_date', 'endDate'],
+        'loanTerm': ['loanTerm', 'loan_term'],
+        'loanTermDays': ['loanTermDays', 'loan_term_days'],
         'netAdvance': ['netAdvance', 'net_advance'],
         'totalNetAdvance': [
             'totalNetAdvance',
@@ -36,6 +41,7 @@ class ScenarioComparison:
         'legalCosts': ['legalCosts', 'legalFees', 'totalLegalFees', 'legal_costs'],
         'siteVisitFee': ['siteVisitFee', 'site_visit_fee'],
         'titleInsurance': ['titleInsurance', 'title_insurance'],
+        'ltv': ['ltv', 'ltv_ratio'],
         'endLTV': ['endLTV', 'end_ltv', 'endLtv'],
         'interestSavings': ['interestSavings', 'interest_savings'],
         'savingsPercentage': ['savingsPercentage', 'savings_percent'],
@@ -148,17 +154,23 @@ class ScenarioComparison:
         if not self.scenarios:
             return []
         
-        # Define key metrics to compare
+        # Define key metrics to compare (mirroring calculator summary)
         key_metrics = [
+            'propertyValue',
             'grossAmount',
-            'netAdvance',
-            'totalNetAdvance',
-            'totalInterest',
+            'startDate',
+            'endDate',
+            'loanTerm',
+            'loanTermDays',
             'arrangementFee',
             'legalCosts',
             'siteVisitFee',
             'titleInsurance',
+            'totalInterest',
+            'netAdvance',
+            'ltv',
             'endLTV',
+            'totalNetAdvance',
             'interestSavings',
             'savingsPercentage'
         ]
@@ -306,15 +318,21 @@ class ScenarioComparison:
     def _format_metric_name(self, metric):
         """Format metric name for display"""
         name_map = {
+            'propertyValue': 'Valuation',
             'grossAmount': 'Gross Amount',
-            'netAdvance': 'Net Advance',
-            'totalNetAdvance': 'Total Net Advance',
-            'totalInterest': 'Total Interest',
+            'startDate': 'Date of First Drawdown',
+            'endDate': 'End Date',
+            'loanTerm': 'Term (Months)',
+            'loanTermDays': 'Term (Days)',
             'arrangementFee': 'Arrangement Fee',
             'legalCosts': 'Legal Costs',
             'siteVisitFee': 'Site Visit Fee',
             'titleInsurance': 'Title Insurance',
+            'totalInterest': 'Interest',
+            'netAdvance': 'Net Day 1 Advance',
+            'ltv': 'LTV Ratio',
             'endLTV': 'End LTV',
+            'totalNetAdvance': 'Total Net Advance',
             'interestSavings': 'Interest Savings',
             'savingsPercentage': 'Savings %'
         }
@@ -326,9 +344,13 @@ class ScenarioComparison:
             return 'N/A'
         
         try:
-            if metric in ['endLTV', 'savingsPercentage']:
-                return str(value)  # Already formatted as percentage
-            elif metric in ['grossAmount', 'netAdvance', 'totalNetAdvance', 'totalInterest', 
+            if metric in ['endLTV', 'ltv', 'savingsPercentage']:
+                return f"{float(value):.2f}%"
+            elif metric in ['startDate', 'endDate']:
+                return str(value)
+            elif metric in ['loanTerm', 'loanTermDays']:
+                return f"{int(float(value))}"
+            elif metric in ['propertyValue', 'grossAmount', 'netAdvance', 'totalNetAdvance', 'totalInterest',
                           'arrangementFee', 'legalCosts', 'siteVisitFee', 'titleInsurance', 'interestSavings']:
                 return f"£{float(value):,.2f}"
             else:
