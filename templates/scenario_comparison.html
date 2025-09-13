@@ -360,6 +360,18 @@
 
     <!-- Comparison Results -->
     <div class="row" id="comparisonResults" style="display: none;">
+                <!-- Loan Summary Comparison -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="mb-0"><i class="fas fa-file-alt me-2"></i>Loan Summary Comparison</h3>
+                        </div>
+                        <div class="card-body" id="loanSummaryComparison">
+                            <!-- Loan summaries will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Best Scenario Analysis -->
                 <div class="col-12 mb-4">
                     <div class="card">
@@ -1008,6 +1020,7 @@
 
         function displayComparisonResults(data) {
             displayBestScenarioAnalysis(data.best_scenario_analysis);
+            displayLoanSummaryColumns(data.comparison_table);
             displayComparisonTable(data.comparison_table);
             document.getElementById('comparisonResults').style.display = 'block';
         }
@@ -1124,6 +1137,31 @@
                 tableRow.innerHTML = rowHtml;
                 tbody.appendChild(tableRow);
             });
+        }
+
+        function displayLoanSummaryColumns(comparisonTable) {
+            const container = document.getElementById('loanSummaryComparison');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (comparisonTable.length === 0) return;
+
+            const scenarios = comparisonTable[0].scenarios.map(s => s.name);
+            const colWidth = Math.floor(12 / scenarios.length);
+            let html = '<div class="row">';
+
+            scenarios.forEach((name, index) => {
+                html += `<div class="col-md-${colWidth} mb-3">`;
+                html += `<table class="table table-bordered table-sm"><thead><tr><th colspan="2" class="text-center">${name}</th></tr></thead><tbody>`;
+                comparisonTable.forEach(row => {
+                    const value = row.scenarios[index].value;
+                    html += `<tr><td>${row.metric}</td><td class="text-end">${value}</td></tr>`;
+                });
+                html += '</tbody></table></div>';
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         async function exportComparison() {
