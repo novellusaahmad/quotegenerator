@@ -335,6 +335,9 @@
                                         <button class="btn btn-outline-primary template-btn" onclick="openLoanAmountModal()">
                                             <i class="fas fa-pound-sign me-2"></i>Compare Loan Amounts
                                         </button>
+                                        <button class="btn btn-outline-primary template-btn" onclick="openInterestTypeModal()">
+                                            <i class="fas fa-calculator me-2"></i>Compare Interest Methods
+                                        </button>
                                         <button class="btn btn-success template-btn" onclick="openCustomScenarioModal()">
                                             <i class="fas fa-plus me-2"></i>Create Custom 4-Scenario Comparison
                                         </button>
@@ -500,6 +503,63 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" onclick="generateLoanAmountComparison()">Generate Comparison</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interest Type Comparison Modal -->
+    <div class="modal fade" id="interestTypeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-calculator me-2"></i>Interest Calculation Comparison</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Select four interest calculation methods to compare:</p>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Type 1</label>
+                            <select id="interestType1" class="form-select">
+                                <option value="simple">Simple</option>
+                                <option value="compound_daily">Compound Daily</option>
+                                <option value="compound_monthly">Compound Monthly</option>
+                                <option value="compound_quarterly">Compound Quarterly</option>
+                            </select>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Type 2</label>
+                            <select id="interestType2" class="form-select">
+                                <option value="compound_daily">Compound Daily</option>
+                                <option value="simple">Simple</option>
+                                <option value="compound_monthly">Compound Monthly</option>
+                                <option value="compound_quarterly">Compound Quarterly</option>
+                            </select>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Type 3</label>
+                            <select id="interestType3" class="form-select">
+                                <option value="compound_monthly">Compound Monthly</option>
+                                <option value="simple">Simple</option>
+                                <option value="compound_daily">Compound Daily</option>
+                                <option value="compound_quarterly">Compound Quarterly</option>
+                            </select>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Type 4</label>
+                            <select id="interestType4" class="form-select">
+                                <option value="compound_quarterly">Compound Quarterly</option>
+                                <option value="simple">Simple</option>
+                                <option value="compound_daily">Compound Daily</option>
+                                <option value="compound_monthly">Compound Monthly</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="generateInterestTypeComparison()">Generate Comparison</button>
                 </div>
             </div>
         </div>
@@ -777,6 +837,11 @@
             modal.show();
         }
 
+        function openInterestTypeModal() {
+            const modal = new bootstrap.Modal(document.getElementById('interestTypeModal'));
+            modal.show();
+        }
+
         function openRepaymentModal() {
             const modal = new bootstrap.Modal(document.getElementById('repaymentModal'));
             modal.show();
@@ -825,9 +890,22 @@
                 parseFloat(document.getElementById('amount3').value),
                 parseFloat(document.getElementById('amount4').value)
             ];
-            
+
             await generateCustomTemplate('loan_amounts', amounts);
             bootstrap.Modal.getInstance(document.getElementById('loanAmountModal')).hide();
+        }
+
+        // Generate Interest Type Comparison
+        async function generateInterestTypeComparison() {
+            const types = [
+                document.getElementById('interestType1').value,
+                document.getElementById('interestType2').value,
+                document.getElementById('interestType3').value,
+                document.getElementById('interestType4').value
+            ];
+
+            await generateCustomTemplate('interest_types', types);
+            bootstrap.Modal.getInstance(document.getElementById('interestTypeModal')).hide();
         }
 
         // Generate Repayment Options Comparison
@@ -867,6 +945,17 @@
                     scenarios = values.map((amount, index) => ({
                         name: `£${(amount/1000000).toFixed(1)}M Loan`,
                         parameters: { ...baseParams, gross_amount: amount }
+                    }));
+                } else if (templateType === 'interest_types') {
+                    const interestNames = {
+                        'simple': 'Simple Interest',
+                        'compound_daily': 'Compound Daily',
+                        'compound_monthly': 'Compound Monthly',
+                        'compound_quarterly': 'Compound Quarterly'
+                    };
+                    scenarios = values.map((type, index) => ({
+                        name: interestNames[type],
+                        parameters: { ...baseParams, interest_type: type }
                     }));
                 } else if (templateType === 'repayment_options') {
                     const repaymentNames = {

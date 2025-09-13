@@ -482,6 +482,30 @@ class ScenarioTemplates:
             })
         return scenarios
 
+    @staticmethod
+    def interest_type_comparison(
+        base_params,
+        interest_types=['simple', 'compound_daily', 'compound_monthly', 'compound_quarterly']
+    ):
+        """Create scenarios comparing different interest calculation methods"""
+        scenarios = []
+        name_map = {
+            'simple': 'Simple Interest',
+            'compound_daily': 'Compound Daily',
+            'compound_monthly': 'Compound Monthly',
+            'compound_quarterly': 'Compound Quarterly'
+        }
+
+        for interest_type in interest_types:
+            params = ScenarioTemplates._get_complete_params(base_params)
+            params['interest_type'] = interest_type
+            scenarios.append({
+                'name': name_map.get(interest_type, interest_type.replace('_', ' ').title()),
+                'parameters': params
+            })
+
+        return scenarios
+
 # Flask integration helper
 def create_scenario_comparison_from_request(request_data):
     """Create scenario comparison from Flask request data"""
