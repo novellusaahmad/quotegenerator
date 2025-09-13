@@ -359,24 +359,6 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             run.bold = bold
             run.font.color.rgb = RGBColor(0, 0, 0)
 
-    property_address = extra_fields.get('property_address')
-    if property_address:
-        addresses = [
-            re.sub(r'^\d+\.\s*', '', a.strip())
-            for a in re.split(r';|\n', property_address)
-            if a.strip()
-        ]
-        if len(addresses) > 1:
-            doc.add_paragraph("Property Addresses:")
-            for idx, addr in enumerate(addresses, 1):
-                p = doc.add_paragraph()
-                num_run = p.add_run(f"{idx}. ")
-                num_run.font.color.rgb = RGBColor(0, 0, 0)
-                run = p.add_run(addr)
-                run.font.color.rgb = RGBColor(0, 0, 0)
-        elif addresses:
-            doc.add_paragraph(f"Property Address: {addresses[0]}")
-
     # Table with header row whose color depends on currency
     table = doc.add_table(rows=9, cols=3)
     table.style = 'Table Grid'
