@@ -870,6 +870,11 @@ class LoanCalculator:
 
         params['loan_term_days'] = loan_term_days
 
+        # Restrict 360-day calculation to loans up to 12 months
+        if use_360_days and loan_term > 12:
+            logging.info("Term loan term exceeds 12 months; disabling 360-day calculation")
+            use_360_days = False
+
         # Determine gross amount based on input type
         if amount_input_type == 'net' and net_amount > 0:
             gross_amount = self._calculate_gross_from_net_bridge(
@@ -1066,9 +1071,12 @@ class LoanCalculator:
         from dateutil.relativedelta import relativedelta
         from calendar import monthrange
         import numpy as np
-        
+
         logging.info("🎯 DEVELOPMENT 2: Using attached Python code methodology")
-        
+
+        # 360-day calculation is not permitted for development2 loans
+        params['use_360_days'] = False
+
         # Extract parameters matching the Python code structure
         net_advance_day1 = float(params.get('day1_advance', 100000))
         legals = float(params.get('legal_fees', 7587.94))
@@ -1551,6 +1559,9 @@ class LoanCalculator:
         amount_input_type = params.get('amount_input_type', 'net')  # Default to net for development loans
         interest_type = params.get('interest_type', 'simple')
         use_360_days = params.get('use_360_days', False)  # Daily rate calculation method
+        if use_360_days and loan_term > 12:
+            logging.info("Development loan term exceeds 12 months; disabling 360-day calculation")
+            use_360_days = False
         
         # Fee parameters
         arrangement_fee_rate = Decimal(str(params.get('arrangement_fee_rate', 0)))

@@ -335,12 +335,14 @@ class LoanCalculator {
         document.getElementById('startDate').addEventListener('change', () => {
             calculateEndDate();
             toggleCalculate();
+            this.update360DayVisibility();
         });
         const endDateField = document.getElementById('endDate');
         if (endDateField) {
             endDateField.addEventListener('change', () => {
                 calculateEndDate();
                 toggleCalculate();
+                this.update360DayVisibility();
             });
         }
         const loanTermField = document.getElementById('loanTerm');
@@ -348,6 +350,7 @@ class LoanCalculator {
             loanTermField.addEventListener('input', () => {
                 calculateEndDate();
                 toggleCalculate();
+                this.update360DayVisibility();
             });
         }
         const loanEndRadios = document.querySelectorAll('input[name="loan_end_type"]');
@@ -1679,8 +1682,17 @@ class LoanCalculator {
             const use360DaysSection = document.getElementById('use360DaysSection');
             const startDateEl = document.getElementById('startDate');
             const endDateEl = document.getElementById('endDate');
+            const loanTypeEl = document.getElementById('loanType');
+            const loanType = loanTypeEl ? loanTypeEl.value : '';
 
             if (!use360DaysSection || !startDateEl || !endDateEl) {
+                return;
+            }
+
+            if (loanType === 'development2') {
+                use360DaysSection.style.display = 'none';
+                const checkbox = document.getElementById('use360Days');
+                if (checkbox) checkbox.checked = false;
                 return;
             }
 
