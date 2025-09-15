@@ -2,7 +2,7 @@
 
 A clean, focused loan calculation and management system with advanced financial computations, professional document generation, and PostgreSQL database persistence. Simplified architecture for reliable on-premise deployment.
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Automated Installation & Launch
 
@@ -17,12 +17,12 @@ install.bat
 ```
 
 The installation script will:
-- ✅ Install Python dependencies and virtual environment
-- ✅ Install and configure PostgreSQL database
-- ✅ Create required directories (uploads, reports_output, etc.)
-- ✅ Configure environment variables
-- ✅ Initialize database with all required tables
-- ✅ Run system tests
+-  Install Python dependencies and virtual environment
+-  Install and configure PostgreSQL database
+-  Create required directories (uploads, reports_output, etc.)
+-  Configure environment variables
+-  Initialize database with all required tables
+-  Run system tests
 
 ### Starting the Application
 
@@ -37,21 +37,21 @@ start.bat
 ```
 
 The start script will:
-- ✅ Check database and initialize if needed
-- ✅ Create required directories
-- ✅ Start with the best available server (Gunicorn/Waitress/Python)
-- ✅ Open application at `http://localhost:5000`
+-  Check database and initialize if needed
+-  Create required directories
+-  Start with the best available server (Gunicorn/Waitress/Python)
+-  Open application at `http://localhost:5000`
 
-## 📋 System Requirements
+##  System Requirements
 
 - **Python**: 3.8+ (automatically checked during installation)
 - **Operating System**: Windows 10+, macOS 10.14+, Ubuntu 18.04+, CentOS 7+
 - **Memory**: 512MB RAM minimum, 1GB recommended
 - **Disk Space**: 200MB for installation + database storage
 
-## ⚡ Features
+##  Features
 
-### 🧮 Advanced Loan Calculations
+###  Advanced Loan Calculations
 - **Bridge Loans**: Retained interest, service-only, service+capital, flexible payments
 - **Term Loans**: Interest-only, amortizing payments with precise scheduling
 - **Development Loans**: Compound daily interest with tranche management
@@ -60,13 +60,13 @@ The start script will:
 - **Date Sensitivity**: Calculations respond to actual calendar days
 - **Precision Mathematics**: Decimal-based calculations for financial accuracy
 
-### 📄 Professional Document Generation
+###  Professional Document Generation
 - **Word Documents**: Professional loan quotes with Novellus branding
 - **Excel Spreadsheets**: Detailed payment schedules and breakdowns
 - **PDF Reports**: Alternative PDF generation options
 - **Template System**: Customizable document templates
 
-### 💾 Database Management
+###  Database Management
 - **PostgreSQL Database**: Production-ready database with SSL support
 - **Optional Snowflake Sync**: Configure Snowflake and push data in real time
 - **Loan History**: Complete storage of all calculations and parameters
@@ -75,14 +75,14 @@ The start script will:
 - **CRUD Operations**: Create, view, edit, and delete loan records
 - **Data Export**: Generate quotes from historical calculations
 
-### ☁️ Cloud Deployment
+###  Cloud Deployment
 - **Azure Container Apps**: Production-ready containerized deployment
 - **Auto-scaling**: Automatic scaling based on demand
 - **CI/CD Pipeline**: GitHub Actions for automated deployments
 - **Database Integration**: Azure PostgreSQL with SSL encryption
 - **Monitoring**: Application Insights and Log Analytics integration
 
-## 🚀 Azure Deployment
+##  Azure Deployment
 
 ### Quick Azure Deployment
 
@@ -98,12 +98,12 @@ The start script will:
 ```
 
 The script will:
-- ✅ Create Azure Resource Group and Container Registry
-- ✅ Set up PostgreSQL database with SSL encryption
-- ✅ Build and push Docker image to Azure Container Registry
-- ✅ Deploy Container App with auto-scaling configuration
-- ✅ Configure all environment variables and secrets
-- ✅ Provide application URL for immediate access
+-  Create Azure Resource Group and Container Registry
+-  Set up PostgreSQL database with SSL encryption
+-  Build and push Docker image to Azure Container Registry
+-  Deploy Container App with auto-scaling configuration
+-  Configure all environment variables and secrets
+-  Provide application URL for immediate access
 
 **Manual Deployment:**
 See [AZURE_DEPLOYMENT_GUIDE.md](AZURE_DEPLOYMENT_GUIDE.md) for detailed step-by-step instructions.
@@ -129,14 +129,14 @@ See [AZURE_DEPLOYMENT_GUIDE.md](AZURE_DEPLOYMENT_GUIDE.md) for detailed step-by-
 - **Burstable database tier** for cost-effective development
 - **Resource limits** to prevent unexpected charges
 
-### 🎨 User Interface
+###  User Interface
 - **Modern Design**: Bootstrap 5 with Novellus gold/navy color scheme
 - **Responsive Layout**: Works on desktop, tablet, and mobile devices
 - **Interactive Charts**: Chart.js visualizations for payment schedules
 - **Notifications**: Professional toast notification system
 - **Theme Support**: Multiple UI themes including Document theme
 
-## 🔧 Technical Architecture
+##  Technical Architecture
 
 ### Backend Stack
 - **Framework**: Flask 3.0+ with SQLAlchemy ORM
@@ -161,7 +161,7 @@ See [AZURE_DEPLOYMENT_GUIDE.md](AZURE_DEPLOYMENT_GUIDE.md) for detailed step-by-
 - `professional_quote_generator.py` - Document generation
 - `excel_generator.py` - Excel export functionality
 
-## 🛠 Development Setup
+##  Development Setup
 
 ### Manual Installation (Advanced)
 
@@ -206,7 +206,7 @@ UPLOAD_FOLDER=uploads
 MAX_CONTENT_LENGTH=16777216
 ```
 
-## 📊 Usage Examples
+##  Usage Examples
 
 ### Basic Loan Calculation
 1. Navigate to `http://localhost:5000`
@@ -228,7 +228,7 @@ MAX_CONTENT_LENGTH=16777216
 - **Fee Management**: Handle arrangement fees, legal costs, title insurance
 - **Tranche Management**: Support for development loan tranche releases
 
-## 🔍 Troubleshooting
+##  Troubleshooting
 
 ### Common Issues
 
@@ -252,7 +252,7 @@ MAX_CONTENT_LENGTH=16777216
 - Installation logs: Console output during installation
 - Database logs: Included in application logs
 
-## 🚀 Deployment
+##  Deployment
 
 ### Production Deployment
 1. Run installation script on target server
@@ -270,7 +270,7 @@ MAX_CONTENT_LENGTH=16777216
 ### Docker Deployment (Optional)
 The system can be containerized using the provided Python dependencies and SQLite database for simple deployment scenarios.
 
-## 📚 Documentation
+##  Documentation
 
 - **System Documentation**: `SYSTEM_DOCUMENTATION.md`
 - **Calculation Guide**: `LOAN_CALCULATION_GUIDE.md`  
@@ -278,7 +278,7 @@ The system can be containerized using the provided Python dependencies and SQLit
 - **Deployment Guide**: `DEPLOYMENT_GUIDE.md`
 - **Windows Guide**: `README_WINDOWS.md`
 
-## 🔒 Security Features
+##  Security Features
 
 - **Input Validation**: Comprehensive form validation and sanitization
 - **File Upload Security**: Type checking and secure file handling
@@ -286,14 +286,14 @@ The system can be containerized using the provided Python dependencies and SQLit
 - **Database Security**: Parameterized queries and ORM protection
 - **Environment Variables**: Secure configuration management
 
-## 📈 Performance
+##  Performance
 
 - **Database Optimization**: Connection pooling and query optimization
 - **Calculation Caching**: Efficient financial computation caching
 - **File Processing**: Optimized document generation
 - **Server Options**: Production-ready server configurations
 
-## 🧊 Snowflake Integration
+##  Snowflake Integration
 
 The application stores data in PostgreSQL by default. To optionally sync data to Snowflake:
 
@@ -323,7 +323,7 @@ The application stores data in PostgreSQL by default. To optionally sync data to
    }
    ```
 
-## 🆘 Support
+##  Support
 
 For technical support or feature requests:
 1. Check troubleshooting section above
