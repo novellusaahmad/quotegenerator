@@ -156,9 +156,14 @@
         font-weight: 500;
     }
 
+    #calculationBreakdownModal .modal-dialog {
+        max-width: 650px;
+        margin: 1.75rem auto;
+    }
+
     #calculationBreakdownModal .modal-body {
-        max-height: none;
-        overflow: hidden;
+        max-height: 70vh;
+        overflow-y: auto;
     }
 
     .calculation-details ul {
@@ -1219,8 +1224,8 @@
 </div>
 
 <!-- Calculation Breakdown Modal -->
-<div class="modal fade modal-edge-to-edge" id="calculationBreakdownModal" tabindex="-1" aria-labelledby="calculationBreakdownLabel" aria-hidden="true">
-    <div class="modal-dialog">
+<div class="modal fade" id="calculationBreakdownModal" tabindex="-1" aria-labelledby="calculationBreakdownLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white" id="calculationBreakdownHeader" data-currency="GBP">
                 <h5 class="modal-title" id="calculationBreakdownLabel"></h5>

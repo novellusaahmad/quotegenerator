@@ -551,7 +551,15 @@ footer {
 
 /* Loan summary modal sizing */
 #loanSummaryFieldsModal .modal-dialog {
-    max-width: 800px;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    margin: 0;
+}
+
+#loanSummaryFieldsModal .modal-content {
+    min-height: 100vh;
+    border-radius: 0;
 }
 
 /* Reduced Motion */
