@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 import pytest
+
 from calculations import LoanCalculator
 
 
@@ -53,3 +56,42 @@ def test_capital_payment_only_timing_changes_totals():
     res_adv = calc.calculate_bridge_loan(params_adv)
     res_arr = calc.calculate_bridge_loan(params_arr)
     assert res_adv['totalInterest'] != pytest.approx(res_arr['totalInterest'])
+
+
+@pytest.mark.parametrize('end_date', ['2024-01-31', '2024-04-09'])
+def test_interest_only_compound_interest_not_less_than_simple(end_date):
+    calc = LoanCalculator()
+    base_params = {
+        'loan_type': 'bridge',
+        'repayment_option': 'service_only',
+        'gross_amount': 100000,
+        'annual_rate': 12,
+        'loan_term': 6,
+        'arrangement_fee_rate': 0,
+        'legal_fees': 0,
+        'site_visit_fee': 0,
+        'title_insurance_rate': 0,
+        'start_date': '2024-01-01',
+        'end_date': end_date,
+    }
+
+    simple_interest = Decimal(
+        str(
+            calc.calculate_bridge_loan({
+                **base_params,
+                'interest_type': 'simple',
+            })['totalInterest']
+        )
+    )
+
+    for compound_type in ['compound_daily', 'compound_monthly', 'compound_quarterly']:
+        compound_interest = Decimal(
+            str(
+                calc.calculate_bridge_loan({
+                    **base_params,
+                    'interest_type': compound_type,
+                })['totalInterest']
+            )
+        )
+        # Allow a tiny rounding slack because totals are rounded to four decimal places.
+        assert compound_interest + Decimal('0.00005') >= simple_interest
