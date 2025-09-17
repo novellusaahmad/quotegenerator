@@ -101,6 +101,29 @@ class LoanCalculator:
         """
         return self._round(value, 4)
 
+    def _decimal_power(self, base: Decimal, exponent: Decimal | int | float) -> Decimal:
+        """Raise ``base`` to ``exponent`` while preserving ``Decimal`` precision."""
+
+        if not isinstance(base, Decimal):
+            base = Decimal(str(base))
+        if not isinstance(exponent, Decimal):
+            exponent = Decimal(str(exponent))
+
+        if exponent == 0:
+            return Decimal('1')
+
+        if exponent < 0:
+            return Decimal('1') / self._decimal_power(base, -exponent)
+
+        integral_exponent = exponent.to_integral_value(rounding=ROUND_HALF_UP)
+        if exponent == integral_exponent:
+            return base ** int(integral_exponent)
+
+        if base <= 0:
+            raise ValueError('Base must be positive for fractional exponents')
+
+        return (exponent * base.ln()).exp()
+
     def _to_decimal(self, value, currency_symbol: str = '£') -> Decimal:
         """Convert currency formatted strings or numbers to ``Decimal``.
 
@@ -2030,14 +2053,27 @@ class LoanCalculator:
         
         # Calculate term in years using actual loan term days if available with 360-day support
         import logging
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
         if loan_term_days is not None:
             # Use configurable day count basis for term calculation
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(str(loan_term_days)) / days_per_year
-            logging.info(f"Bridge retained calculation using loan_term_days={loan_term_days}, days_per_year={days_per_year}, term_years={term_years:.4f}")
+            total_days_decimal = Decimal(str(loan_term_days))
+            term_years = total_days_decimal / days_per_year
+            logging.info(
+                "Bridge retained calculation using loan_term_days=%s, days_per_year=%s, term_years=%.4f",
+                loan_term_days,
+                days_per_year,
+                term_years,
+            )
         else:
-            term_years = Decimal(loan_term) / 12
-            logging.info(f"Bridge retained calculation using loan_term={loan_term} months, term_years={term_years:.4f}")
+            term_years = Decimal(loan_term) / Decimal('12')
+            total_days_decimal = days_per_year * term_years
+            logging.info(
+                "Bridge retained calculation using loan_term=%s months, term_years=%.4f",
+                loan_term,
+                term_years,
+            )
+        months_total = term_years * Decimal('12')
+        quarters_total = term_years * Decimal('4')
         
         # If this is a net-to-gross calculation, use the calculated gross amount to derive
         # interest so the resulting net advance matches the user-provided net amount.
@@ -2057,33 +2093,31 @@ class LoanCalculator:
 
             if interest_type == 'simple':
                 if loan_term_days is not None:
-                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
-                                                                            loan_term_days, use_360_days)
+                    total_interest = self.calculate_simple_interest_by_days(
+                        gross_amount, annual_rate, loan_term_days, use_360_days
+                    )
                     logging.info(f"Bridge retained simple interest: gross={gross_amount}, rate={annual_rate}%, days={loan_term_days}, interest={total_interest:.2f}")
                 else:
-                    days_per_year = Decimal('360') if use_360_days else Decimal('365')
                     total_days = term_years * days_per_year
-                    total_interest = self.calculate_simple_interest_by_days(gross_amount, annual_rate,
-                                                                            int(total_days), use_360_days)
+                    total_interest = self.calculate_simple_interest_by_days(
+                        gross_amount, annual_rate, int(total_days), use_360_days
+                    )
             elif interest_type == 'compound_daily':
                 # Compound daily: A = P(1 + r/days_per_year)^(days_per_year*t) - P
-                days_per_year = Decimal('360') if use_360_days else Decimal('365')
                 daily_rate = annual_rate / Decimal('100') / days_per_year
-                days_total = days_per_year * term_years
-                compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
+                compound_factor = self._decimal_power(Decimal('1') + daily_rate, total_days_decimal)
                 total_amount = gross_amount * compound_factor
                 total_interest = total_amount - gross_amount
             elif interest_type == 'compound_monthly':
                 # Compound monthly: A = P(1 + r/12)^(12*t) - P
                 monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
-                compound_factor = (Decimal('1') + monthly_rate_decimal) ** int(loan_term)
+                compound_factor = self._decimal_power(Decimal('1') + monthly_rate_decimal, months_total)
                 total_amount = gross_amount * compound_factor
                 total_interest = total_amount - gross_amount
             elif interest_type == 'compound_quarterly':
                 # Compound quarterly: A = P(1 + r/4)^(4*t) - P
                 quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
-                quarters_total = term_years * Decimal('4')
-                compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
+                compound_factor = self._decimal_power(Decimal('1') + quarterly_rate, quarters_total)
                 total_amount = gross_amount * compound_factor
                 total_interest = total_amount - gross_amount
             else:
@@ -2108,14 +2142,15 @@ class LoanCalculator:
 
         # Convert monthly rate to annual and derive periodic interest up front
         annual_rate = monthly_rate * Decimal('12')  # Annual rate as percentage
+        days_per_year = Decimal('360') if use_360_days else Decimal('365')
         periodic_interest = self._calculate_periodic_interest(
             gross_amount, annual_rate / Decimal('100'), payment_frequency
         )
 
         # Determine term length in years for interest calculations
         if loan_term_days is not None:
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(loan_term_days) / days_per_year
+            total_days_decimal = Decimal(str(loan_term_days))
+            term_years = total_days_decimal / days_per_year
             logging.info(
                 f"Bridge interest-only{' (net-to-gross)' if net_amount is not None else ''}: "
                 f"use_360_days={use_360_days} -> days_per_year={days_per_year}, "
@@ -2123,6 +2158,10 @@ class LoanCalculator:
             )
         else:
             term_years = Decimal(loan_term) / Decimal('12')
+            total_days_decimal = days_per_year * term_years
+
+        months_total = term_years * Decimal('12')
+        quarters_total = term_years * Decimal('4')
 
         # Calculate total interest using the gross amount and standard day-count logic
         if interest_type == 'simple':
@@ -2146,23 +2185,20 @@ class LoanCalculator:
                 )
         elif interest_type == 'compound_daily':
             # Compound daily: A = P(1 + r/days_per_year)^(days_per_year*t) - P
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
             daily_rate = annual_rate / Decimal('100') / days_per_year
-            days_total = days_per_year * term_years
-            compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
+            compound_factor = self._decimal_power(Decimal('1') + daily_rate, total_days_decimal)
             total_amount = gross_amount * compound_factor
             total_interest = total_amount - gross_amount
         elif interest_type == 'compound_monthly':
             # Compound monthly: A = P(1 + r/12)^(12*t) - P
             monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
-            compound_factor = (Decimal('1') + monthly_rate_decimal) ** loan_term
+            compound_factor = self._decimal_power(Decimal('1') + monthly_rate_decimal, months_total)
             total_amount = gross_amount * compound_factor
             total_interest = total_amount - gross_amount
         elif interest_type == 'compound_quarterly':
             # Compound quarterly: A = P(1 + r/4)^(4*t) - P
             quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
-            quarters_total = term_years * Decimal('4')
-            compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
+            compound_factor = self._decimal_power(Decimal('1') + quarterly_rate, quarters_total)
             total_amount = gross_amount * compound_factor
             total_interest = total_amount - gross_amount
         else:
@@ -2307,31 +2343,32 @@ class LoanCalculator:
         if net_amount is not None:
             # For net-to-gross conversions with flexible payment, the gross amount has already been calculated
             # using the Excel formula for flexible payment (interest in advance), so just calculate interest based on that gross
+            days_per_year = Decimal('360') if use_360_days else Decimal('365')
             if loan_term_days is not None:
-                days_per_year = Decimal('360') if use_360_days else Decimal('365')
-                days_total = Decimal(str(loan_term_days))
-                term_years = days_total / days_per_year
+                total_days_decimal = Decimal(str(loan_term_days))
+                term_years = total_days_decimal / days_per_year
             else:
-                days_per_year = Decimal('360') if use_360_days else Decimal('365')
                 term_years = Decimal(loan_term) / Decimal('12')
-                days_total = days_per_year * term_years
+                total_days_decimal = days_per_year * term_years
+
+            months_total = term_years * Decimal('12')
+            quarters_total = term_years * Decimal('4')
 
             if interest_type == 'simple':
                 total_interest = gross_amount * (annual_rate / Decimal('100')) * term_years
             elif interest_type == 'compound_daily':
                 daily_rate = annual_rate / Decimal('100') / days_per_year
-                compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
+                compound_factor = self._decimal_power(Decimal('1') + daily_rate, total_days_decimal)
                 total_amount = gross_amount * compound_factor
                 total_interest = total_amount - gross_amount
             elif interest_type == 'compound_monthly':
                 monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
-                compound_factor = (Decimal('1') + monthly_rate_decimal) ** loan_term
+                compound_factor = self._decimal_power(Decimal('1') + monthly_rate_decimal, months_total)
                 total_amount = gross_amount * compound_factor
                 total_interest = total_amount - gross_amount
             elif interest_type == 'compound_quarterly':
                 quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
-                quarters_total = term_years * Decimal('4')
-                compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
+                compound_factor = self._decimal_power(Decimal('1') + quarterly_rate, quarters_total)
                 total_amount = gross_amount * compound_factor
                 total_interest = total_amount - gross_amount
             else:
@@ -2382,37 +2419,39 @@ class LoanCalculator:
                     break
         
         # Calculate interest savings compared to interest-only payments using same interest type
+        days_per_year_interest = Decimal('360') if use_360_days else Decimal('365')
         if loan_term_days is not None:
             # Use configurable day count for interest-only comparison
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            term_years = Decimal(loan_term_days) / days_per_year
+            total_days_decimal = Decimal(str(loan_term_days))
+            term_years_interest = total_days_decimal / days_per_year_interest
         else:
-            term_years = Decimal(loan_term) / Decimal('12')
-        
+            term_years_interest = Decimal(loan_term) / Decimal('12')
+            total_days_decimal = days_per_year_interest * term_years_interest
+
+        months_for_interest = term_years_interest * Decimal('12')
+        quarters_for_interest = term_years_interest * Decimal('4')
+
         # Calculate interest-only total using same interest calculation method for fair comparison
         if interest_type == 'simple':
-            interest_only_total = gross_amount * (annual_rate / Decimal('100')) * term_years
+            interest_only_total = gross_amount * (annual_rate / Decimal('100')) * term_years_interest
         elif interest_type == 'compound_daily':
-            days_per_year = Decimal('360') if use_360_days else Decimal('365')
-            daily_rate = annual_rate / Decimal('100') / days_per_year
-            days_total = days_per_year * term_years
-            compound_factor = (Decimal('1') + daily_rate) ** int(days_total)
+            daily_rate = annual_rate / Decimal('100') / days_per_year_interest
+            compound_factor = self._decimal_power(Decimal('1') + daily_rate, total_days_decimal)
             total_amount = gross_amount * compound_factor
             interest_only_total = total_amount - gross_amount
         elif interest_type == 'compound_monthly':
             monthly_rate_decimal = annual_rate / Decimal('100') / Decimal('12')
-            compound_factor = (Decimal('1') + monthly_rate_decimal) ** loan_term
+            compound_factor = self._decimal_power(Decimal('1') + monthly_rate_decimal, months_for_interest)
             total_amount = gross_amount * compound_factor
             interest_only_total = total_amount - gross_amount
         elif interest_type == 'compound_quarterly':
             quarterly_rate = annual_rate / Decimal('100') / Decimal('4')
-            quarters_total = term_years * Decimal('4')
-            compound_factor = (Decimal('1') + quarterly_rate) ** int(quarters_total)
+            compound_factor = self._decimal_power(Decimal('1') + quarterly_rate, quarters_for_interest)
             total_amount = gross_amount * compound_factor
             interest_only_total = total_amount - gross_amount
         else:
             # Default to simple interest
-            interest_only_total = gross_amount * (annual_rate / Decimal('100')) * term_years
+            interest_only_total = gross_amount * (annual_rate / Decimal('100')) * term_years_interest
         interest_savings = interest_only_total - total_interest
         savings_percentage = (interest_savings / interest_only_total) * Decimal('100') if interest_only_total > 0 else Decimal('0')
         
