@@ -208,7 +208,7 @@
 
 /* Document Theme Buttons */
 [data-theme="document"] .btn-primary {
-    background: linear-gradient(135deg, var(--accent-color) 0%, #0056b3 100%);
+    background: white;
     border-color: var(--accent-color);
     color: white;
     font-weight: 500;
@@ -218,7 +218,7 @@
 }
 
 [data-theme="document"] .btn-primary:hover {
-    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    background: white;
     border-color: #004085;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0,123,255,0.3);

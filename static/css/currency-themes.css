@@ -220,8 +220,8 @@ html[data-currency="GBP"] .table thead th,
 .btn-success:hover,
 .btn-calculate:hover,
 .calculate-button:hover {
-    background-color: var(--primary-dark) !important;
-    border-color: var(--primary-dark) !important;
+    background-color: #AD965F;
+    border-color: black;
 }
 
 /* Currency-specific button overrides with multiple selectors */

@@ -25,7 +25,7 @@
 
 .powerbi-config-page .nav-tabs .nav-link:hover {
     background-color: var(--novellus-gold);
-    color: #fff;
+    color: #ffffff;
 }
 
 .powerbi-config-page .nav-tabs .nav-link.active:hover {
@@ -68,27 +68,27 @@
                 <div class="card-header">
                     <ul class="nav nav-tabs card-header-tabs" id="configTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="refresh-tab" data-bs-toggle="tab" data-bs-target="#refresh-panel" type="button" role="tab">
+                            <button class="btn btn-outline-secondary" id="refresh-tab" data-bs-toggle="tab" data-bs-target="#refresh-panel" type="button" role="tab">
                                 <i class="fas fa-sync-alt me-1"></i>Dataset Refresh
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports-panel" type="button" role="tab">
+                            <button class="btn btn-outline-secondary" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports-panel" type="button" role="tab">
                                 <i class="fas fa-chart-bar me-1"></i>Configured Reports
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="schedules-tab" data-bs-toggle="tab" data-bs-target="#schedules-panel" type="button" role="tab">
+                            <button class="btn btn-outline-secondary" id="schedules-tab" data-bs-toggle="tab" data-bs-target="#schedules-panel" type="button" role="tab">
                                 <i class="fas fa-clock me-1"></i>Saved Schedules
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-panel" type="button" role="tab">
+                            <button class="btn btn-outline-secondary" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings-panel" type="button" role="tab">
                                 <i class="fas fa-bookmark me-1"></i>Saved Settings
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="snowflake-tab" data-bs-toggle="tab" data-bs-target="#snowflake-panel" type="button" role="tab">
+                            <button class="btn btn-outline-secondary" id="snowflake-tab" data-bs-toggle="tab" data-bs-target="#snowflake-panel" type="button" role="tab">
                                 <i class="fas fa-database me-1"></i>Snowflake Config
                             </button>
                         </li>
@@ -121,16 +121,16 @@
                                             <label class="form-label small fw-semibold text-secondary">Actions</label>
                                             <div class="d-flex gap-1">
                                                 <button type="button" class="btn btn-sm btn-primary" onclick="testConnection()" id="testBtn">
-                                                    <i class="fas fa-plug me-1"></i>Test Connection
+                                                    <i class="fas fa-plug me-1"></i>Test
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-primary" onclick="startRefresh()" id="refreshBtn">
-                                                    <i class="fas fa-sync-alt me-1"></i>Start Refresh
+                                                    <i class="fas fa-sync-alt me-1"></i>Refresh
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-primary" onclick="saveReportSettings()" id="saveBtn">
-                                                    <i class="fas fa-save me-1"></i>Save Settings
+                                                    <i class="fas fa-save me-1"></i>Save
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-warning" onclick="testNotification()" id="testNotifyBtn">
-                                                    <i class="fas fa-bell me-1"></i>Test Notifications
+                                                    <i class="fas fa-bell me-1"></i>Test
                                                 </button>
                                             </div>
                                         </div>

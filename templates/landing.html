@@ -180,7 +180,13 @@
                         'icon': 'fas fa-chart-line',
                         'desc': 'Compare different loan scenarios.',
                         'url': url_for('scenario_comparison_page')
-                    },
+                    },                    
+                    {
+                        'title': 'Data Refresh',
+                        'icon': 'fas fa-sync',
+                        'desc': 'Refresh Data in LD.',
+                        'url': "http://loancalculator.uksouth.cloudapp.azure.com:8501/"
+                    }
                 ] %}
                 {% for item in nav_items %}
                 <div class="nav-card">
