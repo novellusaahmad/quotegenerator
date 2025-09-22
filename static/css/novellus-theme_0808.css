@@ -1,0 +1,948 @@
+/* Novellus Brand Theme - Expanded Palette */
+:root {
+    --novellus-gold: #AD965F;
+    --novellus-gold-light: #AD965F;
+    --novellus-gold-lighter: #E6C547;
+    --novellus-gold-lightest: #F2E185;
+    --novellus-bright-gold: #FFD700;
+    --novellus-yellow: #FFEB3B;
+    --novellus-gold-dark: #8B6914;
+    --novellus-gold-darker: #5D4409;
+    --novellus-navy: #1E2B3A;
+    --novellus-navy-light: #2D3A49;
+    --novellus-navy-lighter: #3D4F64;
+    --novellus-navy-lightest: #E8EBF0;
+    --novellus-navy-dark: #0F1923;
+    --novellus-navy-darker: #0A1318;
+    --novellus-background: #FAFBFC;
+    --novellus-card-bg: #FFFFFF;
+    --novellus-text: #1E2B3A;
+    --novellus-text-light: #3D4F64;
+    --novellus-text-muted: #6C7B7F;
+    --novellus-border: #E0E6EC;
+    --novellus-hover: #F5F7FA;
+}
+
+/* Card Components - Novellus Theme */
+.card {
+    background-color: var(--novellus-card-bg);
+    border: 1px solid var(--novellus-border);
+    box-shadow: 0 2px 12px rgba(30, 43, 58, 0.08);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 20px rgba(30, 43, 58, 0.12);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background: linear-gradient(135deg, var(--novellus-navy-lightest) 0%, var(--novellus-background) 100%);
+    border-bottom: 2px solid var(--novellus-gold);
+    color: var(--novellus-navy);
+    font-weight: 600;
+    padding: 1rem 1.25rem;
+}
+
+.card-header h5, .card-header h4, .card-header h6 {
+    color: var(--novellus-navy);
+    font-weight: 700;
+    margin-bottom: 0;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Special result cards - Alternating Colors for Visibility */
+.result-card {
+    border: none;
+    box-shadow: 0 4px 12px rgba(184, 134, 11, 0.25);
+    color: white;
+    font-weight: 600;
+}
+
+/* Primary result cards - Gold */
+.result-card:nth-child(odd) {
+    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%);
+}
+
+.result-card:nth-child(odd):hover {
+    background: linear-gradient(135deg, var(--novellus-gold-dark) 0%, var(--novellus-gold-darker) 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(184, 134, 11, 0.35);
+}
+
+/* Secondary result cards - Navy */
+.result-card:nth-child(even) {
+    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%);
+}
+
+.result-card:nth-child(even):hover {
+    background: linear-gradient(135deg, var(--novellus-navy-dark) 0%, var(--novellus-navy-darker) 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(30, 43, 58, 0.35);
+}
+
+/* Ensure high contrast text */
+.result-card .result-value {
+    color: white;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.result-card .result-label {
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    font-size: 0.9rem;
+}
+
+/* Payment schedule table styling */
+.schedule-table {
+    background-color: var(--novellus-card-bg);
+    font-size: 0.8rem;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.schedule-table thead th {
+    background-color: var(--novellus-navy);
+    color: white;
+    border: none;
+    font-weight: 600;
+    padding: 10px 8px;
+    text-align: center;
+    word-wrap: break-word;
+    font-size: 0.75rem;
+}
+
+.schedule-table tbody tr:nth-child(even) {
+    background-color: rgba(184, 134, 11, 0.05);
+}
+
+.schedule-table tbody tr:nth-child(odd) {
+    background-color: var(--novellus-card-bg);
+}
+
+.schedule-table tbody tr:hover {
+    background-color: rgba(184, 134, 11, 0.1);
+    transition: background-color 0.2s ease;
+}
+
+.schedule-table tbody td {
+    padding: 8px 6px;
+    border-color: var(--novellus-border);
+    color: var(--novellus-text);
+    text-align: right;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.schedule-table tbody td:first-child {
+    text-align: center;
+    font-weight: 600;
+    color: var(--novellus-navy);
+}
+
+/* Detailed Calculation Breakdown Table */
+#calculationBreakdownTable {
+    font-size: 0.75rem;
+    table-layout: fixed;
+    width: 100%;
+}
+
+#calculationBreakdownTable thead th {
+    background-color: var(--novellus-gold);
+    color: white;
+    font-size: 0.7rem;
+    padding: 8px 4px;
+    text-align: center;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    word-wrap: break-word;
+}
+
+#calculationBreakdownTable tbody td {
+    padding: 6px 4px;
+    border-color: var(--novellus-border);
+    font-size: 0.75rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Column width adjustments for detailed breakdown table */
+#calculationBreakdownTable th:nth-child(1) { width: 8%; }  /* Period */
+#calculationBreakdownTable th:nth-child(2) { width: 12%; } /* Payment Date */
+#calculationBreakdownTable th:nth-child(3) { width: 12%; } /* Opening Balance */
+#calculationBreakdownTable th:nth-child(4) { width: 18%; } /* Interest Calculation */
+#calculationBreakdownTable th:nth-child(5) { width: 12%; } /* Interest Amount */
+#calculationBreakdownTable th:nth-child(6) { width: 12%; } /* Principal Payment */
+#calculationBreakdownTable th:nth-child(7) { width: 12%; } /* Total Payment */
+#calculationBreakdownTable th:nth-child(8) { width: 12%; } /* Closing Balance */
+#calculationBreakdownTable th:nth-child(9) { width: 12%; } /* Balance Change */
+
+/* Column width adjustments for payment schedule table */
+#paymentScheduleTable th:nth-child(1) { width: 10%; } /* Period */
+#paymentScheduleTable th:nth-child(2) { width: 15%; } /* Payment Date */
+#paymentScheduleTable th:nth-child(3) { width: 15%; } /* Payment */
+#paymentScheduleTable th:nth-child(4) { width: 15%; } /* Principal */
+#paymentScheduleTable th:nth-child(5) { width: 15%; } /* Interest */
+#paymentScheduleTable th:nth-child(6) { width: 15%; } /* Balance */
+
+#calculationBreakdownTable .text-muted {
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--novellus-text-light) !important;
+}
+
+#calculationBreakdownTable tbody tr:nth-child(even) {
+    background-color: rgba(184, 134, 11, 0.03);
+}
+
+#calculationBreakdownTable tbody tr:hover {
+    background-color: rgba(184, 134, 11, 0.08);
+    transition: background-color 0.2s ease;
+}
+
+/* Balance change indicators */
+.text-success {
+    color: #28a745 !important;
+    font-weight: 600;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+    font-weight: 600;
+}
+
+.text-warning {
+    color: var(--novellus-gold) !important;
+    font-weight: 600;
+}
+
+/* Table container to prevent horizontal scrolling */
+.table-container {
+    overflow: visible;
+    width: 100%;
+}
+
+.table-container table {
+    margin-bottom: 0;
+}
+
+/* Responsive table adjustments */
+@media (max-width: 768px) {
+    .schedule-table {
+        font-size: 0.7rem;
+    }
+    
+    .schedule-table thead th {
+        padding: 8px 4px;
+        font-size: 0.65rem;
+    }
+    
+    .schedule-table tbody td {
+        padding: 6px 4px;
+    }
+    
+    #calculationBreakdownTable {
+        font-size: 0.65rem;
+    }
+    
+    #calculationBreakdownTable thead th {
+        padding: 6px 3px;
+        font-size: 0.6rem;
+    }
+    
+    #calculationBreakdownTable tbody td {
+        padding: 4px 3px;
+    }
+}
+
+/* Navigation Logo Enhancement */
+.navbar-logo {
+    background: white;
+    border-radius: 4px;
+    padding: 2px 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.navbar-logo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(184, 134, 11, 0.3);
+}
+
+/* Alternative: If you prefer transparent background with border */
+.navbar-logo-alt {
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    padding: 2px 4px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+/* Result cards */
+.result-card {
+    background: linear-gradient(135deg, var(--novellus-card-bg) 0%, rgba(184, 134, 11, 0.02) 100%);
+    border: 1px solid var(--novellus-border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(30, 43, 58, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(30, 43, 58, 0.1);
+}
+
+.result-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--novellus-navy);
+    margin-bottom: 8px;
+}
+
+.result-label {
+    font-size: 0.9rem;
+    color: var(--novellus-text-light);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Form styling enhancements */
+.form-control:focus {
+    border-color: var(--novellus-gold);
+    box-shadow: 0 0 0 0.2rem rgba(184, 134, 11, 0.25);
+}
+
+.btn-primary {
+    background-color: var(--novellus-gold);
+    border-color: var(--novellus-gold);
+    color: white;
+    font-weight: 600;
+}
+
+.btn-primary:hover {
+    background-color: var(--novellus-gold-dark);
+    border-color: var(--novellus-gold-dark);
+}
+
+.btn-outline-secondary {
+    border-color: var(--novellus-navy);
+    color: var(--novellus-navy);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--novellus-navy);
+    border-color: var(--novellus-navy);
+}
+
+/* Alert styling */
+.alert-success {
+    background-color: rgba(184, 134, 11, 0.1);
+    border-color: var(--novellus-gold);
+    color: var(--novellus-gold-dark);
+}
+
+.alert-danger {
+    background-color: rgba(30, 43, 58, 0.1);
+    border-color: var(--novellus-navy);
+    color: var(--novellus-navy);
+}
+
+/* Chart canvas styling */
+canvas {
+    background-color: var(--novellus-card-bg);
+    border-radius: 4px;
+}
+
+/* Chart specific overrides */
+.chartjs-render-monitor {
+    background-color: var(--novellus-card-bg) !important;
+}
+
+/* Ensure chart text uses Novellus colors */
+.chart-container {
+    background-color: var(--novellus-card-bg);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+/* Calculate button positioning fix */
+.d-grid {
+    position: relative;
+    width: 100%;
+}
+
+.calculate-button, .btn-primary {
+    position: relative;
+    width: 100%;
+    margin: 20px 0;
+    padding: 12px 24px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    transition: all 0.15s ease-in-out;
+    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 3px 6px rgba(184, 134, 11, 0.2);
+}
+
+.calculate-button:hover, .btn-primary:hover {
+    background: linear-gradient(135deg, var(--novellus-gold-dark) 0%, var(--novellus-gold-darker) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 10px rgba(184, 134, 11, 0.3);
+    color: white;
+}
+
+/* Prevent form layout shift when content changes */
+.calculator-section form {
+    min-height: 600px;
+    position: relative;
+}
+
+.calculator-section {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Fix for floating/moving buttons */
+button[type="submit"] {
+    transform: none !important;
+    position: relative !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+
+/* Ensure stable layout */
+.tranche-item, #additionalParams, #developmentLoanParams {
+    transition: opacity 0.2s ease-in-out;
+}
+
+/* Form Elements - Novellus Theme */
+.form-control, .form-select {
+    border: 2px solid var(--novellus-border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: var(--font-family);
+    color: var(--novellus-text);
+    background-color: var(--novellus-card-bg);
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--novellus-gold);
+    box-shadow: 0 0 0 0.2rem rgba(184, 134, 11, 0.15);
+    background-color: var(--novellus-card-bg);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--novellus-navy);
+    margin-bottom: 0.5rem;
+    font-family: var(--font-family);
+}
+
+.input-group-text {
+    background: linear-gradient(135deg, var(--novellus-navy-lightest) 0%, var(--novellus-background) 100%);
+    border: 2px solid var(--novellus-border);
+    color: var(--novellus-navy);
+    font-weight: 600;
+}
+
+/* Button Groups and Tabs */
+.btn-group .btn-check:checked + .btn {
+    background-color: var(--novellus-gold);
+    border-color: var(--novellus-gold);
+    color: white;
+}
+
+.btn-outline-secondary {
+    border-color: var(--novellus-navy-lighter);
+    color: var(--novellus-navy);
+}
+
+.btn-outline-secondary:hover {
+    background-color: var(--novellus-navy);
+    border-color: var(--novellus-navy);
+    color: white;
+}
+
+.btn-outline-secondary.active {
+    background-color: var(--novellus-gold);
+    border-color: var(--novellus-gold);
+    color: white;
+}
+
+/* Headings - Novellus Theme */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--novellus-navy);
+    font-family: var(--font-family);
+    font-weight: 700;
+}
+
+h1 {
+    color: var(--novellus-navy);
+}
+
+h2 {
+    color: var(--novellus-navy);
+    border-bottom: 2px solid var(--novellus-gold-lightest);
+    padding-bottom: 0.5rem;
+}
+
+h3 {
+    color: var(--novellus-navy-light);
+}
+
+h4, h5, h6 {
+    color: var(--novellus-navy);
+}
+
+/* Navigation Theme - Override any blue */
+.navbar {
+    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
+}
+
+.navbar-brand {
+    color: white !important;
+    font-weight: 700;
+}
+
+.navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500;
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--novellus-gold) !important;
+}
+
+.navbar-nav .nav-link.active {
+    color: var(--novellus-gold) !important;
+}
+
+/* Remove any blue backgrounds */
+.bg-primary {
+    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
+}
+
+.text-primary {
+    color: var(--novellus-gold) !important;
+}
+
+/* User dropdown and badges */
+.dropdown-menu {
+    border: 1px solid var(--novellus-border);
+    box-shadow: 0 4px 12px rgba(30, 43, 58, 0.15);
+}
+
+.badge-primary {
+    background-color: var(--novellus-gold) !important;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--novellus-gold-light) 0%, var(--novellus-gold) 100%) !important;
+    border-color: var(--novellus-gold) !important;
+    color: white !important;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%) !important;
+    border-color: var(--novellus-gold-dark) !important;
+}
+
+/* Alert Components */
+.alert-success {
+    background-color: var(--novellus-gold-lightest);
+    border-color: var(--novellus-gold-light);
+    color: var(--novellus-gold-darker);
+}
+
+.alert-info {
+    background-color: var(--novellus-navy-lightest);
+    border-color: var(--novellus-navy-lighter);
+    color: var(--novellus-navy-dark);
+}
+
+.alert-warning {
+    background-color: var(--novellus-gold-lighter);
+    border-color: var(--novellus-gold);
+    color: var(--novellus-gold-darker);
+}
+
+/* Badge Components */
+.badge-primary {
+    background-color: var(--novellus-gold);
+}
+
+.badge-secondary {
+    background-color: var(--novellus-navy);
+}
+
+/* Text Colors */
+.text-primary {
+    color: var(--novellus-gold) !important;
+}
+
+.text-secondary {
+    color: var(--novellus-navy) !important;
+}
+
+.text-muted {
+    color: var(--novellus-text-muted) !important;
+}
+
+/* Container and Layout */
+.calculator-section {
+    background: linear-gradient(135deg, var(--novellus-background) 0%, var(--novellus-card-bg) 100%);
+    border: 1px solid var(--novellus-border);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(30, 43, 58, 0.06);
+}
+
+.results-section {
+    background: var(--novellus-card-bg);
+    border: 1px solid var(--novellus-border);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(30, 43, 58, 0.06);
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%);
+    color: white;
+}
+
+/* Progress Bars */
+.progress {
+    background-color: var(--novellus-navy-lightest);
+}
+
+.progress-bar {
+    background-color: var(--novellus-gold);
+}
+
+/* Override any remaining blue/bootstrap defaults */
+.bg-info {
+    background-color: var(--novellus-navy-light) !important;
+}
+
+.border-primary {
+    border-color: var(--novellus-gold) !important;
+}
+
+.border-info {
+    border-color: var(--novellus-navy) !important;
+}
+
+/* Table enhancements for visibility */
+.table-striped > tbody > tr:nth-of-type(odd) > td,
+.table-striped > tbody > tr:nth-of-type(odd) > th {
+    background-color: var(--novellus-gold-lightest);
+}
+
+.table-hover > tbody > tr:hover > td,
+.table-hover > tbody > tr:hover > th {
+    background-color: var(--novellus-gold-lighter);
+}
+
+/* Ensure calculate button visibility */
+.btn-lg.calculate-button {
+    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%) !important;
+    border: 2px solid var(--novellus-gold-dark) !important;
+    color: white !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    box-shadow: 0 4px 15px rgba(184, 134, 11, 0.3) !important;
+}
+
+.btn-lg.calculate-button:hover {
+    background: linear-gradient(135deg, var(--novellus-gold-dark) 0%, var(--novellus-gold-darker) 100%) !important;
+    box-shadow: 0 6px 20px rgba(184, 134, 11, 0.4) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Dashboard Statistics Cards - Novellus Theme */
+.novellus-stat-card-gold {
+    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(184, 134, 11, 0.25) !important;
+    transition: all 0.3s ease !important;
+}
+
+.novellus-stat-card-gold:hover {
+    background: linear-gradient(135deg, var(--novellus-gold-dark) 0%, var(--novellus-gold-darker) 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(184, 134, 11, 0.35) !important;
+}
+
+.novellus-stat-card-navy {
+    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(30, 43, 58, 0.25) !important;
+    transition: all 0.3s ease !important;
+}
+
+.novellus-stat-card-navy:hover {
+    background: linear-gradient(135deg, var(--novellus-navy-dark) 0%, var(--novellus-navy-darker) 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(30, 43, 58, 0.35) !important;
+}
+
+.novellus-stat-card-gold-light {
+    background: linear-gradient(135deg, var(--novellus-gold-light) 0%, var(--novellus-gold) 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(205, 164, 76, 0.25) !important;
+    transition: all 0.3s ease !important;
+}
+
+.novellus-stat-card-gold-light:hover {
+    background: linear-gradient(135deg, var(--novellus-gold) 0%, var(--novellus-gold-dark) 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(205, 164, 76, 0.35) !important;
+}
+
+.novellus-stat-card-navy-light {
+    background: linear-gradient(135deg, var(--novellus-navy-light) 0%, var(--novellus-navy) 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(45, 58, 73, 0.25) !important;
+    transition: all 0.3s ease !important;
+}
+
+.novellus-stat-card-navy-light:hover {
+    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(45, 58, 73, 0.35) !important;
+}
+
+/* Ensure stat card text is highly visible */
+.novellus-stat-card-gold .card-title,
+.novellus-stat-card-navy .card-title,
+.novellus-stat-card-gold-light .card-title,
+.novellus-stat-card-navy-light .card-title {
+    color: white !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3) !important;
+    font-weight: 700 !important;
+}
+
+.novellus-stat-card-gold .card-text,
+.novellus-stat-card-navy .card-text,
+.novellus-stat-card-gold-light .card-text,
+.novellus-stat-card-navy-light .card-text {
+    color: rgba(255, 255, 255, 0.9) !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Quick Actions Card Styling */
+.novellus-quick-actions-card {
+    background: linear-gradient(135deg, var(--novellus-navy-dark) 0%, var(--novellus-navy-darker) 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(30, 43, 58, 0.25) !important;
+}
+
+.novellus-quick-actions-card .card-header {
+    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-dark) 100%) !important;
+    border-bottom: 2px solid var(--novellus-gold) !important;
+}
+
+.novellus-quick-actions-card .card-body {
+    background: var(--novellus-card-bg) !important;
+}
+
+/* Quick Actions Buttons - High Contrast Golden Variations */
+.novellus-action-btn-gold {
+    background: linear-gradient(135deg, #FFD700 0%, var(--novellus-gold) 100%) !important;
+    border: 3px solid var(--novellus-gold-dark) !important;
+    color: var(--novellus-navy-darker) !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    transition: all 0.3s ease !important;
+    border-radius: 10px !important;
+    padding: 14px 20px !important;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4) !important;
+    text-shadow: none !important;
+    font-size: 1rem !important;
+    letter-spacing: 0.5px !important;
+}
+
+.novellus-action-btn-gold:hover {
+    background: linear-gradient(135deg, #FFC107 0%, var(--novellus-gold-dark) 100%) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5) !important;
+    color: var(--novellus-navy-darker) !important;
+    border-color: var(--novellus-gold-darker) !important;
+}
+
+.novellus-action-btn-navy {
+    background: linear-gradient(135deg, var(--novellus-gold-lighter) 0%, var(--novellus-gold-light) 100%) !important;
+    border: 3px solid var(--novellus-gold) !important;
+    color: var(--novellus-navy-darker) !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    transition: all 0.3s ease !important;
+    border-radius: 10px !important;
+    padding: 14px 20px !important;
+    box-shadow: 0 4px 15px rgba(230, 197, 71, 0.4) !important;
+    text-shadow: none !important;
+    font-size: 1rem !important;
+    letter-spacing: 0.5px !important;
+}
+
+.novellus-action-btn-navy:hover {
+    background: linear-gradient(135deg, var(--novellus-gold-light) 0%, var(--novellus-gold) 100%) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 6px 20px rgba(230, 197, 71, 0.5) !important;
+    color: var(--novellus-navy-darker) !important;
+    border-color: var(--novellus-gold-dark) !important;
+}
+
+.novellus-action-btn-gold-light {
+    background: linear-gradient(135deg, #FFEB3B 0%, var(--novellus-gold-lighter) 100%) !important;
+    border: 3px solid var(--novellus-gold-light) !important;
+    color: var(--novellus-navy-darker) !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    transition: all 0.3s ease !important;
+    border-radius: 10px !important;
+    padding: 14px 20px !important;
+    box-shadow: 0 4px 15px rgba(255, 235, 59, 0.4) !important;
+    text-shadow: none !important;
+    font-size: 1rem !important;
+    letter-spacing: 0.5px !important;
+}
+
+.novellus-action-btn-gold-light:hover {
+    background: linear-gradient(135deg, var(--novellus-gold-lighter) 0%, var(--novellus-gold-light) 100%) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 6px 20px rgba(255, 235, 59, 0.5) !important;
+    color: var(--novellus-navy-darker) !important;
+    border-color: var(--novellus-gold) !important;
+}
+
+.novellus-action-btn-navy-light {
+    background: linear-gradient(135deg, #FFF59D 0%, var(--novellus-gold-lightest) 100%) !important;
+    border: 3px solid var(--novellus-gold-lighter) !important;
+    color: var(--novellus-navy-darker) !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    transition: all 0.3s ease !important;
+    border-radius: 10px !important;
+    padding: 14px 20px !important;
+    box-shadow: 0 4px 15px rgba(255, 245, 157, 0.4) !important;
+    text-shadow: none !important;
+    font-size: 1rem !important;
+    letter-spacing: 0.5px !important;
+}
+
+.novellus-action-btn-navy-light:hover {
+    background: linear-gradient(135deg, var(--novellus-gold-lightest) 0%, var(--novellus-gold-lighter) 100%) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 6px 20px rgba(255, 245, 157, 0.5) !important;
+    color: var(--novellus-navy-darker) !important;
+    border-color: var(--novellus-gold-light) !important;
+}
+
+/* Ensure text is always visible */
+.novellus-action-btn-gold,
+.novellus-action-btn-navy,
+.novellus-action-btn-gold-light,
+.novellus-action-btn-navy-light {
+    text-transform: uppercase !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 50px !important;
+}
+
+/* Additional professional touches */
+.text-muted {
+    color: var(--novellus-text-light) !important;
+}
+
+.border {
+    border-color: var(--novellus-border) !important;
+}
+
+/* Loading states */
+.loading {
+    background: linear-gradient(90deg, transparent, rgba(184, 134, 11, 0.1), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Download Options Styling */
+.download-option-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+}
+
+.download-option-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(30, 43, 58, 0.15) !important;
+}
+
+.download-option-card:hover .icon-wrapper {
+    transform: scale(1.1);
+}
+
+.download-option-card .icon-wrapper {
+    transition: transform 0.3s ease;
+}
+
+.download-option-card button:hover {
+    background-color: #1E2B3A !important;
+    color: white !important;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(30, 43, 58, 0.3);
+}
+
+.download-option-card button {
+    transition: all 0.3s ease;
+}
+
+.download-option-card:hover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(184, 134, 11, 0.03) 0%, rgba(218, 165, 32, 0.03) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.download-option-card > div {
+    position: relative;
+    z-index: 2;
+}
+
+/* Animation for download buttons */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.download-option-card:hover {
+    animation: pulse 2s infinite;
+}

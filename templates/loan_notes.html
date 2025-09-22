@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}Loan Notes - Novellus Financial{% endblock %}
+{% block body_attr %}class="gold-nav"{% endblock %}
+{% block nav_heading %}<span class="navbar-text text-white text-center fw-bold">Loan Notes</span>{% endblock %}
+{% block head %}
+<link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
+{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-body p-0">
+        <form method="get" class="p-3">
+            <div class="row">
+                <div class="col-md-3">
+                    <label class="form-label">Group</label>
+                    <select name="group" class="form-select" onchange="this.form.submit()">
+                        <option value="">All</option>
+                        {% for g in group_options %}
+                        <option value="{{ g }}"{% if g == group_filter %} selected{% endif %}>{{ g }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </form>
+        <table class="table" style="border: 1px solid #000; border-collapse: collapse;">
+            <thead>
+                <tr style="border: 1px solid #000; background: #f8f9fa;">
+                    <th class="px-3" style="color:#fff!important; font-weight:bold; border-right:1px solid #000;">Group</th>
+                    <th class="px-3" style="color:#fff!important; font-weight:bold; border-right:1px solid #000;">Name</th>
+                    <th class="px-3" style="color:#fff!important; font-weight:bold; border-right:1px solid #000; width:470px;">Placeholder Map</th>
+                    <th class="px-3 text-center" style="color:#fff!important; font-weight:bold; width:130px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in notes %}
+                <tr data-note-id="{{ note.id }}" style="border:1px solid #000;">
+                    <td class="px-3" style="color:#000!important; border-right:1px solid #000;">
+                        <span class="view">{{ note.group }}</span>
+                        <input type="text" class="form-control edit d-none" name="group" form="edit-form-{{ note.id }}" value="{{ note.group }}" data-original="{{ note.group }}">
+                    </td>
+                    <td class="px-3" style="color:#000!important; border-right:1px solid #000;">
+                        <span class="view">{{ note.name }}</span>
+                        <textarea class="form-control edit d-none" name="name" form="edit-form-{{ note.id }}" rows="2" data-original="{{ note.name }}">{{ note.name }}</textarea>
+                    </td>
+                    <td class="px-3" style="color:#000!important; border-right:1px solid #000; width:470px;">
+                        <span class="view">{{ note.placeholder_map|tojson }}</span>
+                        <div class="edit placeholder-map d-none">
+                            <div class="placeholder-row template d-none">
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control placeholder-key" placeholder="Placeholder e.g. CLIENT_NAME">
+                                    <select class="form-select placeholder-value">
+                                        <option value="" disabled selected>Mapping e.g. loan_data.gross_amount</option>
+                                        {% for opt in placeholder_options %}
+                                        <option value="{{ opt }}">{{ opt }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="button" class="btn btn-outline-danger remove-placeholder">&times;</button>
+                                </div>
+                            </div>
+                            <div class="placeholder-list"></div>
+                            <button type="button" class="btn btn-sm btn-secondary add-placeholder mt-2">Add Mapping</button>
+                            <input type="hidden" name="placeholder_map" form="edit-form-{{ note.id }}" value='{{ note.placeholder_map|tojson }}' data-original='{{ note.placeholder_map|tojson }}'>
+                        </div>
+                    </td>
+                    <td class="px-3 text-center" style="width:130px;">
+                        <div class="view loan-note-actions">
+                            <button type="button" class="btn btn-sm btn-primary edit-note">Edit</button>
+                            <form method="post" action="{{ url_for('delete_loan_note', note_id=note.id) }}" style="display:inline;" onsubmit="return confirm('Delete this note?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </div>
+                        <div class="edit d-none">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="checkbox" name="add_flag" form="edit-form-{{ note.id }}" id="addFlag{{note.id}}"{% if note.add_flag %} checked{% endif %} data-original="{{ 'true' if note.add_flag else 'false' }}">
+                                <label class="form-check-label" for="addFlag{{note.id}}">Add Flag</label>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-success" form="edit-form-{{ note.id }}">Save</button>
+                            <button type="button" class="btn btn-sm btn-secondary cancel-edit">Cancel</button>
+                        </div>
+                    </td>
+                </tr>
+                <form id="edit-form-{{ note.id }}" method="post" action="{{ url_for('update_loan_note', note_id=note.id) }}"></form>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header bg-primary text-white fw-bold">Add Loan Note</div>
+    <div class="card-body">
+        <form method="post" action="{{ url_for('add_loan_note') }}">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Group</label>
+                        <input type="text" class="form-control" name="group" required>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <textarea class="form-control" name="name" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Placeholder Map</label>
+                        <div class="placeholder-map">
+                            <div class="placeholder-row template d-none">
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control placeholder-key" placeholder="Placeholder e.g. CLIENT_NAME">
+                                    <select class="form-select placeholder-value">
+                                        <option value="" disabled selected>Mapping e.g. loan_data.gross_amount</option>
+                                        {% for opt in placeholder_options %}
+                                        <option value="{{ opt }}">{{ opt }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="button" class="btn btn-outline-danger remove-placeholder">&times;</button>
+                                </div>
+                            </div>
+                            <div class="placeholder-list"></div>
+                            <button type="button" class="btn btn-sm btn-secondary add-placeholder mt-2">Add Mapping</button>
+                            <input type="hidden" name="placeholder_map" value='{}'>
+                        </div>
+                        <div class="form-text">Map placeholders to report fields</div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" name="add_flag" id="newAddFlag">
+                        <label class="form-check-label" for="newAddFlag">Add Flag</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3">Add</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const message = {{ request.args.get('toast')|tojson }};
+    if (message && Novellus?.utils?.showToast) {
+        Novellus.utils.showToast(message, 'success');
+    }
+    initPlaceholderMaps();
+    initRowEditing();
+});
+
+function initPlaceholderMap(wrapper) {
+    const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+    const list = wrapper.querySelector('.placeholder-list');
+    const template = wrapper.querySelector('.placeholder-row.template');
+    const addBtn = wrapper.querySelector('.add-placeholder');
+
+    function sync() {
+        const data = {};
+        list.querySelectorAll('.placeholder-row').forEach(row => {
+            const key = row.querySelector('.placeholder-key').value.trim();
+            const val = row.querySelector('.placeholder-value').value.trim();
+            if (key && val) {
+                data[key] = val;
+            }
+        });
+        hiddenInput.value = JSON.stringify(data);
+    }
+
+    function renderRow(key = '', val = '') {
+        const row = template.cloneNode(true);
+        row.classList.remove('template', 'd-none');
+        row.querySelector('.placeholder-key').value = key;
+        row.querySelector('.placeholder-value').value = val;
+        row.querySelector('.remove-placeholder').addEventListener('click', () => {
+            row.remove();
+            sync();
+        });
+        row.addEventListener('input', sync);
+        row.addEventListener('change', sync);
+        list.appendChild(row);
+    }
+
+    function renderFromHidden() {
+        list.innerHTML = '';
+        try {
+            const data = JSON.parse(hiddenInput.value || '{}');
+            Object.entries(data).forEach(([k, v]) => renderRow(k, v));
+        } catch (e) {
+            // ignore invalid JSON
+        }
+    }
+
+    addBtn.addEventListener('click', () => renderRow());
+
+    renderFromHidden();
+
+    wrapper.__renderFromHidden = renderFromHidden;
+    wrapper.__hiddenInput = hiddenInput;
+}
+
+function initPlaceholderMaps() {
+    document.querySelectorAll('.placeholder-map').forEach(initPlaceholderMap);
+}
+
+function initRowEditing() {
+    document.querySelectorAll('tr[data-note-id]').forEach(row => {
+        const viewEls = row.querySelectorAll('.view');
+        const editEls = row.querySelectorAll('.edit');
+        const editBtn = row.querySelector('.edit-note');
+        const cancelBtn = row.querySelector('.cancel-edit');
+        const placeholderWrapper = row.querySelector('.placeholder-map.edit');
+
+        editBtn.addEventListener('click', () => {
+            viewEls.forEach(el => el.classList.add('d-none'));
+            editEls.forEach(el => el.classList.remove('d-none'));
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            const groupInput = row.querySelector('input[name="group"]');
+            const nameInput = row.querySelector('textarea[name="name"]');
+            const flagInput = row.querySelector('input[name="add_flag"]');
+            if (groupInput && groupInput.dataset.original !== undefined) {
+                groupInput.value = groupInput.dataset.original;
+            }
+            if (nameInput && nameInput.dataset.original !== undefined) {
+                nameInput.value = nameInput.dataset.original;
+            }
+            if (flagInput && flagInput.dataset.original !== undefined) {
+                flagInput.checked = flagInput.dataset.original === 'true';
+            }
+            if (placeholderWrapper && placeholderWrapper.__hiddenInput) {
+                placeholderWrapper.__hiddenInput.value = placeholderWrapper.__hiddenInput.dataset.original;
+                if (placeholderWrapper.__renderFromHidden) {
+                    placeholderWrapper.__renderFromHidden();
+                }
+            }
+            viewEls.forEach(el => el.classList.remove('d-none'));
+            editEls.forEach(el => el.classList.add('d-none'));
+        });
+    });
+}
+</script>
+{% endblock %}

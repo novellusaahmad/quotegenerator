@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Snowflake Configuration{% endblock %}
+
+{% block nav_heading %}
+<span class="navbar-text text-white text-center fw-bold"><i class="fas fa-database me-2"></i>Snowflake Configuration</span>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 snowflake-config-page">
+    <div class="d-flex justify-content-end align-items-start mb-3">
+        <button id="openModalBtn" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#snowflakeModal">
+            <i class="fas fa-cog me-1"></i>Configure
+        </button>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <div id="savedConfig" style="display:none;">
+                <ul id="savedDetails" class="list-group list-group-flush mb-3"></ul>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary" onclick="editConfig()">Edit</button>
+                    <button type="button" class="btn btn-info" onclick="testConnection()" title="Test Connection">
+                        <i class="fas fa-vial"></i>
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="deleteConfig()">Delete</button>
+                </div>
+            </div>
+            <div id="noConfig" class="text-muted">No Snowflake configuration saved.</div>
+            <div id="testResult" class="mt-3"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="snowflakeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="snowflakeForm" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Snowflake Connection</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+            <label class="form-label">Account</label>
+            <input type="text" class="form-control" name="account" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">User</label>
+            <input type="text" class="form-control" name="user" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Warehouse</label>
+            <input type="text" class="form-control" name="warehouse" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Database</label>
+            <input type="text" class="form-control" name="database" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Schema</label>
+            <input type="text" class="form-control" name="schema" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">PAT Token</label>
+            <input type="password" class="form-control" name="token" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadConfig();
+    document.getElementById('snowflakeForm').addEventListener('submit', saveConfig);
+});
+
+async function loadConfig() {
+    const resp = await fetch('/api/snowflake/config');
+    if (!resp.ok) return;
+    const { config } = await resp.json();
+    const savedDiv = document.getElementById('savedConfig');
+    const detailsList = document.getElementById('savedDetails');
+    const openBtn = document.getElementById('openModalBtn');
+    const noConfig = document.getElementById('noConfig');
+    if (!config) {
+        savedDiv.style.display = 'none';
+        noConfig.style.display = 'block';
+        openBtn.style.display = 'inline-block';
+        return;
+    }
+    openBtn.style.display = 'none';
+    noConfig.style.display = 'none';
+    const form = document.getElementById('snowflakeForm');
+    form.account.value = config.account || '';
+    form.user.value = config.user || '';
+    form.warehouse.value = config.warehouse || '';
+    form.database.value = config.database || '';
+    form.schema.value = config.schema || '';
+    form.token.value = config.token || '';
+    detailsList.innerHTML = `
+        <li class="list-group-item"><strong>Account:</strong> ${config.account || ''}</li>
+        <li class="list-group-item"><strong>User:</strong> ${config.user || ''}</li>
+        <li class="list-group-item"><strong>Warehouse:</strong> ${config.warehouse || ''}</li>
+        <li class="list-group-item"><strong>Database:</strong> ${config.database || ''}</li>
+        <li class="list-group-item"><strong>Schema:</strong> ${config.schema || ''}</li>
+    `;
+    savedDiv.style.display = 'block';
+}
+
+async function saveConfig(e) {
+    e.preventDefault();
+    const form = e.target;
+    const payload = {
+        method: 'pat',
+        account: form.account.value,
+        user: form.user.value,
+        warehouse: form.warehouse.value,
+        database: form.database.value,
+        schema: form.schema.value,
+        token: form.token.value
+    };
+    const resp = await fetch('/api/snowflake/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    if (resp.ok) {
+        await testConnection();
+        bootstrap.Modal.getInstance(document.getElementById('snowflakeModal')).hide();
+        loadConfig();
+    }
+}
+
+async function testConnection() {
+    const resultDiv = document.getElementById('testResult');
+    try {
+        const resp = await fetch('/api/snowflake/test', {method: 'POST'});
+        if (resp.ok) {
+            resultDiv.innerHTML = '<div class="alert alert-success">Connection successful.</div>';
+        } else {
+            const text = await resp.text();
+            resultDiv.innerHTML = '<div class="alert alert-danger">Connection failed: ' + text + '</div>';
+        }
+    } catch (err) {
+        resultDiv.innerHTML = '<div class="alert alert-danger">Connection failed.</div>';
+    }
+}
+
+function editConfig() {
+    loadConfig();
+    const modal = new bootstrap.Modal(document.getElementById('snowflakeModal'));
+    modal.show();
+}
+
+async function deleteConfig() {
+    if (!confirm('Delete Snowflake configuration?')) return;
+    await fetch('/api/snowflake/config', {method: 'DELETE'});
+    document.getElementById('savedConfig').style.display = 'none';
+    document.getElementById('openModalBtn').style.display = 'inline-block';
+    document.getElementById('noConfig').style.display = 'block';
+    document.getElementById('testResult').innerHTML = '';
+}
+</script>
+{% endblock %}

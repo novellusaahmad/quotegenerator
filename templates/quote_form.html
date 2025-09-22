@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if quote %}Edit Quote{% else %}New Quote{% endif %} - Novellus
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-quote-left me-2"></i>
+                    {% if quote %}Edit Quote{% else %}Create Quote{% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Application Summary -->
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-2"></i>Application Summary</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Borrower:</strong> {{ application.user.full_name }}<br>
+                            <strong>Loan Type:</strong> {{ application.loan_type.title() }}<br>
+                            <strong>Requested Amount:</strong> £{{ "{:,.0f}".format(application.loan_amount) }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Property Value:</strong> £{{ "{:,.0f}".format(application.property_value) }}<br>
+                            <strong>Term:</strong> {{ application.loan_term }} months<br>
+                            <strong>Current LTV:</strong> {{ "{:.1f}".format((application.loan_amount / application.property_value) * 100) }}%
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" id="quoteForm">
+                    <!-- Progress Steps -->
+                    <div class="mb-4">
+                        <div class="progress mb-3">
+                            <div class="progress-bar" role="progressbar" style="width: 33%" id="progressBar"></div>
+                        </div>
+                        <div class="row text-center">
+                            <div class="col step-indicator active" data-step="1">
+                                <i class="fas fa-money-bill"></i><br>Loan Details
+                            </div>
+                            <div class="col step-indicator" data-step="2">
+                                <i class="fas fa-file-invoice-dollar"></i><br>Fees
+                            </div>
+                            <div class="col step-indicator" data-step="3">
+                                <i class="fas fa-file-signature"></i><br>Terms
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Loan Details -->
+                    <div class="form-step active" id="step1">
+                        <h5 class="mb-3">Loan Details</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="gross_amount" class="form-label">Gross Loan Amount *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="gross_amount" name="gross_amount"
+                                           min="0" step="1000" required
+                                           value="{{ quote.gross_amount if quote else application.loan_amount }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="loan_term" class="form-label">Loan Term *</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="loan_term" name="loan_term"
+                                           min="1" step="1" required
+                                           value="{{ quote.loan_term if quote else application.loan_term }}">
+                                    <span class="input-group-text">months</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="interest_rate" class="form-label">Interest Rate * (%)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="interest_rate" name="interest_rate"
+                                           min="0" max="50" step="0.001" required
+                                           value="{{ quote.interest_rate if quote else '' }}">
+                                    <span class="input-group-text">% per annum</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Calculated LTV</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="ltv_display" readonly>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Fees & Charges -->
+                    <div class="form-step" id="step2">
+                        <h5 class="mb-3">Fees & Charges</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="arrangement_fee" class="form-label">Arrangement Fee</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="arrangement_fee" name="arrangement_fee"
+                                           min="0" step="100" value="{{ quote.arrangement_fee if quote else 0 }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="legal_fees" class="form-label">Legal Fees</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="legal_fees" name="legal_fees"
+                                           min="0" step="100" value="{{ quote.legal_fees if quote else 1500 }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="valuation_fee" class="form-label">Valuation Fee</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="valuation_fee" name="valuation_fee"
+                                           min="0" step="50" value="{{ quote.valuation_fee if quote else 0 }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="title_insurance" class="form-label">Title Insurance</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="title_insurance" name="title_insurance"
+                                           min="0" step="50" value="{{ quote.title_insurance if quote else 0 }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="exit_fee" class="form-label">Exit Fee</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="exit_fee" name="exit_fee"
+                                           min="0" step="100" value="{{ quote.exit_fee if quote else 0 }}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Total Fees</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="text" class="form-control bg-light" id="total_fees_display" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Terms & Conditions -->
+                    <div class="form-step" id="step3">
+                        <h5 class="mb-3">Terms & Conditions</h5>
+                        <div class="mb-3">
+                            <label for="repayment_type" class="form-label">Repayment Type</label>
+                            <select class="form-select" id="repayment_type" name="repayment_type">
+                                <option value="interest_only">Interest Only</option>
+                                <option value="capital_and_interest">Capital & Interest</option>
+                                <option value="retained_interest">Retained Interest (Bridge only)</option>
+                                <option value="flexible">Flexible Payment</option>
+                            </select>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="valid_until" class="form-label">Quote Valid Until</label>
+                                <input type="date" class="form-control" id="valid_until" name="valid_until"
+                                       value="{{ quote.valid_until.strftime('%Y-%m-%d') if quote and quote.valid_until else '' }}">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="currency" class="form-label">Currency</label>
+                                <select class="form-select" id="currency" name="currency">
+                                    <option value="GBP" {% if not quote or quote.currency == 'GBP' %}selected{% endif %}>GBP (£)</option>
+                                    <option value="EUR" {% if quote and quote.currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="special_conditions" class="form-label">Special Conditions</label>
+                            <textarea class="form-control" id="special_conditions" name="special_conditions" rows="3"
+                                      placeholder="Any special conditions or requirements for this loan...">{{ quote.special_conditions if quote else '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <div>
+                            <a href="{{ url_for('quotes') }}" class="btn btn-outline-secondary me-2">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="button" class="btn btn-secondary" id="prevBtn" onclick="changeStep(-1)" style="display: none;">
+                                <i class="fas fa-arrow-left me-2"></i>Previous
+                            </button>
+                        </div>
+
+                        <div>
+                            <button type="button" class="btn btn-primary" id="nextBtn" onclick="changeStep(1)">
+                                Next<i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary me-2" id="draftBtn" style="display: none;">
+                                <i class="fas fa-save me-2"></i>Save as Draft
+                            </button>
+                            <button type="submit" name="action" value="send" class="btn btn-success" id="submitBtn" style="display: none;">
+                                <i class="fas fa-paper-plane me-2"></i>Save & Send Quote
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Preview -->
+    <div class="col-lg-4">
+        <div class="card sticky-top">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-eye me-2"></i>Quote Preview</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h4 class="text-primary mb-1" id="preview_gross">£0</h4>
+                    <small class="text-muted">Gross Loan Amount</small>
+                </div>
+
+                <div class="text-center mb-3">
+                    <h5 class="text-success mb-1" id="preview_net">£0</h5>
+                    <small class="text-muted">Net Advance</small>
+                </div>
+
+                <hr>
+
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <div class="fw-bold" id="preview_rate">0.000%</div>
+                        <small class="text-muted">Rate</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold" id="preview_term">0</div>
+                        <small class="text-muted">Months</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold" id="preview_ltv">0.0%</div>
+                        <small class="text-muted">LTV</small>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h6>Fee Breakdown</h6>
+                <div class="small">
+                    <div class="d-flex justify-content-between">
+                        <span>Arrangement Fee:</span>
+                        <span id="preview_arrangement">£0</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Legal Fees:</span>
+                        <span id="preview_legal">£0</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Valuation Fee:</span>
+                        <span id="preview_valuation">£0</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Title Insurance:</span>
+                        <span id="preview_title">£0</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Exit Fee:</span>
+                        <span id="preview_exit">£0</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>Total Fees:</span>
+                        <span id="preview_total_fees">£0</span>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="d-flex justify-content-between">
+                    <span>Monthly Payment:</span>
+                    <strong id="preview_monthly">£0</strong>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Total Interest:</span>
+                    <strong id="preview_total_interest">£0</strong>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <span>Total Repayment:</span>
+                    <strong id="preview_total">£0</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentStep = 1;
+const totalSteps = 3;
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (!document.getElementById('valid_until').value) {
+        const validUntil = new Date();
+        validUntil.setDate(validUntil.getDate() + 30);
+        document.getElementById('valid_until').value = validUntil.toISOString().split('T')[0];
+    }
+    updateCalculations();
+    updateButtons();
+});
+
+document.querySelectorAll('.step-indicator').forEach(ind => {
+    ind.addEventListener('click', function() {
+        const target = parseInt(this.dataset.step);
+        if (target > currentStep && !validateStep(currentStep)) return;
+        document.getElementById(`step${currentStep}`).classList.remove('active');
+        document.querySelector(`[data-step="${currentStep}"]`).classList.remove('active');
+        currentStep = target;
+        document.getElementById(`step${currentStep}`).classList.add('active');
+        document.querySelector(`[data-step="${currentStep}"]`).classList.add('active');
+        document.getElementById('progressBar').style.width = `${(currentStep/totalSteps)*100}%`;
+        updateButtons();
+    });
+});
+
+function changeStep(direction) {
+    if (direction > 0 && !validateStep(currentStep)) {
+        return;
+    }
+    document.getElementById(`step${currentStep}`).classList.remove('active');
+    document.querySelector(`[data-step="${currentStep}"]`).classList.remove('active');
+    currentStep += direction;
+    document.getElementById(`step${currentStep}`).classList.add('active');
+    document.querySelector(`[data-step="${currentStep}"]`).classList.add('active');
+    document.getElementById('progressBar').style.width = `${(currentStep/totalSteps)*100}%`;
+    updateButtons();
+}
+
+function updateButtons() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const draftBtn = document.getElementById('draftBtn');
+
+    prevBtn.style.display = currentStep > 1 ? 'inline-block' : 'none';
+
+    if (currentStep < totalSteps) {
+        nextBtn.style.display = 'inline-block';
+        submitBtn.style.display = 'none';
+        draftBtn.style.display = 'none';
+    } else {
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'inline-block';
+        draftBtn.style.display = 'inline-block';
+    }
+}
+
+function validateStep(step) {
+    const stepElement = document.getElementById(`step${step}`);
+    const requiredFields = stepElement.querySelectorAll('[required]');
+    let isValid = true;
+
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+
+    if (step === 1) {
+        const grossAmount = parseFloat(document.getElementById('gross_amount').value) || 0;
+        const propertyValue = {{ application.property_value }};
+        const interestRate = parseFloat(document.getElementById('interest_rate').value) || 0;
+        const ltv = (grossAmount / propertyValue) * 100;
+        if (ltv > 95) {
+            alert('LTV ratio cannot exceed 95%. Please adjust the gross amount.');
+            isValid = false;
+        }
+        if (grossAmount <= 0) {
+            alert('Gross amount must be greater than 0.');
+            isValid = false;
+        }
+        if (interestRate <= 0) {
+            alert('Interest rate must be greater than 0.');
+            isValid = false;
+        }
+    }
+    return isValid;
+}
+
+const calculationInputs = [
+    'gross_amount', 'loan_term', 'interest_rate', 'arrangement_fee',
+    'legal_fees', 'valuation_fee', 'title_insurance', 'exit_fee'
+];
+
+calculationInputs.forEach(id => {
+    document.getElementById(id).addEventListener('input', updateCalculations);
+});
+
+function updateCalculations() {
+    const grossAmount = parseFloat(document.getElementById('gross_amount').value) || 0;
+    const loanTerm = parseInt(document.getElementById('loan_term').value) || 0;
+    const interestRate = parseFloat(document.getElementById('interest_rate').value) || 0;
+    const propertyValue = {{ application.property_value }};
+
+    const arrangementFee = parseFloat(document.getElementById('arrangement_fee').value) || 0;
+    const legalFees = parseFloat(document.getElementById('legal_fees').value) || 0;
+    const valuationFee = parseFloat(document.getElementById('valuation_fee').value) || 0;
+    const titleInsurance = parseFloat(document.getElementById('title_insurance').value) || 0;
+    const exitFee = parseFloat(document.getElementById('exit_fee').value) || 0;
+
+    const totalFees = arrangementFee + legalFees + valuationFee + titleInsurance + exitFee;
+    const netAmount = grossAmount - totalFees;
+    const ltv = propertyValue > 0 ? (grossAmount / propertyValue) * 100 : 0;
+
+    const monthlyRate = interestRate / 12 / 100;
+    const monthlyInterest = grossAmount * monthlyRate;
+    const totalInterest = monthlyInterest * loanTerm;
+    const totalRepayment = grossAmount + totalInterest;
+
+    document.getElementById('ltv_display').value = ltv.toFixed(1);
+    if (ltv > 80) {
+        document.getElementById('ltv_display').className = 'form-control text-danger';
+    } else if (ltv > 70) {
+        document.getElementById('ltv_display').className = 'form-control text-warning';
+    } else {
+        document.getElementById('ltv_display').className = 'form-control text-success';
+    }
+
+    document.getElementById('total_fees_display').value = totalFees.toLocaleString();
+
+    document.getElementById('preview_gross').textContent = '£' + grossAmount.toLocaleString();
+    document.getElementById('preview_net').textContent = '£' + netAmount.toLocaleString();
+    document.getElementById('preview_rate').textContent = interestRate.toFixed(3) + '%';
+    document.getElementById('preview_term').textContent = loanTerm;
+    document.getElementById('preview_ltv').textContent = ltv.toFixed(1) + '%';
+
+    document.getElementById('preview_arrangement').textContent = '£' + arrangementFee.toLocaleString();
+    document.getElementById('preview_legal').textContent = '£' + legalFees.toLocaleString();
+    document.getElementById('preview_valuation').textContent = '£' + valuationFee.toLocaleString();
+    document.getElementById('preview_title').textContent = '£' + titleInsurance.toLocaleString();
+    document.getElementById('preview_exit').textContent = '£' + exitFee.toLocaleString();
+    document.getElementById('preview_total_fees').textContent = '£' + totalFees.toLocaleString();
+
+    document.getElementById('preview_monthly').textContent = '£' + monthlyInterest.toLocaleString();
+    document.getElementById('preview_total_interest').textContent = '£' + totalInterest.toLocaleString();
+    document.getElementById('preview_total').textContent = '£' + totalRepayment.toLocaleString();
+}
+
+document.getElementById('quoteForm').addEventListener('submit', function(e) {
+    for (let i = 1; i <= totalSteps; i++) {
+        if (!validateStep(i)) {
+            e.preventDefault();
+            while (currentStep !== i) {
+                changeStep(i > currentStep ? 1 : -1);
+            }
+            return;
+        }
+    }
+});
+
+const style = document.createElement('style');
+style.textContent = `
+    .step-indicator {
+        opacity: 0.5;
+        transition: opacity 0.3s;
+        font-size: 0.9rem;
+    }
+    .step-indicator.active {
+        opacity: 1;
+        color: #007bff;
+    }
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+    .is-invalid { border-color: #dc3545; }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

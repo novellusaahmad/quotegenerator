@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Novellus Loan Management{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='tabicon.svg') }}">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Preload Brother 1816 Light font -->
+    <link rel="preload" href="{{ url_for('serve_font', filename='brother-1816-light.otf') }}" as="font" type="font/otf">
+    
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <!-- Chart.js DataLabels plugin for persistent value display -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <!-- Custom chart data labels configuration -->
+    <script src="{{ url_for('static', filename='js/chart-datalabels-config.js') }}"></script>
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/document-theme.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/currency-themes.css') }}" rel="stylesheet">
+    <!-- Enhanced Chart Styles for better visibility -->
+    <link href="{{ url_for('static', filename='css/chart-styles.css') }}" rel="stylesheet">
+    <!-- Layout hotfix -->
+    <link href="{{ url_for('static', filename='css/layout-hotfix.css') }}" rel="stylesheet">
+    
+    {% block head %}{% endblock %}
+</head>
+<body {% block body_attr %}{% endblock %}>
+    <header>
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: black; border-bottom: 5px solid darkgrey;">
+        <div class="container-fluid px-4 d-flex justify-content-between align-items-center position-relative">
+            <button class="btn btn-outline-light me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='novellus_logo.png') }}" alt="Novellus" height="32" class="me-2 navbar-logo" id="navbarLogo" style="height: 32px; width: auto; object-fit: contain; filter: brightness(100%) saturate(100%);">
+                <span class="fw-bold"></span>
+            </a>
+
+            <div class="navbar-title">
+                {% block nav_heading %}{% endblock %}
+            </div>
+            <div class="d-flex ms-auto gap-2">
+                <button type="button" class="btn btn-sm btn-light" onclick="window.location.reload();">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div id="nextStepBanner" class="text-center bg-dark text-white fw-bold py-2 d-none"></div>
+    </header>
+
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="sidebarMenuLabel">{{ request.endpoint.replace('_', ' ').title() if request.endpoint else 'Menu' }}</h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <ul class="nav flex-column">
+                {% for route in nav_routes %}
+                    {% if route.children %}
+                        {% set sub_active = route.children|selectattr('url', 'equalto', request.path)|list|length > 0 %}
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center text-black{% if sub_active %} active{% endif %}" data-bs-toggle="collapse" href="#submenu{{ loop.index }}" role="button" aria-expanded="{{ 'true' if sub_active else 'false' }}" aria-controls="submenu{{ loop.index }}">
+                                <i class="{{ route.icon }} me-2 text-black"></i>{{ route.name }}
+                            </a>
+                            <div class="collapse{% if sub_active %} show{% endif %}" id="submenu{{ loop.index }}">
+                                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small ms-4">
+                                    {% for sub in route.children %}
+                                        <li>
+                                            <a class="nav-link d-flex align-items-center text-black{% if request.path == sub.url %} active{% endif %}" href="{{ sub.url }}">
+                                                <i class="{{ sub.icon }} me-2 text-black"></i>{{ sub.name }}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center text-black{% if request.path == route.url %} active{% endif %}" href="{{ route.url }}">
+                                <i class="{{ route.icon }} me-2 text-black"></i>{{ route.name }}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <main class="{% block main_class %}container-fluid mt-4 px-4{% endblock %}">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-light mt-5 py-4" style="border-top: 5px solid darkgrey;">
+        <div class="container-fluid px-4">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start">
+                    <div class="d-flex align-items-center justify-content-center justify-content-md-start">
+                        <img src="{{ url_for('static', filename='novellus_logo.png') }}" alt="Novellus" height="24" class="me-2" id="footerLogo" style="height: 24px; width: auto; object-fit: contain; filter: brightness(100%) saturate(100%);">
+                        <span class="text-muted">&copy; 2025 Novellus Lending. All rights reserved.</span>
+                    </div>
+                </div>
+                <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
+                    <small class="text-muted">Version 1.0.0.0</small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js Data Labels Plugin for enhanced data markers -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <!-- Chart font size overrides for bigger data markers -->
+    <script src="{{ url_for('static', filename='js/chart-font-override.js') }}"></script>
+    <!-- Chart Enhancements for fullscreen data labels -->
+    <script src="{{ url_for('static', filename='js/chart-enhancements.js') }}"></script>
+    
+    <!-- Rollback functionality -->
+    <script>
+    function confirmRollback() {
+        if (Novellus?.utils?.showToast) {
+            const toastId = 'rollback-toast';
+            const confirmMessage = `
+                <div style="margin-top: 8px;">
+                    <button class="btn btn-sm btn-warning me-2" onclick="performRollback()" style="font-size: 0.8rem;">Yes, Rollback</button>
+                    <button class="btn btn-sm btn-secondary" onclick="document.getElementById('${toastId}').remove()" style="font-size:0.8rem;">Cancel</button>
+                </div>
+            `;
+            Novellus.utils.showToast('Are you sure you want to rollback? This will undo recent changes.' + confirmMessage, 'warning', { autohide: false, id: toastId });
+        } else if (confirm('Are you sure you want to rollback? This will undo recent changes.')) {
+            performRollback();
+        }
+    }
+
+    function performRollback() {
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach(t => t.remove());
+
+        window.history.back();
+        if (Novellus?.utils?.showToast) {
+            setTimeout(() => {
+                Novellus.utils.showToast('Navigated back to previous page', 'info');
+            }, 500);
+        }
+    }
+    </script>
+    
+    <!-- Theme Toggle JavaScript -->
+    <!-- Theme switching functionality removed per user request -->
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <!-- Layout hotfix -->
+    <script src="{{ url_for('static', filename='js/layout-hotfix.js') }}"></script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

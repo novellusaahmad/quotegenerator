@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+
+{% block title %}Quotes - Novellus{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-quote-left me-2"></i>
+            {% if current_user.role == 'borrower' %}
+                My Quotes
+            {% else %}
+                Loan Quotes
+            {% endif %}
+        </h2>
+        <p class="text-muted">
+            {% if current_user.role == 'borrower' %}
+                View and manage quotes received for your loan applications
+            {% else %}
+                Create and manage quotes for loan applications
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-end">
+            <div class="col-md-3">
+                <label for="statusFilter" class="form-label">Status</label>
+                <select class="form-select" id="statusFilter">
+                    <option value="">All Statuses</option>
+                    <option value="draft">Draft</option>
+                    <option value="sent">Sent</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="expired">Expired</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="amountFilter" class="form-label">Amount Range</label>
+                <select class="form-select" id="amountFilter">
+                    <option value="">All Amounts</option>
+                    <option value="0-100000">£0 - £100k</option>
+                    <option value="100000-500000">£100k - £500k</option>
+                    <option value="500000-1000000">£500k - £1M</option>
+                    <option value="1000000+">£1M+</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="validityFilter" class="form-label">Validity</label>
+                <select class="form-select" id="validityFilter">
+                    <option value="">All Quotes</option>
+                    <option value="valid">Valid</option>
+                    <option value="expiring">Expiring Soon</option>
+                    <option value="expired">Expired</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                    <i class="fas fa-times me-2"></i>Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quotes Grid -->
+{% if quotes %}
+<div class="row" id="quotesContainer">
+    {% for quote in quotes %}
+    <div class="col-lg-6 col-xl-4 mb-4 quote-card" 
+         data-status="{{ quote.status }}" 
+         data-amount="{{ quote.gross_amount }}"
+         data-valid-until="{{ quote.valid_until.isoformat() if quote.valid_until else '' }}">
+        <div class="card h-100 {% if quote.status == 'accepted' %}border-success{% elif quote.status == 'rejected' %}border-danger{% elif quote.status == 'sent' %}border-primary{% endif %}">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-0">Quote #{{ quote.id }}</h6>
+                    <small class="text-muted">{{ quote.application.loan_type.title() }} Loan</small>
+                </div>
+                <div>
+                    {% set status_colors = {
+                        'draft': 'secondary',
+                        'sent': 'primary',
+                        'accepted': 'success',
+                        'rejected': 'danger',
+                        'expired': 'warning'
+                    } %}
+                    <span class="badge bg-{{ status_colors.get(quote.status, 'secondary') }}">
+                        {{ quote.status.title() }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Key Details -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <h5 class="text-primary mb-1">£{{ "{:,.0f}".format(quote.gross_amount) }}</h5>
+                        <small class="text-muted">Gross Amount</small>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-success mb-1">£{{ "{:,.0f}".format(quote.net_amount) }}</h5>
+                        <small class="text-muted">Net Advance</small>
+                    </div>
+                </div>
+                
+                <!-- Loan Details -->
+                <div class="mb-3">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="border-end">
+                                <div class="fw-bold">{{ "{:.3f}".format(quote.interest_rate) }}%</div>
+                                <small class="text-muted">Rate</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="border-end">
+                                <div class="fw-bold">{{ quote.loan_term }}</div>
+                                <small class="text-muted">Months</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold">{{ "{:.1f}".format(quote.ltv_ratio) }}%</div>
+                            <small class="text-muted">LTV</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Property Address -->
+                <div class="mb-3">
+                    <small class="text-muted">Property:</small>
+                    <div class="text-truncate">{{ quote.application.property_address[:50] }}...</div>
+                </div>
+                
+                <!-- Fees Summary -->
+                <div class="mb-3">
+                    <small class="text-muted">Total Fees: £{{ "{:,.0f}".format(quote.arrangement_fee + quote.legal_fees + quote.valuation_fee + quote.title_insurance) }}</small>
+                </div>
+                
+                <!-- Monthly Payment -->
+                {% if quote.monthly_payment %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Monthly Payment:</span>
+                        <strong>£{{ "{:,.0f}".format(quote.monthly_payment) }}</strong>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Validity -->
+                {% if quote.valid_until %}
+                <div class="mb-3">
+                    <small class="text-muted">
+                        Valid until: {{ quote.valid_until.strftime('%d/%m/%Y') }}
+                        {% set days_left = (quote.valid_until - now).days %}
+                        {% if days_left < 0 %}
+                            <span class="text-danger">(Expired)</span>
+                        {% elif days_left <= 7 %}
+                            <span class="text-warning">({{ days_left }} days left)</span>
+                        {% endif %}
+                    </small>
+                </div>
+                {% endif %}
+                
+                <!-- Borrower Info (for lenders) -->
+                {% if current_user.role == 'lender' %}
+                <div class="mb-3">
+                    <small class="text-muted">Borrower:</small>
+                    <div>{{ quote.application.user.full_name }}</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="card-footer">
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="viewQuote({{ quote.id }})">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                    
+                    {% if current_user.role == 'lender' and quote.status == 'draft' %}
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="editQuote({{ quote.id }})">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="sendQuote({{ quote.id }})">
+                            <i class="fas fa-paper-plane"></i> Send
+                        </button>
+                    {% elif current_user.role == 'borrower' and quote.status == 'sent' %}
+                        <button type="button" class="btn btn-success btn-sm" onclick="acceptQuote({{ quote.id }})">
+                            <i class="fas fa-check"></i> Accept
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="rejectQuote({{ quote.id }})">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    {% else %}
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="downloadQuote({{ quote.id }})">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+<nav aria-label="Quotes pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        <li class="page-item disabled">
+            <a class="page-link" href="#" tabindex="-1">Previous</a>
+        </li>
+        <li class="page-item active">
+            <a class="page-link" href="#">1</a>
+        </li>
+        <li class="page-item disabled">
+            <a class="page-link" href="#">Next</a>
+        </li>
+    </ul>
+</nav>
+
+{% else %}
+<!-- Empty State -->
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-quote-left fa-4x text-muted mb-4"></i>
+        <h4 class="text-muted">No Quotes Found</h4>
+        <p class="text-muted mb-4">
+            {% if current_user.role == 'borrower' %}
+                You haven't received any quotes yet. Quotes will appear here once lenders review your applications.
+            {% else %}
+                No quotes have been created yet. Create quotes for submitted loan applications.
+            {% endif %}
+        </p>
+        {% if current_user.role == 'lender' %}
+            <a href="{{ url_for('applications') }}" class="btn btn-primary">
+                <i class="fas fa-eye me-2"></i>Review Applications
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Quote Detail Modal -->
+<div class="modal fade" id="quoteModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quote Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="quoteModalBody">
+                <!-- Quote details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="printQuote()">
+                    <i class="fas fa-print me-2"></i>Print
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const now = new Date();
+
+// Filter functionality
+document.getElementById('statusFilter').addEventListener('change', filterQuotes);
+document.getElementById('amountFilter').addEventListener('change', filterQuotes);
+document.getElementById('validityFilter').addEventListener('change', filterQuotes);
+
+function filterQuotes() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const amountFilter = document.getElementById('amountFilter').value;
+    const validityFilter = document.getElementById('validityFilter').value;
+    
+    const quotes = document.querySelectorAll('.quote-card');
+    
+    quotes.forEach(quote => {
+        const status = quote.dataset.status;
+        const amount = parseFloat(quote.dataset.amount);
+        const validUntil = new Date(quote.dataset.validUntil);
+        
+        // Status filter
+        const statusMatch = !statusFilter || status === statusFilter;
+        
+        // Amount filter
+        let amountMatch = true;
+        if (amountFilter) {
+            if (amountFilter === '0-100000') {
+                amountMatch = amount <= 100000;
+            } else if (amountFilter === '100000-500000') {
+                amountMatch = amount > 100000 && amount <= 500000;
+            } else if (amountFilter === '500000-1000000') {
+                amountMatch = amount > 500000 && amount <= 1000000;
+            } else if (amountFilter === '1000000+') {
+                amountMatch = amount > 1000000;
+            }
+        }
+        
+        // Validity filter
+        let validityMatch = true;
+        if (validityFilter && quote.dataset.validUntil) {
+            const daysLeft = Math.ceil((validUntil - now) / (1000 * 60 * 60 * 24));
+            if (validityFilter === 'valid') {
+                validityMatch = daysLeft > 0;
+            } else if (validityFilter === 'expiring') {
+                validityMatch = daysLeft > 0 && daysLeft <= 7;
+            } else if (validityFilter === 'expired') {
+                validityMatch = daysLeft <= 0;
+            }
+        }
+        
+        if (statusMatch && amountMatch && validityMatch) {
+            quote.style.display = '';
+        } else {
+            quote.style.display = 'none';
+        }
+    });
+}
+
+function clearFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('amountFilter').value = '';
+    document.getElementById('validityFilter').value = '';
+    filterQuotes();
+}
+
+function viewQuote(id) {
+    // Load quote details in modal
+    fetch(`/api/quotes/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            // Calculate daily and monthly interest rates from annual rate
+            const annualRate = parseFloat(data.interest_rate) || 0;
+            const monthlyRate = annualRate / 12;
+            const dailyRate = annualRate / 365;
+
+            // Populate modal with quote details
+            document.getElementById('quoteModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5>Loan Summary</h5>
+                        <table class="table table-bordered">
+                            <tr><td><strong>Gross Amount:</strong></td><td>£${data.gross_amount.toLocaleString()}</td></tr>
+                            <tr><td><strong>Net Advance:</strong></td><td>£${data.net_amount.toLocaleString()}</td></tr>
+                            <tr><td><strong>Interest Rate:</strong></td><td>${dailyRate.toFixed(5)}% per day<br>${monthlyRate.toFixed(3)}% per month<br>${annualRate.toFixed(3)}% per annum</td></tr>
+                            <tr><td><strong>Loan Term:</strong></td><td>${data.loan_term} months</td></tr>
+                            <tr><td><strong>LTV Ratio:</strong></td><td>${data.ltv_ratio}%</td></tr>
+                        </table>
+
+                        <h6>Fees Breakdown</h6>
+                        <table class="table table-sm">
+                            <tr><td>Arrangement Fee:</td><td>£${data.arrangement_fee.toLocaleString()}</td></tr>
+                            <tr><td>Legal Fees:</td><td>£${data.legal_fees.toLocaleString()}</td></tr>
+                            <tr><td>Valuation Fee:</td><td>£${data.valuation_fee.toLocaleString()}</td></tr>
+                            <tr><td>Title Insurance:</td><td>£${data.title_insurance.toLocaleString()}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Application Details</h6>
+                        <p><strong>Property:</strong><br>${data.application.property_address}</p>
+                        <p><strong>Borrower:</strong><br>${data.application.user.full_name}</p>
+                        <p><strong>Status:</strong> ${data.status}</p>
+                        ${data.valid_until ? `<p><strong>Valid Until:</strong><br>${new Date(data.valid_until).toLocaleDateString()}</p>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('quoteModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading quote:', error);
+            alert('Error loading quote details');
+        });
+}
+
+function editQuote(id) {
+    window.location.href = `/quotes/edit/${id}`;
+}
+
+function sendQuote(id) {
+    if (confirm('Are you sure you want to send this quote to the borrower?')) {
+        fetch(`/api/quotes/${id}/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error sending quote');
+            }
+        })
+        .catch(error => {
+            console.error('Error sending quote:', error);
+            alert('Error sending quote');
+        });
+    }
+}
+
+function acceptQuote(id) {
+    if (confirm('Are you sure you want to accept this quote? This action cannot be undone.')) {
+        fetch(`/api/quotes/${id}/accept`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error accepting quote');
+            }
+        })
+        .catch(error => {
+            console.error('Error accepting quote:', error);
+            alert('Error accepting quote');
+        });
+    }
+}
+
+function rejectQuote(id) {
+    const reason = prompt('Please provide a reason for rejecting this quote (optional):');
+    if (reason !== null) {
+        fetch(`/api/quotes/${id}/reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error rejecting quote');
+            }
+        })
+        .catch(error => {
+            console.error('Error rejecting quote:', error);
+            alert('Error rejecting quote');
+        });
+    }
+}
+
+function downloadQuote(id) {
+    window.open(`/quotes/${id}/download`, '_blank');
+}
+
+function printQuote() {
+    window.print();
+}
+</script>
+{% endblock %}

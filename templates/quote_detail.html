@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Quote Details - Novellus{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-primary fw-bold">
+                <i class="fas fa-quote-right me-2"></i>Quote #{{ quote.id }}
+            </h1>
+            <p class="text-muted mb-0">{{ quote.application.property_address }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('quotes') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Quotes
+            </a>
+            {% if current_user.role == 'lender' and quote.status == 'draft' %}
+                <button type="button" class="btn btn-success" onclick="sendQuote({{ quote.id }})">
+                    <i class="fas fa-paper-plane me-2"></i>Send Quote
+                </button>
+                <form method="POST" action="{{ url_for('generate_quote_document', id=quote.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-file-word me-2"></i>Generate Document
+                    </button>
+                </form>
+            {% elif current_user.role == 'borrower' and quote.status == 'sent' %}
+                <button type="button" class="btn btn-success" onclick="acceptQuote({{ quote.id }})">
+                    <i class="fas fa-check me-2"></i>Accept Quote
+                </button>
+                <button type="button" class="btn btn-outline-danger" onclick="rejectQuote({{ quote.id }})">
+                    <i class="fas fa-times me-2"></i>Decline Quote
+                </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quote Status -->
+    <div class="row mb-4">
+        <div class="col-12">
+            {% if quote.status == 'draft' %}
+                <div class="alert alert-secondary">
+                    <i class="fas fa-edit me-2"></i>
+                    This quote is in draft status and has not been sent to the borrower yet.
+                </div>
+            {% elif quote.status == 'sent' %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-clock me-2"></i>
+                    Quote sent and awaiting borrower response.
+                </div>
+            {% elif quote.status == 'accepted' %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check me-2"></i>
+                    Quote has been accepted by the borrower.
+                </div>
+            {% elif quote.status == 'rejected' %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-times me-2"></i>
+                    Quote has been declined by the borrower.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quote Details -->
+        <div class="col-lg-8 mb-4">
+            <!-- Loan Summary -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-chart-line me-2"></i>Loan Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Gross Amount</label>
+                                <div class="h4 fw-bold text-primary">{{ quote.gross_amount|currency }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Net Amount</label>
+                                <div class="h4 fw-bold text-success">{{ quote.net_amount|currency }}</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Monthly Payment</label>
+                                <div class="h5 fw-bold">{{ quote.monthly_payment|currency }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Interest Rate</label>
+                                <div class="h5 fw-bold">{{ quote.interest_rate|percentage(3) }} per annum</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Loan Term</label>
+                                <div class="h5 fw-bold">{{ quote.loan_term }} months</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted">LTV Ratio</label>
+                                <div class="h5 fw-bold">
+                                    <span class="badge {% if quote.ltv_ratio > 80 %}bg-warning{% elif quote.ltv_ratio > 90 %}bg-danger{% else %}bg-success{% endif %} fs-6">
+                                        {{ quote.ltv_ratio|percentage(1) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fee Breakdown -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-receipt me-2 text-primary"></i>Fee Breakdown
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td>Arrangement Fee</td>
+                                    <td class="text-end fw-medium">{{ quote.arrangement_fee|currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Legal Fees</td>
+                                    <td class="text-end fw-medium">{{ quote.legal_fees|currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Valuation Fee</td>
+                                    <td class="text-end fw-medium">{{ quote.valuation_fee|currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Title Insurance</td>
+                                    <td class="text-end fw-medium">{{ quote.title_insurance|currency }}</td>
+                                </tr>
+                                {% if quote.exit_fee > 0 %}
+                                <tr>
+                                    <td>Exit Fee</td>
+                                    <td class="text-end fw-medium">{{ quote.exit_fee|currency }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr class="border-top">
+                                    <td class="fw-bold">Total Fees</td>
+                                    <td class="text-end fw-bold">{{ (quote.arrangement_fee + quote.legal_fees + quote.valuation_fee + quote.title_insurance + quote.exit_fee)|currency }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Cost Summary -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-calculator me-2 text-primary"></i>Total Cost Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td>Total Interest</td>
+                                    <td class="text-end fw-medium">{{ quote.total_interest|currency }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Total Fees</td>
+                                    <td class="text-end fw-medium">{{ (quote.arrangement_fee + quote.legal_fees + quote.valuation_fee + quote.title_insurance + quote.exit_fee)|currency }}</td>
+                                </tr>
+                                <tr class="border-top">
+                                    <td class="fw-bold h5">Total Amount Payable</td>
+                                    <td class="text-end fw-bold h5 text-primary">{{ quote.total_amount|currency }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Schedule -->
+            {% if quote.payment_schedule %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-bottom">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="fas fa-calendar-alt me-2 text-primary"></i>Payment Schedule
+                            </h5>
+                            <button type="button" class="btn btn-sm btn-outline-success" onclick="exportSchedule()">
+                                <i class="fas fa-download me-1"></i>Export CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 400px;">
+                            <table class="table table-striped table-sm mb-0">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Payment</th>
+                                        <th>Principal</th>
+                                        <th>Interest</th>
+                                        <th>Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set schedule = quote.payment_schedule|from_json %}
+                                    {% for payment in schedule %}
+                                        <tr>
+                                            <td>{{ payment.month }}</td>
+                                            <td>{{ payment.payment|currency }}</td>
+                                            <td>{{ payment.principal|currency }}</td>
+                                            <td>{{ payment.interest|currency }}</td>
+                                            <td>{{ payment.balance|currency }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Application Details -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-file-alt me-2 text-primary"></i>Application Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Property Address</label>
+                        <div class="fw-medium">{{ quote.application.property_address }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted">Loan Type</label>
+                            <div class="fw-medium">
+                                <span class="badge bg-secondary">{{ quote.application.loan_type.title() }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted">Property Value</label>
+                            <div class="fw-medium">{{ quote.application.property_value|currency }}</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Applicant</label>
+                        <div class="fw-medium">{{ quote.application.user.full_name }}</div>
+                        <small class="text-muted">{{ quote.application.user.email }}</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quote Information -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-info-circle me-2 text-primary"></i>Quote Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Created By</label>
+                        <div class="fw-medium">{{ quote.created_by }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Created Date</label>
+                        <div class="fw-medium">{{ quote.created_at|date_format }}</div>
+                    </div>
+                    {% if quote.valid_until %}
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Valid Until</label>
+                            <div class="fw-medium">{{ quote.valid_until|date_format }}</div>
+                        </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Status</label>
+                        <div>
+                            {% if quote.status == 'draft' %}
+                                <span class="badge bg-secondary">Draft</span>
+                            {% elif quote.status == 'sent' %}
+                                <span class="badge bg-warning">Sent</span>
+                            {% elif quote.status == 'accepted' %}
+                                <span class="badge bg-success">Accepted</span>
+                            {% elif quote.status == 'rejected' %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-bolt me-2 text-primary"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('application_detail', id=quote.application.id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-file-alt me-2"></i>View Application
+                        </a>
+                        <a href="{{ url_for('calculator_page') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-calculator me-2"></i>Recalculate
+                        </a>
+                        {% if current_user.role == 'lender' %}
+                            <button type="button" class="btn btn-outline-info">
+                                <i class="fas fa-comment me-2"></i>Add Note
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function sendQuote(quoteId) {
+    if (confirm('Are you sure you want to send this quote to the borrower?')) {
+        // Implementation would make AJAX call to update status
+        console.log('Sending quote:', quoteId);
+        location.reload();
+    }
+}
+
+function acceptQuote(quoteId) {
+    if (confirm('Are you sure you want to accept this quote?')) {
+        // Implementation would make AJAX call to accept quote
+        console.log('Accepting quote:', quoteId);
+        location.reload();
+    }
+}
+
+function rejectQuote(quoteId) {
+    const reason = prompt('Please provide a reason for declining this quote (optional):');
+    if (reason !== null) {
+        // Implementation would make AJAX call to reject quote
+        console.log('Rejecting quote:', quoteId, 'Reason:', reason);
+        location.reload();
+    }
+}
+
+function exportSchedule() {
+    // Implementation would export payment schedule as CSV
+    console.log('Exporting payment schedule');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,2923 @@
+{% extends "base.html" %}
+
+{% block title %}Loan Calculator - Novellus{% endblock %}
+
+{% block nav_heading %}
+<span class="navbar-text text-white text-center fw-bold"><i class="fas fa-calculator me-2"></i>Loan Calculator</span>
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}"/>
+<style>
+    /* Calculator and results section styling moved to novellus-theme.css */
+    
+    /* Result card styling moved to novellus-theme.css */
+    
+    .result-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+        color: white !important;
+    }
+    
+    .result-label {
+        font-size: 0.8rem;
+        opacity: 1;
+        color: white !important;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0.5px;
+    }
+    
+    .schedule-table {
+        font-size: 0.9rem;
+    }
+    
+    .calculation-spinner {
+        display: none;
+    }
+    
+    /* Fix input field sizing issues */
+    #monthlyRateInput, #annualRateInput {
+        min-width: 100% !important;
+        width: 100% !important;
+    }
+    
+    #monthlyRateInput .form-control, #annualRateInput .form-control {
+        min-width: 120px !important;
+        width: auto !important;
+        flex: 1 !important;
+    }
+    
+    /* Ensure input groups maintain size */
+    .input-group {
+        width: 100% !important;
+    }
+    
+    .input-group .form-control {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+    }
+    
+    /* Full width utilization */
+    main.container-fluid {
+        max-width: 100% !important;
+    }
+    
+    /* Ensure proper form field sizing */
+    .form-control {
+        min-height: 38px !important;
+        font-size: 1rem !important;
+        box-sizing: border-box !important;
+    }
+    
+    .form-select {
+        min-height: 38px !important;
+        font-size: 1rem !important;
+    }
+    
+    /* Optimize table layout for wider screens */
+    .table-container {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+    
+    .schedule-table {
+        font-size: 0.85rem;
+        width: 100% !important;
+        table-layout: fixed;
+    }
+    
+    .schedule-table th,
+    .schedule-table td {
+        padding: 0.5rem 0.3rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Responsive result cards */
+    .result-card {
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .result-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    }
+    
+    .result-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px #AD965F;
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .result-card .result-value,
+    .result-card .result-label {
+        color: white !important;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Summary cards in calculation breakdown modal */
+    .summary-card {
+        border-radius: 10px;
+        padding: 0.5rem;
+        text-align: center;
+        color: #fff;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    }
+
+    .summary-card .summary-value {
+        font-size: 0.9rem;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+
+    .summary-card .summary-label {
+        font-size: 0.7rem;
+        font-weight: 500;
+    }
+
+    #calculationBreakdownModal .modal-dialog {
+        max-width: 650px;
+        margin: 1.75rem auto;
+    }
+
+    #calculationBreakdownModal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .calculation-details ul {
+        list-style: disc;
+        margin-left: 1.25rem;
+    }
+
+    .calculation-details li {
+        margin-bottom: 0.25rem;
+    }
+
+    .bg-purple {
+        background-color: #6f42c1 !important;
+    }
+
+    .modal-edge-to-edge .modal-dialog {
+        width: calc(100vw - 5px);
+        max-width: calc(100vw - 5px);
+        height: calc(100vh - 5px);
+        margin: 0;
+    }
+
+    .modal-edge-to-edge .modal-content,
+    .modal-edge-to-edge .modal-body {
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    /* Better spacing for wide screens */
+    @media (min-width: 1200px) {
+        .calculator-section {
+            position: sticky;
+            top: 10px;
+            height: fit-content;
+        }
+        
+        .results-section {
+            max-width: 100%;
+        }
+    }
+    
+    /* Fix input group proportions */
+    .input-group {
+        display: flex !important;
+        width: 100% !important;
+    }
+    
+    .input-group .input-group-text {
+        flex: 0 0 auto !important;
+        min-width: 40px !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+    }
+    
+    .input-group .input-group-text.currency-symbol {
+        max-width: 60px !important;
+    }
+    
+    .input-group .form-control {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+    }
+
+    /* Fix button group formatting for payment timing and frequency */
+    .btn-group {
+        display: flex !important;
+        width: 100% !important;
+        gap: 0 !important;
+    }
+    
+    .btn-group .btn-outline-primary {
+        border: 1px solid var(--novellus-gold) !important;
+        color: var(--novellus-gold) !important;
+        background-color: transparent !important;
+        margin: 0 !important;
+        padding: 0.25rem 0.25rem !important;
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
+        border-radius: 0 !important;
+        white-space: nowrap !important;
+        flex: 1 !important;
+        position: relative !important;
+        text-align: center !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    .btn-group .btn-outline-primary:not(:first-child) {
+        margin-left: -1px !important;
+    }
+    
+    .btn-group .btn-outline-primary:first-child {
+        border-top-left-radius: 0.375rem !important;
+        border-bottom-left-radius: 0.375rem !important;
+    }
+    
+    .btn-group .btn-outline-primary:last-child {
+        border-top-right-radius: 0.375rem !important;
+        border-bottom-right-radius: 0.375rem !important;
+    }
+    
+    .btn-group .btn-outline-primary:hover {
+        background-color: var(--novellus-gold-light) !important;
+        border-color: var(--novellus-gold) !important;
+        color: white !important;
+        z-index: 2 !important;
+    }
+    
+    .btn-check:checked + .btn-outline-primary {
+        background-color: var(--novellus-gold) !important;
+        border-color: var(--novellus-gold) !important;
+        color: white !important;
+        z-index: 1 !important;
+    }
+    
+    /* Ensure button groups take full width and proper alignment */
+    .btn-group.w-100 {
+        display: flex !important;
+        width: 100% !important;
+    }
+    
+    .btn-group.w-100 .btn {
+        flex: 1 !important;
+        max-width: none !important;
+    }
+    
+    /* Fix specific row layout issues */
+    #paymentTimingSection .row .col-md-6 {
+        margin-bottom: 0.75rem;
+    }
+    
+    /* Consistent uniform font sizes for all input section elements */
+    .form-label,
+    .calculator-section h6,
+    .card-header h6,
+    .calculator-section .form-text,
+    .calculator-section small,
+    .input-group-text {
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+    }
+    
+    .form-label {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .calculator-section h6 {
+        margin-bottom: 0.75rem !important;
+    }
+    
+    /* Ensure form inputs also have consistent font size */
+    .calculator-section .form-control,
+    .calculator-section .form-select {
+        font-size: 0.875rem !important;
+    }
+    
+    /* Reduce Calculate button size to match input section styling */
+    .calculator-section .btn-primary {
+        font-size: 0.875rem !important;
+        padding: 0.5rem 1rem !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Fix outline-secondary buttons to use Novellus styling */
+    .btn-group .btn-outline-secondary {
+        border: 1px solid var(--novellus-gold) !important;
+        color: var(--novellus-gold) !important;
+        background-color: transparent !important;
+        margin: 0 !important;
+        padding: 0.25rem 0.25rem !important;
+        font-size: 0.75rem !important;
+        line-height: 1.2 !important;
+        border-radius: 0 !important;
+        white-space: nowrap !important;
+        flex: 1 !important;
+        position: relative !important;
+        text-align: center !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    
+    .btn-group .btn-outline-secondary:not(:first-child) {
+        margin-left: -1px !important;
+    }
+    
+    .btn-group .btn-outline-secondary:first-child {
+        border-top-left-radius: 0.375rem !important;
+        border-bottom-left-radius: 0.375rem !important;
+    }
+    
+    .btn-group .btn-outline-secondary:last-child {
+        border-top-right-radius: 0.375rem !important;
+        border-bottom-right-radius: 0.375rem !important;
+    }
+    
+    .btn-group .btn-outline-secondary:hover {
+        background-color: var(--novellus-gold-light) !important;
+        border-color: var(--novellus-gold) !important;
+        color: white !important;
+        z-index: 2 !important;
+    }
+    
+    .btn-check:checked + .btn-outline-secondary {
+        background-color: var(--novellus-gold) !important;
+        border-color: var(--novellus-gold) !important;
+        color: white !important;
+        z-index: 1 !important;
+    }
+
+    /* Chart container styling */
+    .chart-container {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .chart-container:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+
+    .chart-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        font-weight: bold;
+        padding: 12px 15px;
+        border-radius: 8px 8px 0 0;
+        border: none;
+        font-size: 0.95rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .chart-container .card-body {
+        padding: 20px;
+        background: white;
+        border-radius: 0 0 8px 8px;
+    }
+
+    /* Fullscreen chart styling */
+    .chart-container.fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1050;
+        width: 100% !important;
+        height: 100vh !important;
+        max-width: none !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .chart-container.fullscreen .card-body {
+        height: calc(100vh - 60px);
+        border-radius: 0;
+        overflow: auto;
+    }
+
+    .chart-container.fullscreen canvas {
+        max-height: calc(100vh - 100px) !important;
+    }
+
+    .no-scroll {
+        overflow: hidden;
+    }
+
+    /* Expand button styling */
+    .expand-btn {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        border: 1px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.1);
+        color: white;
+        transition: all 0.2s ease;
+    }
+
+    .expand-btn:hover {
+        background: rgba(255,255,255,0.2);
+        border-color: rgba(255,255,255,0.5);
+        color: white;
+    }
+
+    /* Chart responsiveness */
+    .chart-container canvas {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    @media (max-width: 768px) {
+        .chart-container .card-body {
+            padding: 10px;
+        }
+        
+        .chart-header {
+            font-size: 0.85rem;
+            padding: 10px 12px;
+        }
+    }
+
+    /* Add more vertical spacing between calculator input fields */
+    .calculator-section .input-group {
+        margin-bottom: 1rem !important; /* space between input and next field */
+    }
+
+    /* Also give extra space to sections that have button groups + inputs stacked */
+    .calculator-section .btn-group + .input-group {
+        margin-top: 0.5rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    /* More space between each field block */
+    .calculator-section > div {
+        margin-bottom: 1.25rem !important;
+    }
+
+    /* Slightly more space after labels */
+    .calculator-section .form-label {
+        margin-bottom: 0.6rem !important;
+    }
+
+    /* Adjust layout spacing and widths */
+    .calculator-layout {
+        --bs-gutter-x: 2px;
+        width: calc(100% - 10px);
+    }
+
+    @media (min-width: 992px) {
+        .calculator-layout .user-input-col {
+            width: calc(33.333333% + 10px);
+        }
+
+        .calculator-layout .results-col {
+            width: calc(66.666667% - 10px);
+        }
+    }
+
+</style>
+{% endblock %}
+
+{% block main_class %}container-fluid mt-2 px-2{% endblock %}
+
+{% block content %}
+<div class="row calculator-layout">
+<!-- Calculator Form -->
+<div class="col-lg-4 user-input-col">
+<div class="calculator-section">
+<form id="calculatorForm" autocomplete="off">
+<!-- Currency -->
+<div class="">
+<!--<label class="form-label">Currency</label>-->
+<div class="btn-group w-100" role="group" aria-label="Currency">
+    <input type="radio" class="btn-check" name="currency" id="currencyGBP" value="GBP" checked>
+    <label class="btn btn-outline-primary" for="currencyGBP">GBP (£)</label>
+    <input type="radio" class="btn-check" name="currency" id="currencyEUR" value="EUR">
+    <label class="btn btn-outline-primary" for="currencyEUR">EUR (€)</label>
+</div>
+<input type="hidden" id="currency" value="GBP">
+</div>
+  <div class="accordion" id="calculatorAccordion">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingParameters">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseParameters" aria-expanded="true" aria-controls="collapseParameters">
+          Loan Parameters
+        </button>
+      </h2>
+      <div id="collapseParameters" class="accordion-collapse collapse show" data-bs-parent="#calculatorAccordion">
+        <div class="accordion-body">
+<!-- Loan Name -->
+<div class="">
+<label class="form-label" for="loanName">
+<i class="fas me-1"></i>Loan Name <span class="text-danger">*</span>
+</label>
+<input class="form-control" id="loanName" maxlength="200" name="loanName" placeholder="Enter loan name (e.g., Client Name - Property Address)" required="" style="min-height: 38px; font-size: 1rem;" type="text" autocomplete="off"/>
+</div>
+<!-- Loan Type Selection -->
+<div class="">
+<label class="form-label">Loan Type</label>
+<div class="btn-group w-100" role="group" aria-label="Loan Type">
+    <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeBridge" value="bridge" checked>
+    <label class="btn btn-outline-primary" for="loanTypeBridge">Bridge</label>
+    <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeTerm" value="term">
+    <label class="btn btn-outline-primary" for="loanTypeTerm">Term</label>
+    <input type="radio" class="btn-check" name="loanTypeToggle" id="loanTypeDevelopment" value="development2">
+    <label class="btn btn-outline-primary" for="loanTypeDevelopment">Development</label>
+</div>
+<input type="hidden" id="loanType" name="loan_type" value="bridge">
+</div>
+
+
+
+<!-- Property Value -->
+<div class="">
+<label class="form-label" for="propertyValue">Property Value</label>
+<div class="input-group">
+<span class="input-group-text currency-symbol">£</span>
+<input class="form-control" id="propertyValue" inputmode="decimal" min="0.01" name="property_value" pattern="^(?=.*[1-9])[0-9.,]+$" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+</div>
+</div>
+<!-- Amount Input Type -->
+<div class="">
+<label class="form-label">Amount Input</label>
+<div class="btn-group w-100" role="group">
+<input checked="" class="btn-check" id="grossAmount" name="amount_input_type" type="radio" value="gross"/>
+<label class="btn btn-outline-primary" for="grossAmount">Gross Amount</label>
+<input class="btn-check" id="netAmount" name="amount_input_type" type="radio" value="net"/>
+<label class="btn btn-outline-primary" for="netAmount">Net Amount</label>
+</div>
+</div>
+<!-- Gross Amount Input -->
+<div class="" id="grossAmountSection">
+<label class="form-label">Gross Amount</label>
+<div class="btn-group w-100" role="group">
+<input checked="" class="btn-check" id="grossFixed" name="gross_amount_type" type="radio" value="fixed"/>
+<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossFixed">Fixed Amount</label>
+<input class="btn-check" id="grossPercentage" name="gross_amount_type" type="radio" value="percentage"/>
+<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="grossPercentage">% of Property Value</label>
+</div>
+<div class="input-group" id="grossFixedInput">
+<span class="input-group-text currency-symbol">£</span>
+<input class="form-control" id="grossAmountFixed" inputmode="decimal" min="0.01" name="gross_amount" pattern="^(?=.*[1-9])[0-9.,]+$" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+</div>
+<div class="input-group" id="grossPercentageInput" style="display: none;">
+<input class="form-control" id="grossAmountPercentage" max="100" min="0.0001" name="gross_amount_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<span class="input-group-text">%</span>
+</div>
+</div>
+<!-- Net Amount Input -->
+<div class="" id="netAmountSection" style="display: none;">
+<label class="form-label" for="netAmountInput">Net Amount</label>
+<div class="input-group">
+<span class="input-group-text currency-symbol">£</span>
+<input class="form-control" id="netAmountInput" inputmode="decimal" min="0.01" name="net_amount" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+</div>
+<small class="form-text text-muted">Total net amount required for the loan</small>
+</div>
+<!-- Day 1 Advance (Development Loans) -->
+<div class="" id="day1AdvanceSection" style="display: none;">
+<label class="form-label" for="day1Advance">Day 1 Advance (Optional)</label>
+<div class="input-group">
+<span class="input-group-text currency-symbol">£</span>
+<input class="form-control" id="day1Advance" inputmode="decimal" min="0" name="day1_advance" pattern="[0-9.,]*" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value="0"/>
+</div>
+<small class="form-text text-muted">Initial advance on first day (will be included in first tranche)</small>
+</div>
+<!-- Start Date -->
+<div class="">
+<label class="form-label" for="startDate">Start Date</label>
+<input class="form-control" id="startDate" name="start_date" required="" style="min-height: 38px; font-size: 1rem;" type="date"/>
+</div>
+<!-- Loan End Selection -->
+<div class="">
+<label class="form-label">Loan End</label>
+<div class="btn-group w-100" role="group">
+<input class="btn-check" id="loanTermOption" name="loan_end_type" type="radio" value="term" checked>
+<label class="btn btn-outline-secondary btn-sm" for="loanTermOption">Term (months)</label>
+<input class="btn-check" id="loanEndDateOption" name="loan_end_type" type="radio" value="date">
+<label class="btn btn-outline-secondary btn-sm" for="loanEndDateOption">End Date</label>
+</div>
+<div id="loanTermContainer" class="mt-2">
+<div class="input-group">
+<input class="form-control" id="loanTerm" min="1" step="1" name="loan_term" required style="min-height: 38px; font-size: 1rem;" type="number" value=""/>
+<span class="input-group-text">months</span>
+</div>
+</div>
+<div id="endDateContainer" class="mt-2" style="display:none;">
+<input class="form-control" id="endDate" name="end_date" style="min-height: 38px; font-size: 1rem;" type="date"/>
+</div>
+</div>
+<!-- Daily Rate Calculation Method -->
+<div class="" id="use360DaysSection">
+<div class="form-check">
+<input class="form-check-input" id="use360Days" name="use_360_days" type="checkbox" value="true"/>
+<label class="form-check-label" for="use360Days">
+                            Use 360-day calculation for daily rate
+                        </label>
+</div>
+</div>
+
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingRepayment">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRepayment" aria-expanded="false" aria-controls="collapseRepayment">
+          Repayment Profile
+        </button>
+      </h2>
+      <div id="collapseRepayment" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
+        <div class="accordion-body">
+<!-- Repayment Option -->
+<div class="">
+<label class="form-label">Interest Calculation Type</label>
+<div class="btn-group w-100 flex-wrap interest-toggle" role="group" aria-label="Interest Calculation Type">
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentNone" value="none" checked>
+    <label class="btn btn-outline-primary" for="repaymentNone">Retained</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceOnly" value="service_only">
+    <label class="btn btn-outline-primary" for="repaymentServiceOnly">Service</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentServiceCapital" value="service_and_capital">
+    <label class="btn btn-outline-primary" for="repaymentServiceCapital">Service + Capital</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentCapitalOnly" value="capital_payment_only">
+    <label class="btn btn-outline-primary" for="repaymentCapitalOnly">Capital</label>
+    <input type="radio" class="btn-check" name="repaymentOptionToggle" id="repaymentFlexible" value="flexible_payment">
+    <label class="btn btn-outline-primary" for="repaymentFlexible">Flexible</label>
+</div>
+<input type="hidden" id="repaymentOption" name="repayment_option" value="none">
+</div>
+<!-- Interest Rate -->
+<div class="">
+<label class="form-label">Interest Rate</label>
+<div class="btn-group w-100" role="group">
+<input class="btn-check" id="monthlyRate" name="rate_input_type" type="radio" value="monthly"/>
+<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="monthlyRate">Monthly Rate</label>
+<input checked="" class="btn-check" id="annualRate" name="rate_input_type" type="radio" value="annual"/>
+<label class="btn btn-outline-secondary btn-sm" data-currency="GBP" for="annualRate">Annual Rate</label>
+</div>
+<div class="input-group" id="monthlyRateInput" style="display: none;">
+<input class="form-control" id="monthlyRateValue" max="10" min="0.0001" name="monthly_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per month</span>
+</div>
+<div class="input-group" id="annualRateInput">
+<input class="form-control" id="annualRateValue" max="50" min="0.0001" name="annual_rate" required step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<span class="input-group-text" style="min-width: 80px; font-size: 0.875rem;">% per annum</span>
+</div>
+<small id="rateEquivalenceNote" class="form-text text-muted"></small>
+</div>
+<!-- Interest Type -->
+<div class="">
+    <label class="form-label">Interest Calculation</label>
+    <div class="btn-group w-100 flex-wrap interest-type-toggle" role="group" aria-label="Interest Calculation">
+        <input type="radio" class="btn-check" name="interestTypeToggle" id="interestSimple" value="simple" checked>
+        <label class="btn btn-outline-primary" for="interestSimple">Simple</label>
+        <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundDaily" value="compound_daily">
+        <label class="btn btn-outline-primary" for="interestCompoundDaily">Daily</label>
+        <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundMonthly" value="compound_monthly">
+        <label class="btn btn-outline-primary" for="interestCompoundMonthly">Monthly</label>
+        <input type="radio" class="btn-check" name="interestTypeToggle" id="interestCompoundQuarterly" value="compound_quarterly">
+        <label class="btn btn-outline-primary" for="interestCompoundQuarterly">Quarterly</label>
+    </div>
+    <input type="hidden" id="interestType" name="interest_type" value="simple">
+</div>
+
+<div class="" id="additionalParams" style="display: none;">
+<!-- Payment Timing Options -->
+<div class="" id="paymentTimingSection" style="display: none;">
+<div class="row">
+<div class="col-md-6">
+<label class="form-label">Payment Timing</label>
+<div class="btn-group w-100" role="group">
+<input checked="" class="btn-check" id="paymentInAdvance" name="payment_timing" type="radio" value="advance"/>
+<label class="btn btn-outline-primary" for="paymentInAdvance">Advance</label>
+<input class="btn-check" id="paymentInArrears" name="payment_timing" type="radio" value="arrears"/>
+<label class="btn btn-outline-primary" for="paymentInArrears">Arrears</label>
+</div>
+</div>
+<div class="col-md-6">
+<label class="form-label">Payment Frequency</label>
+<div class="btn-group w-100" role="group">
+<input checked="" class="btn-check" id="paymentMonthly" name="payment_frequency" type="radio" value="monthly"/>
+<label class="btn btn-outline-primary" for="paymentMonthly">Monthly</label>
+<input class="btn-check" id="paymentQuarterly" name="payment_frequency" type="radio" value="quarterly"/>
+<label class="btn btn-outline-primary" for="paymentQuarterly">Quarterly</label>
+</div>
+</div>
+</div>
+</div>
+<div class="" id="capitalRepaymentSection" style="display: none;">
+<label class="form-label" for="capitalRepayment">Capital Repayment Amount</label>
+<div class="input-group">
+<span class="input-group-text currency-symbol">£</span>
+<input class="form-control" id="capitalRepayment" inputmode="decimal" min="0.01" name="capital_repayment" pattern="^(?=.*[1-9])[0-9.,]+$" placeholder="e.g. 10000" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text"/>
+</div>
+<small class="form-text text-muted">Principal amount to repay each payment period (monthly/quarterly)</small>
+<small class="form-text text-muted">Enter the amount per selected payment period; no automatic conversion is applied.</small>
+</div>
+<div class="" id="flexiblePaymentSection" style="display: none;">
+<label class="form-label" for="flexiblePayment">Flexible Payment per Payment</label>
+<div class="input-group">
+<span class="input-group-text currency-symbol">£</span>
+<input class="form-control" id="flexiblePayment" inputmode="decimal" min="0.01" name="flexible_payment" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text"/>
+</div>
+<small class="form-text text-muted">Enter the amount per selected payment period; no automatic conversion is applied.</small>
+</div>
+
+<div class="" id="ltvSimulationSection" style="display: none;">
+  <div class="form-check mb-2">
+    <input class="form-check-input" type="checkbox" id="ltvTargetCheckbox"/>
+    <label class="form-check-label" for="ltvTargetCheckbox">LTV Targeting Simulation</label>
+  </div>
+  <div id="ltvTargetInputs" style="display: none;">
+    <div class="mb-2">
+      <label class="form-label" for="targetLTVExit">Target LTV % on Exit</label>
+      <div class="input-group">
+<input class="form-control" id="targetLTVExit" min="0.0001" max="100" step="0.01" type="number" placeholder="e.g. 40"/>
+        <span class="input-group-text">%</span>
+      </div>
+    </div>
+    <div class="mb-2">
+      <label class="form-label">Progressive LTV Targets</label>
+      <div id="progressiveLTVList"></div>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="addLTVTarget">Add Target</button>
+    </div>
+    <div class="mt-2">
+      <strong>Total Capital Needed:</strong> <span id="ltvTotalCapital">£0</span>
+      <div id="ltvCapitalSchedule" class="mt-2"></div>
+  </div>
+</div>
+</div>
+<!-- Development Loan Tranches -->
+<div class="" id="developmentTrancheSection" style="display: none;">
+  <h6 class="">Development Loan Tranches</h6>
+  <!-- Tranche Mode Selection -->
+  <div class="">
+    <label class="form-label">Tranche Setup</label>
+    <div class="btn-group w-100" role="group">
+      <input checked="" class="btn-check" id="manual_tranches" name="tranche_mode" type="radio" value="manual"/>
+      <label class="btn btn-outline-primary" for="manual_tranches">Manual Entry</label>
+      <input class="btn-check" id="auto_tranches" name="tranche_mode" type="radio" value="auto"/>
+      <label class="btn btn-outline-primary" for="auto_tranches">Auto Generate</label>
+    </div>
+  </div>
+  <!-- Auto Generation Settings -->
+  <div class="" id="autoTrancheSettings" style="display: none;">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="">Auto Generation Settings</h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Total Development Tranche</label>
+            <div class="input-group">
+              <span class="input-group-text currency-symbol">£</span>
+              <input class="form-control" id="autoTotalAmount" inputmode="decimal" min="0" step="0.0001" type="number" value="0"/>
+            </div>
+          </div>
+          <div class="col-md-6" style="display: none;">
+            <label class="form-label">Start Date</label>
+            <input class="form-control" id="autoStartDate" type="date"/>
+          </div>
+        </div>
+        <div class="row" style="display: none;">
+          <div class="col-md-6">
+            <label class="form-label">Loan Period (Months)</label>
+            <input class="form-control" id="autoLoanPeriod" min="1" step="1" type="number" value="12"/>
+          </div>
+          <div class="col-md-6" style="display: none;">
+            <label class="form-label">Interest Rate (%)</label>
+            <input class="form-control" id="autoInterestRate" max="50" min="0" step="0.0001" type="number" value="12"/>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <label class="form-label">Number of Tranches</label>
+            <input class="form-control" id="autoTrancheCount" min="1" step="1" type="number" value="6"/>
+          </div>
+          <div class="col-md-6 d-flex align-items-end">
+            <button class="btn btn-success w-100" id="generateTranches" type="button">
+              <i class="fas fa-magic me-2"></i>Generate Tranches
+                                      </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Manual Tranche Controls -->
+  <div class="d-flex justify-content-between align-items-center" id="manualTrancheControls">
+    <span>Number of Tranches</span>
+    <div class="btn-group" role="group">
+      <button class="btn btn-outline-secondary btn-sm" id="decreaseTranches" type="button">-</button>
+      <span class="btn btn-outline-secondary btn-sm" id="trancheCount">1</span>
+      <button class="btn btn-outline-secondary btn-sm" id="increaseTranches" type="button">+</button>
+    </div>
+  </div>
+  <table class="table table-sm" id="tranchesTable">
+    <thead>
+      <tr>
+        <th>#</th>
+      </tr>
+    </thead>
+    <tbody id="tranchesContainer">
+      <tr class="tranche-item" data-tranche="1">
+        <td class="tranche-number">1</td>
+        <td class="text-end">
+          <span class="currency-symbol">£</span><span class="tranche-amount-display">0.00</span>
+          <input type="hidden" name="tranche_amounts[]" class="tranche-amount" value="0">
+        </td>
+        <td>
+          <span class="tranche-date-display"></span>
+          <input type="hidden" name="tranche_dates[]" class="tranche-date" value="">
+        </td>
+        <td class="text-end">
+          <span class="tranche-rate-display">0.00</span>
+          <input type="hidden" name="tranche_rates[]" class="tranche-rate" value="0">
+        </td>
+        <td>
+          <span class="tranche-description-display"></span>
+          <input type="hidden" name="tranche_descriptions[]" class="tranche-description" value="">
+        </td>
+        <td>
+          <button type="button" class="btn btn-sm btn-outline-primary me-1 edit-tranche-btn" onclick="window.loanCalculator.openEditTrancheModal(0, 'manual')"><i class="fas fa-edit"></i></button>
+          <button type="button" class="btn btn-sm btn-outline-danger delete-tranche-btn" onclick="window.loanCalculator.openDeleteTrancheModal(0, 'manual')"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingFees">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFees" aria-expanded="false" aria-controls="collapseFees">
+          Fees Section
+        </button>
+      </h2>
+      <div id="collapseFees" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
+        <div class="accordion-body">
+<!-- Arrangement Fee -->
+<div class="">
+<label class="form-label" for="arrangementFeeRate">Arrangement Fee</label>
+<div class="input-group">
+<input class="form-control" id="arrangementFeeRate" max="10" min="0.0001" name="arrangement_fee_percentage" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<span class="input-group-text">%</span>
+</div>
+</div>
+<!-- Legal Fees -->
+<div class="">
+<label class="form-label" for="legalFees">Legal Fees</label>
+<div class="input-group">
+<span class="input-group-text currency-symbol">£</span>
+<input class="form-control" id="legalFees" inputmode="decimal" min="0.01" name="legal_fees" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+</div>
+</div>
+<!-- Site Visit Fee -->
+<div class="">
+<label class="form-label" for="siteVisitFee">Site Visit Fee</label>
+<div class="input-group">
+<span class="input-group-text currency-symbol">£</span>
+<input class="form-control" id="siteVisitFee" inputmode="decimal" min="0.01" name="site_visit_fee" pattern="^(?=.*[1-9])[0-9.,]+$" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="text" value=""/>
+</div>
+</div>
+<!-- Title Insurance -->
+<div class="">
+<label class="form-label" for="titleInsuranceRate">Title Insurance</label>
+<div class="input-group">
+<input class="form-control" id="titleInsuranceRate" max="1" min="0.0001" name="title_insurance_rate" step="0.0001" style="min-height: 38px; font-size: 1rem;" type="number"/>
+<span class="input-group-text">%</span>
+</div>
+</div>
+        </div>
+      </div>
+    </div>
+
+<!-- Calculate Button -->
+<div class="d-grid gap-2">
+<button class="btn btn-primary btn-lg calculate-button" data-currency="GBP" type="submit" disabled>
+    <i class="fas fa-calculator me-2"></i>Calculate
+                    </button>
+<button class="btn btn-outline-secondary" id="cancelEditBtn" style="display: none;" type="button">
+<i class="fas fa-times me-2"></i>Cancel Edit
+                    </button>
+</div>
+</form>
+</div>
+</div>
+<!-- Results Section -->
+<div class="col-lg-8 results-col">
+<div class="results-section" id="resultsSection" style="display: none;">
+<!-- Edit Mode Notice -->
+<div class="row" id="editModeNotice" style="display: none;">
+<div class="col-12">
+<div class="alert alert-info">
+<i class="fas fa-edit me-2"></i>
+<strong>Edit Mode:</strong> You are editing "<span id="editingLoanName"></span>". Make changes and save to update the loan.
+                    </div>
+</div>
+</div>
+<!-- Calculation Results Section -->
+<div id="calculationResultsSection">
+<!-- Summary Table (Loan Summary Format) -->
+<div class="card">
+<div class="card-header d-flex justify-content-left align-items-left position-relative bg-primary text-white fw-bold border border-dark" data-currency="GBP">
+                    <span>Loan Summary</span>
+                    <div class="position-absolute top-50 end-0 translate-middle-y d-flex align-items-center">
+                        <span id="workflowStep" class="badge bg-warning text-dark fs-6 px-3 py-1 me-2"><i class="fas fa-arrow-right me-1"></i>Next: Generate Report</span>
+                        <a id="openReportFields" href="#" class="btn btn-sm btn-light me-2 report-fields-link" style="display:none;" title="Edit Report Fields"><i class="fas fa-list"></i> Report Fields</a>
+                        <a id="openLoanReport" class="btn btn-sm btn-light me-2" href="#" style="display:none;" target="_blank" title="Generate Quote">
+                            <i class="fas fa-file-word"></i> Quote
+                        </a>
+                        <button type="button" class="btn btn-sm btn-light me-2" id="viewBreakdownBtn" data-bs-toggle="modal" data-bs-target="#calculationBreakdownModal" title="View Details"><i class="fas fa-eye"></i> Details</button>
+                        <button class="btn btn-sm btn-light me-2" disabled id="saveLoanBtn" type="button"><i class="fas fa-save me-2"></i><span id="saveLoanText">Save</span></button>
+                    </div>
+                </div>
+<div class="card-body p-0">
+<table class="table" style="border: 1px solid #000; border-collapse: collapse;">
+                        <tbody>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Valuation</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+<td class="fw-bold px-3 text-end" id="propertyValueResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Gross Amount</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+<td class="fw-bold px-3 text-end" id="grossAmountResult" style="color: #000 !important; background: white;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Date of First Drawdown</td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+<td class="fw-bold px-3 text-end" id="startDateResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">End Date</td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
+<td class="fw-bold px-3 text-end" id="endDateResult" style="color: #000 !important; background: white;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Months)</td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+<td class="fw-bold px-3 text-end" id="loanTermResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Days)</td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+<td class="fw-bold px-3 text-end" id="loanTermDaysResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Arrangement Fee</td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="arrangementFeePercentageDisplay">0.00%</span> <span class="currency-symbol">£</span></td>
+<td class="fw-bold px-3 text-end" id="arrangementFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Legal Costs</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+<td class="fw-bold px-3 text-end" id="legalCostsResult" style="color: #000 !important; background: white;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Site Visit Fee</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+<td class="fw-bold px-3 text-end" id="siteVisitFeeResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Title Insurance</td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"><span id="titleInsurancePercentageDisplay">0.000%</span> <span class="currency-symbol">£</span></td>
+<td class="fw-bold px-3 text-end" id="titleInsuranceResult" style="color: #000 !important; background: white;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest</td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="interestRatePercentageDisplay">12.00%</span> <span class="currency-symbol">£</span></td>
+<td class="fw-bold px-3 text-end" id="totalInterestResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr id="retainedInterestRow" style="border: 1px solid #000; display: none;">
+  <td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Retained Interest</td>
+  <td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+  <td class="fw-bold px-3 text-end" id="retainedInterestResult" style="color: #000 !important; background: white;">-</td>
+</tr>
+<tr id="interestRefundRow" style="border: 1px solid #000; display: none;">
+  <td class="px-3" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest Refund</td>
+  <td class="text-end px-3 currency-symbol" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+  <td class="fw-bold px-3 text-end" id="interestRefundResult" style="color: #28a745 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr id="interestOnlyTotalRow" style="border: 1px solid #000; display: none;">
+<td class="px-3" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">Interest-Only Total</td>
+<td class="text-end px-3 currency-symbol" style="color: #6c757d !important; border-right: 1px solid #000; background: white;">£</td>
+<td class="fw-bold px-3 text-end" id="interestOnlyTotalResult" style="color: #6c757d !important; background: white;">-</td>
+</tr>
+<tr id="interestSavingsRow" style="border: 1px solid #000; display: none;">
+<td class="px-3" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest Savings vs Interest-Only</td>
+<td class="text-end px-3" style="color: #28a745 !important; border-right: 1px solid #000; background: #f8f9fa;"><span id="savingsPercentageResult">-</span></td>
+<td class="fw-bold px-3 text-end" id="interestSavingsResult" style="color: #28a745 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr id="periodicInterestRow" style="border: 1px solid #000; display: none;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">
+<span id="periodicInterestLabel">Monthly Interest Payment</span>
+</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: white;">£</td>
+<td class="fw-bold px-3 text-end" id="periodicInterestResult" style="color: #000 !important; background: white;">-</td>
+</tr>
+<tr id="interestPaymentTimingRow" style="border: 1px solid #000; display: none;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest Payment</td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+<td class="fw-bold px-3 text-end" id="interestPaymentTimingResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Net Day 1 Advance</td>
+<td class="text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">£</td>
+<td class="fw-bold px-3 text-end" id="netDay1AdvanceResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">LTV Ratio</td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
+<td class="fw-bold px-3 text-end" id="ltvRatioResult" style="color: #000 !important; background: #f8f9fa;">-</td>
+</tr>
+<tr style="border: 1px solid #000;">
+<td class="px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">End LTV</td>
+<td class="text-end px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
+<td class="fw-bold px-3 text-end" id="endLTVResult" style="color: #000 !important; background: white;">-</td>
+</tr>
+<tr style="border: 2px solid #000; background: #f0f0f0;">
+<td class="fw-bold px-3" style="color: #000 !important; border-right: 1px solid #000;">Total Net Advance</td>
+<td class="fw-bold text-end px-3 currency-symbol" style="color: #000 !important; border-right: 1px solid #000;">£</td>
+<td class="fw-bold px-3 text-end" id="totalNetAdvanceResult" style="color: #000 !important; font-size: 1.1rem;">-</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Visualization Buttons -->
+<div class="mt-4 d-flex flex-wrap gap-2" id="visualizationButtons">
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#paymentScheduleModal">
+        <i class="fas fa-calendar-alt me-1"></i>Detailed Payment Schedule
+    </button>
+    <button class="btn btn-outline-primary" id="trancheScheduleBtn" data-bs-toggle="modal" data-bs-target="#trancheScheduleModal" style="display: none;">
+        <i class="fas fa-layer-group me-1"></i>Calculation Breakdown
+    </button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#loanBreakdownModal">
+        <i class="fas fa-chart-pie me-1"></i>Loan Breakdown
+    </button>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#balanceModal">
+        <i class="fas fa-chart-line me-1"></i>Balance Over Time
+    </button>
+</div>
+</div>
+<!-- End Calculation Results Section -->
+</div>
+<!-- No Results Message -->
+<div class="results-section text-center" id="noResults">
+<i class="fas fa-calculator fa-3x text-muted"></i>
+<h5 class="text-muted">Enter loan details to see calculations</h5>
+<p class="text-muted"></p>
+</div>
+
+<!-- Visualization Modals -->
+<div class="modal fade modal-edge-to-edge" id="paymentScheduleModal" tabindex="-1" aria-labelledby="paymentScheduleLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="paymentScheduleLabel">Detailed Payment Schedule</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="detailedPaymentScheduleCard">
+          <div>
+            <table class="table table-sm" style="width: 100%; border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+              <thead>
+                <tr style="background: #f8f9fa; border: 1px solid #000;">
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Capital Outstanding</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Annual Interest %</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Factor P.D.</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Scheduled Repayment</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Repayment</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Accrued</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Retained</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Refund</th>
+                  <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Running LTV</th>
+                </tr>
+              </thead>
+              <tbody id="detailedPaymentScheduleBody">
+                <!-- Payment schedule rows will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="exportPaymentScheduleBtn" style="display: none;">Export</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+</div>
+</div>
+</div>
+</div>
+
+<div class="modal fade modal-edge-to-edge" id="trancheScheduleModal" tabindex="-1" aria-labelledby="trancheScheduleLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="trancheScheduleLabel">Calculation Breakdown</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <table class="table table-sm" style="width: 100%; border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+              <tr style="background: #f8f9fa; border: 1px solid #000;">
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Tranche Release</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Calculation</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
+                <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Running LTV</th>
+              </tr>
+            </thead>
+            <tbody id="trancheScheduleBody">
+              <!-- Tranche schedule rows will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="exportTrancheScheduleBtn" style="display: none;">Export</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade modal-edge-to-edge" id="loanBreakdownModal" tabindex="-1" aria-labelledby="loanBreakdownLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="loanBreakdownLabel">Loan Breakdown</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <canvas id="loanBreakdownChart" class="w-100" style="height:80vh;"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade modal-edge-to-edge" id="balanceModal" tabindex="-1" aria-labelledby="balanceLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="balanceLabel">Balance Over Time</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <canvas id="balanceOverTimeChart" class="w-100" style="height:80vh;"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Calculation Breakdown Modal -->
+<div class="modal fade" id="calculationBreakdownModal" tabindex="-1" aria-labelledby="calculationBreakdownLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white" id="calculationBreakdownHeader" data-currency="GBP">
+                <h5 class="modal-title" id="calculationBreakdownLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body calculation-details" id="calculationBreakdownContent">
+                <!-- Content injected by calculator.js -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Tranche Edit Modal -->
+<div class="modal fade" id="trancheEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Tranche <span id="editTrancheNumber"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-2">
+                    <label for="editTrancheAmount" class="form-label">Amount</label>
+                    <input type="number" step="0.0001" class="form-control" id="editTrancheAmount">
+                </div>
+                <div class="mb-2">
+                    <label for="editTrancheDate" class="form-label">Release Date</label>
+                    <input type="date" class="form-control" id="editTrancheDate">
+                </div>
+                <div class="mb-2">
+                    <label for="editTrancheRate" class="form-label">Rate (%)</label>
+                    <input type="number" step="0.0001" class="form-control" id="editTrancheRate">
+                </div>
+                <div class="mb-2">
+                    <label for="editTrancheDescription" class="form-label">Description</label>
+                    <input type="text" class="form-control" id="editTrancheDescription">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="window.loanCalculator.saveTrancheEdits()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tranche Delete Modal -->
+<div class="modal fade" id="trancheDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Tranche</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete this tranche?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="window.loanCalculator.confirmDeleteTranche()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Modern Notification System -->
+<script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+<script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
+<script>
+// End date/term synchronization with automatic recalculation
+function calculateEndDate() {
+    const mode = document.querySelector('input[name="loan_end_type"]:checked').value;
+    const startDateEl = document.getElementById('startDate');
+    const startDate = startDateEl.value;
+    const loanTermEl = document.getElementById('loanTerm');
+    const endDateEl = document.getElementById('endDate');
+
+    // Ensure users cannot pick an end date before the start date
+    if (endDateEl) {
+        endDateEl.min = startDate;
+    }
+
+    if (mode === 'term') {
+        const loanTerm = parseInt(loanTermEl.value);
+        if (startDate && loanTerm && (document.activeElement === loanTermEl || document.activeElement === startDateEl || !endDateEl.value)) {
+            const [sy, sm, sd] = startDate.split('-').map(Number);
+            let endYear = sy;
+            let endMonth = sm - 1 + loanTerm;
+            endYear += Math.floor(endMonth / 12);
+            endMonth = endMonth % 12;
+            let end = new Date(Date.UTC(endYear, endMonth, sd));
+            if (end.getUTCMonth() !== endMonth) {
+                end = new Date(Date.UTC(endYear, endMonth + 1, 0));
+            }
+            end.setUTCDate(end.getUTCDate() - 1);
+            const endStr = `${end.getUTCFullYear()}-${String(end.getUTCMonth() + 1).padStart(2, '0')}-${String(end.getUTCDate()).padStart(2, '0')}`;
+            endDateEl.value = endStr;
+
+            const startUTC = Date.UTC(sy, sm - 1, sd);
+            const endUTC = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate());
+            const daysDiff = Math.floor((endUTC - startUTC) / 86400000) + 1;
+            const loanTermDaysEl = document.getElementById('loanTermDaysResult');
+            if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
+            if (window.loanCalculator && typeof window.loanCalculator.update360DayVisibility === 'function') {
+                window.loanCalculator.update360DayVisibility();
+            }
+            triggerCalculationUpdate();
+        }
+    } else {
+        const endDate = endDateEl.value;
+        if (startDate && endDate && (document.activeElement === endDateEl || document.activeElement === startDateEl || !loanTermEl.value)) {
+            const startObj = new Date(startDate);
+            const endObj = new Date(endDate);
+
+            // Warn and correct if end date is before start date
+            if (endObj < startObj) {
+                Novellus.utils.showToast('Start date cannot be greater than end date', 'danger');
+                endDateEl.value = startDate;
+                endObj.setTime(startObj.getTime());
+            }
+
+            const [sy, sm, sd] = startDate.split('-').map(Number);
+            const [ey, em, ed] = endDateEl.value.split('-').map(Number);
+
+            const startUTC = Date.UTC(sy, sm - 1, sd);
+            const endUTC = Date.UTC(ey, em - 1, ed);
+            const daysDiff = Math.floor((endUTC - startUTC) / 86400000) + 1;
+            const loanTermDaysEl = document.getElementById('loanTermDaysResult');
+            if (loanTermDaysEl) loanTermDaysEl.textContent = daysDiff;
+            if (window.loanCalculator && typeof window.loanCalculator.update360DayVisibility === 'function') {
+                window.loanCalculator.update360DayVisibility();
+            }
+
+            // Derive loan term (months) from start/end dates
+            const endPlusOne = new Date(endObj);
+            endPlusOne.setUTCDate(endPlusOne.getUTCDate() + 1);
+            let months = (endPlusOne.getUTCFullYear() - startObj.getUTCFullYear()) * 12 +
+                         (endPlusOne.getUTCMonth() - startObj.getUTCMonth());
+            if (endPlusOne.getUTCDate() < startObj.getUTCDate()) {
+                months -= 1;
+            }
+            loanTermEl.value = months > 0 ? months : '';
+
+            triggerCalculationUpdate();
+        }
+    }
+}
+
+function toggleLoanEndInputs() {
+    const mode = document.querySelector('input[name="loan_end_type"]:checked').value;
+    const loanTermContainer = document.getElementById('loanTermContainer');
+    const endDateContainer = document.getElementById('endDateContainer');
+    const loanTermInput = document.getElementById('loanTerm');
+    const endDateInput = document.getElementById('endDate');
+
+    if (mode === 'term') {
+        loanTermContainer.style.display = '';
+        endDateContainer.style.display = 'none';
+        if (loanTermInput) loanTermInput.required = true;
+        if (endDateInput) endDateInput.required = false;
+    } else {
+        loanTermContainer.style.display = 'none';
+        endDateContainer.style.display = '';
+        if (loanTermInput) loanTermInput.required = false;
+        if (endDateInput) endDateInput.required = true;
+    }
+}
+
+// Helper function to trigger calculation update when dates change
+function triggerCalculationUpdate() {
+    try {
+        // Check if we have existing loan results to update
+        const loanSummaryTable = document.querySelector('#loanSummaryTable tbody');
+        const hasExistingResults = loanSummaryTable && loanSummaryTable.children.length > 0;
+        
+        // Check if we have a calculator instance and the form has sufficient data
+        const calculator = window.loanCalculator;
+        if (calculator && (hasExistingResults || hasMinimumFormData())) {
+            console.log('Date changed - automatic calculation disabled. Use Calculate button.');
+        }
+    } catch (error) {
+        console.log('Auto-calculation on date change not available:', error.message);
+    }
+}
+
+// Check if form has minimum data required for calculation
+function hasMinimumFormData() {
+    const grossAmount = document.getElementById('grossAmountFixed').value;
+    const netAmount = document.getElementById('netAmountInput').value;
+    const propertyValue = document.getElementById('propertyValue').value;
+    const annualRate = document.getElementById('annualRate').value;
+    const loanName = document.getElementById('loanName').value.trim();
+    
+    // Only return true if we have meaningful data AND a loan name
+    const hasAmountData = (grossAmount && parseFloat(grossAmount) > 0) || 
+                         (netAmount && parseFloat(netAmount) > 0) || 
+                         (propertyValue && parseFloat(propertyValue) > 0 && annualRate && parseFloat(annualRate) > 0);
+    
+    return hasAmountData && loanName;
+}
+
+// Initialize end date calculation and loan calculator
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        // Set default start date to today without timezone shifts unless editing
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const startDateElement = document.getElementById('startDate');
+        const urlParams = new URLSearchParams(window.location.search);
+        const isEditMode = urlParams.get('edit') === 'true';
+        if (startDateElement && !isEditMode && !startDateElement.value) {
+            startDateElement.value = todayStr;
+        }
+        const endDateElement = document.getElementById('endDate');
+        if (endDateElement) {
+            endDateElement.min = startDateElement ? (startDateElement.value || todayStr) : todayStr;
+        }
+        
+        // Ensure correct field visibility and initial calculation
+        toggleLoanEndInputs();
+        if (typeof calculateEndDate === 'function') {
+            calculateEndDate();
+        }
+
+        // Add event listeners with error handling
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        const loanTerm = document.getElementById('loanTerm');
+        const loanEndRadios = document.querySelectorAll('input[name="loan_end_type"]');
+
+        if (startDate) startDate.addEventListener('change', calculateEndDate);
+        if (endDate) endDate.addEventListener('change', calculateEndDate);
+        if (loanTerm) loanTerm.addEventListener('input', calculateEndDate);
+        loanEndRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                toggleLoanEndInputs();
+                calculateEndDate();
+            });
+        });
+        
+        // Initialize the main loan calculator and store global reference
+        try {
+            window.loanCalculator = new LoanCalculator();
+            console.log('Calculator page initialized successfully');
+        } catch (calculatorError) {
+            console.error('Error initializing LoanCalculator:', calculatorError);
+            // Create a minimal fallback calculator object
+            window.loanCalculator = {
+                collectFormData: function() {
+                    console.warn('Using fallback collectFormData function');
+                    return {};
+                }
+            };
+        }
+        
+    } catch (error) {
+        console.error('Error during page initialization:', error);
+        // Show user-friendly error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-warning mt-3';
+        errorDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Some calculator features may not be available. Please refresh the page to try again.
+        `;
+        const container = document.querySelector('.container-fluid');
+        if (container) {
+            container.insertBefore(errorDiv, container.firstChild);
+        }
+    }
+});
+
+// Simplified fullscreen toggle for compact charts
+function toggleChartFullscreen(button) {
+    const card = button.closest('.chart-container');
+    if (!card) {
+        console.error('Chart container not found for button:', button);
+        return;
+    }
+    
+    const icon = button.querySelector('i');
+    
+    if (card.classList.contains('fullscreen')) {
+        // Exit fullscreen
+        card.classList.remove('fullscreen');
+        if (icon) {
+            icon.className = 'fas fa-expand';
+        }
+        document.body.classList.remove('no-scroll');
+        
+        // Resize charts after transition
+        setTimeout(() => resizeChartsInCard(card), 300);
+    } else {
+        // Enter fullscreen
+        card.classList.add('fullscreen');
+        if (icon) {
+            icon.className = 'fas fa-compress';
+        }
+        document.body.classList.add('no-scroll');
+        
+        // Resize charts after transition
+        setTimeout(() => resizeChartsInCard(card), 300);
+    }
+}
+
+// Legacy fullscreen toggle functionality for backward compatibility
+function toggleFullscreen(cardId) {
+    // Find the chart container - it might be the card itself or a parent
+    let card = document.getElementById(cardId);
+    if (!card) {
+        // Try to find the card by looking for the chart canvas
+        const canvas = document.getElementById(cardId.replace('Card', 'Chart'));
+        if (canvas) {
+            card = canvas.closest('.chart-container');
+        }
+    }
+    
+    if (!card) {
+        console.error('Chart container not found for:', cardId);
+        return;
+    }
+    
+    const button = card.querySelector('.expand-btn');
+    const icon = button ? button.querySelector('i') : null;
+    
+    if (card.classList.contains('fullscreen')) {
+        // Exit fullscreen
+        card.classList.remove('fullscreen');
+        if (icon) {
+            icon.className = 'fas fa-expand';
+        }
+        if (button) {
+            button.innerHTML = '<i class="fas fa-expand"></i>';
+        }
+        document.body.classList.remove('no-scroll');
+        
+        // Resize charts if they exist
+        setTimeout(() => resizeChartsInCard(card), 100);
+    } else {
+        // Enter fullscreen
+        card.classList.add('fullscreen');
+        if (icon) {
+            icon.className = 'fas fa-compress';
+        }
+        if (button) {
+            button.innerHTML = '<i class="fas fa-compress"></i>';
+        }
+        document.body.classList.add('no-scroll');
+        
+        // Resize charts if they exist
+        setTimeout(() => resizeChartsInCard(card), 200);
+    }
+}
+
+// Enhanced resize charts when entering/exiting fullscreen
+function resizeChartsInCard(cardElement) {
+    // Handle both element and ID
+    const card = typeof cardElement === 'string' ? document.getElementById(cardElement) : cardElement;
+    if (!card) return;
+    
+    const canvases = card.querySelectorAll('canvas');
+    
+    canvases.forEach(canvas => {
+        const chartInstance = Chart.getChart(canvas);
+        if (chartInstance) {
+            console.log('Resizing chart:', canvas.id);
+            chartInstance.resize();
+            chartInstance.update('none'); // Update without animation for better performance
+        }
+    });
+}
+
+// Close fullscreen on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const fullscreenCard = document.querySelector('.fullscreen');
+        if (fullscreenCard) {
+            const expandBtn = fullscreenCard.querySelector('.expand-btn');
+            if (expandBtn) {
+                toggleChartFullscreen(expandBtn);
+            }
+        }
+    }
+});
+
+// Edit functionality - handles URL parameters for loan editing
+function handleEditMode() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('edit') === 'true') {
+        const loanId = urlParams.get('loanId');
+        const loanName = urlParams.get('loanName');
+        
+        if (loanId && loanName) {
+            // Show edit mode notice
+            document.getElementById('editModeNotice').style.display = 'block';
+            document.getElementById('editingLoanName').textContent = decodeURIComponent(loanName);
+            document.getElementById('saveLoanText').textContent = 'Update';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
+            
+            // Store edit mode data
+            window.editMode = {
+                loanId: loanId,
+                loanName: decodeURIComponent(loanName)
+            };
+            
+            // Populate loan name field
+            const loanNameField = document.getElementById('loanName');
+            if (loanNameField) {
+                loanNameField.value = decodeURIComponent(loanName);
+                console.log('Set loan name field to:', decodeURIComponent(loanName));
+            }
+
+            // Populate form with URL parameters (fallback)
+            populateFormFromParams(urlParams);
+
+            // Fetch full loan details from server and populate form
+            fetch(`/api/loan/${loanId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.success) {
+                        const paramsFromData = new URLSearchParams();
+                        // Prefer original input_data but fall back to loan summary data
+                        const source = (data.input_data && Object.keys(data.input_data).length > 0)
+                            ? data.input_data
+                            : (data.loan || {});
+
+                        for (const [key, value] of Object.entries(source)) {
+                            if (value === null || value === undefined) continue;
+
+                            // Handle tranche arrays separately
+                            if (key === 'tranches' && Array.isArray(value)) {
+                                value.forEach((tranche, index) => {
+                                    paramsFromData.set(`tranche_amounts[${index}]`, tranche.amount ?? '');
+                                    paramsFromData.set(`tranche_dates[${index}]`, tranche.date ?? '');
+                                    paramsFromData.set(`tranche_rates[${index}]`, tranche.rate ?? '');
+                                    paramsFromData.set(`tranche_descriptions[${index}]`, tranche.description ?? '');
+                                });
+                                continue; // skip setting 'tranches' key directly
+                            }
+
+                            const formatted = typeof value === 'boolean'
+                                ? value.toString().toLowerCase()
+                                : value;
+                            const snakeKey = key.replace(/[A-Z]/g, letter => '_' + letter.toLowerCase());
+                            paramsFromData.set(snakeKey, formatted);
+                            paramsFromData.set(key, formatted);
+                            if (snakeKey === 'interest_rate') {
+                                paramsFromData.set('annual_rate', formatted);
+                            }
+                        }
+
+                        // Derive missing amount parameters for proper display
+                        if (!paramsFromData.has('gross_amount_percentage')) {
+                            const gross = parseFloat(paramsFromData.get('gross_amount'));
+                            const property = parseFloat(paramsFromData.get('property_value'));
+                            if (!isNaN(gross) && !isNaN(property) && property !== 0) {
+                                paramsFromData.set('gross_amount_percentage', ((gross / property) * 100).toFixed(4));
+                            }
+                        }
+                        if (!paramsFromData.has('amount_input_type')) {
+                            const net = parseFloat(paramsFromData.get('net_amount'));
+                            if (!isNaN(net) && net > 0) {
+                                paramsFromData.set('amount_input_type', 'net');
+                            } else {
+                                paramsFromData.set('amount_input_type', 'gross');
+                            }
+                        }
+                        if (paramsFromData.get('amount_input_type') === 'gross') {
+                            const perc = paramsFromData.get('gross_amount_percentage');
+                            paramsFromData.set('gross_amount_type', perc && parseFloat(perc) > 0 ? 'percentage' : 'fixed');
+                        }
+
+                        // Ensure end date is always passed and toggle set to date mode
+                        const endDateValue = source.end_date || source.endDate || (data.loan ? (data.loan.end_date || data.loan.endDate) : null);
+                        if (endDateValue) {
+                            paramsFromData.set('end_date', endDateValue);
+                        }
+                        paramsFromData.set('loan_end_type', 'date');
+
+                        populateFormFromParams(paramsFromData);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading loan data:', err);
+                })
+                .finally(() => {
+                    // Ensure toggle-dependent sections reflect loaded values
+                    if (window.loanCalculator) {
+                        try {
+                            window.loanCalculator.toggleAmountInputSections();
+                            window.loanCalculator.toggleGrossAmountInputs();
+                            window.loanCalculator.toggleRateInputs();
+                            window.loanCalculator.toggleTrancheMode();
+                            // Ensure repayment-specific sections are visible when editing
+                            window.loanCalculator.updateRepaymentOptions();
+                            window.loanCalculator.updateAdditionalParams();
+                            // Automatically calculate to populate results and visualisation
+                            window.loanCalculator.calculateLoan(true);
+                        } catch (err) {
+                            console.error('Error toggling sections in edit mode:', err);
+                        }
+                    }
+                });
+        }
+    }
+}
+
+function populateFormFromParams(params) {
+    // Basic input/select fields mapped by parameter name -> element ID
+    const fieldMap = {
+        'loan_type': 'loanType',
+        'gross_amount': 'grossAmountFixed',
+        'net_amount': 'netAmountInput',
+        'gross_amount_percentage': 'grossAmountPercentage',
+        'property_value': 'propertyValue',
+        'annual_rate': 'annualRateValue',
+        'interest_rate': 'annualRateValue',
+        'monthly_rate': 'monthlyRateValue',
+        'loan_term': 'loanTerm',
+        'start_date': 'startDate',
+        'end_date': 'endDate',
+        'repayment_option': 'repaymentOption',
+        'arrangement_fee_percentage': 'arrangementFeeRate',
+        'legal_fees': 'legalFees',
+        'site_visit_fee': 'siteVisitFee',
+        'title_insurance_rate': 'titleInsuranceRate',
+        'capital_repayment': 'capitalRepayment',
+        'capitalRepayment': 'capitalRepayment',
+        'flexible_payment': 'flexiblePayment',
+        'currency': 'currency',
+        'day1_advance': 'day1Advance'
+    };
+
+    for (const [param, id] of Object.entries(fieldMap)) {
+        const value = params.get(param);
+        if (value !== null) {
+            const field = document.getElementById(id);
+            if (field) {
+                field.value = value;
+                // Trigger change for any dependent logic
+                field.dispatchEvent(new Event('change'));
+                field.dispatchEvent(new Event('input'));
+            }
+        }
+    }
+
+    // Handle radio/button groups separately
+    const radioParams = ['amount_input_type', 'gross_amount_type', 'rate_input_type', 'payment_timing', 'payment_frequency', 'tranche_mode', 'currency', 'loan_end_type'];
+    radioParams.forEach(name => {
+        const value = params.get(name);
+        if (value !== null) {
+            const radio = document.querySelector(`input[name="${name}"][value="${value}"]`);
+            if (radio) {
+                radio.checked = true;
+                // Trigger events so UI updates (toggle styles, dependent sections)
+                radio.dispatchEvent(new Event('change'));
+                radio.dispatchEvent(new Event('click'));
+            }
+        }
+    });
+
+    // Map parameters where the radio group name differs from the parameter name
+    const toggleMap = [
+        { param: 'loan_type', name: 'loanTypeToggle' },
+        { param: 'repayment_option', name: 'repaymentOptionToggle' },
+        { param: 'interest_type', name: 'interestTypeToggle' }
+    ];
+    toggleMap.forEach(({ param, name }) => {
+        const value = params.get(param);
+        if (value !== null) {
+            const radio = document.querySelector(`input[name="${name}"][value="${value}"]`);
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change'));
+                radio.dispatchEvent(new Event('click'));
+            }
+        }
+    });
+
+    // Handle checkbox fields
+    const use360 = params.get('use_360_days');
+    if (use360 !== null) {
+        const checkbox = document.getElementById('use360Days');
+        if (checkbox) {
+            checkbox.checked = use360 === 'true' || use360 === '1';
+            checkbox.dispatchEvent(new Event('change'));
+        }
+    }
+
+    // Handle tranche data population for development loans
+    populateTrancheData(params);
+}
+
+
+
+
+
+// Populate tranche data for development loans
+function populateTrancheData(params) {
+    // Check if this is a development loan
+    const loanType = params.get('loan_type');
+    if (!['development', 'development2'].includes(loanType)) {
+        return;
+    }
+
+    // Extract tranche parameters
+    const trancheContainer = document.getElementById('tranchesContainer');
+    if (!trancheContainer || !window.loanCalculator) {
+        console.warn('Tranche container not found or loan calculator unavailable');
+        return;
+    }
+
+    // Remove any existing rows (including default blank row)
+    trancheContainer.innerHTML = '';
+
+    let trancheIndex = 0;
+    let foundTranches = false;
+
+    // Look for tranche parameters in URL
+    while (params.has(`tranche_amounts[${trancheIndex}]`)) {
+        const amount = params.get(`tranche_amounts[${trancheIndex}]`);
+        const date = params.get(`tranche_dates[${trancheIndex}]`);
+        const rate = params.get(`tranche_rates[${trancheIndex}]`);
+        const description = params.get(`tranche_descriptions[${trancheIndex}]`);
+
+        // Create tranche rows directly using loan calculator helper
+        window.loanCalculator.createTrancheItem(
+            trancheIndex + 1,
+            parseFloat(amount) || 0,
+            date || '',
+            parseFloat(rate) || 0,
+            description || ''
+        );
+
+        foundTranches = true;
+        trancheIndex++;
+    }
+
+    if (foundTranches) {
+        console.log(`Populated ${trancheIndex} tranches for development loan`);
+    }
+}
+
+// Cancel edit functionality
+function cancelEdit() {
+    window.location.href = '/calculator';
+}
+
+// Initialize edit mode when page loads
+function initializeEditMode() {
+    handleEditMode();
+
+    // Add cancel edit button handler
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', cancelEdit);
+    }
+}
+
+// Power BI report utilities
+let powerBIReports = {};
+let isLoanSaved = false;
+
+async function loadPowerBIReports() {
+    try {
+        const response = await fetch('/api/powerbi/reports');
+        const data = await response.json();
+        if (response.ok && data.reports) {
+            powerBIReports = data.reports;
+        } else {
+            powerBIReports = {
+                'main': {
+                    name: 'Loan Summary Report',
+                    baseUrl: 'https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/3bcd8dd2-4773-4372-9a19-1174c108aee5?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21',
+                    icon: 'fas fa-chart-column'
+                }
+            };
+        }
+    } catch (error) {
+        console.error('Error loading Power BI reports:', error);
+        powerBIReports = {
+            'main': {
+                name: 'Loan Summary Report',
+                baseUrl: 'https://app.powerbi.com/groups/71153f62-9f44-47cd-b6d5-c3e56e8977ba/rdlreports/3bcd8dd2-4773-4372-9a19-1174c108aee5?ctid=16f1922b-4a40-4f3f-8c40-afbd1d4a0e21',
+                icon: 'fas fa-chart-column'
+            }
+        };
+    }
+}
+
+function getPowerBIReports() {
+    return powerBIReports;
+}
+
+function generatePowerBIUrl(loan, format = 'standard', reportKey = 'main') {
+    const reports = getPowerBIReports();
+    const report = reports[reportKey];
+    if (!report) {
+        console.error(`Power BI report '${reportKey}' not found`);
+        return '#';
+    }
+    const baseUrl = report.baseUrl;
+    const parameters = report.parameters || [];
+    let paramString = '';
+    if (parameters.length > 0) {
+        parameters.forEach(param => {
+            let value = '';
+            switch(param.source) {
+                case 'loan_name':
+                    value = loan.loan_name || param.defaultValue || '';
+                    break;
+                case 'currency':
+                    if (param.name.toLowerCase().includes('template')) {
+                        value = loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited';
+                    } else {
+                        value = loan.currency || param.defaultValue || '';
+                    }
+                    break;
+                case 'gross_amount':
+                    value = loan.gross_amount?.toString() || param.defaultValue || '';
+                    break;
+                case 'loan_type':
+                    value = loan.loan_type || param.defaultValue || '';
+                    break;
+                case 'property_value':
+                    value = loan.property_value?.toString() || param.defaultValue || '';
+                    break;
+                default:
+                    value = param.defaultValue || '';
+                    break;
+            }
+            if (value) {
+                const encodedValue = encodeURIComponent(value);
+                paramString += `&rp:${param.name}=${encodedValue}`;
+            }
+        });
+    } else {
+        const template = loan.currency === 'EUR' ? 'Novellus Finance limited' : 'Novellus Limited';
+        const encodedTemplate = encodeURIComponent(template);
+        const encodedLoanName = encodeURIComponent(loan.loan_name || '');
+        paramString = `&rp:Template=${encodedTemplate}&rp:loansummaryloanname=${encodedLoanName}`;
+    }
+    let finalUrl = baseUrl + paramString;
+    if (format === 'powerbi') {
+        finalUrl = baseUrl + '&rs:Command=Render' + paramString;
+    }
+    return finalUrl;
+}
+
+function generateReportDropdownItems(loan) {
+    const reports = getPowerBIReports();
+    const items = [];
+    const loanId = window.editMode && window.editMode.loanId;
+    if (loanId) {
+        items.push(`<li><a class="dropdown-item" href="/loan/${loanId}/summary-docx" target="_blank"><i class="fas fa-file-word me-2"></i>Loan Summary (DOCX)</a></li>`);
+        if (Object.keys(reports).length) {
+            items.push('<li><hr class="dropdown-divider"></li>');
+        }
+    }
+    Object.keys(reports).forEach(reportKey => {
+        const report = reports[reportKey];
+        items.push(`<li><a class="dropdown-item" href="${generatePowerBIUrl(loan,'standard',reportKey)}" target="_blank"><i class="${report.icon} me-2"></i>${report.name}</a></li>`);
+    });
+    return items.join('');
+}
+
+function getLoanForReport() {
+    if (!window.loanCalculator) return null;
+    const data = window.loanCalculator.collectFormData();
+    return {
+        loan_name: document.getElementById('loanName').value.trim(),
+        currency: data.currency || 'GBP',
+        gross_amount: data.gross_amount || data.net_amount || 0,
+        loan_type: data.loan_type || 'bridge',
+        property_value: data.property_value || 0
+    };
+}
+
+function updateLoanReportLink() {
+    const link = document.getElementById('openLoanReport');
+    if (!link) return;
+    if (isLoanSaved && window.editMode && window.editMode.loanId) {
+        link.style.display = 'inline';
+        link.href = `/loan/${window.editMode.loanId}/summary-docx`;
+    } else {
+        link.style.display = 'none';
+        link.removeAttribute('href');
+    }
+}
+
+window.pendingReportFields = window.pendingReportFields || null;
+
+async function fetchReportFields() {
+    if (!window.editMode || !window.editMode.loanId) {
+        window.currentReportFields = window.pendingReportFields || {};
+        return window.currentReportFields;
+    }
+    const resp = await fetch(`/loan/${window.editMode.loanId}/report-fields`);
+    const data = await resp.json();
+    window.currentReportFields = data;
+    return data;
+}
+
+function addPropertyAddressField(value = '') {
+    const container = document.getElementById('docxPropertyAddressContainer');
+    const div = document.createElement('div');
+    div.className = 'input-group mb-2 property-address-item';
+    div.innerHTML = `<input type="text" class="form-control property-address-input" value="${value}">` +
+        `<button class="btn btn-outline-secondary remove-property-address" type="button"><i class="fas fa-minus"></i></button>`;
+    container.appendChild(div);
+}
+
+async function handleReportFieldsClick(e) {
+    e.preventDefault();
+    const data = await fetchReportFields();
+    document.getElementById('docxClientName').value = data.client_name || '';
+    const addresses = data.property_address
+        ? data.property_address
+            .split(/;|\n/)
+            .map(a => a.replace(/^\d+\.\s*/, '').trim())
+            .filter(a => a)
+        : [''];
+    const container = document.getElementById('docxPropertyAddressContainer');
+    container.innerHTML = '';
+    addresses.forEach(addr => addPropertyAddressField(addr));
+    document.getElementById('docxDebenture').value = data.debenture || '';
+    document.getElementById('docxGuarantor').value = data.corporate_guarantor || '';
+    document.getElementById('docxBrokerName').value = data.broker_name || '';
+    document.getElementById('docxBrokerage').value = data.brokerage || '';
+    document.getElementById('docxMaxLtv').value = data.max_ltv || '';
+    document.getElementById('docxExitFee').value = data.exit_fee_percent || '';
+    document.getElementById('docxCommitmentFee').value = data.commitment_fee || '';
+    document.getElementById('includeValuation').checked = data.include_valuation !== false;
+    document.getElementById('includePlanningAppraisal').checked = data.include_planning_appraisal !== false;
+    document.getElementById('includeQsAppraisal').checked = data.include_qs_appraisal !== false;
+    document.getElementById('includeDueDiligence').checked = data.include_due_diligence !== false;
+    document.getElementById('includeLegals').checked = data.include_legals !== false;
+    const notesResp = await fetch('/api/loan-notes');
+    const notesData = await notesResp.json();
+    const accordion = document.getElementById('loanNotesAccordion');
+    accordion.innerHTML = '';
+    let idx = 0;
+    const selectedNotes = (data.note_ids || []).map(id => parseInt(id, 10));
+    const loanType = document.getElementById('loanType')?.value || '';
+    for (const [group, notes] of Object.entries(notesData)) {
+        if ((group === 'Development Conditions' && !['development', 'development2'].includes(loanType)) ||
+            (group === 'Financial Covenants' && loanType !== 'term')) {
+            continue;
+        }
+        const item = document.createElement('div');
+        item.className = 'accordion-item';
+        const headingId = `loanNotesHeading${idx}`;
+        const collapseId = `loanNotesCollapse${idx}`;
+        item.innerHTML = `
+           <h2 class="accordion-header" id="${headingId}">
+             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}">
+               ${group}
+             </button>
+           </h2>
+           <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#loanNotesAccordion">
+             <div class="accordion-body"></div>
+           </div>
+        `;
+        const body = item.querySelector('.accordion-body');
+        notes.forEach(note => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'form-check';
+            wrapper.innerHTML = `
+                <input class="form-check-input" type="checkbox" id="note-${note.id}" data-note-id="${note.id}">
+                <label class="form-check-label" for="note-${note.id}">${note.text}</label>
+            `;
+            const shouldCheck = selectedNotes.length ?
+                selectedNotes.includes(note.id) : note.add_flag;
+            if (shouldCheck) {
+                wrapper.querySelector('input').checked = true;
+            }
+            body.appendChild(wrapper);
+        });
+        const controls = document.createElement('div');
+        controls.className = 'mb-2';
+        controls.innerHTML = `
+            <button type="button" class="btn btn-sm btn-link p-0 me-2 select-all">Select All</button>
+            <button type="button" class="btn btn-sm btn-link p-0 clear-all">Clear All</button>
+        `;
+        const selectAllBtn = controls.querySelector('.select-all');
+        const clearAllBtn = controls.querySelector('.clear-all');
+        selectAllBtn.addEventListener('click', () => {
+            body.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+            });
+        });
+        clearAllBtn.addEventListener('click', () => {
+            body.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+        });
+        body.insertBefore(controls, body.firstChild);
+        accordion.appendChild(item);
+        idx++;
+    }
+    const modal = new bootstrap.Modal(document.getElementById('loanSummaryFieldsModal'));
+    modal.show();
+}
+
+function initializeReportFieldsLinks() {
+    const links = document.querySelectorAll('.report-fields-link');
+    links.forEach(link => {
+        link.removeEventListener('click', handleReportFieldsClick);
+        link.addEventListener('click', handleReportFieldsClick);
+    });
+}
+
+function updateReportsButton(loan) {
+    const btn = document.getElementById('openReportsBtn');
+    const menu = document.getElementById('reportDropdownMenu');
+    if (!btn || !menu) return;
+    if (!loan || !loan.loan_name || !isLoanSaved) {
+        btn.disabled = true;
+        menu.innerHTML = '';
+        return;
+    }
+    btn.disabled = false;
+    menu.innerHTML = generateReportDropdownItems(loan);
+}
+
+// Initialize everything when page loads
+document.addEventListener('DOMContentLoaded', async function() {
+    window.updateNextStep = function(step) {
+        const el = document.getElementById('workflowStep');
+        if (el) {
+            el.innerHTML = `<i class="fas fa-arrow-right me-1"></i>Next: ${step}`;
+        }
+    };
+    window.updateNextStep('Calculate');
+    await loadPowerBIReports();
+    // Initialize edit mode
+    initializeEditMode();
+    isLoanSaved = !!(window.editMode && window.editMode.loanId);
+    if (isLoanSaved) {
+        updateReportsButton(getLoanForReport());
+    } else {
+        updateReportsButton(null);
+    }
+    updateLoanReportLink();
+    initializeReportFieldsLinks();
+
+    const reportModal = document.getElementById('loanSummaryFieldsModal');
+    if (reportModal && reportModal.parentElement !== document.body) {
+        document.body.appendChild(reportModal);
+    }
+
+    const addAddressBtn = document.getElementById('addPropertyAddress');
+    if (addAddressBtn) {
+        addAddressBtn.addEventListener('click', () => addPropertyAddressField());
+    }
+    const addressContainer = document.getElementById('docxPropertyAddressContainer');
+    if (addressContainer) {
+        addressContainer.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-property-address')) {
+                e.target.closest('.property-address-item').remove();
+            }
+        });
+    }
+
+    const saveFieldsBtn = document.getElementById('saveReportFields');
+    if (saveFieldsBtn) {
+        saveFieldsBtn.addEventListener('click', async function() {
+            const selectedNoteIds = Array.from(
+                document.querySelectorAll('#loanNotesAccordion input[type="checkbox"]:checked')
+            )
+            .map(cb => parseInt(cb.dataset.noteId, 10))
+            .filter(id => !isNaN(id));
+            const data = {
+                client_name: document.getElementById('docxClientName').value,
+                property_address: (() => {
+                    const addrList = Array.from(document.querySelectorAll('.property-address-input'))
+                        .map(input => input.value.trim())
+                        .filter(v => v);
+                    if (addrList.length > 1) {
+                        return addrList.map((addr, idx) => `${idx + 1}. ${addr}`).join('\n');
+                    }
+                    return addrList[0] || '';
+                })(),
+                debenture: document.getElementById('docxDebenture').value,
+                corporate_guarantor: document.getElementById('docxGuarantor').value,
+                broker_name: document.getElementById('docxBrokerName').value,
+                brokerage: document.getElementById('docxBrokerage').value,
+                max_ltv: document.getElementById('docxMaxLtv').value,
+                exit_fee_percent: document.getElementById('docxExitFee').value,
+                commitment_fee: document.getElementById('docxCommitmentFee').value,
+                include_valuation: document.getElementById('includeValuation').checked,
+                include_planning_appraisal: document.getElementById('includePlanningAppraisal').checked,
+                include_qs_appraisal: document.getElementById('includeQsAppraisal').checked,
+                include_due_diligence: document.getElementById('includeDueDiligence').checked,
+                include_legals: document.getElementById('includeLegals').checked,
+                note_ids: selectedNoteIds
+            };
+            if (!window.editMode || !window.editMode.loanId) {
+                window.pendingReportFields = data;
+                if (Novellus?.utils?.showToast) {
+                    Novellus.utils.showToast('Report fields saved', 'success');
+                }
+                const modalEl = document.getElementById('loanSummaryFieldsModal');
+                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                if (modalInstance) modalInstance.hide();
+                const saveBtn = document.getElementById('saveLoanBtn');
+                if (saveBtn) saveBtn.disabled = false;
+                isLoanSaved = false;
+                updateLoanReportLink();
+                if (window.updateNextStep) window.updateNextStep('Save Loan');
+                return;
+            }
+            try {
+                const response = await fetch(`/loan/${window.editMode.loanId}/report-fields`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    Novellus.utils.showToast('Report fields saved', 'success');
+                    await fetchReportFields();
+                    const modalEl = document.getElementById('loanSummaryFieldsModal');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) modalInstance.hide();
+                    const saveBtn = document.getElementById('saveLoanBtn');
+                    if (saveBtn) saveBtn.disabled = false;
+                    isLoanSaved = false;
+                    updateLoanReportLink();
+                    if (window.updateNextStep) window.updateNextStep('Save Loan');
+                } else {
+                    Novellus.utils.showToast(result.error || 'Failed to save report fields', 'danger');
+                }
+            } catch (error) {
+                Novellus.utils.showToast('Failed to save report fields', 'danger');
+            }
+        });
+    }
+
+    // Initialize save loan functionality
+    const saveLoanBtn = document.getElementById('saveLoanBtn');
+    
+    // Save loan button click handler
+    saveLoanBtn.addEventListener('click', async function() {
+        try {
+            // Check if loan name is provided
+            const loanName = document.getElementById('loanName').value.trim();
+            if (!loanName) {
+                if (window.notifications) {
+                    window.notifications.show('Please enter a loan name before saving.', 'warning');
+                } else {
+                    alert('Please enter a loan name before saving.');
+                }
+                document.getElementById('loanName').focus();
+                return;
+            }
+
+            // Check if results section is visible (calculation completed)
+            const resultsSection = document.getElementById('resultsSection');
+            if (!resultsSection || resultsSection.style.display === 'none') {
+                if (window.notifications) {
+                    window.notifications.show('Please calculate the loan first before saving.', 'warning');
+                } else {
+                    alert('Please calculate the loan first before saving.');
+                }
+                return;
+            }
+            
+            // Disable button during save
+            saveLoanBtn.disabled = true;
+            saveLoanBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            
+            // Collect form data
+            const formData = window.loanCalculator.collectFormData();
+            formData.loanName = loanName;
+            
+            // Perform fresh calculation to get current results
+            const calcResponse = await fetch('/api/calculate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            if (!calcResponse.ok) {
+                throw new Error('Failed to get calculation results');
+            }
+            
+            const calculationResults = await calcResponse.json();
+
+            // Merge form data with calculation results
+            const saveData = { ...formData, ...calculationResults };
+            if (window.editMode && window.editMode.loanId) {
+                saveData.loanId = window.editMode.loanId;
+            }
+
+            console.log('Saving loan with data:', saveData);
+            
+            // Send to save endpoint
+            const response = await fetch('/save-loan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(saveData)
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                
+                // Handle duplicate name error specifically
+                if (response.status === 409 && errorData.duplicate) {
+                    // Show notification with input field for new name
+                    const notificationMessage = `
+                        <div>
+                            <p style="margin-bottom: 12px;">A loan with this name already exists. Please enter a different name:</p>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text" id="duplicateNameInput" 
+                                       value="${loanName}_copy" 
+                                       style="flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
+                                <button onclick="retryLoanSave()" 
+                                        style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                    Save
+                                </button>
+                                <button onclick="this.closest('.notification').remove()" 
+                                        style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    if (window.notifications) {
+                        window.notifications.show(notificationMessage, 'warning', 30000);
+                    } else {
+                        // Fallback to prompt if notifications not available
+                        const newName = prompt('A loan with this name already exists.\n\nPlease enter a different name:', loanName + '_copy');
+                        if (newName && newName.trim() !== loanName) {
+                            document.getElementById('loanName').value = newName.trim();
+                            saveLoanBtn.click();
+                        }
+                    }
+                    return;
+                } else {
+                    throw new Error(errorData.error || 'Save failed');
+                }
+            }
+            
+            const result = await response.json();
+
+            // Mark loan as saved and enable reports
+            isLoanSaved = true;
+            window.editMode = { loanId: result.loan_id, loanName: loanName };
+            updateLoanReportLink();
+            // Show success notification
+            if (window.notifications) {
+                window.notifications.show(result.message, 'success');
+            } else {
+                alert(`Success! ${result.message}`);
+            }
+            updateReportsButton(getLoanForReport());
+            if (window.updateNextStep) window.updateNextStep('Generate Report');
+            if (window.pendingReportFields) {
+                try {
+                    const rfResp = await fetch(`/loan/${result.loan_id}/report-fields`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(window.pendingReportFields)
+                    });
+                    const rfResult = await rfResp.json();
+                    if (rfResp.ok && rfResult.success) {
+                        if (Novellus?.utils?.showToast) {
+                            Novellus.utils.showToast('Report fields saved', 'success');
+                        }
+                        window.pendingReportFields = null;
+                        await fetchReportFields();
+                    } else if (Novellus?.utils?.showToast) {
+                        Novellus.utils.showToast(rfResult.error || 'Failed to save report fields', 'danger');
+                    }
+                } catch (err) {
+                    if (Novellus?.utils?.showToast) {
+                        Novellus.utils.showToast('Failed to save report fields', 'danger');
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.error('Save loan error:', error);
+
+            // Show error notification
+            if (window.notifications) {
+                window.notifications.show('Failed to save loan: ' + error.message, 'error');
+            } else {
+                alert('Failed to save loan: ' + error.message);
+            }
+        } finally {
+            // Re-enable button
+            saveLoanBtn.disabled = false;
+            const btnText = window.editMode && window.editMode.loanId ? 'Update Loan' : 'Save Loan';
+            saveLoanBtn.innerHTML = `<i class="fas fa-save me-2"></i>${btnText}`;
+        }
+    });
+});
+
+// Helper function for retrying loan save with new name
+function retryLoanSave() {
+    const newNameInput = document.getElementById('duplicateNameInput');
+    if (newNameInput) {
+        const newName = newNameInput.value.trim();
+        if (newName) {
+            // Update the loan name field
+            document.getElementById('loanName').value = newName;
+            
+            // Close the notification
+            const notification = newNameInput.closest('.notification');
+            if (notification) {
+                notification.remove();
+            }
+            
+            // Trigger save again
+            document.getElementById('saveLoanBtn').click();
+        } else {
+            if (window.notifications) {
+                window.notifications.show('Please enter a valid loan name', 'warning');
+            }
+        }
+    }
+}
+
+// Save button is enabled automatically by calculator.js after successful calculation
+
+
+</script>
+<style>
+/* Enhanced fullscreen styles for compact charts */
+.fullscreen {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100vh !important;
+    z-index: 9999 !important;
+    background: white !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    overflow: auto !important;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3) !important;
+}
+
+.fullscreen .card-header {
+    padding: 1rem !important;
+    font-size: 1.25rem !important;
+    border-bottom: 2px solid #dee2e6 !important;
+}
+
+.fullscreen .card-body {
+    height: calc(100vh - 80px) !important;
+    overflow: auto !important;
+    padding: 2rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.fullscreen canvas {
+    max-height: calc(100vh - 160px) !important;
+    max-width: calc(100% - 80px) !important;
+    height: auto !important;
+    width: auto !important;
+}
+
+.fullscreen .table-responsive {
+    height: calc(100vh - 120px) !important;
+    overflow: auto !important;
+}
+
+/* Fullscreen expand button styling */
+.fullscreen .expand-btn {
+    position: absolute !important;
+    top: 15px !important;
+    right: 15px !important;
+    z-index: 10000 !important;
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: white !important;
+    padding: 8px 12px !important;
+    font-size: 1rem !important;
+}
+
+.no-scroll {
+    overflow: hidden !important;
+}
+
+.expand-btn {
+    background-color: #B8860B !important;
+    border-color: #B8860B !important;
+    color: white !important;
+    font-size: 0.875rem !important;
+}
+
+.expand-btn:hover {
+    background-color: #9A7209 !important;
+    border-color: #9A7209 !important;
+    color: white !important;
+}
+
+#loanNotesAccordion {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+#loanNotesAccordion .accordion-item {
+    flex: 1 1 calc(50% - 1rem);
+}
+</style>
+<!-- Report Fields Modal -->
+<div class="modal fade" id="loanSummaryFieldsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-fullscreen">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white justify-content-center position-relative" id="loanSummaryFieldsHeader" data-currency="GBP">
+        <h5 class="modal-title text-white w-100 text-center">Report Fields</h5>
+        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label for="docxClientName" class="form-label">Client/Broker</label>
+            <input type="text" class="form-control" id="docxClientName">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Property Address</label>
+            <div id="docxPropertyAddressContainer"></div>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="addPropertyAddress"><i class="fas fa-plus me-1"></i>Add Address</button>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxDebenture" class="form-label">Borrowing Entity</label>
+            <input type="text" class="form-control" id="docxDebenture">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxGuarantor" class="form-label">Corporate Guarantor</label>
+            <input type="text" class="form-control" id="docxGuarantor">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxBrokerName" class="form-label">Broker Name</label>
+            <input type="text" class="form-control" id="docxBrokerName">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxBrokerage" class="form-label">Brokerage</label>
+            <input type="text" class="form-control" id="docxBrokerage">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxMaxLtv" class="form-label">Max LTV (%)</label>
+            <input type="number" step="0.01" class="form-control" id="docxMaxLtv">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxExitFee" class="form-label">Exit Fee (%)</label>
+            <input type="number" step="0.01" class="form-control" id="docxExitFee">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label for="docxCommitmentFee" class="form-label">Commitment Fee</label>
+            <input type="number" step="0.01" class="form-control" id="docxCommitmentFee">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Report Inclusions</label>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includeValuation" checked>
+            <label class="form-check-label" for="includeValuation">Valuation</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includePlanningAppraisal" checked>
+            <label class="form-check-label" for="includePlanningAppraisal">Planning Appraisal</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includeQsAppraisal" checked>
+            <label class="form-check-label" for="includeQsAppraisal">QS Appraisal</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includeDueDiligence" checked>
+            <label class="form-check-label" for="includeDueDiligence">Due Diligence</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="includeLegals" checked>
+            <label class="form-check-label" for="includeLegals">Legals</label>
+          </div>
+        </div>
+        <div id="loanNotesAccordion" class="accordion"></div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    <button type="button" class="btn btn-primary" id="saveReportFields">Save</button>
+  </div>
+</div>
+</div>
+</div>
+<!-- Database Info Modal -->
+<div aria-hidden="true" aria-labelledby="databaseInfoModalLabel" class="modal fade" id="databaseInfoModal" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header" data-currency="GBP" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white;">
+<h5 class="modal-title" id="databaseInfoModalLabel">
+<i class="fas fa-database me-2"></i>Database Connection Information
+                </h5>
+<button aria-label="Close" class="btn-close btn-close-white" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<div id="databaseInfoContent">
+<div class="text-center">
+<div class="spinner-border text-primary" role="status">
+<span class="visually-hidden">Loading...</span>
+</div>
+<p class="">Loading database information...</p>
+</div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline-secondary" onclick="refreshDatabaseInfo()" type="button">
+<i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+<button class="btn btn-primary" data-bs-dismiss="modal" type="button">Close</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+// Database Info Functions
+function showDatabaseInfo() {
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('databaseInfoModal'));
+    modal.show();
+    
+    // Load database info
+    loadDatabaseInfo();
+}
+
+function loadDatabaseInfo() {
+    fetch('/api/database-info')
+        .then(response => response.json())
+        .then(data => {
+            displayDatabaseInfo(data);
+        })
+        .catch(error => {
+            console.error('Error loading database info:', error);
+            document.getElementById('databaseInfoContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Error loading database information: ${error.message}
+                </div>
+            `;
+        });
+}
+
+function displayDatabaseInfo(data) {
+    let html = '';
+    
+    // Connection Status
+    html += `
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-plug me-2"></i>Connection Status</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Database Type:</strong> 
+                                <span class="badge ${data.type === 'PostgreSQL' ? 'bg-success' : 'bg-secondary'}">${data.type}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Status:</strong> 
+                                <span class="badge ${data.status === 'Connected' ? 'bg-success' : 'bg-danger'}">${data.status}</span>
+                            </div>
+                        </div>
+                        ${data.last_tested ? `<small class="text-muted">Last tested: ${data.last_tested}</small>` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Connection Details
+    if (data.type === 'PostgreSQL') {
+        html += `
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-server me-2"></i>PostgreSQL Connection Details</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Host:</strong> ${data.host || 'N/A'}<br>
+                                    <strong>Port:</strong> ${data.port || 'N/A'}<br>
+                                    <strong>Database:</strong> ${data.database || 'N/A'}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Username:</strong> ${data.username || 'N/A'}<br>
+                                    <strong>Password:</strong> ${data.password || 'N/A'}
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong>Connection String:</strong><br>
+                                    <code style="font-size: 0.8rem; word-break: break-all;">${data.connection_string || 'N/A'}</code>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>External Access:</strong> Use VM IP address instead of localhost for remote connections
+                                        <br><small>Format: postgresql://novellus_user:***@[VM_IP]:5432/novellus_loans</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Table Information
+    if (data.tables) {
+        html += `
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-table me-2"></i>Database Tables (${data.table_count})</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        ${data.tables.slice(0, Math.ceil(data.tables.length/2)).map(table => `<li><i class="fas fa-table me-1"></i>${table}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        ${data.tables.slice(Math.ceil(data.tables.length/2)).map(table => `<li><i class="fas fa-table me-1"></i>${table}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Record Counts
+    if (data.record_counts) {
+        html += `
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-chart-column me-2"></i>Record Counts</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                ${Object.entries(data.record_counts).map(([table, count]) => `
+                                    <div class="col-md-3 mb-2">
+                                        <div class="text-center p-2 border rounded">
+                                            <strong>${table}</strong><br>
+                                            <span class="badge bg-primary">${count}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    document.getElementById('databaseInfoContent').innerHTML = html;
+}
+
+function refreshDatabaseInfo() {
+    document.getElementById('databaseInfoContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Refreshing...</span>
+            </div>
+            <p class="mt-2">Refreshing database information...</p>
+        </div>
+    `;
+    loadDatabaseInfo();
+}
+</script>
+<!-- Currency Theme Manager -->
+<script src="{{ url_for('static', filename='js/currency-theme-simple.js') }}"></script>
+<script>
+// Initialize currency theme manager on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Currency theme is auto-initialized in currency-theme-simple.js
+    // Access via window.currencyTheme if needed
+    
+    // Manual test function for debugging
+    window.testCurrencyTheme = function(currency) {
+        console.log(`Manual theme test: ${currency}`);
+        if (window.currencyTheme) {
+            window.currencyTheme.switchCurrency(currency);
+        }
+    };
+    
+    // Add immediate trigger for currency dropdown changes with multiple approaches
+    const currencyDropdown = document.getElementById('currency');
+    if (currencyDropdown) {
+        currencyDropdown.addEventListener('change', function(e) {
+            console.log(`Currency dropdown changed to: ${e.target.value}`);
+            
+            // Multiple approach to ensure theme updates
+            setTimeout(() => {
+                if (window.currencyTheme) {
+                    window.currencyTheme.switchCurrency(e.target.value);
+                }
+                
+                // Direct aggressive button styling as backup
+                const colors = e.target.value === 'EUR' ? 
+                    { primary: '#509664', secondary: '#3d7450' } : 
+                    { primary: '#AD965F', secondary: '#DAA520' };
+                
+                // Direct style updates with class-based approach
+                const calculateBtn = document.querySelector('.calculate-button');
+                const saveBtn = document.getElementById('saveLoanBtn');
+                
+                if (calculateBtn) {
+                    calculateBtn.classList.remove('currency-gbp-btn', 'currency-eur-btn');
+                    calculateBtn.classList.add(`currency-${e.target.value.toLowerCase()}-btn`);
+                    calculateBtn.setAttribute('style', `background-color: ${colors.primary} !important; border-color: ${colors.primary} !important; color: white !important;`);
+                }
+                
+                if (saveBtn) {
+                    saveBtn.classList.remove('currency-gbp-btn', 'currency-eur-btn');
+                    saveBtn.classList.add(`currency-${e.target.value.toLowerCase()}-btn`);
+                    saveBtn.setAttribute('style', `background-color: ${colors.primary} !important; border-color: ${colors.primary} !important; color: white !important;`);
+                }
+                
+                // Update table headers immediately
+                const tableHeaders = document.querySelectorAll('.table thead th, .card-header, .bg-primary');
+                tableHeaders.forEach(header => {
+                    header.setAttribute('data-currency', e.target.value);
+                    header.style.setProperty('background-color', colors.primary, 'important');
+                    header.style.setProperty('border', '2px solid #000000', 'important');
+                    header.style.setProperty('color', 'white', 'important');
+                    header.style.setProperty('background-image', 'none', 'important');
+                });
+                
+                // Update toggle buttons
+                const toggleButtons = document.querySelectorAll('.btn-outline-secondary');
+                toggleButtons.forEach(toggle => {
+                    toggle.classList.remove('currency-gbp-toggle', 'currency-eur-toggle');
+                    toggle.classList.add(`currency-${e.target.value.toLowerCase()}-toggle`);
+                    toggle.style.borderColor = colors.primary;
+                    toggle.style.color = colors.primary;
+                    
+                    // Check if this toggle is active
+                    const associatedRadio = document.getElementById(toggle.getAttribute('for'));
+                    if (associatedRadio && associatedRadio.checked) {
+                        toggle.style.backgroundColor = colors.primary;
+                        toggle.style.color = 'white';
+                    }
+                });
+                
+                console.log(`Direct button styling applied for ${e.target.value}`);
+            }, 10);
+        });
+        
+        // Also trigger on page load with current selection
+        setTimeout(() => {
+            currencyDropdown.dispatchEvent(new Event('change'));
+        }, 100);
+    }
+});
+</script>
+<!-- Calculator JavaScript already loaded above in scripts block -->
+
+{% endblock %}

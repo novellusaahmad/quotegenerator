@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if application %}Edit Application{% else %}New Application{% endif %} - Novellus
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i>
+                    {% if application %}Edit Application{% else %}New Loan Application{% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="applicationForm">
+                    <!-- Progress Steps -->
+                    <div class="mb-4">
+                        <div class="progress mb-3">
+                            <div class="progress-bar" role="progressbar" style="width: 25%" id="progressBar"></div>
+                        </div>
+                        <div class="row text-center">
+                            <div class="col step-indicator active" data-step="1">
+                                <i class="fas fa-info-circle"></i><br>Basic Info
+                            </div>
+                            <div class="col step-indicator" data-step="2">
+                                <i class="fas fa-home"></i><br>Property
+                            </div>
+                            <div class="col step-indicator" data-step="3">
+                                <i class="fas fa-money-bill"></i><br>Loan Details
+                            </div>
+                            <div class="col step-indicator" data-step="4">
+                                <i class="fas fa-chart-bar"></i><br>Financial Info
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Basic Information -->
+                    <div class="form-step active" id="step1">
+                        <h5 class="mb-3">Basic Information</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="loan_type" class="form-label">Loan Type *</label>
+                                <select class="form-select" id="loan_type" name="loan_type" required>
+                                    <option value="">Select loan type</option>
+                                    <option value="bridge" {% if application and application.loan_type == 'bridge' %}selected{% endif %}>Bridge Loan</option>
+                                    <option value="term" {% if application and application.loan_type == 'term' %}selected{% endif %}>Term Loan</option>
+                                    <option value="development" {% if application and application.loan_type == 'development' %}selected{% endif %}>Development Loan</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="loan_purpose" class="form-label">Loan Purpose</label>
+                                <select class="form-select" id="loan_purpose" name="loan_purpose">
+                                    <option value="">Select purpose</option>
+                                    <option value="purchase" {% if application and application.loan_purpose == 'purchase' %}selected{% endif %}>Property Purchase</option>
+                                    <option value="refinance" {% if application and application.loan_purpose == 'refinance' %}selected{% endif %}>Refinancing</option>
+                                    <option value="renovation" {% if application and application.loan_purpose == 'renovation' %}selected{% endif %}>Renovation</option>
+                                    <option value="development" {% if application and application.loan_purpose == 'development' %}selected{% endif %}>Development</option>
+                                    <option value="other" {% if application and application.loan_purpose == 'other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Development specific fields -->
+                        <div id="developmentFields" class="row" style="display: none;">
+                            <div class="col-md-6 mb-3">
+                                <label for="development_type" class="form-label">Development Type</label>
+                                <select class="form-select" id="development_type" name="development_type">
+                                    <option value="">Select type</option>
+                                    <option value="residential" {% if application and application.development_type == 'residential' %}selected{% endif %}>Residential</option>
+                                    <option value="commercial" {% if application and application.development_type == 'commercial' %}selected{% endif %}>Commercial</option>
+                                    <option value="mixed_use" {% if application and application.development_type == 'mixed_use' %}selected{% endif %}>Mixed Use</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="number_of_units" class="form-label">Number of Units</label>
+                                <input type="number" class="form-control" id="number_of_units" name="number_of_units" 
+                                       min="1" value="{{ application.number_of_units if application else '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="estimated_gdv" class="form-label">Estimated GDV</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="estimated_gdv" name="estimated_gdv" 
+                                           min="0" step="1000" value="{{ application.estimated_gdv if application else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="development_timeline" class="form-label">Timeline (months)</label>
+                                <input type="number" class="form-control" id="development_timeline" name="development_timeline" 
+                                       min="3" max="60" value="{{ application.development_timeline if application else '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Property Information -->
+                    <div class="form-step" id="step2">
+                        <h5 class="mb-3">Property Information</h5>
+                        
+                        <div class="mb-3">
+                            <label for="property_address" class="form-label">Property Address *</label>
+                            <textarea class="form-control" id="property_address" name="property_address" rows="3" required>{{ application.property_address if application else '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="property_type" class="form-label">Property Type</label>
+                                <select class="form-select" id="property_type" name="property_type">
+                                    <option value="">Select type</option>
+                                    <option value="residential" {% if application and application.property_type == 'residential' %}selected{% endif %}>Residential</option>
+                                    <option value="commercial" {% if application and application.property_type == 'commercial' %}selected{% endif %}>Commercial</option>
+                                    <option value="industrial" {% if application and application.property_type == 'industrial' %}selected{% endif %}>Industrial</option>
+                                    <option value="land" {% if application and application.property_type == 'land' %}selected{% endif %}>Land</option>
+                                    <option value="mixed_use" {% if application and application.property_type == 'mixed_use' %}selected{% endif %}>Mixed Use</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="property_value" class="form-label">Property Value *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="property_value" name="property_value" 
+                                           min="0" step="1000" required value="{{ application.property_value if application else '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="purchase_price" class="form-label">Purchase Price (if applicable)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">£</span>
+                                <input type="number" class="form-control" id="purchase_price" name="purchase_price" 
+                                       min="0" step="1000" value="{{ application.purchase_price if application else '' }}">
+                            </div>
+                            <div class="form-text">Leave blank if refinancing or if property is already owned</div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Loan Details -->
+                    <div class="form-step" id="step3">
+                        <h5 class="mb-3">Loan Details</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="loan_amount" class="form-label">Loan Amount *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="loan_amount" name="loan_amount" 
+                                           min="0" step="1000" required value="{{ application.loan_amount if application else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="loan_term" class="form-label">Loan Term *</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="loan_term" name="loan_term"
+                                           min="1" step="1" required value="{{ application.loan_term if application else '' }}">
+                                    <span class="input-group-text">months</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Loan to Value (LTV)</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="ltv_display" readonly>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <div class="form-text">Automatically calculated based on loan amount and property value</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="interest_rate" class="form-label">Desired Interest Rate</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="interest_rate" name="interest_rate" 
+                                           min="0" max="20" step="0.01" value="{{ application.interest_rate if application else '' }}">
+                                    <span class="input-group-text">% per annum</span>
+                                </div>
+                                <div class="form-text">Optional - for your reference only</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Financial Information -->
+                    <div class="form-step" id="step4">
+                        <h5 class="mb-3">Financial Information</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="monthly_income" class="form-label">Monthly Income</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="monthly_income" name="monthly_income" 
+                                           min="0" step="100" value="{{ application.monthly_income if application else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="annual_income" class="form-label">Annual Income</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="annual_income" name="annual_income" 
+                                           min="0" step="1000" value="{{ application.annual_income if application else '' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="existing_debt" class="form-label">Existing Debt</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" id="existing_debt" name="existing_debt" 
+                                           min="0" step="1000" value="{{ application.existing_debt if application else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="credit_score" class="form-label">Credit Score</label>
+                                <input type="number" class="form-control" id="credit_score" name="credit_score" 
+                                       min="300" max="850" value="{{ application.credit_score if application else '' }}">
+                                <div class="form-text">Optional - helps us provide better terms</div>
+                            </div>
+                        </div>
+
+                        <!-- Document Upload Section -->
+                        <div class="mt-4">
+                            <h6>Supporting Documents</h6>
+                            <p class="text-muted">Upload any supporting documents for your application</p>
+                            
+                            <div class="mb-3">
+                                <label for="documents" class="form-label">Documents</label>
+                                <input type="file" class="form-control" id="documents" name="documents" multiple 
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                                <div class="form-text">Accepted formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (Max 16MB per file)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <button type="button" class="btn btn-secondary" id="prevBtn" onclick="changeStep(-1)" style="display: none;">
+                            <i class="fas fa-arrow-left me-2"></i>Previous
+                        </button>
+                        
+                        <div class="ms-auto">
+                            <button type="button" class="btn btn-primary" id="nextBtn" onclick="changeStep(1)">
+                                Next<i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                            <button type="submit" class="btn btn-success" id="submitBtn" style="display: none;">
+                                <i class="fas fa-check me-2"></i>
+                                {% if application %}Update Application{% else %}Submit Application{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentStep = 1;
+const totalSteps = 4;
+
+// Initialize form
+document.addEventListener('DOMContentLoaded', function() {
+    // Show development fields if development loan is selected
+    document.getElementById('loan_type').addEventListener('change', function() {
+        const developmentFields = document.getElementById('developmentFields');
+        if (this.value === 'development') {
+            developmentFields.style.display = 'block';
+        } else {
+            developmentFields.style.display = 'none';
+        }
+    });
+
+    // Calculate LTV automatically
+    const loanAmountInput = document.getElementById('loan_amount');
+    const propertyValueInput = document.getElementById('property_value');
+    const ltvDisplay = document.getElementById('ltv_display');
+
+    function calculateLTV() {
+        const loanAmount = parseFloat(loanAmountInput.value) || 0;
+        const propertyValue = parseFloat(propertyValueInput.value) || 0;
+        
+        if (propertyValue > 0) {
+            const ltv = (loanAmount / propertyValue) * 100;
+            ltvDisplay.value = ltv.toFixed(1);
+            
+            // Color code the LTV
+            if (ltv > 80) {
+                ltvDisplay.className = 'form-control text-danger';
+            } else if (ltv > 70) {
+                ltvDisplay.className = 'form-control text-warning';
+            } else {
+                ltvDisplay.className = 'form-control text-success';
+            }
+        } else {
+            ltvDisplay.value = '';
+            ltvDisplay.className = 'form-control';
+        }
+    }
+
+    loanAmountInput.addEventListener('input', calculateLTV);
+    propertyValueInput.addEventListener('input', calculateLTV);
+
+    // Initialize LTV calculation if values exist
+    calculateLTV();
+
+    // Trigger loan type change if development is selected
+    if (document.getElementById('loan_type').value === 'development') {
+        document.getElementById('loan_type').dispatchEvent(new Event('change'));
+    }
+});
+
+function changeStep(direction) {
+    // Validate current step before proceeding
+    if (direction > 0 && !validateStep(currentStep)) {
+        return;
+    }
+
+    // Hide current step
+    document.getElementById(`step${currentStep}`).classList.remove('active');
+    document.querySelector(`[data-step="${currentStep}"]`).classList.remove('active');
+
+    // Update step
+    currentStep += direction;
+
+    // Show new step
+    document.getElementById(`step${currentStep}`).classList.add('active');
+    document.querySelector(`[data-step="${currentStep}"]`).classList.add('active');
+
+    // Update progress bar
+    const progress = (currentStep / totalSteps) * 100;
+    document.getElementById('progressBar').style.width = `${progress}%`;
+
+    // Update buttons
+    updateButtons();
+}
+
+function updateButtons() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Show/hide previous button
+    prevBtn.style.display = currentStep > 1 ? 'block' : 'none';
+
+    // Show/hide next/submit buttons
+    if (currentStep < totalSteps) {
+        nextBtn.style.display = 'block';
+        submitBtn.style.display = 'none';
+    } else {
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'block';
+    }
+}
+
+function validateStep(step) {
+    const stepElement = document.getElementById(`step${step}`);
+    const requiredFields = stepElement.querySelectorAll('[required]');
+    let isValid = true;
+
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+
+    // Step-specific validation
+    if (step === 3) {
+        const loanAmount = parseFloat(document.getElementById('loan_amount').value) || 0;
+        const propertyValue = parseFloat(document.getElementById('property_value').value) || 0;
+        
+        if (propertyValue > 0) {
+            const ltv = (loanAmount / propertyValue) * 100;
+            if (ltv > 95) {
+                alert('LTV ratio cannot exceed 95%. Please adjust the loan amount or property value.');
+                isValid = false;
+            }
+        }
+    }
+
+    return isValid;
+}
+
+// Form submission
+document.getElementById('applicationForm').addEventListener('submit', function(e) {
+    // Validate all steps
+    for (let i = 1; i <= totalSteps; i++) {
+        if (!validateStep(i)) {
+            e.preventDefault();
+            // Go to first invalid step
+            while (currentStep !== i) {
+                changeStep(i > currentStep ? 1 : -1);
+            }
+            return;
+        }
+    }
+});
+
+// Add CSS for step indicators
+const style = document.createElement('style');
+style.textContent = `
+    .step-indicator {
+        opacity: 0.5;
+        transition: opacity 0.3s;
+        font-size: 0.9rem;
+    }
+    
+    .step-indicator.active {
+        opacity: 1;
+        color: #007bff;
+    }
+    
+    .form-step {
+        display: none;
+    }
+    
+    .form-step.active {
+        display: block;
+    }
+    
+    .is-invalid {
+        border-color: #dc3545;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

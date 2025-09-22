@@ -1,0 +1,765 @@
+/* Currency-Based Color Palettes */
+
+/* Pound Sterling Theme - Gold Variations (#AD965F) */
+:root[data-currency="GBP"], 
+[data-currency="GBP"] {
+    /* Primary Gold Palette */
+    --primary-color: #AD965F;
+    --primary-light: #AD965F;
+    --primary-lighter: #AD965F;
+    --primary-lightest: #AD965F;
+    --primary-dark: #AD965F;
+    --primary-darker: #5D4409;
+    
+    /* Secondary Gold Variations */
+    --secondary-color: #AD965F;
+    --secondary-light: #AD965F;
+    --secondary-dark: #AD965F;
+    
+    /* Accent Colors */
+    --accent-color: #AD965F;
+    --accent-light: #FFEB3B;
+    --accent-dark: #CCAA00;
+    
+    /* Background and Surface Colors */
+    --surface-primary: #AD965F;
+    --surface-secondary: #AD965F;
+    --surface-light: #F2E185;
+    --surface-background: #FFFDF5;
+    
+    /* Chart Colors */
+    --chart-primary: #AD965F;
+    --chart-secondary: #DAA520;
+    --chart-tertiary: #CDA44C;
+    --chart-quaternary: #E6C547;
+    --chart-quinary: #F2E185;
+}
+
+/* Euro Theme - Teal Variations (#42B89A) */
+:root[data-currency="EUR"], 
+[data-currency="EUR"] {
+    /* Primary Teal Palette */
+    --primary-color: #509664;
+    --primary-light: #6CB180;
+    --primary-lighter: #91C4A0;
+    --primary-lightest: #B5D8BF;
+    --primary-dark: #3D7450;
+    --primary-darker: #30593C;
+    
+    /* Secondary Teal Variations */
+    --secondary-color: #20B2AA;
+    --secondary-light: #48D1C7;
+    --secondary-dark: #178B7A;
+    
+    /* Accent Colors */
+    --accent-color: #00CED1;
+    --accent-light: #40E0D0;
+    --accent-dark: #008B8B;
+    
+    /* Background and Surface Colors */
+    --surface-primary: #42B89A;
+    --surface-secondary: #5CC9B0;
+    --surface-light: #B8F0E5;
+    --surface-background: #F5FFFE;
+    
+    /* Chart Colors */
+    --chart-primary: #42B89A;
+    --chart-secondary: #20B2AA;
+    --chart-tertiary: #5CC9B0;
+    --chart-quaternary: #76DAC6;
+    --chart-quinary: #B8F0E5;
+}
+
+/* Dynamic Currency-Based Styling */
+
+/* CRITICAL: Override gradients and ensure solid colors */
+.calculate-button,
+.btn-primary,
+#saveLoanBtn,
+.btn-success {
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+/* GBP Currency Button Colors */
+[data-currency="GBP"] .calculate-button,
+[data-currency="GBP"] .btn-primary,
+.currency-gbp-btn {
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
+    color: white !important;
+}
+
+[data-currency="GBP"] #saveLoanBtn,
+[data-currency="GBP"] .btn-success {
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
+    color: white !important;
+}
+
+/* EUR Currency Button Colors */
+[data-currency="EUR"] .calculate-button,
+[data-currency="EUR"] .btn-primary,
+.currency-eur-btn {
+    background-color: #509664 !important;
+    border-color: #509664 !important;
+    color: white !important;
+}
+
+[data-currency="EUR"] #saveLoanBtn,
+[data-currency="EUR"] .btn-success {
+    background-color: #3d7450 !important;
+    border-color: #3d7450 !important;
+    color: white !important;
+}
+
+/* EUR Navbar Button Colors */
+[data-currency="EUR"] .navbar .btn-nav {
+    background: #000 !important;
+    color: #fff !important;
+}
+
+[data-currency="EUR"] .navbar .btn-nav:hover {
+    background: #000 !important;
+    color: #fff !important;
+}
+
+[data-currency="EUR"] .navbar .btn-nav i,
+[data-currency="EUR"] .navbar .btn-nav:hover i {
+    color: #fff !important;
+}
+
+/* Change navbar background when using EUR */
+[data-currency="EUR"] .navbar {
+    background-color: #509664 !important;
+}
+
+/* Table Headers and Cards - Currency Specific */
+[data-currency="GBP"] .table thead th,
+[data-currency="GBP"] .card-header,
+[data-currency="GBP"] .bg-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+    border: 2px solid #000000 !important;
+    color: white !important;
+}
+
+[data-currency="EUR"] .table thead th,
+[data-currency="EUR"] .card-header,
+[data-currency="EUR"] .bg-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+    border: 2px solid #000000 !important;
+    color: white !important;
+}
+
+/* Accordion Headers - Currency Specific */
+[data-currency="GBP"] .accordion-button,
+[data-currency="EUR"] .accordion-button {
+    background-color: var(--primary-color) !important;
+    border: 2px solid #000000 !important;
+    color: white !important;
+    box-shadow: none !important;
+    --bs-accordion-active-bg: var(--primary-color) !important;
+    --bs-accordion-btn-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+    --bs-accordion-btn-active-icon: var(--bs-accordion-btn-icon);
+}
+
+/* Global table header override */
+.table thead th {
+    background-color: var(--primary-color) !important;
+    border: 2px solid #000000 !important;
+    color: white !important;
+}
+
+/* Force table header styling with maximum specificity */
+body .table thead th {
+    border: 2px solid #000000 !important;
+}
+
+body[data-currency="GBP"] .table thead th {
+    background-color: #AD965F !important;
+    border: 2px solid #000000 !important;
+}
+
+body[data-currency="EUR"] .table thead th {
+    background-color: #509664 !important;
+    border: 2px solid #000000 !important;
+}
+
+/* Ultra-specific selectors to override any conflicting styles */
+html[data-currency="EUR"] body .table thead th,
+html[data-currency="EUR"] .table thead th,
+[data-currency="EUR"] .table-primary,
+[data-currency="EUR"] th.bg-primary {
+    background-color: #509664 !important;
+    background-image: none !important;
+    border: 2px solid #000000 !important;
+    color: white !important;
+}
+
+html[data-currency="GBP"] body .table thead th,
+html[data-currency="GBP"] .table thead th,
+[data-currency="GBP"] .table-primary,
+[data-currency="GBP"] th.bg-primary {
+    background-color: #AD965F !important;
+    background-image: none !important;
+    border: 2px solid #000000 !important;
+    color: white !important;
+}
+
+/* Primary Action Buttons */
+.btn-primary,
+.btn-success,
+.btn-calculate,
+.calculate-button {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.btn-primary:hover,
+.btn-success:hover,
+.btn-calculate:hover,
+.calculate-button:hover {
+    background-color: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+}
+
+/* Currency-specific button overrides with multiple selectors */
+[data-currency="GBP"] .btn-primary,
+[data-currency="GBP"] .btn-success,
+[data-currency="GBP"] .calculate-button,
+[data-currency="GBP"] #saveLoanBtn,
+[data-currency="GBP"] button[type="submit"],
+[data-currency="GBP"] .btn.btn-success,
+[data-currency="GBP"] .btn.btn-primary {
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
+    color: white !important;
+}
+
+[data-currency="GBP"] .btn-primary:hover,
+[data-currency="GBP"] .btn-success:hover,
+[data-currency="GBP"] .calculate-button:hover,
+[data-currency="GBP"] #saveLoanBtn:hover {
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
+}
+
+[data-currency="EUR"] .btn-primary,
+[data-currency="EUR"] .btn-success,
+[data-currency="EUR"] .calculate-button,
+[data-currency="EUR"] #saveLoanBtn,
+[data-currency="EUR"] button[type="submit"],
+[data-currency="EUR"] .btn.btn-success,
+[data-currency="EUR"] .btn.btn-primary {
+    background-color: #509664 !important;
+    border-color: #509664 !important;
+    color: white !important;
+}
+
+[data-currency="EUR"] .btn-primary:hover,
+[data-currency="EUR"] .btn-success:hover,
+[data-currency="EUR"] .calculate-button:hover,
+[data-currency="EUR"] #saveLoanBtn:hover {
+    background-color: #3d7450 !important;
+    border-color: #3d7450 !important;
+}
+
+/* Force button styling regardless of specificity */
+body[data-currency="GBP"] .btn-primary,
+body[data-currency="GBP"] .btn-success,
+body[data-currency="GBP"] .calculate-button,
+body[data-currency="GBP"] #saveLoanBtn {
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
+    color: white !important;
+}
+
+body[data-currency="EUR"] .btn-primary,
+body[data-currency="EUR"] .btn-success,
+body[data-currency="EUR"] .calculate-button,
+body[data-currency="EUR"] #saveLoanBtn {
+    background-color: #509664 !important;
+    border-color: #509664 !important;
+    color: white !important;
+}
+
+/* Animation to ensure color transitions are visible */
+.btn-primary, .btn-success, .calculate-button, #saveLoanBtn {
+    transition: background-color 0.3s ease, border-color 0.3s ease !important;
+}
+
+/* Force repaint helper class */
+.force-repaint {
+    transform: translateZ(0);
+}
+
+/* Ultra-specific button selectors to override any conflicting styles including gradients */
+body[data-currency="GBP"] form button[type="submit"].btn.btn-primary.btn-lg.calculate-button,
+body[data-currency="GBP"] button#saveLoanBtn.btn.btn-success,
+html[data-currency="GBP"] .btn-primary,
+html[data-currency="GBP"] .btn-success,
+html[data-currency="GBP"] .calculate-button {
+    background: #AD965F !important;
+    background-color: #AD965F !important;
+    background-image: none !important;
+    border-color: #AD965F !important;
+    color: white !important;
+}
+
+body[data-currency="EUR"] form button[type="submit"].btn.btn-primary.btn-lg.calculate-button,
+body[data-currency="EUR"] button#saveLoanBtn.btn.btn-success,
+html[data-currency="EUR"] .btn-primary,
+html[data-currency="EUR"] .btn-success,
+html[data-currency="EUR"] .calculate-button {
+    background: #42B89A !important;
+    background-color: #42B89A !important;
+    background-image: none !important;
+    border-color: #42B89A !important;
+    color: white !important;
+}
+
+/* Extra specificity for Save button EUR color */
+body[data-currency="EUR"] #saveLoanBtn,
+body[data-currency="EUR"] .btn-success {
+    background: #359677 !important;
+    background-color: #359677 !important;
+    background-image: none !important;
+    border-color: #359677 !important;
+}
+
+/* Override gradient styles from style.css */
+[data-currency="GBP"] .btn-primary,
+[data-currency="GBP"] .calculate-button {
+    background: #AD965F !important;
+    background-color: #AD965F !important;
+    background-image: none !important;
+}
+
+[data-currency="GBP"] .btn-primary:hover,
+[data-currency="GBP"] .calculate-button:hover {
+    background: #AD965F !important;
+    background-color: #AD965F !important;
+    background-image: none !important;
+}
+
+[data-currency="EUR"] .btn-primary,
+[data-currency="EUR"] .calculate-button {
+    background: #42B89A !important;
+    background-color: #42B89A !important;
+    background-image: none !important;
+}
+
+[data-currency="EUR"] .btn-primary:hover,
+[data-currency="EUR"] .calculate-button:hover {
+    background: #359677 !important;
+    background-color: #359677 !important;
+    background-image: none !important;
+}
+
+[data-currency="EUR"] .btn-success,
+[data-currency="EUR"] #saveLoanBtn {
+    background: #359677 !important;
+    background-color: #359677 !important;
+    background-image: none !important;
+}
+
+[data-currency="GBP"] .btn-success,
+[data-currency="GBP"] #saveLoanBtn {
+    background: #AD965F !important;
+    background-color: #AD965F !important;
+    background-image: none !important;
+}
+
+/* Input Toggle Buttons - All Types */
+.btn-group .btn-outline-secondary,
+.btn-group .btn-outline-primary {
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+.btn-group .btn-outline-secondary:hover,
+.btn-group .btn-outline-primary:hover {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+.btn-group .btn-outline-secondary.active,
+.btn-group .btn-outline-primary.active,
+.btn-group .btn-check:checked + .btn-outline-secondary,
+.btn-group .btn-check:checked + .btn-outline-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+/* Currency-specific toggle button overrides */
+[data-currency="GBP"] .btn-group .btn-outline-secondary,
+[data-currency="GBP"] .btn-group .btn-outline-primary {
+    border-color: #AD965F !important;
+    color: #AD965F !important;
+}
+
+[data-currency="GBP"] .btn-group .btn-outline-secondary:hover,
+[data-currency="GBP"] .btn-group .btn-outline-primary:hover,
+[data-currency="GBP"] .btn-group .btn-outline-secondary.active,
+[data-currency="GBP"] .btn-group .btn-outline-primary.active,
+[data-currency="GBP"] .btn-group .btn-check:checked + .btn-outline-secondary,
+[data-currency="GBP"] .btn-group .btn-check:checked + .btn-outline-primary {
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
+    color: white !important;
+}
+
+[data-currency="EUR"] .btn-group .btn-outline-secondary,
+[data-currency="EUR"] .btn-group .btn-outline-primary {
+    border-color: #509664 !important;
+    color: #509664 !important;
+}
+
+[data-currency="EUR"] .btn-group .btn-outline-secondary:hover,
+[data-currency="EUR"] .btn-group .btn-outline-primary:hover,
+[data-currency="EUR"] .btn-group .btn-outline-secondary.active,
+[data-currency="EUR"] .btn-group .btn-outline-primary.active,
+[data-currency="EUR"] .btn-group .btn-check:checked + .btn-outline-secondary,
+[data-currency="EUR"] .btn-group .btn-check:checked + .btn-outline-primary {
+    background-color: #509664 !important;
+    border-color: #509664 !important;
+    color: white !important;
+}
+  
+
+.btn-group .btn-warning {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* Currency-specific toggle button overrides */
+[data-currency="GBP"] .btn-outline-secondary {
+    border-color: #AD965F !important;
+    color: #AD965F !important;
+}
+
+[data-currency="GBP"] .btn-outline-secondary:hover,
+[data-currency="GBP"] .btn-outline-secondary.active,
+[data-currency="GBP"] .btn-check:checked + .btn-outline-secondary {
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
+    color: white !important;
+}
+
+[data-currency="EUR"] .btn-outline-secondary {
+    border-color: #509664 !important;
+    color: #509664 !important;
+}
+
+[data-currency="EUR"] .btn-outline-secondary:hover,
+[data-currency="EUR"] .btn-outline-secondary.active,
+[data-currency="EUR"] .btn-check:checked + .btn-outline-secondary {
+    background-color: #509664 !important;
+    border-color: #509664 !important;
+    color: white !important;
+}
+
+/* Additional utility classes for JavaScript manipulation */
+.currency-gbp-btn {
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
+    color: white !important;
+}
+
+.currency-eur-btn {
+    background-color: #509664 !important;
+    border-color: #509664 !important;
+    color: white !important;
+}
+
+.currency-gbp-toggle {
+    border-color: #AD965F !important;
+    color: #AD965F !important;
+}
+
+.currency-gbp-toggle.active,
+.currency-gbp-toggle:checked {
+    background-color: #AD965F !important;
+    border-color: #AD965F !important;
+    color: white !important;
+}
+
+.currency-eur-toggle {
+    border-color: #509664 !important;
+    color: #509664 !important;
+}
+
+.currency-eur-toggle.active,
+.currency-eur-toggle:checked {
+    background-color: #509664 !important;
+    border-color: #509664 !important;
+    color: white !important;
+}
+
+.currency-eur-toggle:focus,
+.currency-eur-toggle:focus-visible {
+    border-color: #509664 !important;
+    color: #509664 !important;
+    box-shadow: 0 0 0 0.2rem rgba(80, 150, 100, 0.25) !important;
+}
+
+.currency-eur-toggle.active:focus,
+.currency-eur-toggle:checked:focus,
+.currency-eur-toggle.active:focus-visible,
+.currency-eur-toggle:checked:focus-visible {
+    background-color: #509664 !important;
+    border-color: #509664 !important;
+    color: white !important;
+    box-shadow: 0 0 0 0.2rem rgba(80, 150, 100, 0.25) !important;
+}
+
+/* Table Headers */
+.table thead th {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+/* Chart Container Headers */
+.chart-container h5,
+.chart-container .card-header {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+}
+
+/* Result Cards */
+.result-card {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    border-color: var(--primary-light);
+    box-shadow: 0 4px 12px rgba(var(--primary-color), 0.25);
+}
+
+.result-card:hover {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-darker) 100%);
+    box-shadow: 0 6px 20px rgba(var(--primary-color), 0.35);
+}
+
+.result-card::before {
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+/* Card Headers */
+.card-header {
+    background: linear-gradient(135deg, var(--primary-lightest) 0%, var(--surface-background) 100%);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+/* Buttons */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-darker) 100%);
+    border-color: var(--primary-dark);
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Form Controls */
+.form-control:focus {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-color), 0.25);
+}
+
+.form-select:focus {
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 0.2rem rgba(var(--primary-color), 0.25);
+}
+
+/* Input Groups */
+.input-group-text {
+    background-color: var(--primary-lightest);
+    border-color: var(--primary-light);
+    color: var(--primary-darker);
+}
+
+/* Tables */
+.table thead th {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: var(--surface-light);
+}
+
+/* Progress Bars */
+.progress-bar {
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+/* Badges */
+.badge-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Links */
+a {
+    color: var(--primary-color);
+}
+
+a:hover {
+    color: var(--primary-dark);
+}
+
+/* Navigation */
+.navbar-brand {
+    color: var(--primary-color) !important;
+}
+
+.nav-link {
+    color: var(--primary-color) !important;
+}
+
+.nav-link:hover {
+    color: var(--primary-dark) !important;
+}
+
+/* Loan History Table */
+.loan-history-table {
+    --table-striped-bg: var(--surface-light);
+}
+
+.loan-history-table thead th {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-color: var(--primary-dark);
+}
+
+.loan-history-table tbody tr:hover {
+    background-color: var(--primary-lightest);
+}
+
+/* Chart Containers */
+.chart-container {
+    border: 2px solid var(--primary-light);
+    border-radius: 8px;
+    background-color: var(--surface-background);
+}
+
+.chart-title {
+    color: var(--primary-darker);
+    background: linear-gradient(135deg, var(--primary-lightest) 0%, transparent 100%);
+}
+
+/* Power BI Links */
+.powerbi-link {
+    color: var(--primary-color);
+    background-color: var(--primary-lightest);
+    border: 1px solid var(--primary-light);
+}
+
+.powerbi-link:hover {
+    color: white;
+    background-color: var(--primary-color);
+    border-color: var(--primary-dark);
+}
+
+/* Scenario Comparison */
+.scenario-card {
+    border: 2px solid var(--primary-light);
+    background: linear-gradient(135deg, var(--surface-background) 0%, var(--primary-lightest) 100%);
+}
+
+.scenario-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(var(--primary-color), 0.15);
+}
+
+/* Alert Variations */
+.alert-info {
+    background-color: var(--primary-lightest);
+    border-color: var(--primary-light);
+    color: var(--primary-darker);
+}
+
+.alert-warning {
+    background-color: var(--secondary-light);
+    border-color: var(--secondary-color);
+    color: var(--primary-darker);
+}
+
+/* Dropdown Menus */
+.dropdown-menu {
+    border-color: var(--primary-light);
+}
+
+.dropdown-item:hover {
+    background-color: var(--primary-lightest);
+    color: var(--primary-darker);
+}
+
+/* Custom Currency Indicators */
+.currency-indicator {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.currency-gbp .currency-indicator::before {
+    content: "£ ";
+}
+
+.currency-eur .currency-indicator::before {
+    content: "€ ";
+}
+
+/* Specific Currency Classes for Direct Application */
+.currency-gbp {
+    --dynamic-primary: #AD965F;
+    --dynamic-secondary: #AD965F;
+    --dynamic-accent: #AD965F;
+}
+
+.currency-eur {
+    --dynamic-primary: #42B89A;
+    --dynamic-secondary: #20B2AA;
+    --dynamic-accent: #00CED1;
+}
+
+/* Responsive Currency Themes */
+@media (max-width: 768px) {
+    .result-card {
+        background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    }
+    
+    .currency-indicator {
+        font-size: 0.875rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .result-card {
+        background: var(--primary-lightest) !important;
+        color: var(--primary-darker) !important;
+        border: 2px solid var(--primary-color) !important;
+    }
+    
+    .table thead th {
+        background: var(--primary-lightest) !important;
+        color: var(--primary-darker) !important;
+    }
+}

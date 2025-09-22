@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Power BI Refresh Scheduler - {{ current_user.username if current_user.is_authenticated else 'Novellus' }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
+    <style>
+        .scheduler-card {
+            border: 2px solid #B8860B;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        .scheduler-header {
+            background: linear-gradient(135deg, #B8860B 0%, #DAA520 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 8px 8px 0 0;
+        }
+        .schedule-status {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .status-active {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        .status-inactive {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background: linear-gradient(135deg, #1E2B3A 0%, #2C3E50 100%);">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main_routes.dashboard') }}">
+                <img src="{{ url_for('static', filename='images/novellus_logo.png') }}" alt="Novellus" height="40" class="me-2" style="height: 40px; width: auto; object-fit: contain; filter: brightness(100%) saturate(100%);">
+                <span class="fw-bold">Power BI Scheduler</span>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('main_routes.dashboard') }}">Dashboard</a>
+                <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5 pt-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                
+                <!-- Page Header -->
+                <div class="text-center mb-4">
+                    <h1 class="display-5 fw-bold" style="color: #1E2B3A;">Power BI Refresh Scheduler</h1>
+                    <p class="lead text-muted">Automated Power BI dataset refresh management</p>
+                </div>
+
+                <!-- Schedule Status Card -->
+                <div class="scheduler-card mb-4">
+                    <div class="scheduler-header">
+                        <h3 class="mb-0">Current Schedule Status</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="scheduleStatus" class="schedule-status">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Status:</strong> <span id="statusText">Loading...</span>
+                                </div>
+                                <button id="refreshStatusBtn" class="btn btn-outline-primary btn-sm">
+                                    Refresh Status
+                                </button>
+                            </div>
+                            <div class="mt-2">
+                                <strong>Next Run:</strong> <span id="nextRunText">-</span>
+                            </div>
+                            <div class="mt-2">
+                                <strong>Active Jobs:</strong> <span id="activeJobsText">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration Card -->
+                <div class="scheduler-card mb-4">
+                    <div class="scheduler-header">
+                        <h3 class="mb-0">Scheduler Configuration</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="schedulerForm">
+                            <!-- Credentials Section -->
+                            <div class="row mb-4">
+                                <div class="col-md-4">
+                                    <label for="username" class="form-label">Power BI Username</label>
+                                    <input type="email" class="form-control" id="username" placeholder="your.email@company.com" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="password" class="form-label">Power BI Password</label>
+                                    <input type="password" class="form-control" id="password" placeholder="Your password" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="datasetUrl" class="form-label">Dataset URL</label>
+                                    <input type="url" class="form-control" id="datasetUrl" placeholder="https://app.powerbi.com/groups/..." required>
+                                </div>
+                            </div>
+
+                            <!-- Schedule Settings -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label for="refreshInterval" class="form-label">Refresh Interval (minutes)</label>
+                                    <select class="form-select" id="refreshInterval">
+                                        <option value="15">Every 15 minutes</option>
+                                        <option value="30">Every 30 minutes</option>
+                                        <option value="60" selected>Every 1 hour</option>
+                                        <option value="120">Every 2 hours</option>
+                                        <option value="240">Every 4 hours</option>
+                                        <option value="480">Every 8 hours</option>
+                                        <option value="1440">Daily</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="startTime" class="form-label">Start Time (optional)</label>
+                                    <input type="time" class="form-control" id="startTime">
+                                    <small class="form-text text-muted">Leave empty to start immediately</small>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-flex gap-3 justify-content-center">
+                                <button type="button" id="testRefreshBtn" class="btn btn-outline-primary">
+                                    Test Refresh Now
+                                </button>
+                                <button type="button" id="startScheduleBtn" class="btn btn-success">
+                                    Start Schedule
+                                </button>
+                                <button type="button" id="stopScheduleBtn" class="btn btn-danger">
+                                    Stop Schedule
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Refresh Log Card -->
+                <div class="scheduler-card">
+                    <div class="scheduler-header">
+                        <h3 class="mb-0">Refresh Activity Log</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="refreshLog" class="border rounded p-3" style="height: 300px; overflow-y: auto; background: #f8f9fa;">
+                            <p class="text-muted mb-0">Activity log will appear here...</p>
+                        </div>
+                        <div class="mt-2">
+                            <button id="clearLogBtn" class="btn btn-outline-secondary btn-sm">Clear Log</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+    
+    <script>
+        class PowerBIScheduler {
+            constructor() {
+                this.init();
+                this.loadScheduleStatus();
+                this.startStatusPolling();
+            }
+
+            init() {
+                // Bind event listeners
+                document.getElementById('testRefreshBtn').addEventListener('click', () => this.testRefresh());
+                document.getElementById('startScheduleBtn').addEventListener('click', () => this.startSchedule());
+                document.getElementById('stopScheduleBtn').addEventListener('click', () => this.stopSchedule());
+                document.getElementById('refreshStatusBtn').addEventListener('click', () => this.loadScheduleStatus());
+                document.getElementById('clearLogBtn').addEventListener('click', () => this.clearLog());
+
+                // Load saved credentials
+                this.loadSavedCredentials();
+                
+                // Auto-save credentials as user types
+                ['username', 'password', 'datasetUrl'].forEach(id => {
+                    document.getElementById(id).addEventListener('input', () => this.saveCredentials());
+                });
+            }
+
+            loadSavedCredentials() {
+                const credentials = {
+                    username: localStorage.getItem('powerbi_username') || '',
+                    password: localStorage.getItem('powerbi_password') || '',
+                    datasetUrl: localStorage.getItem('powerbi_dataset_url') || ''
+                };
+
+                Object.keys(credentials).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element && credentials[key]) {
+                        element.value = credentials[key];
+                    }
+                });
+            }
+
+            saveCredentials() {
+                const credentials = {
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    datasetUrl: document.getElementById('datasetUrl').value
+                };
+
+                Object.keys(credentials).forEach(key => {
+                    if (credentials[key]) {
+                        localStorage.setItem(`powerbi_${key.toLowerCase()}`, credentials[key]);
+                    }
+                });
+            }
+
+            getCredentials() {
+                return {
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    dataset_url: document.getElementById('datasetUrl').value,
+                    interval: parseInt(document.getElementById('refreshInterval').value),
+                    start_time: document.getElementById('startTime').value
+                };
+            }
+
+            async testRefresh() {
+                const credentials = this.getCredentials();
+                if (!this.validateCredentials(credentials)) return;
+
+                this.logActivity('Starting test refresh...', 'info');
+                document.getElementById('testRefreshBtn').disabled = true;
+
+                try {
+                    const response = await fetch('/api/powerbi/test-refresh', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(credentials)
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.logActivity('Test refresh completed successfully!', 'success');
+                        showNotification('Test refresh completed successfully!', 'success');
+                    } else {
+                        this.logActivity(`Test refresh failed: ${result.error}`, 'error');
+                        showNotification(`Test refresh failed: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.logActivity(`Test refresh error: ${error.message}`, 'error');
+                    showNotification(`Test refresh error: ${error.message}`, 'error');
+                } finally {
+                    document.getElementById('testRefreshBtn').disabled = false;
+                }
+            }
+
+            async startSchedule() {
+                const credentials = this.getCredentials();
+                if (!this.validateCredentials(credentials)) return;
+
+                this.logActivity(`Starting scheduled refresh every ${credentials.interval} minutes...`, 'info');
+                document.getElementById('startScheduleBtn').disabled = true;
+
+                try {
+                    const response = await fetch('/api/powerbi/start-schedule', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(credentials)
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.logActivity('Schedule started successfully!', 'success');
+                        showNotification('Schedule started successfully!', 'success');
+                        this.loadScheduleStatus();
+                    } else {
+                        this.logActivity(`Failed to start schedule: ${result.error}`, 'error');
+                        showNotification(`Failed to start schedule: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.logActivity(`Schedule start error: ${error.message}`, 'error');
+                    showNotification(`Schedule start error: ${error.message}`, 'error');
+                } finally {
+                    document.getElementById('startScheduleBtn').disabled = false;
+                }
+            }
+
+            async stopSchedule() {
+                this.logActivity('Stopping scheduled refresh...', 'info');
+                document.getElementById('stopScheduleBtn').disabled = true;
+
+                try {
+                    const response = await fetch('/api/powerbi/stop-schedule', {
+                        method: 'POST'
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.logActivity('Schedule stopped successfully!', 'success');
+                        showNotification('Schedule stopped successfully!', 'success');
+                        this.loadScheduleStatus();
+                    } else {
+                        this.logActivity(`Failed to stop schedule: ${result.error}`, 'error');
+                        showNotification(`Failed to stop schedule: ${result.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.logActivity(`Schedule stop error: ${error.message}`, 'error');
+                    showNotification(`Schedule stop error: ${error.message}`, 'error');
+                } finally {
+                    document.getElementById('stopScheduleBtn').disabled = false;
+                }
+            }
+
+            async loadScheduleStatus() {
+                try {
+                    const response = await fetch('/api/powerbi/schedule-status');
+                    const status = await response.json();
+
+                    const statusElement = document.getElementById('scheduleStatus');
+                    const statusText = document.getElementById('statusText');
+                    const nextRunText = document.getElementById('nextRunText');
+                    const activeJobsText = document.getElementById('activeJobsText');
+
+                    if (status.scheduler_running) {
+                        statusElement.className = 'schedule-status status-active';
+                        statusText.textContent = 'Active';
+                        statusText.className = 'text-success fw-bold';
+                    } else {
+                        statusElement.className = 'schedule-status status-inactive';
+                        statusText.textContent = 'Inactive';  
+                        statusText.className = 'text-danger fw-bold';
+                    }
+
+                    nextRunText.textContent = status.next_run ? 
+                        new Date(status.next_run).toLocaleString() : 'No scheduled runs';
+                    activeJobsText.textContent = status.total_jobs || 0;
+
+                } catch (error) {
+                    console.error('Failed to load schedule status:', error);
+                }
+            }
+
+            validateCredentials(credentials) {
+                if (!credentials.username || !credentials.password || !credentials.dataset_url) {
+                    showNotification('Please fill in all credential fields', 'error');
+                    return false;
+                }
+                return true;
+            }
+
+            logActivity(message, level = 'info') {
+                const logContainer = document.getElementById('refreshLog');
+                const timestamp = new Date().toLocaleString();
+                const levelClass = {
+                    'info': 'text-primary',
+                    'success': 'text-success',
+                    'error': 'text-danger',
+                    'warning': 'text-warning'
+                }[level] || 'text-muted';
+
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry mb-1';
+                logEntry.innerHTML = `
+                    <small class="text-muted">[${timestamp}]</small>
+                    <span class="${levelClass} fw-bold">[${level.toUpperCase()}]</span>
+                    <span>${message}</span>
+                `;
+
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+
+                // Keep only last 100 entries
+                while (logContainer.children.length > 100) {
+                    logContainer.removeChild(logContainer.firstChild);
+                }
+            }
+
+            clearLog() {
+                const logContainer = document.getElementById('refreshLog');
+                logContainer.innerHTML = '<p class="text-muted mb-0">Activity log cleared...</p>';
+            }
+
+            startStatusPolling() {
+                // Update status every 30 seconds
+                setInterval(() => {
+                    this.loadScheduleStatus();
+                }, 30000);
+            }
+        }
+
+        // Initialize scheduler when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new PowerBIScheduler();
+        });
+    </script>
+</body>
+</html>

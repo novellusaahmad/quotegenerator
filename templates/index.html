@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Novellus - Professional Lending Solutions{% endblock %}
+
+{% block content %}
+<div class="hero-section bg-primary text-white py-5 mb-5 rounded">
+    <div class="container text-center">
+        <div class="mb-4">
+            <img src="{{ url_for('static', filename='novellus_logo.png') }}" alt="Novellus" height="80" class="mb-3" style="height: 80px; width: auto; object-fit: contain; filter: brightness(100%) saturate(100%);">
+        </div>
+        <h1 class="display-4 fw-bold mb-3">Professional Lending Solutions</h1>
+        <p class="lead mb-4">Specializing in bridging, development, and term loans with competitive rates and expert service</p>
+        
+        {% if not current_user.is_authenticated %}
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <a href="{{ url_for('register') }}" class="btn btn-light btn-lg me-3">
+                        <i class="fas fa-user-plus me-2"></i>Get Started
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg me-3">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                    <a href="{{ url_for('powerbi_config') }}" class="btn btn-warning btn-lg me-2">
+                        <i class="fas fa-cog me-2"></i>Power BI Config
+                    </a>
+                    <a href="{{ url_for('snowflake_config') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-database me-2"></i>Snowflake Config
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg me-3">
+                        <i class="fas fa-tachometer-alt me-2"></i>Go to Dashboard
+                    </a>
+                    <a href="{{ url_for('powerbi_config') }}" class="btn btn-warning btn-lg me-2">
+                        <i class="fas fa-cog me-2"></i>Power BI Config
+                    </a>
+                    <a href="{{ url_for('snowflake_config') }}" class="btn btn-primary btn-lg me-2">
+                        <i class="fas fa-database me-2"></i>Snowflake Config
+                    </a>
+                    <a href="{{ url_for('powerbi_scheduler') }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-clock me-2"></i>Power BI Scheduler
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <h2 class="mb-4">Our Loan Products</h2>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-bridge fa-2x text-primary me-3"></i>
+                            <h4 class="card-title mb-0">Bridge Loans</h4>
+                        </div>
+                        <p class="card-text">Short-term financing for property transactions, refurbishments, and development projects.</p>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>3-24 month terms</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Up to 75% LTV</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Flexible repayment options</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-building fa-2x text-primary me-3"></i>
+                            <h4 class="card-title mb-0">Development Loans</h4>
+                        </div>
+                        <p class="card-text">Funding for residential and commercial development projects with staged releases.</p>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>12-36 month terms</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Up to 70% GDV</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Stage release funding</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-calendar-alt fa-2x text-primary me-3"></i>
+                            <h4 class="card-title mb-0">Term Loans</h4>
+                        </div>
+                        <p class="card-text">Medium-term lending for established property investments and business purposes.</p>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>2-10 year terms</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Up to 75% LTV</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Fixed or variable rates</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-calculator fa-2x text-primary me-3"></i>
+                            <h4 class="card-title mb-0">Loan Calculator</h4>
+                        </div>
+                        <p class="card-text">Advanced calculator with precise financial modeling and payment schedules.</p>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>Multiple currencies</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Detailed schedules</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Export capabilities</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Why Choose Novellus?</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-3">
+                        <i class="fas fa-lightning-bolt text-warning me-2"></i>
+                        <strong>Fast Decisions</strong><br>
+                        <small class="text-muted">Quick turnaround times for loan approvals</small>
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-shield-alt text-success me-2"></i>
+                        <strong>Secure Platform</strong><br>
+                        <small class="text-muted">Bank-level security for all transactions</small>
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-headset text-info me-2"></i>
+                        <strong>Expert Support</strong><br>
+                        <small class="text-muted">Dedicated relationship managers</small>
+                    </li>
+                    <li class="mb-3">
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        <strong>Competitive Rates</strong><br>
+                        <small class="text-muted">Market-leading interest rates</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-phone me-2"></i>Contact Us</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><i class="fas fa-envelope me-2"></i>info@novellus.com</p>
+                <p class="mb-2"><i class="fas fa-phone me-2"></i>+44 20 7000 0000</p>
+                <p class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>London, United Kingdom</p>
+                <hr>
+                <div class="d-grid">
+                    <a href="{{ url_for('powerbi_config') }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-cog me-2"></i>Power BI Configuration
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

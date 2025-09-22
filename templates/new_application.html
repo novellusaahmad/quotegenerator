@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}New Application - Novellus Loan Management{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">New Loan Application</h4>
+                    <p class="text-muted mb-0">Complete all sections to submit your application</p>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="applicationForm">
+                        <!-- Loan Details -->
+                        <h5 class="border-bottom pb-2 mb-3">Loan Details</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="loan_type" class="form-label">Loan Type *</label>
+                                <select class="form-select" name="loan_type" id="loan_type" required>
+                                    <option value="">Select loan type</option>
+                                    <option value="bridge">Bridge Loan</option>
+                                    <option value="term">Term Loan</option>
+                                    <option value="development">Development Loan</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="currency" class="form-label">Currency *</label>
+                                <select class="form-select" name="currency" id="currency" required>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="EUR">EUR (€)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="loan_amount" class="form-label">Loan Amount Required *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text" id="currency_symbol">£</span>
+                                    <input type="number" class="form-control" name="loan_amount" id="loan_amount" min="0" step="1000" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="loan_term" class="form-label">Loan Term (months) *</label>
+                                <input type="number" class="form-control" name="loan_term" id="loan_term" min="1" step="1" required>
+                            </div>
+                        </div>
+
+                        <!-- Property Information -->
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">Property Information</h5>
+                        
+                        <div class="mb-3">
+                            <label for="property_address" class="form-label">Property Address *</label>
+                            <textarea class="form-control" name="property_address" id="property_address" rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="property_value" class="form-label">Property Value *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text" id="property_currency_symbol">£</span>
+                                    <input type="number" class="form-control" name="property_value" id="property_value" min="0" step="1000" required>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="property_type" class="form-label">Property Type</label>
+                                <select class="form-select" name="property_type" id="property_type">
+                                    <option value="">Select property type</option>
+                                    <option value="residential">Residential</option>
+                                    <option value="commercial">Commercial</option>
+                                    <option value="mixed_use">Mixed Use</option>
+                                    <option value="land">Land</option>
+                                    <option value="development">Development</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="property_description" class="form-label">Property Description</label>
+                            <textarea class="form-control" name="property_description" id="property_description" rows="3" placeholder="Describe the property, its condition, and any relevant details"></textarea>
+                        </div>
+
+                        <!-- Financial Information -->
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">Financial Information</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="monthly_income" class="form-label">Monthly Income</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" name="monthly_income" id="monthly_income" min="0" step="100">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="monthly_expenses" class="form-label">Monthly Expenses</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">£</span>
+                                    <input type="number" class="form-control" name="monthly_expenses" id="monthly_expenses" min="0" step="100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Development Loan Specific Fields -->
+                        <div id="development_fields" style="display: none;">
+                            <h5 class="border-bottom pb-2 mb-3 mt-4">Development Details</h5>
+                            
+                            <div class="mb-3">
+                                <label for="development_description" class="form-label">Development Description</label>
+                                <textarea class="form-control" name="development_description" id="development_description" rows="3" placeholder="Describe the development project"></textarea>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="construction_start_date" class="form-label">Construction Start Date</label>
+                                    <input type="date" class="form-control" name="construction_start_date" id="construction_start_date">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="construction_end_date" class="form-label">Construction End Date</label>
+                                    <input type="date" class="form-control" name="construction_end_date" id="construction_end_date">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="total_units" class="form-label">Total Units</label>
+                                    <input type="number" class="form-control" name="total_units" id="total_units" min="1">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="gd_value" class="form-label">Gross Development Value (GDV)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">£</span>
+                                        <input type="number" class="form-control" name="gd_value" id="gd_value" min="0" step="1000">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LTV Display -->
+                        <div class="alert alert-info mt-4" id="ltv_display" style="display: none;">
+                            <h6 class="mb-2">Loan-to-Value Calculation</h6>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <strong>Loan Amount:</strong> <span id="ltv_loan_amount">£0</span>
+                                </div>
+                                <div class="col-sm-6">
+                                    <strong>Property Value:</strong> <span id="ltv_property_value">£0</span>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <strong>LTV Ratio:</strong> 
+                                <span id="ltv_ratio" class="badge bg-secondary">0%</span>
+                                <span id="ltv_status" class="ms-2"></span>
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('applications') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Applications
+                            </a>
+                            
+                            <div>
+                                <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary me-2">
+                                    <i class="bi bi-save me-2"></i>Save as Draft
+                                </button>
+                                <button type="submit" name="action" value="submit" class="btn btn-success">
+                                    <i class="bi bi-send me-2"></i>Submit Application
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update currency symbols when currency changes
+document.getElementById('currency').addEventListener('change', function() {
+    const symbol = this.value === 'EUR' ? '€' : '£';
+    document.getElementById('currency_symbol').textContent = symbol;
+    document.getElementById('property_currency_symbol').textContent = symbol;
+    updateLTV();
+});
+
+// Show/hide development fields
+document.getElementById('loan_type').addEventListener('change', function() {
+    const developmentFields = document.getElementById('development_fields');
+    if (this.value === 'development') {
+        developmentFields.style.display = 'block';
+    } else {
+        developmentFields.style.display = 'none';
+    }
+});
+
+// Update LTV calculation
+function updateLTV() {
+    const loanAmount = parseFloat(document.getElementById('loan_amount').value) || 0;
+    const propertyValue = parseFloat(document.getElementById('property_value').value) || 0;
+    const currency = document.getElementById('currency').value;
+    const symbol = currency === 'EUR' ? '€' : '£';
+    
+    const ltvDisplay = document.getElementById('ltv_display');
+    
+    if (loanAmount > 0 && propertyValue > 0) {
+        const ltv = (loanAmount / propertyValue) * 100;
+        
+        document.getElementById('ltv_loan_amount').textContent = `${symbol}${loanAmount.toLocaleString()}`;
+        document.getElementById('ltv_property_value').textContent = `${symbol}${propertyValue.toLocaleString()}`;
+        document.getElementById('ltv_ratio').textContent = `${ltv.toFixed(1)}%`;
+        
+        const ltvRatioBadge = document.getElementById('ltv_ratio');
+        const ltvStatus = document.getElementById('ltv_status');
+        
+        if (ltv <= 70) {
+            ltvRatioBadge.className = 'badge bg-success';
+            ltvStatus.innerHTML = '<i class="bi bi-check-circle text-success me-1"></i>Excellent LTV';
+        } else if (ltv <= 80) {
+            ltvRatioBadge.className = 'badge bg-warning';
+            ltvStatus.innerHTML = '<i class="bi bi-info-circle text-warning me-1"></i>Good LTV';
+        } else if (ltv <= 90) {
+            ltvRatioBadge.className = 'badge bg-warning';
+            ltvStatus.innerHTML = '<i class="bi bi-exclamation-triangle text-warning me-1"></i>High LTV';
+        } else {
+            ltvRatioBadge.className = 'badge bg-danger';
+            ltvStatus.innerHTML = '<i class="bi bi-x-circle text-danger me-1"></i>Very High LTV';
+        }
+        
+        ltvDisplay.style.display = 'block';
+    } else {
+        ltvDisplay.style.display = 'none';
+    }
+}
+
+// Add event listeners for LTV calculation
+document.getElementById('loan_amount').addEventListener('input', updateLTV);
+document.getElementById('property_value').addEventListener('input', updateLTV);
+
+// Form validation
+document.getElementById('applicationForm').addEventListener('submit', function(e) {
+    const loanAmount = parseFloat(document.getElementById('loan_amount').value) || 0;
+    const propertyValue = parseFloat(document.getElementById('property_value').value) || 0;
+    
+    if (loanAmount > propertyValue) {
+        e.preventDefault();
+        alert('Loan amount cannot exceed property value');
+        return false;
+    }
+    
+    if (loanAmount > 0 && propertyValue > 0) {
+        const ltv = (loanAmount / propertyValue) * 100;
+        if (ltv > 95) {
+            e.preventDefault();
+            if (!confirm('LTV ratio is very high (>95%). Are you sure you want to continue?')) {
+                return false;
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
