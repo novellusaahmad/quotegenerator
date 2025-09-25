@@ -142,7 +142,9 @@
         @media (max-width: 768px) {
             .hero-title { font-size: 2.5rem; }
             .hero-subtitle { font-size: 1.2rem; }
-            .navigation-cards { grid-template-columns: 1fr; gap: 1rem; }
+            .navigation-cards { grid-template-columns: repeat(7, 1fr); gap: 1rem; }
+            .nav-card.disabled {opacity: 0.1;    pointer-events: none; /* makes it unclickable */}
+	    .nav-card-button[disabled] {background: red; cursor: not-allowed;}
             .nav-card { padding: 1rem; }
         }
     </style>
@@ -174,22 +176,30 @@
                         'icon': 'fas fa-history',
                         'desc': 'View saved loan calculations.',
                         'url': url_for('loan_history')
-                    },
+                    },                    
                     {
-                        'title': 'Scenario',
-                        'icon': 'fas fa-chart-line',
-                        'desc': 'Compare different loan scenarios.',
-                        'url': url_for('scenario_comparison_page')
+                        'title': 'Automation',
+                        'icon': 'fa-solid fa-wand-magic-sparkles',
+                        'desc': 'Automation Test Studio.',
+                        'url': "http://loancalculator.uksouth.cloudapp.azure.com:8502/"
                     },                    
                     {
                         'title': 'Data Refresh',
                         'icon': 'fas fa-sync',
                         'desc': 'Refresh Data in LD.',
                         'url': "http://loancalculator.uksouth.cloudapp.azure.com:8501/"
+                    },
+                    {
+                        'title': 'Scenario',
+                        'icon': 'fas fa-chart-line',
+                        'desc': 'Compare different loan scenarios.',
+                        'url': url_for('scenario_comparison_page'),
+			'disabled': True
                     }
+
                 ] %}
                 {% for item in nav_items %}
-                <div class="nav-card">
+                <div class="nav-card {% if item.disabled %}disabled{% endif %}">
                     <div class="nav-card-icon">
                         <i class="{{ item.icon }}"></i>
                     </div>
@@ -197,9 +207,11 @@
                     <p class="nav-card-description">
                         {{ item.desc }}
                     </p>
-                    <a href="{{ item.url }}" class="nav-card-button">
-                        {{ item.title }}
-                    </a>
+                    {% if not item.disabled %}
+			<a href="{{ item.url }}" class="nav-card-button">{{ item.title }}</a>
+		    {% else %}
+			<button class="nav-card-button" disabled>{{ item.title }}</button>
+		    {% endif %}
                 </div>
                 {% endfor %}
             </div>
