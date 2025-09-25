@@ -344,10 +344,12 @@ def generate_loan_summary_docx(loan, extra_fields=None):
         doc.add_paragraph(
             f"Further to our correspondence, please see below our high-level terms subject to {clause}:"
         )
+        doc.add_paragraph("")
     else:
         doc.add_paragraph(
             "Further to our correspondence, please see below our high-level terms:"
         )
+        doc.add_paragraph("")
 
     # Helper to add bullet paragraphs with optional bold segments
     def _add_numbered(parts):
@@ -639,6 +641,7 @@ def generate_loan_summary_docx(loan, extra_fields=None):
                 run.bold = b
                 run.font.color.rgb = RGBColor(0, 0, 0)
 
+    doc.add_paragraph("")
     doc.add_paragraph("Yours sincerely, [or faithfully if Dear Sir],")
     doc.add_paragraph("[•]")
     doc.add_paragraph("For and on behalf of")
