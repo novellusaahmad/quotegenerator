@@ -218,6 +218,8 @@ Novellus.forms = {
     },
 
     // Validate form
+    // Validate form. By default, do not mark pristine (untouched) fields invalid
+    // on initial load. Only show invalid styles after user interaction.
     validate: function(form, showToast = true) {
         let isValid = true;
         const invalidFields = [];
@@ -232,6 +234,16 @@ Novellus.forms = {
         };
 
         requiredFields.forEach(field => {
+            // Skip untouched fields so the page doesn't show red on load
+            if (!field.dataset.touched) {
+                // Ensure any previous invalid styling is cleared for pristine fields
+                field.classList.remove('is-invalid');
+                const tt = bootstrap.Tooltip.getInstance(field);
+                if (tt) tt.dispose();
+                field.removeAttribute('data-bs-toggle');
+                field.removeAttribute('title');
+                return;
+            }
             const label = form.querySelector(`label[for="${field.id}"]`);
             const labelText = label ? label.textContent.trim() : field.name || field.id;
             const valueMissing = !field.value.trim();
@@ -258,6 +270,7 @@ Novellus.forms = {
         // Email validation
         const emailFields = form.querySelectorAll('input[type="email"]');
         emailFields.forEach(field => {
+            if (!field.dataset.touched) return;
             if (field.value && !Novellus.utils.validateEmail(field.value)) {
                 field.classList.add('is-invalid');
                 field.dataset.bsToggle = 'tooltip';
@@ -277,6 +290,7 @@ Novellus.forms = {
         // Phone validation
         const phoneFields = form.querySelectorAll('input[type="tel"]');
         phoneFields.forEach(field => {
+            if (!field.dataset.touched) return;
             if (field.value && !Novellus.utils.validatePhone(field.value)) {
                 field.classList.add('is-invalid');
                 field.dataset.bsToggle = 'tooltip';
@@ -315,6 +329,9 @@ Novellus.forms = {
             field.removeAttribute('data-bs-toggle');
             field.removeAttribute('title');
         });
+        // Also clear touched markers so the form returns to pristine state
+        const fields = form.querySelectorAll('input, select, textarea');
+        fields.forEach(f => { delete f.dataset.touched; });
     }
 };
 

@@ -161,6 +161,14 @@ class LoanCalculator {
     }
 
     initializeEventListeners() {
+        // Mark fields as touched on user interaction so validation only shows then
+        this.form.querySelectorAll('input, select, textarea').forEach(el => {
+            const markTouched = () => { el.dataset.touched = '1'; };
+            el.addEventListener('input', markTouched, { once: true });
+            el.addEventListener('change', markTouched, { once: true });
+            el.addEventListener('blur', markTouched, { once: true });
+        });
+
         // Form submission
         this.form.addEventListener('submit', (e) => {
             e.preventDefault();

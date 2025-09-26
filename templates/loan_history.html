@@ -685,12 +685,12 @@ class LoanHistoryManager {
                                 <tr style="border: 1px solid #000;">
                                     <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Start LTV</td>
                                     <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${((loan.startLtv || 0) * 100).toFixed(1)}%</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.startLtv ?? 0).toFixed(1)}%</td>
                                 </tr>
                                 <tr style="border: 1px solid #000;">
                                     <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">End LTV</td>
                                     <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${((loan.endLtv || 0) * 100).toFixed(1)}%</td>
+                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${(loan.endLtv ?? 0).toFixed(1)}%</td>
                                 </tr>
                             </tbody>
                         </table>

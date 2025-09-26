@@ -6,13 +6,13 @@ kind: ContainerApp
 metadata:
   name: novellus-loan-calculator
   resourceGroup: novellus-rg
-  location: eastus
+  location: uksouth
 spec:
-  environmentId: /subscriptions/{subscription-id}/resourceGroups/novellus-rg/providers/Microsoft.App/managedEnvironments/novellus-env
+  environmentId: /subscriptions/c61a3539-0683-4a3d-a9ba-9d56c71bb9ec/resourceGroups/rg-crm-staging/providers/Microsoft.App/managedEnvironments/novellus-env
   template:
     containers:
-    - name: novellus-app
-      image: {your-registry}.azurecr.io/novellus-loan-calculator:latest
+    - name: loancalculator-app
+      image: lendingdynamics.azurecr.io/novellus-loan-calculator:latest
       resources:
         cpu: 1.0
         memory: 2Gi
@@ -28,8 +28,8 @@ spec:
       - name: FLASK_APP
         value: main.py
     scale:
-      minReplicas: 1
-      maxReplicas: 3
+      minReplicas: 0
+      maxReplicas: 1
       rules:
       - name: http-rule
         http:

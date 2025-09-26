@@ -1,0 +1,85 @@
+version: 2.1
+
+jobs:
+  build_and_deploy:
+    docker:
+      - image: cimg/base:stable
+    environment:
+      # Default values can be overridden in CircleCI Project Settings → Environment Variables
+      CONTAINER_PORT: "8080"
+    steps:
+      - checkout
+
+      - run:
+          name: Install prerequisites
+          command: |
+            sudo apt-get update -y
+            sudo apt-get install -y curl jq
+
+      - run:
+          name: Install Azure CLI
+          command: |
+            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+            az extension add --name containerapp || az extension update --name containerapp
+
+      - run:
+          name: Azure login (service principal)
+          command: |
+            az login --service-principal \
+              -u "$AZURE_CLIENT_ID" \
+              -p "$AZURE_CLIENT_SECRET" \
+              --tenant "$AZURE_TENANT_ID"
+            az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+
+      - run:
+          name: Login to ACR
+          command: |
+            az acr login --name "$ACR_NAME"
+
+      - run:
+          name: Build and push Docker image
+          command: |
+            IMAGE_TAG=${CIRCLE_SHA1:0:7}
+            IMAGE_NAME="$ACR_LOGIN_SERVER/$AZURE_CONTAINERAPP_NAME:$IMAGE_TAG"
+            docker build -t "$IMAGE_NAME" -t "$ACR_LOGIN_SERVER/$AZURE_CONTAINERAPP_NAME:latest" .
+            docker push "$IMAGE_NAME"
+            docker push "$ACR_LOGIN_SERVER/$AZURE_CONTAINERAPP_NAME:latest"
+
+      - run:
+          name: Create or update Azure Container App
+          command: |
+            set -e
+            IMAGE_TAG=${CIRCLE_SHA1:0:7}
+            IMAGE_NAME="$ACR_LOGIN_SERVER/$AZURE_CONTAINERAPP_NAME:$IMAGE_TAG"
+
+            if ! az containerapp show -n "$AZURE_CONTAINERAPP_NAME" -g "$AZURE_RESOURCE_GROUP" >/dev/null 2>&1; then
+              echo "Creating Container App $AZURE_CONTAINERAPP_NAME..."
+              az containerapp create \
+                -n "$AZURE_CONTAINERAPP_NAME" \
+                -g "$AZURE_RESOURCE_GROUP" \
+                --environment "$AZURE_CONTAINERAPPS_ENV" \
+                --image "$IMAGE_NAME" \
+                --registry-server "$ACR_LOGIN_SERVER" \
+                --target-port "$CONTAINER_PORT" \
+                --ingress external
+            else
+              echo "Updating Container App $AZURE_CONTAINERAPP_NAME image..."
+              az containerapp update \
+                -n "$AZURE_CONTAINERAPP_NAME" \
+                -g "$AZURE_RESOURCE_GROUP" \
+                --image "$IMAGE_NAME"
+            fi
+
+      - run:
+          name: Output public URL
+          command: |
+            az containerapp show -n "$AZURE_CONTAINERAPP_NAME" -g "$AZURE_RESOURCE_GROUP" --query properties.configuration.ingress.fqdn -o tsv
+
+workflows:
+  deploy:
+    jobs:
+      - build_and_deploy:
+          filters:
+            branches:
+              only: main
+

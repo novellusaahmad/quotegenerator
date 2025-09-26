@@ -11,18 +11,26 @@ ENV FLASK_ENV=production
 WORKDIR /app
 
 # Install system dependencies required for WeasyPrint and other packages
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    libpango-1.0-0 \
-    libpangoft2-1.0-0 \
-    libffi-dev \
-    libgdk-pixbuf2.0-0 \
-    libgtk-3-0 \
-    libcairo-gobject2 \
-    libcairo2 \
-    shared-mime-info \
-    && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    apt-get update; \
+    # Determine correct gdk-pixbuf package name for the base distro
+    if apt-cache show libgdk-pixbuf-xlib-2.0-0 >/dev/null 2>&1; then \
+        PIXBUF_PKG=libgdk-pixbuf-xlib-2.0-0; \
+    else \
+        PIXBUF_PKG=libgdk-pixbuf-2.0-0; \
+    fi; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+      gcc \
+      g++ \
+      libpango-1.0-0 \
+      libpangoft2-1.0-0 \
+      libffi-dev \
+      "$PIXBUF_PKG" \
+      libgtk-3-0 \
+      libcairo-gobject2 \
+      libcairo2 \
+      shared-mime-info; \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
 COPY Requirements.txt .
