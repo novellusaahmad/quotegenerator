@@ -1693,15 +1693,26 @@ function handleEditMode() {
                                 paramsFromData.set('gross_amount_percentage', ((gross / property) * 100).toFixed(4));
                             }
                         }
+                        // Ensure amount_input_type reflects original input, not derived values
                         if (!paramsFromData.has('amount_input_type')) {
-                            const net = parseFloat(paramsFromData.get('net_amount'));
-                            if (!isNaN(net) && net > 0) {
-                                paramsFromData.set('amount_input_type', 'net');
+                            const originalAmountType = source.amount_input_type || source.amountInputType;
+                            if (originalAmountType === 'net' || originalAmountType === 'gross') {
+                                paramsFromData.set('amount_input_type', originalAmountType);
                             } else {
-                                paramsFromData.set('amount_input_type', 'gross');
+                                const net = parseFloat(paramsFromData.get('net_amount'));
+                                const gross = parseFloat(paramsFromData.get('gross_amount'));
+                                if (!isNaN(net) && net > 0 && (isNaN(gross) || gross === 0)) {
+                                    paramsFromData.set('amount_input_type', 'net');
+                                } else {
+                                    paramsFromData.set('amount_input_type', 'gross');
+                                }
                             }
                         }
-                        if (paramsFromData.get('amount_input_type') === 'gross') {
+                        // Preserve gross_amount_type if present in source; otherwise infer from percentage
+                        const originalGrossType = source.gross_amount_type || source.grossAmountType;
+                        if (originalGrossType === 'percentage' || originalGrossType === 'fixed') {
+                            paramsFromData.set('gross_amount_type', originalGrossType);
+                        } else if (paramsFromData.get('amount_input_type') === 'gross') {
                             const perc = paramsFromData.get('gross_amount_percentage');
                             paramsFromData.set('gross_amount_type', perc && parseFloat(perc) > 0 ? 'percentage' : 'fixed');
                         }
@@ -1721,12 +1732,25 @@ function handleEditMode() {
                             || data.loan?.amount_input_type
                             || data.loan?.amountInputType
                             || paramsFromData.get('amount_input_type');
+                        const grossTypeFromResponse = data.input_data?.gross_amount_type
+                            || data.input_data?.grossAmountType
+                            || data.loan?.gross_amount_type
+                            || data.loan?.grossAmountType
+                            || paramsFromData.get('gross_amount_type');
 
+                        // Force radios after populate, before any downstream toggles
                         if (amountTypeFromResponse) {
-                            const amountRadio = document.querySelector(`input[name="amount_input_type"][value="${amountTypeFromResponse}"]`);
-                            if (amountRadio && !amountRadio.checked) {
+                            const amountRadio = document.querySelector(`input[name=\"amount_input_type\"][value=\"${amountTypeFromResponse}\"]`);
+                            if (amountRadio) {
                                 amountRadio.checked = true;
-                                amountRadio.dispatchEvent(new Event('change'));
+                                amountRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+                        }
+                        if (amountTypeFromResponse === 'gross' && grossTypeFromResponse) {
+                            const grossRadio = document.querySelector(`input[name=\"gross_amount_type\"][value=\"${grossTypeFromResponse}\"]`);
+                            if (grossRadio) {
+                                grossRadio.checked = true;
+                                grossRadio.dispatchEvent(new Event('change', { bubbles: true }));
                             }
                         }
                     }
@@ -1745,6 +1769,27 @@ function handleEditMode() {
                             // Ensure repayment-specific sections are visible when editing
                             window.loanCalculator.updateRepaymentOptions();
                             window.loanCalculator.updateAdditionalParams();
+                            // Finalize: force radios once more and reapply minimal toggles to avoid late overrides
+                            try {
+                                const amt = document.querySelector('input[name="amount_input_type"]:checked')?.value;
+                                const gross = document.querySelector('input[name="gross_amount_type"]:checked')?.value;
+                                if (amt) {
+                                    const amtRadio = document.querySelector(`input[name="amount_input_type"][value="${amt}"]`);
+                                    if (amtRadio) {
+                                        amtRadio.checked = true;
+                                        amtRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                                    }
+                                }
+                                if (amt === 'gross' && gross) {
+                                    const grossRadio = document.querySelector(`input[name="gross_amount_type"][value="${gross}"]`);
+                                    if (grossRadio) {
+                                        grossRadio.checked = true;
+                                        grossRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                                    }
+                                }
+                                window.loanCalculator.toggleAmountInputSections();
+                                window.loanCalculator.toggleGrossAmountInputs();
+                            } catch(e) { console.warn('Finalize amount toggles failed', e); }
                             // Automatically calculate to populate results and visualisation
                             window.loanCalculator.calculateLoan(true);
                         } catch (err) {

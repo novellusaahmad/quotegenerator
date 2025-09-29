@@ -122,6 +122,9 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <a id="downloadDocxButton" class="btn btn-outline-primary" href="#" target="_blank" style="display:none;">
+                    <i class="fas fa-file-word me-2"></i>Download DOCX
+                </a>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-novellus-gold" id="editLoanButton">
                     <i class="fas fa-edit me-2"></i>Edit & Recalculate
@@ -501,6 +504,12 @@ class LoanHistoryManager {
             }
             
             this.renderLoanDetails(data.loan);
+            // Enable DOCX download link
+            const docxBtn = document.getElementById('downloadDocxButton');
+            if (docxBtn) {
+                docxBtn.href = `/loan/${loanId}/summary-docx`;
+                docxBtn.style.display = 'inline-block';
+            }
             
         } catch (error) {
             console.error('Error loading loan details:', error);

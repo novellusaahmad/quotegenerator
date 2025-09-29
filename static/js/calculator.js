@@ -605,7 +605,8 @@ class LoanCalculator {
         });
         
         // Handle special cases for amount input
-        const amountInputType = document.querySelector('input[name="amount_input_type"]:checked').value;
+        const checked = document.querySelector('input[name="amount_input_type"]:checked');
+        const amountInputType = checked ? checked.value : 'gross';
         data.amount_input_type = amountInputType;
         
         // Handle payment timing and frequency explicitly
@@ -2008,9 +2009,7 @@ class LoanCalculator {
 
     toggleGrossAmountInputs() {
         const grossAmountTypeRadio = document.querySelector('input[name="gross_amount_type"]:checked');
-        if (!grossAmountTypeRadio) return;
-        
-        const grossAmountType = grossAmountTypeRadio.value;
+        const grossAmountType = grossAmountTypeRadio ? grossAmountTypeRadio.value : 'fixed';
         const grossFixedInput = document.getElementById('grossFixedInput');
         const grossPercentageInput = document.getElementById('grossPercentageInput');
         const grossFixed = document.getElementById('grossAmountFixed');
