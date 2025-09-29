@@ -183,7 +183,20 @@ class NovellussExcelGenerator:
 
         # --- Payment schedule (values) ---
         pay_ws = self.workbook.create_sheet("Payment Schedule")
-        pay_headers = ["Payment #", "Date", "Opening Balance", "Payment", "Interest", "Closing Balance"]
+        # Expanded headers to match on-screen Detailed Payment Schedule
+        pay_headers = [
+            "Period",
+            "Payment Date",
+            "Opening Balance",
+            "Tranche Release",
+            "Interest Calculation",
+            "Interest",
+            "Principal",
+            "Total Payment",
+            "Closing Balance",
+            "Balance Change",
+            "Running LTV",
+        ]
         for col, header in enumerate(pay_headers, 1):
             cell = pay_ws.cell(row=1, column=col, value=header)
             cell.font = header_font
@@ -191,8 +204,10 @@ class NovellussExcelGenerator:
             cell.fill = header_fill
 
         for r, payment in enumerate(payment_schedule, start=2):
-            pay_ws.cell(row=r, column=1, value=r - 1)
-            date_str = payment.get("date")
+            # Period number
+            pay_ws.cell(row=r, column=1, value=payment.get("period_number") or payment.get("period") or (r - 1))
+            # Payment date
+            date_str = payment.get("payment_date") or payment.get("date")
             if date_str:
                 try:
                     dt_val = datetime.strptime(date_str, "%Y-%m-%d")
@@ -202,12 +217,40 @@ class NovellussExcelGenerator:
                 dt_val = None
             date_cell = pay_ws.cell(row=r, column=2, value=dt_val)
             date_cell.number_format = "dd/mm/yyyy"
+            # Opening balance
             pay_ws.cell(row=r, column=3, value=self._to_float(payment.get("opening_balance", 0)))
-            pay_ws.cell(row=r, column=4, value=self._to_float(payment.get("payment_amount", 0)))
-            pay_ws.cell(row=r, column=5, value=self._to_float(payment.get("interest_amount", 0)))
-            pay_ws.cell(row=r, column=6, value=self._to_float(payment.get("closing_balance", 0)))
+            # Tranche release
+            pay_ws.cell(row=r, column=4, value=self._to_float(payment.get("tranche_release", 0)))
+            # Interest calculation description
+            pay_ws.cell(row=r, column=5, value=payment.get("interest_calculation", ""))
+            # Interest amount
+            pay_ws.cell(row=r, column=6, value=self._to_float(payment.get("interest_amount", payment.get("interest", 0))))
+            # Principal payment
+            pay_ws.cell(row=r, column=7, value=self._to_float(payment.get("principal_payment", payment.get("principal", 0))))
+            # Total payment
+            pay_ws.cell(row=r, column=8, value=self._to_float(payment.get("total_payment", 0)))
+            # Closing balance
+            pay_ws.cell(row=r, column=9, value=self._to_float(payment.get("closing_balance", 0)))
+            # Balance change
+            pay_ws.cell(row=r, column=10, value=self._to_float(payment.get("balance_change", 0)))
+            # Running LTV (store as string if percent)
+            running_ltv = payment.get("running_ltv")
+            try:
+                # accept either string like '65.12%' or numeric ratio 0.6512
+                if isinstance(running_ltv, str) and running_ltv.endswith('%'):
+                    val = float(running_ltv.rstrip('%')) / 100.0
+                    cell = pay_ws.cell(row=r, column=11, value=val)
+                    cell.number_format = '0.00%'
+                elif running_ltv is not None:
+                    cell = pay_ws.cell(row=r, column=11, value=float(running_ltv))
+                    cell.number_format = '0.00%'
+                else:
+                    pay_ws.cell(row=r, column=11, value="")
+            except Exception:
+                pay_ws.cell(row=r, column=11, value=str(running_ltv) if running_ltv is not None else "")
 
-        for col in (3, 4, 5, 6):
+        # Number formats
+        for col in (3, 4, 6, 7, 8, 9, 10):
             for r in range(2, len(payment_schedule) + 2):
                 pay_ws.cell(row=r, column=col).number_format = currency_format
 
@@ -236,7 +279,17 @@ class NovellussExcelGenerator:
 
         # --- Tranche schedule (values) ---
         tranche_ws = self.workbook.create_sheet("Tranche Schedule")
-        tranche_headers = ["Tranche #", "Release Date", "Amount", "Days Outstanding", "Rate", "Interest"]
+        # Expanded tranche headers for development2-style detailed schedule
+        tranche_headers = [
+            "Tranche #",
+            "Release Date",
+            "Amount",
+            "Days Outstanding",
+            "Rate",
+            "Interest",
+            "Description",
+            "Month",
+        ]
         for col, header in enumerate(tranche_headers, 1):
             cell = tranche_ws.cell(row=1, column=col, value=header)
             cell.font = header_font
@@ -265,6 +318,8 @@ class NovellussExcelGenerator:
             tranche_ws.cell(row=r, column=4, value=days_outstanding)
             tranche_ws.cell(row=r, column=5, value=rate)
             tranche_ws.cell(row=r, column=6, value=interest)
+            tranche_ws.cell(row=r, column=7, value=tranche.get("description", tranche.get("tranche_description", "")))
+            tranche_ws.cell(row=r, column=8, value=tranche.get("month") or tranche.get("tranche_month") or "")
 
         for r in range(2, len(tranche_schedule) + 2):
             tranche_ws.cell(row=r, column=3).number_format = currency_format
