@@ -536,7 +536,7 @@
           Loan Parameters
         </button>
       </h2>
-      <div id="collapseParameters" class="accordion-collapse collapse show" data-bs-parent="#calculatorAccordion">
+      <div id="collapseParameters" class="accordion-collapse collapse show">
         <div class="accordion-body">
 <!-- Loan Name -->
 <div class="">
@@ -658,7 +658,7 @@
           Repayment Profile
         </button>
       </h2>
-      <div id="collapseRepayment" class="accordion-collapse collapse" data-bs-parent="#calculatorAccordion">
+      <div id="collapseRepayment" class="accordion-collapse collapse">
         <div class="accordion-body">
 <!-- Repayment Option -->
 <div class="">
@@ -2093,7 +2093,29 @@ async function handleReportFieldsClick(e) {
     let idx = 0;
     const selectedNotes = (data.note_ids || []).map(id => parseInt(id, 10));
     const loanType = document.getElementById('loanType')?.value || '';
-    for (const [group, notes] of Object.entries(notesData)) {
+    // Desired order of note groups
+    const groupOrder = [
+        'Security',
+        'Salient Points',
+        'Standard AML Pre-Conditions',
+        'Standard Financial Pre-Conditions',
+        'Standard General Conditions',
+        'Development Conditions',
+        'Financial Covenants',
+        'Repayment Conditions',
+        'Other Conditions'
+    ];
+
+    // Sort groups by the specified order; unknown groups go last in original order
+    const orderedEntries = Object.entries(notesData).sort((a, b) => {
+        const ia = groupOrder.indexOf(a[0]);
+        const ib = groupOrder.indexOf(b[0]);
+        const va = ia === -1 ? Number.MAX_SAFE_INTEGER : ia;
+        const vb = ib === -1 ? Number.MAX_SAFE_INTEGER : ib;
+        return va - vb;
+    });
+
+    for (const [group, notes] of orderedEntries) {
         if ((group === 'Development Conditions' && !['development', 'development2'].includes(loanType)) ||
             (group === 'Financial Covenants' && loanType !== 'term')) {
             continue;

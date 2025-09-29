@@ -52,7 +52,18 @@
                 {% block nav_heading %}{% endblock %}
             </div>
             <div class="d-flex ms-auto gap-2">
-                <button type="button" class="btn btn-sm btn-light" onclick="window.location.reload();">
+                <button type="button" class="btn btn-sm btn-light" onclick="(function(){
+                    try {
+                        // Clear edit mode and any cached report fields or calculator state
+                        if (window.localStorage) {
+                            localStorage.removeItem('pendingReportFields');
+                            localStorage.removeItem('calculatorState');
+                        }
+                    } catch(e) {}
+                    // Navigate to the same path without query string to fully reset edit context
+                    var path = window.location.pathname;
+                    window.location.replace(path);
+                })();">
                     <i class="fas fa-sync-alt me-1"></i>Refresh
                 </button>
             </div>

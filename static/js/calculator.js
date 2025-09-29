@@ -1692,8 +1692,18 @@ class LoanCalculator {
             const endDateEl = document.getElementById('endDate');
             const loanTypeEl = document.getElementById('loanType');
             const loanType = loanTypeEl ? loanTypeEl.value : '';
+            const currencyEl = document.querySelector('input[name="currency"]:checked');
+            const currency = currencyEl ? currencyEl.value : (document.getElementById('currency')?.value || 'GBP');
 
             if (!use360DaysSection || !startDateEl || !endDateEl) {
+                return;
+            }
+
+            // Only show 360-day option for EUR currency
+            if (currency !== 'EUR') {
+                use360DaysSection.style.display = 'none';
+                const checkbox = document.getElementById('use360Days');
+                if (checkbox) checkbox.checked = false;
                 return;
             }
 
@@ -1704,44 +1714,8 @@ class LoanCalculator {
                 return;
             }
 
-            const startValue = startDateEl.value;
-            const endValue = endDateEl.value;
-
-            if (!startValue || !endValue) {
-                use360DaysSection.style.display = 'none';
-                const checkbox = document.getElementById('use360Days');
-                if (checkbox) checkbox.checked = false;
-                return;
-            }
-
-            const [sy, sm, sd] = startValue.split('-').map(Number);
-            const [ey, em, ed] = endValue.split('-').map(Number);
-            const start = new Date(Date.UTC(sy, sm - 1, sd));
-            const end = new Date(Date.UTC(ey, em - 1, ed));
-            const daysDiff = Math.floor((end - start) / 86400000) + 1;
-
-            const includesLeapDay = (s, e) => {
-                for (let year = s.getUTCFullYear(); year <= e.getUTCFullYear(); year++) {
-                    const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
-                    if (isLeap) {
-                        const feb29 = Date.UTC(year, 1, 29);
-                        if (feb29 >= s.getTime() && feb29 <= e.getTime()) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            };
-
-            const threshold = includesLeapDay(start, end) ? 366 : 365;
-
-            if (daysDiff > threshold) {
-                use360DaysSection.style.display = 'none';
-                const checkbox = document.getElementById('use360Days');
-                if (checkbox) checkbox.checked = false;
-            } else {
-                use360DaysSection.style.display = 'block';
-            }
+            // Make 360-day option available regardless of period length
+            use360DaysSection.style.display = 'block';
         } catch (error) {
             console.error('Error in update360DayVisibility:', error);
         }
