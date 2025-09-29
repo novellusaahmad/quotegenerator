@@ -1,13 +1,9 @@
 #!/bin/bash
 
-# Azure Container Apps Deployment Script
+# Azure Container Apps Deployment Script (Managed DB Only)
 # Novellus Loan Management System
-# 
-# This script automates the complete deployment process to Azure Container Apps
-# Run: ./azure-deploy-script.sh
 
-set -e  # Exit on error
-set -o pipefail
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -16,7 +12,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}🚀 Novellus Loan Calculator - Azure Deployment Script${NC}"
+echo -e "${BLUE}🚀 Novellus Loan Calculator - Azure Deployment (Managed DB Only)${NC}"
 echo "=================================================="
 
 # Check prerequisites
@@ -34,33 +30,21 @@ fi
 
 echo -e "${GREEN}✅ Prerequisites check passed${NC}"
 
-# Configuration - Defaults (can override via env or prompts)
-read -p "Enter your Azure Subscription ID: " SUBSCRIPTION_ID
-read -p "Enter Resource Group name (default: rg-crm-staging): " RESOURCE_GROUP
-RESOURCE_GROUP=${RESOURCE_GROUP:-rg-crm-staging}
+SUBSCRIPTION_ID="c61a3539-0683-4a3d-a9ba-9d56c71bb9ec"
+read -p "Resource Group [rg-crm-staging]: " RESOURCE_GROUP; RESOURCE_GROUP=${RESOURCE_GROUP:-rg-crm-staging}
+read -p "Azure region [uksouth]: " LOCATION; LOCATION=${LOCATION:-uksouth}
+read -p "ACR name [applications]: " ACR_NAME; ACR_NAME=${ACR_NAME:-applications}
+read -p "App name [novellus-loan-calculator]: " APP_NAME; APP_NAME=${APP_NAME:-novellus-loan-calculator}
+read -p "ACA environment [novellus-env]: " CONTAINER_ENV; CONTAINER_ENV=${CONTAINER_ENV:-novellus-env}
+read -p "App port [5000]: " TARGET_PORT; TARGET_PORT=${TARGET_PORT:-5000}
 
-read -p "Enter Azure region (default: uksouth): " LOCATION
-LOCATION=${LOCATION:-uksouth}
-
-read -p "Enter Container Registry name (default: applications): " ACR_NAME
-ACR_NAME=${ACR_NAME:-applications}
-
-read -p "Enter App name (default: novellus-loan-calculator): " APP_NAME
-APP_NAME=${APP_NAME:-novellus-loan-calculator}
-
-read -p "Enter Container Apps Environment name (default: novellus-env): " CONTAINER_ENV
-CONTAINER_ENV=${CONTAINER_ENV:-novellus-env}
-
-read -p "App container port (default: 5000): " TARGET_PORT
-TARGET_PORT=${TARGET_PORT:-5000}
-
-# Database values (only used if creating managed Postgres)
-read -p "Enter Database server name (default: novellus-db-server): " DB_SERVER_NAME
-DB_SERVER_NAME=${DB_SERVER_NAME:-novellus-db-server}
-
-read -p "Enter Database admin password (leave empty to skip DB creation): " -s DB_PASSWORD || true
-echo
 DB_NAME="novellus_loans"
+read -p "DB server name [novellus-db-server]: " DB_SERVER_NAME; DB_SERVER_NAME=${DB_SERVER_NAME:-novellus-db-server}
+# Use fixed managed DB admin password for novellus_admin
+DB_PASSWORD='lendingdynamics987654321'
+# Trim any accidental whitespace and confirm non-empty (debug)
+DB_PASSWORD=$(printf %s "$DB_PASSWORD" | sed 's/^[[:space:]]\+//; s/[[:space:]]\+$//')
+echo "DBG: DB_PASSWORD length=$(printf %s "$DB_PASSWORD" | wc -c | tr -d ' ')"
 
 echo -e "${BLUE}Configuration:${NC}"
 echo "Subscription ID: $SUBSCRIPTION_ID"
@@ -79,57 +63,27 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     exit 1
 fi
 
-# Login to Azure
-echo -e "${YELLOW}Logging into Azure...${NC}"
-if [[ -n "$AZURE_CLIENT_ID" && -n "$AZURE_CLIENT_SECRET" && -n "$AZURE_TENANT_ID" ]]; then
-  echo -e "${BLUE}Using service principal credentials from environment${NC}"
-  az login --service-principal \
-    -u "$AZURE_CLIENT_ID" \
-    -p "$AZURE_CLIENT_SECRET" \
-    --tenant "$AZURE_TENANT_ID"
-else
-  echo -e "${BLUE}Using device code flow (interactive)${NC}"
-  az login --use-device-code
-fi
-
-# Set subscription
-az account set --subscription $SUBSCRIPTION_ID
+echo -e "${YELLOW}Logging into Azure and selecting subscription...${NC}"
+az login --use-device-code >/dev/null
+az account set --subscription "$SUBSCRIPTION_ID"
 
 # Step 1: Ensure Resource Group exists
 echo -e "${YELLOW}Step 1: Ensuring Resource Group...${NC}"
 az group show --name $RESOURCE_GROUP >/dev/null 2>&1 || az group create --name $RESOURCE_GROUP --location $LOCATION
 echo -e "${GREEN}✅ Resource group ready${NC}"
 
-# Step 2: Ensure Container Registry exists and login
-echo -e "${YELLOW}Step 2: Ensuring Azure Container Registry...${NC}"
-if ! az acr show --name $ACR_NAME --resource-group $RESOURCE_GROUP >/dev/null 2>&1; then
-  az acr create \
-    --resource-group $RESOURCE_GROUP \
-    --name $ACR_NAME \
-    --sku Basic \
-    --admin-enabled true
-fi
-ACR_SERVER=$(az acr show --name $ACR_NAME --resource-group $RESOURCE_GROUP --query "loginServer" --output tsv)
-
-# Prefer SP-based az acr login; fallback to admin creds via docker login
-if ! az acr login --name "$ACR_NAME" >/dev/null 2>&1; then
-  echo -e "${YELLOW}az acr login failed; trying admin credentials via docker login...${NC}"
-  ADMIN_ENABLED=$(az acr show -n "$ACR_NAME" --query 'adminUserEnabled' -o tsv)
-  if [ "$ADMIN_ENABLED" != "true" ]; then
-    az acr update -n "$ACR_NAME" --admin-enabled true >/dev/null
-  fi
+echo -e "${YELLOW}Step 2: Ensuring ACR...${NC}"
+az acr show -n "$ACR_NAME" -g "$RESOURCE_GROUP" >/dev/null 2>&1 || az acr create -n "$ACR_NAME" -g "$RESOURCE_GROUP" --sku Basic --admin-enabled true >/dev/null
+ACR_SERVER=$(az acr show -n "$ACR_NAME" -g "$RESOURCE_GROUP" --query loginServer -o tsv)
+az acr login -n "$ACR_NAME" >/dev/null 2>&1 || {
   ACR_USER=$(az acr credential show -n "$ACR_NAME" --query username -o tsv)
   ACR_PASS=$(az acr credential show -n "$ACR_NAME" --query 'passwords[0].value' -o tsv)
   echo "$ACR_PASS" | docker login "$ACR_SERVER" -u "$ACR_USER" --password-stdin
-fi
+}
 echo -e "${GREEN}✅ Container Registry ready: $ACR_SERVER${NC}"
 
-# Step 3: Create PostgreSQL Database (idempotent, optional)
-echo -e "${YELLOW}Step 3: Creating PostgreSQL Database...${NC}"
-
-echo -e "${YELLOW}Checking the existence of the resource group '$RESOURCE_GROUP'...${NC}"
-RG_EXISTS=$(az group exists --name "$RESOURCE_GROUP")
-echo -e "Resource group '$RESOURCE_GROUP' exists ? : $RG_EXISTS"
+## Step 3: Managed DB provisioning
+echo -e "${YELLOW}Step 3: Managed DB provisioning...${NC}"
 
 DB_SERVER_EXISTS=false
 if az postgres flexible-server show --resource-group "$RESOURCE_GROUP" --name "$DB_SERVER_NAME" >/dev/null 2>&1; then
@@ -184,8 +138,19 @@ fi
 
 if [ -n "$DB_PASSWORD" ]; then
   DB_HOST=$(az postgres flexible-server show --resource-group $RESOURCE_GROUP --name $DB_SERVER_NAME --query "fullyQualifiedDomainName" --output tsv)
-  DATABASE_URL="postgresql://novellus_admin:$DB_PASSWORD@$DB_HOST:5432/$DB_NAME"
-  echo -e "${GREEN}✅ Database created/configured (idempotent)${NC}"
+  echo "DBG: composing DATABASE_URL..."
+  ENC_DB_PASSWORD=$(DB_PASSWORD="$DB_PASSWORD" python3 - << 'PY'
+import os, urllib.parse
+pwd = os.environ.get('DB_PASSWORD', '')
+print(urllib.parse.quote(pwd.strip(), safe=''))
+PY
+)
+  echo "DBG: Encoded password length=$(printf %s "$ENC_DB_PASSWORD" | wc -c | tr -d ' ')"
+  DATABASE_URL="postgresql://novellus_admin:${ENC_DB_PASSWORD}@${DB_HOST}:5432/${DB_NAME}?sslmode=require"
+  if ! echo "$DATABASE_URL" | grep -qE 'postgresql:\/\/novellus_admin:[^@]+@'; then
+    echo -e "${RED}Composed DATABASE_URL is missing password; aborting.${NC}"; exit 1
+  fi
+  echo -e "${GREEN}✅ Managed PostgreSQL configured${NC}"
 else
   echo -e "${YELLOW}Skipping managed PostgreSQL creation; no DB password provided.${NC}"
 fi
@@ -206,21 +171,24 @@ else
 fi
 
 # Step 5: Build and Push Docker Image
-echo -e "${YELLOW}Step 5: Building and pushing Docker image...${NC}"
+echo -e "${YELLOW}Step 4: Building and pushing Docker image...${NC}"
 
-# Build image (tag with commit short SHA if available)
-IMAGE_TAG=${CIRCLE_SHA1:0:7}
-IMAGE_TAG=${IMAGE_TAG:-latest}
-docker build -t $ACR_SERVER/novellus-loan-calculator:$IMAGE_TAG -t $ACR_SERVER/novellus-loan-calculator:latest .
+# Build image tag from git commit if available, else latest
+if git rev-parse --short HEAD >/dev/null 2>&1; then
+  IMAGE_TAG=$(git rev-parse --short HEAD)
+else
+  IMAGE_TAG="latest"
+fi
+docker build -t "$ACR_SERVER/novellus-loan-calculator:$IMAGE_TAG" -t "$ACR_SERVER/novellus-loan-calculator:latest" .
 
 # Push images (already logged in earlier)
-docker push $ACR_SERVER/novellus-loan-calculator:$IMAGE_TAG
-docker push $ACR_SERVER/novellus-loan-calculator:latest
+docker push "$ACR_SERVER/novellus-loan-calculator:$IMAGE_TAG"
+docker push "$ACR_SERVER/novellus-loan-calculator:latest"
 
 echo -e "${GREEN}✅ Docker image built and pushed${NC}"
 
 # Step 6: Deploy/Update Container App
-echo -e "${YELLOW}Step 6: Deploying Container App...${NC}"
+echo -e "${YELLOW}Step 5: Deploying Container App...${NC}"
 
 # Generate secrets
 SESSION_SECRET=$(openssl rand -hex 32)
@@ -240,7 +208,7 @@ if ! az containerapp show -n "$APP_NAME" -g "$RESOURCE_GROUP" >/dev/null 2>&1; t
     --min-replicas 1 \
     --max-replicas 3 \
     $( [ -n "$DATABASE_URL" ] && echo --secrets database-url="$DATABASE_URL" ) \
-    $( [ -n "$DATABASE_URL" ] && echo --env-vars DATABASE_URL=secretref:database-url ) \
+    $( [ -n "$DATABASE_URL" ] && echo --env-vars DATABASE_URL=secretref:database-url SQLALCHEMY_DATABASE_URI=secretref:database-url ) \
     --env-vars SESSION_SECRET=$SESSION_SECRET JWT_SECRET_KEY=$JWT_SECRET FLASK_ENV=production FLASK_APP=main.py
 else
   az containerapp update \
@@ -248,7 +216,10 @@ else
     --resource-group $RESOURCE_GROUP \
     --image $ACR_SERVER/novellus-loan-calculator:$IMAGE_TAG \
     --set-env-vars SESSION_SECRET=$SESSION_SECRET JWT_SECRET_KEY=$JWT_SECRET \
-    $( [ -n "$DATABASE_URL" ] && echo --set-env-vars DATABASE_URL=secretref:database-url )
+    $( [ -n "$DATABASE_URL" ] && echo --set-env-vars DATABASE_URL=secretref:database-url SQLALCHEMY_DATABASE_URI=secretref:database-url )
+
+echo -e "${YELLOW}Restarting revision to apply configuration...${NC}"
+az containerapp revision restart -n "$APP_NAME" -g "$RESOURCE_GROUP" >/dev/null 2>&1 || true
 fi
 
 echo -e "${GREEN}✅ Container App deployed${NC}"

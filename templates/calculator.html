@@ -1714,6 +1714,21 @@ function handleEditMode() {
                         paramsFromData.set('loan_end_type', 'date');
 
                         populateFormFromParams(paramsFromData);
+
+                        // Ensure the amount input toggle reflects the stored loan configuration
+                        const amountTypeFromResponse = data.input_data?.amount_input_type
+                            || data.input_data?.amountInputType
+                            || data.loan?.amount_input_type
+                            || data.loan?.amountInputType
+                            || paramsFromData.get('amount_input_type');
+
+                        if (amountTypeFromResponse) {
+                            const amountRadio = document.querySelector(`input[name="amount_input_type"][value="${amountTypeFromResponse}"]`);
+                            if (amountRadio && !amountRadio.checked) {
+                                amountRadio.checked = true;
+                                amountRadio.dispatchEvent(new Event('change'));
+                            }
+                        }
                     }
                 })
                 .catch(err => {

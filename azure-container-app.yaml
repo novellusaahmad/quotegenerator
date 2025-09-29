@@ -14,8 +14,8 @@ spec:
     - name: loancalculator-app
       image: lendingdynamics.azurecr.io/novellus-loan-calculator:latest
       resources:
-        cpu: 1.0
-        memory: 2Gi
+        cpu: 0.5
+        memory: 1Gi
       env:
       - name: DATABASE_URL
         secretRef: database-url
