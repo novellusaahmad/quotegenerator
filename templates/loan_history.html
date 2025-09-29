@@ -95,6 +95,30 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
+                            <div class="card mt-4" id="loan-notes-card" style="display:none;">
+                            <div class="card-header bg-novellus-navy text-white fw-bold">Notes</div>
+                            <div class="card-body">
+                                <form id="add-loan-note-form" class="row g-2 mb-3">
+                                    <div class="col-md-3">
+                                        <select class="form-select" id="loan-note-status">
+                                            <option>General</option>
+                                            <option>Call</option>
+                                            <option>Email</option>
+                                            <option>Underwriting</option>
+                                            <option>Legal</option>
+                                            <option>Completed</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <textarea class="form-control" id="loan-note-text" rows="2" placeholder="Add a note..."></textarea>
+                                    </div>
+                                    <div class="col-md-2 d-grid">
+                                        <button type="submit" class="btn btn-novellus-gold">Add Note</button>
+                                    </div>
+                                </form>
+                                <div id="loan-notes-list" class="list-group"></div>
+                                <div id="loan-notes-empty" class="text-muted text-center mt-2" style="display:none;">No notes yet.</div>
+                            </div>
                             <tbody id="loansTableBody">
                                 <!-- Loan rows will be populated here -->
                             </tbody>
@@ -817,6 +841,7 @@ class LoanHistoryManager {
         `;
         this.createLoanBreakdownChart(loan);
     }
+
 
     createLoanBreakdownChart(loan) {
         const ctx = document.getElementById('loanBreakdownChart');
