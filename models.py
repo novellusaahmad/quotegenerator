@@ -292,6 +292,13 @@ class LoanSummary(db.Model):
         'ReportFields', backref='loan', uselist=False, cascade='all, delete-orphan'
     )
 
+    history_notes = db.relationship(
+        'LoanHistoryNote',
+        backref='loan_summary',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
+
     loan_notes = db.relationship(
         'LoanNote',
         secondary='loan_summary_notes',
@@ -430,6 +437,35 @@ class ReportFields(db.Model):
 
 
 LoanData = _create_loan_data_model()
+
+
+class LoanHistoryNote(db.Model):
+    __tablename__ = 'loan_history_notes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    loan_summary_id = db.Column(
+        db.Integer,
+        db.ForeignKey('loan_summary.id'),
+        nullable=False,
+        index=True,
+    )
+    author = db.Column(db.String(120))
+    status = db.Column(db.String(50), default='General')
+    text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'loan_summary_id': self.loan_summary_id,
+            'author': self.author,
+            'status': self.status,
+            'text': self.text,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+    def __repr__(self):
+        return f'<LoanHistoryNote loan={self.loan_summary_id} status={self.status}>'
 
 
 class LoanNote(db.Model):

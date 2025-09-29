@@ -95,30 +95,6 @@
                                     <th>Actions</th>
                                 </tr>
                             </thead>
-                            <div class="card mt-4" id="loan-notes-card" style="display:none;">
-                            <div class="card-header bg-novellus-navy text-white fw-bold">Notes</div>
-                            <div class="card-body">
-                                <form id="add-loan-note-form" class="row g-2 mb-3">
-                                    <div class="col-md-3">
-                                        <select class="form-select" id="loan-note-status">
-                                            <option>General</option>
-                                            <option>Call</option>
-                                            <option>Email</option>
-                                            <option>Underwriting</option>
-                                            <option>Legal</option>
-                                            <option>Completed</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-7">
-                                        <textarea class="form-control" id="loan-note-text" rows="2" placeholder="Add a note..."></textarea>
-                                    </div>
-                                    <div class="col-md-2 d-grid">
-                                        <button type="submit" class="btn btn-novellus-gold">Add Note</button>
-                                    </div>
-                                </form>
-                                <div id="loan-notes-list" class="list-group"></div>
-                                <div id="loan-notes-empty" class="text-muted text-center mt-2" style="display:none;">No notes yet.</div>
-                            </div>
                             <tbody id="loansTableBody">
                                 <!-- Loan rows will be populated here -->
                             </tbody>
@@ -167,6 +143,15 @@ class LoanHistoryManager {
         this.currentLoanId = null;
         this.powerBIReports = {};
         this.loanBreakdownChart = null;
+        this.noteStatuses = ['General', 'Call', 'Email', 'Underwriting', 'Legal', 'Completed'];
+        this.noteStatusClasses = {
+            'General': 'bg-secondary',
+            'Call': 'bg-info text-dark',
+            'Email': 'bg-primary',
+            'Underwriting': 'bg-warning text-dark',
+            'Legal': 'bg-danger',
+            'Completed': 'bg-success'
+        };
         this.init();
     }
 
@@ -830,6 +815,42 @@ class LoanHistoryManager {
             `
             }
 
+            <div class="card border-0 mt-4" id="loanNotesCard">
+                <div class="card-header bg-novellus-navy text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes</h6>
+                    <small class="text-white-50">Track status updates and interactions</small>
+                </div>
+                <div class="card-body">
+                    <form id="loanNotesForm" class="row g-2 align-items-start mb-3" data-loan-id="${loan.id}">
+                        <div class="col-md-3">
+                            <label for="loanNoteStatus" class="form-label visually-hidden">Note status</label>
+                            <select class="form-select" id="loanNoteStatus" name="status">
+                                <option value="General">General</option>
+                                <option value="Call">Call</option>
+                                <option value="Email">Email</option>
+                                <option value="Underwriting">Underwriting</option>
+                                <option value="Legal">Legal</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <label for="loanNoteText" class="form-label visually-hidden">Note text</label>
+                            <textarea class="form-control" id="loanNoteText" name="text" rows="2" placeholder="Add a note about this loan..." required></textarea>
+                        </div>
+                        <div class="col-md-2 d-grid">
+                            <button type="submit" class="btn btn-novellus-gold">
+                                <i class="fas fa-plus me-1"></i>Add Note
+                            </button>
+                        </div>
+                    </form>
+                    <div id="loanNotesLoading" class="text-center text-muted my-3" style="display:none;">
+                        <i class="fas fa-spinner fa-spin me-2"></i>Loading notes...
+                    </div>
+                    <div id="loanNotesList" class="list-group"></div>
+                    <div id="loanNotesEmpty" class="text-muted text-center mt-3" style="display:none;">No notes yet. Be the first to add one.</div>
+                </div>
+            </div>
+
             <div class="card border-0 mt-4">
                 <div class="card-header bg-novellus-navy text-white">
                     <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Loan Breakdown</h6>
@@ -839,6 +860,7 @@ class LoanHistoryManager {
                 </div>
             </div>
         `;
+        this.setupLoanNotesSection(loan);
         this.createLoanBreakdownChart(loan);
     }
 
@@ -888,6 +910,214 @@ class LoanHistoryManager {
         };
 
         this.loanBreakdownChart = new Chart(ctx, {type: 'doughnut', data, options});
+    }
+
+    setupLoanNotesSection(loan) {
+        const form = document.getElementById('loanNotesForm');
+        const statusSelect = document.getElementById('loanNoteStatus');
+        const textArea = document.getElementById('loanNoteText');
+
+        if (!form || !statusSelect || !textArea) {
+            console.warn('Loan notes form not found in DOM');
+            return;
+        }
+
+        form.dataset.loanId = loan.id;
+        form.addEventListener('submit', (event) => this.handleAddLoanNote(event));
+
+        this.renderLoanNotesList(Array.isArray(loan.history_notes) ? loan.history_notes : []);
+        this.loadLoanNotes(loan.id);
+    }
+
+    async loadLoanNotes(loanId) {
+        const loading = document.getElementById('loanNotesLoading');
+
+        if (loading) {
+            loading.style.display = 'block';
+        }
+
+        try {
+            const response = await fetch(`/api/loan/${loanId}/notes`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to load notes');
+            }
+
+            this.renderLoanNotesList(Array.isArray(data.notes) ? data.notes : []);
+        } catch (error) {
+            console.error('Failed to load loan notes:', error);
+            if (window.notifications) {
+                window.notifications.error(`Failed to load notes: ${error.message}`);
+            }
+        } finally {
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        }
+    }
+
+    renderLoanNotesList(notes = []) {
+        const list = document.getElementById('loanNotesList');
+        const empty = document.getElementById('loanNotesEmpty');
+        const loading = document.getElementById('loanNotesLoading');
+
+        if (!list || !empty) {
+            return;
+        }
+
+        if (loading) {
+            loading.style.display = 'none';
+        }
+
+        list.innerHTML = '';
+
+        if (!notes.length) {
+            empty.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
+        const items = notes.map((note) => this.renderLoanNoteItem(note)).join('');
+        list.innerHTML = items;
+    }
+
+    prependLoanNote(note) {
+        const list = document.getElementById('loanNotesList');
+        const empty = document.getElementById('loanNotesEmpty');
+        if (!list) {
+            return;
+        }
+
+        if (empty) {
+            empty.style.display = 'none';
+        }
+
+        list.insertAdjacentHTML('afterbegin', this.renderLoanNoteItem(note));
+    }
+
+    renderLoanNoteItem(note) {
+        const status = note.status || 'General';
+        const author = note.author || 'System';
+        const timestamp = this.formatNoteTimestamp(note.created_at);
+        const safeAuthor = this.escapeHtml(author);
+        const safeText = this.escapeHtml(note.text || '');
+        const badgeClass = this.getStatusBadgeClass(status);
+
+        return `
+            <div class="list-group-item">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge ${badgeClass}">${this.escapeHtml(status)}</span>
+                        <span class="fw-semibold">${safeAuthor}</span>
+                    </div>
+                    <small class="text-muted">${timestamp}</small>
+                </div>
+                <p class="mb-0 mt-2" style="white-space: pre-wrap;">${safeText}</p>
+            </div>
+        `;
+    }
+
+    getStatusBadgeClass(status) {
+        return this.noteStatusClasses[status] || 'bg-secondary';
+    }
+
+    formatNoteTimestamp(value) {
+        if (!value) {
+            return '';
+        }
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+
+        return date.toLocaleString('en-GB', {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    escapeHtml(value) {
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        return String(value).replace(/[&<>"']/g, (char) => {
+            switch (char) {
+                case '&': return '&amp;';
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '"': return '&quot;';
+                case "'": return '&#39;';
+                default: return char;
+            }
+        });
+    }
+
+    async handleAddLoanNote(event) {
+        event.preventDefault();
+
+        const form = event.currentTarget;
+        const loanId = form?.dataset?.loanId;
+        const statusSelect = document.getElementById('loanNoteStatus');
+        const textArea = document.getElementById('loanNoteText');
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        if (!loanId || !statusSelect || !textArea) {
+            return;
+        }
+
+        const text = textArea.value.trim();
+        if (!text) {
+            if (window.notifications) {
+                window.notifications.warning('Please enter a note before adding it.');
+            }
+            return;
+        }
+
+        const status = this.noteStatuses.includes(statusSelect.value) ? statusSelect.value : 'General';
+        const originalButtonContent = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Saving';
+
+        try {
+            const response = await fetch(`/api/loan/${loanId}/notes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, status })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to add note');
+            }
+
+            if (data.note) {
+                this.prependLoanNote(data.note);
+            }
+
+            textArea.value = '';
+            statusSelect.value = status;
+
+            if (window.notifications) {
+                window.notifications.success('Note added successfully.');
+            }
+
+            this.loadLoanNotes(loanId);
+        } catch (error) {
+            console.error('Failed to add loan note:', error);
+            if (window.notifications) {
+                window.notifications.error(`Failed to add note: ${error.message}`);
+            }
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonContent;
+        }
     }
 
     editLoan() {

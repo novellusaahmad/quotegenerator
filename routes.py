@@ -24,6 +24,7 @@ from models import (
     PaymentSchedule,
     ReportFields,
     LoanNote,
+    LoanHistoryNote,
     LoanSummaryNote,
 )
 import sqlalchemy as sa
@@ -78,6 +79,15 @@ from uuid import uuid4
 
 # In-memory store for scenario comparisons to keep session data small
 SCENARIO_COMPARISON_STORE = {}
+
+LOAN_HISTORY_NOTE_STATUSES = {
+    'General',
+    'Call',
+    'Email',
+    'Underwriting',
+    'Legal',
+    'Completed'
+}
 
 # Initialize Power BI scheduler if available
 if POWERBI_AVAILABLE:
@@ -2618,6 +2628,58 @@ def get_saved_loans():
         return jsonify({'error': f'Failed to retrieve loans: {str(e)}'}), 500
 
 
+@app.route('/api/loan/<int:loan_id>/notes', methods=['GET'])
+def get_loan_history_notes(loan_id):
+    """Return all notes associated with a saved loan."""
+    loan = LoanSummary.query.get_or_404(loan_id)
+
+    notes = (
+        LoanHistoryNote.query.filter_by(loan_summary_id=loan.id)
+        .order_by(LoanHistoryNote.created_at.desc())
+        .all()
+    )
+
+    return jsonify({
+        'success': True,
+        'notes': [note.to_dict() for note in notes],
+    })
+
+
+@app.route('/api/loan/<int:loan_id>/notes', methods=['POST'])
+def create_loan_history_note(loan_id):
+    """Persist a new note for a saved loan."""
+    loan = LoanSummary.query.get_or_404(loan_id)
+
+    payload = request.get_json(silent=True) or {}
+    text = (payload.get('text') or '').strip()
+    status = (payload.get('status') or 'General').strip()
+
+    if not text:
+        return jsonify({'success': False, 'error': 'Note text is required.'}), 400
+
+    if status not in LOAN_HISTORY_NOTE_STATUSES:
+        status = 'General'
+
+    author = None
+    if current_user and getattr(current_user, 'is_authenticated', False):
+        author = current_user.full_name or current_user.email or None
+
+    if not author:
+        author = 'System'
+
+    note = LoanHistoryNote(
+        loan_summary_id=loan.id,
+        author=author,
+        status=status,
+        text=text,
+    )
+
+    db.session.add(note)
+    db.session.commit()
+
+    return jsonify({'success': True, 'note': note.to_dict()}), 201
+
+
 @app.route('/api/loan/<int:loan_id>', methods=['GET'])
 @cross_origin()
 def get_loan_details(loan_id):
@@ -2784,6 +2846,13 @@ def get_loan_details(loan_id):
             loan_data['tranches'] = []
         # Include original user input data for editing
         input_data = input_params
+
+        notes = (
+            LoanHistoryNote.query.filter_by(loan_summary_id=loan.id)
+            .order_by(LoanHistoryNote.created_at.desc())
+            .all()
+        )
+        loan_data['history_notes'] = [note.to_dict() for note in notes]
 
         return jsonify({
             'success': True,
