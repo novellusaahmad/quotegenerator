@@ -39,7 +39,12 @@ read -p "ACA environment [novellus-env]: " CONTAINER_ENV; CONTAINER_ENV=${CONTAI
 read -p "App port [5000]: " TARGET_PORT; TARGET_PORT=${TARGET_PORT:-5000}
 
 DB_NAME="novellus_loans"
-read -p "DB server name [novellus-db-server]: " DB_SERVER_NAME; DB_SERVER_NAME=${DB_SERVER_NAME:-novellus-db-server}
+read -p "DB server name [loancalculator-db-server]: " DB_SERVER_NAME; DB_SERVER_NAME=${DB_SERVER_NAME:-loancalculator-db-server}
+# Networking exposure for DB server: world|azure|custom
+read -p "DB firewall scope [azure] (world/azure/custom): " DB_FIREWALL_SCOPE; DB_FIREWALL_SCOPE=${DB_FIREWALL_SCOPE:-azure}
+if [ "$DB_FIREWALL_SCOPE" = "custom" ]; then
+  read -p "Comma-separated IP ranges (e.g. 1.2.3.4-1.2.3.4,5.6.7.8-5.6.7.8): " DB_CUSTOM_IPS; DB_CUSTOM_IPS=${DB_CUSTOM_IPS:-}
+fi
 # Use fixed managed DB admin password for novellus_admin
 DB_PASSWORD='lendingdynamics987654321'
 # Trim any accidental whitespace and confirm non-empty (debug)
@@ -121,19 +126,42 @@ elif [ -n "$DB_PASSWORD" ]; then
   echo -e "${BLUE}Database '$DB_NAME' already exists. Skipping database creation.${NC}"
 fi
 
-# Configure firewall rule (idempotent; only when DB configured)
-if [ -n "$DB_PASSWORD" ] && ! az postgres flexible-server firewall-rule show \
-  --resource-group $RESOURCE_GROUP \
-  --name $DB_SERVER_NAME \
-  --rule-name AllowAzureServices >/dev/null 2>&1; then
-  az postgres flexible-server firewall-rule create \
-    --resource-group $RESOURCE_GROUP \
-    --name $DB_SERVER_NAME \
-    --rule-name AllowAzureServices \
-    --start-ip-address 0.0.0.0 \
-    --end-ip-address 0.0.0.0
-elif [ -n "$DB_PASSWORD" ]; then
-  echo -e "${BLUE}Firewall rule 'AllowAzureServices' already exists. Skipping.${NC}"
+if [ -n "$DB_PASSWORD" ]; then
+  echo -e "${YELLOW}Configuring PostgreSQL firewall (${DB_FIREWALL_SCOPE})...${NC}"
+  if [ "$DB_FIREWALL_SCOPE" = "world" ]; then
+    az postgres flexible-server firewall-rule create \
+      --resource-group $RESOURCE_GROUP \
+      --name $DB_SERVER_NAME \
+      --rule-name AllowAll \
+      --start-ip-address 0.0.0.0 \
+      --end-ip-address 255.255.255.255 >/dev/null 2>&1 || true
+    echo -e "${GREEN}✅ DB open to world (NOT recommended for prod)${NC}"
+  elif [ "$DB_FIREWALL_SCOPE" = "azure" ]; then
+    az postgres flexible-server firewall-rule create \
+      --resource-group $RESOURCE_GROUP \
+      --name $DB_SERVER_NAME \
+      --rule-name AllowAzureServices \
+      --start-ip-address 0.0.0.0 \
+      --end-ip-address 0.0.0.0 >/dev/null 2>&1 || true
+    echo -e "${GREEN}✅ DB open to Azure services only${NC}"
+  elif [ "$DB_FIREWALL_SCOPE" = "custom" ] && [ -n "$DB_CUSTOM_IPS" ]; then
+    IFS=',' read -r -a RANGES <<< "$DB_CUSTOM_IPS"
+    i=1
+    for r in "${RANGES[@]}"; do
+      start_ip=${r%-*}
+      end_ip=${r#*-}
+      az postgres flexible-server firewall-rule create \
+        --resource-group $RESOURCE_GROUP \
+        --name $DB_SERVER_NAME \
+        --rule-name CustomRange$i \
+        --start-ip-address "$start_ip" \
+        --end-ip-address "$end_ip" >/dev/null 2>&1 || true
+      i=$((i+1))
+    done
+    echo -e "${GREEN}✅ DB firewall configured for custom ranges${NC}"
+  else
+    echo -e "${YELLOW}No firewall changes applied (unknown scope)${NC}"
+  fi
 fi
 
 if [ -n "$DB_PASSWORD" ]; then
@@ -211,6 +239,14 @@ if ! az containerapp show -n "$APP_NAME" -g "$RESOURCE_GROUP" >/dev/null 2>&1; t
     $( [ -n "$DATABASE_URL" ] && echo --env-vars DATABASE_URL=secretref:database-url SQLALCHEMY_DATABASE_URI=secretref:database-url ) \
     --env-vars SESSION_SECRET=$SESSION_SECRET JWT_SECRET_KEY=$JWT_SECRET FLASK_ENV=production FLASK_APP=main.py
 else
+  # Ensure secret is set in a CLI-version-compatible way
+  if [ -n "$DATABASE_URL" ]; then
+    az containerapp secret set \
+      --name "$APP_NAME" \
+      --resource-group "$RESOURCE_GROUP" \
+      --secrets database-url="$DATABASE_URL"
+  fi
+
   az containerapp update \
     --name $APP_NAME \
     --resource-group $RESOURCE_GROUP \
@@ -245,4 +281,74 @@ echo "View logs: az containerapp logs show --name $APP_NAME --resource-group $RE
 echo "Scale app: az containerapp update --name $APP_NAME --resource-group $RESOURCE_GROUP --min-replicas 2"
 echo "Update image: az containerapp update --name $APP_NAME --resource-group $RESOURCE_GROUP --image $ACR_SERVER/novellus-loan-calculator:new-tag"
 echo ""
+echo -e "${YELLOW}Post-deploy: initializing database inside the container...${NC}"
+
+# Helpers to robustly discover revision and replica
+RETRIES=36; SLEEP=5
+get_latest_revision() {
+  local rev
+  rev=$(az containerapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.latestRevisionName" -o tsv 2>/dev/null || true)
+  [ -n "$rev" ] && [ "$rev" != "null" ] && { echo "$rev"; return 0; }
+  rev=$(az containerapp revision list --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query "sort_by(@,&properties.createdTime)[-1].name" -o tsv 2>/dev/null || true)
+  [ -n "$rev" ] && [ "$rev" != "null" ] && { echo "$rev"; return 0; }
+  az containerapp revision restart -n "$APP_NAME" -g "$RESOURCE_GROUP" >/dev/null 2>&1 || true
+  sleep 5
+  rev=$(az containerapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.latestRevisionName" -o tsv 2>/dev/null || true)
+  [ -n "$rev" ] && [ "$rev" != "null" ] && { echo "$rev"; return 0; }
+  echo ""; return 1
+}
+
+echo -e "${BLUE}Discovering latest revision...${NC}"
+LATEST_REV=""
+for i in $(seq 1 $RETRIES); do
+  LATEST_REV=$(get_latest_revision || true)
+  [ -n "$LATEST_REV" ] && [ "$LATEST_REV" != "null" ] && break
+  echo -e "${YELLOW}Waiting for revision ($i/$RETRIES)...${NC}"; sleep $SLEEP
+done
+
+if [ -z "$LATEST_REV" ] || [ "$LATEST_REV" = "null" ]; then
+  echo -e "${RED}❌ Could not determine a revision. Showing app status and exiting.${NC}"
+  az containerapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" || true
+  exit 1
+fi
+
+echo -e "${BLUE}Waiting for a ready replica in $LATEST_REV...${NC}"
+REPLICA=""
+for i in $(seq 1 $RETRIES); do
+  REPLICA=$(az containerapp replica list --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --revision "$LATEST_REV" --query "[0].name" -o tsv 2>/dev/null || true)
+  if [ -n "$REPLICA" ] && [ "$REPLICA" != "null" ]; then break; fi
+  STATUS=$(az containerapp show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --query "properties.runningStatus" -o tsv 2>/dev/null || true)
+  if [ "$STATUS" = "Stopped" ] || [ "$STATUS" = "Failed" ]; then
+    echo -e "${YELLOW}App status: $STATUS. Triggering restart...${NC}"; az containerapp revision restart -n "$APP_NAME" -g "$RESOURCE_GROUP" >/dev/null 2>&1 || true
+  fi
+  echo -e "${YELLOW}Waiting for replica ($i/$RETRIES)...${NC}"; sleep $SLEEP
+done
+
+if [ -z "$REPLICA" ] || [ "$REPLICA" = "null" ]; then
+  echo -e "${RED}❌ No replica found for revision $LATEST_REV. Showing recent logs.${NC}"
+  az containerapp logs show --name "$APP_NAME" --resource-group "$RESOURCE_GROUP" --tail 100 || true
+  exit 1
+fi
+
+echo -e "${BLUE}Running database initialization on revision ${LATEST_REV}, replica ${REPLICA}...${NC}"
+
+# Exec into the container and run database initialization and connection test
+set +e
+az containerapp exec \
+  --name "$APP_NAME" \
+  --resource-group "$RESOURCE_GROUP" \
+  --revision "$LATEST_REV" \
+  --replica "$REPLICA" \
+  --command \
+  "/bin/sh -lc 'echo Using DATABASE_URL=\"\$DATABASE_URL\"; python database_init.py && python - <<\"PY\"\nfrom database_init import test_database_connection as t\nimport sys\nsys.exit(0 if t() else 1)\nPY\n'"
+INIT_RC=$?
+set -e
+
+if [ $INIT_RC -ne 0 ]; then
+  echo -e "${RED}❌ Database initialization or connection test failed. Check container logs.${NC}"
+  echo "Hint: az containerapp logs show --name $APP_NAME --resource-group $RESOURCE_GROUP --follow"
+  exit $INIT_RC
+fi
+
+echo -e "${GREEN}✅ Database initialized and verified successfully${NC}"
 echo "Deployment script completed successfully!"
