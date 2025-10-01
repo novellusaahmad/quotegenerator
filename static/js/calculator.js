@@ -2214,14 +2214,23 @@ class LoanCalculator {
             }
 
             // Generate tranche dates (monthly intervals)
-            const start = new Date(startDate);
+            const start = this.parseDateInput(startDate);
+            if (!start) {
+                const message = 'Please select a valid start date';
+                if (window.notifications) {
+                    window.notifications.warning(message);
+                } else {
+                    alert(message);
+                }
+                return;
+            }
             const monthInterval = Math.max(1, Math.floor(loanPeriod / trancheCount));
 
             console.log('Generating', trancheCount, 'tranches with', monthInterval, 'month intervals');
 
             // Create tranches
             for (let i = 0; i < trancheCount; i++) {
-                const releaseDate = new Date(start);
+                const releaseDate = new Date(start.getTime());
                 // Start auto-generated tranches one month after loan start
                 releaseDate.setMonth(releaseDate.getMonth() + (i * monthInterval) + 1);
                 
@@ -2550,6 +2559,41 @@ class LoanCalculator {
         const day = String(date.getDate()).padStart(2, '0');
 
         return `${year}-${month}-${day}`;
+    }
+
+    parseDateInput(value) {
+        if (typeof value !== 'string') {
+            return null;
+        }
+
+        const [yearStr, monthStr, dayStr] = value.split('-');
+        if (!yearStr || !monthStr || !dayStr) {
+            return null;
+        }
+
+        const year = Number(yearStr);
+        const month = Number(monthStr);
+        const day = Number(dayStr);
+
+        if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+            return null;
+        }
+
+        const monthIndex = month - 1;
+        if (monthIndex < 0 || monthIndex > 11) {
+            return null;
+        }
+
+        const parsed = new Date(year, monthIndex, day);
+        if (Number.isNaN(parsed.getTime())) {
+            return null;
+        }
+
+        if (parsed.getFullYear() !== year || parsed.getMonth() !== monthIndex || parsed.getDate() !== day) {
+            return null;
+        }
+
+        return parsed;
     }
 
     updateCurrencySymbols() {
