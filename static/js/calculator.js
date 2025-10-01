@@ -2255,15 +2255,17 @@ class LoanCalculator {
 
             // Generate tranche dates (monthly intervals)
             const start = new Date(startDate);
-            const monthInterval = Math.max(1, Math.floor(loanPeriod / trancheCount));
 
-            console.log('Generating', trancheCount, 'tranches with', monthInterval, 'month intervals');
+            console.log('Generating', trancheCount, 'tranches with consecutive monthly intervals');
 
             // Create tranches
             for (let i = 0; i < trancheCount; i++) {
                 const releaseDate = new Date(start);
-                // Start auto-generated tranches one month after loan start
-                releaseDate.setMonth(releaseDate.getMonth() + (i * monthInterval) + 1);
+                // Start auto-generated tranches one month after loan start and progress consecutively
+                const baseDay = start.getUTCDate();
+                releaseDate.setUTCMonth(start.getUTCMonth() + i + 1);
+                releaseDate.setUTCDate(baseDay);
+                releaseDate.setUTCHours(0, 0, 0, 0);
                 
                 const formattedDate = LoanCalculator.formatDateForStorage(releaseDate);
                 console.log(`Creating tranche ${i + 1}:`, {
