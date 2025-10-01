@@ -2082,7 +2082,7 @@ class LoanCalculator {
     setDefaultDate() {
         const startDateInput = document.getElementById('startDate');
         const autoStartDateInput = document.getElementById('autoStartDate');
-        const today = new Date().toISOString().split('T')[0];
+        const today = this.formatForDateInput(new Date());
         const urlParams = new URLSearchParams(window.location.search);
         const isEditMode = urlParams.get('edit') === 'true';
 
@@ -2227,11 +2227,17 @@ class LoanCalculator {
                 
                 console.log(`Creating tranche ${i + 1}:`, {
                     amount: trancheAmount,
-                    date: releaseDate.toISOString().split('T')[0],
+                    date: this.formatForDateInput(releaseDate),
                     rate: interestRate
                 });
-                
-                this.createTrancheItem(i + 1, trancheAmount, releaseDate.toISOString().split('T')[0], interestRate, `Tranche ${i + 1}`);
+
+                this.createTrancheItem(
+                    i + 1,
+                    trancheAmount,
+                    this.formatForDateInput(releaseDate),
+                    interestRate,
+                    `Tranche ${i + 1}`
+                );
             }
 
             // Switch to manual mode to show generated tranches
@@ -2534,6 +2540,18 @@ class LoanCalculator {
         }
     }
 
+    formatForDateInput(date) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+            return '';
+        }
+
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
     updateCurrencySymbols() {
         const currency = document.getElementById('currency').value;
         const symbol = currency === 'EUR' ? '€' : '£';
@@ -2547,7 +2565,7 @@ class LoanCalculator {
         const urlParams = new URLSearchParams(window.location.search);
         const isEditMode = urlParams.get('edit') === 'true';
         if (!isEditMode && startDateInput && !startDateInput.value) {
-            const today = new Date().toISOString().split('T')[0];
+            const today = this.formatForDateInput(new Date());
             startDateInput.value = today;
             // Calculate end date after setting default start date
             setTimeout(() => calculateEndDate(), 50);
