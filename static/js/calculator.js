@@ -74,6 +74,46 @@ if (typeof Chart !== 'undefined') {
 }
 
 class LoanCalculator {
+    static formatDateForStorage(dateInput) {
+        if (!dateInput) return '';
+
+        let date;
+        if (dateInput instanceof Date) {
+            date = dateInput;
+        } else if (typeof dateInput === 'number') {
+            date = new Date(dateInput);
+        } else if (dateInput && typeof dateInput === 'object' && typeof dateInput.getTime === 'function') {
+            const timestamp = dateInput.getTime();
+            if (!isNaN(timestamp)) {
+                date = new Date(timestamp);
+            }
+        } else if (typeof dateInput === 'string') {
+            const parsed = new Date(dateInput);
+            if (!isNaN(parsed.getTime())) {
+                date = parsed;
+            }
+        }
+
+        if (!(date instanceof Date) || isNaN(date.getTime())) {
+            return '';
+        }
+
+        const useLocalMidnight =
+            date.getHours() === 0 &&
+            date.getMinutes() === 0 &&
+            date.getSeconds() === 0 &&
+            date.getMilliseconds() === 0;
+
+        const year = useLocalMidnight ? date.getFullYear() : date.getUTCFullYear();
+        const monthIndex = useLocalMidnight ? date.getMonth() : date.getUTCMonth();
+        const dayNum = useLocalMidnight ? date.getDate() : date.getUTCDate();
+
+        const month = String(monthIndex + 1).padStart(2, '0');
+        const day = String(dayNum).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
     constructor() {
         try {
             this.form = document.getElementById('calculatorForm');
@@ -2082,7 +2122,7 @@ class LoanCalculator {
     setDefaultDate() {
         const startDateInput = document.getElementById('startDate');
         const autoStartDateInput = document.getElementById('autoStartDate');
-        const today = new Date().toISOString().split('T')[0];
+        const today = LoanCalculator.formatDateForStorage(new Date());
         const urlParams = new URLSearchParams(window.location.search);
         const isEditMode = urlParams.get('edit') === 'true';
 
@@ -2225,13 +2265,14 @@ class LoanCalculator {
                 // Start auto-generated tranches one month after loan start
                 releaseDate.setMonth(releaseDate.getMonth() + (i * monthInterval) + 1);
                 
+                const formattedDate = LoanCalculator.formatDateForStorage(releaseDate);
                 console.log(`Creating tranche ${i + 1}:`, {
                     amount: trancheAmount,
-                    date: releaseDate.toISOString().split('T')[0],
+                    date: formattedDate,
                     rate: interestRate
                 });
-                
-                this.createTrancheItem(i + 1, trancheAmount, releaseDate.toISOString().split('T')[0], interestRate, `Tranche ${i + 1}`);
+
+                this.createTrancheItem(i + 1, trancheAmount, formattedDate, interestRate, `Tranche ${i + 1}`);
             }
 
             // Switch to manual mode to show generated tranches
@@ -2322,6 +2363,7 @@ class LoanCalculator {
 
         console.log(`Creating tranche item ${number} in container`, container);
 
+        const formattedDate = LoanCalculator.formatDateForStorage(date);
         const trancheHtml = `
             <tr class="tranche-item" data-tranche="${number}">
                 <td class="tranche-number">${number}</td>
@@ -2330,8 +2372,8 @@ class LoanCalculator {
                     <input type="hidden" name="tranche_amounts[]" class="tranche-amount" value="${amount}">
                 </td>
                 <td>
-                    <span class="tranche-date-display">${date}</span>
-                    <input type="hidden" name="tranche_dates[]" class="tranche-date" value="${date}">
+                    <span class="tranche-date-display">${formattedDate}</span>
+                    <input type="hidden" name="tranche_dates[]" class="tranche-date" value="${formattedDate}">
                 </td>
                 <td class="text-end">
                     <span class="tranche-rate-display">${(rate || 0).toFixed(2)}</span>
@@ -2547,7 +2589,7 @@ class LoanCalculator {
         const urlParams = new URLSearchParams(window.location.search);
         const isEditMode = urlParams.get('edit') === 'true';
         if (!isEditMode && startDateInput && !startDateInput.value) {
-            const today = new Date().toISOString().split('T')[0];
+            const today = LoanCalculator.formatDateForStorage(new Date());
             startDateInput.value = today;
             // Calculate end date after setting default start date
             setTimeout(() => calculateEndDate(), 50);
