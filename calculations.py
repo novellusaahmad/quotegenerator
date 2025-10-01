@@ -1507,10 +1507,14 @@ class LoanCalculator:
                     next_year += 1
                 
                 _, last_day = monthrange(next_year, next_month)
-                day = min(current_date.day - 1, last_day)
-                if day < 1:
-                    day = 1
+                target_day = current_date.day - 1
+                if target_day < 1:
+                    day = last_day
+                else:
+                    day = min(target_day, last_day)
                 period_end_date = datetime(next_year, next_month, day)
+                if target_day < 1:
+                    period_end_date = period_end_date + relativedelta(months=-1)
             
             days_in_period = (period_end_date - period_start_date).days + 1
             
