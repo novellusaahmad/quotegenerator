@@ -28,6 +28,17 @@ def test_development2_first_period_for_start_on_first_matches_excel_days():
     assert '^30' in first_period['interest_calculation']
 
 
+def test_development2_first_period_for_january_start_spans_full_month():
+    calc = LoanCalculator()
+    result = calc.calculate_development2_loan(_base_params('2025-01-01'))
+    schedule = result['detailed_payment_schedule']
+    first_period = schedule[0]
+
+    assert first_period['days'] == 31
+    assert first_period['payment_date'].endswith('31/01/2025')
+    assert '^31' in first_period['interest_calculation']
+
+
 def test_development2_first_period_for_end_of_month_start_dates_match_excel_days():
     calc = LoanCalculator()
 
