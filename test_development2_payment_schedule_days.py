@@ -1,3 +1,5 @@
+import pytest
+
 from calculations import LoanCalculator
 
 
@@ -15,6 +17,22 @@ def _base_params(start_date: str) -> dict:
         'site_visit_fee': 0,
         'tranches': [],
     }
+
+
+def _scenario_params(start_date: str) -> dict:
+    params = _base_params(start_date)
+    params.update({
+        'loan_term': 24,
+        'day1_advance': 356123.564,
+        'net_amount': 856123.564,
+        'annual_rate': 10.9865,
+        'legal_fees': 0,
+        'tranches': [
+            {'amount': 100000, 'month': month}
+            for month in range(2, 7)
+        ],
+    })
+    return params
 
 
 def test_development2_first_period_for_start_on_first_matches_excel_days():
@@ -56,3 +74,28 @@ def test_development2_first_period_for_end_of_month_start_dates_match_excel_days
         assert first_period['days'] == expected_days
         assert first_period['payment_date'].endswith(expected_end)
         assert f'^{expected_days}' in first_period['interest_calculation']
+
+
+def test_development2_scenario_start_dates_align_interest_and_closing_balance():
+    calc = LoanCalculator()
+
+    scenario_one = calc.calculate_development2_loan(_scenario_params('2025-11-01'))
+    scenario_two = calc.calculate_development2_loan(_scenario_params('2025-11-02'))
+
+    total_interest_one = scenario_one['totalInterest']
+    total_interest_two = scenario_two['totalInterest']
+
+    assert total_interest_one == pytest.approx(total_interest_two, abs=1e-6)
+
+    closing_one = float(
+        scenario_one['detailed_payment_schedule'][-1]['closing_balance']
+        .replace('£', '')
+        .replace(',', '')
+    )
+    closing_two = float(
+        scenario_two['detailed_payment_schedule'][-1]['closing_balance']
+        .replace('£', '')
+        .replace(',', '')
+    )
+
+    assert closing_one == pytest.approx(closing_two, abs=1e-9)
