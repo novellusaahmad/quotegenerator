@@ -1,0 +1,712 @@
+{% extends "base.html" %}
+
+{% block title %}Loan History Detail - Novellus Financial{% endblock %}
+
+{% block body_attr %}class="gold-nav"{% endblock %}
+
+{% block nav_heading %}
+<span class="navbar-text text-white text-center fw-bold"><i class="fas fa-file-invoice-dollar me-2"></i>Loan History Detail</span>
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/novellus-theme.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/currency-themes.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
+<style>
+    body.gold-nav {
+        background-color: #0b0b16;
+        color: #f0f0f0;
+    }
+
+    .loan-detail-page .page-title {
+        font-weight: 600;
+        color: #ffffff;
+    }
+
+    .loan-detail-page .subtitle {
+        color: rgba(255, 255, 255, 0.65);
+        font-size: 0.9rem;
+    }
+
+    .loan-detail-actions .btn {
+        border-radius: 30px;
+        padding: 0.45rem 1.25rem;
+        font-weight: 600;
+        text-transform: none;
+    }
+
+    .loan-detail-actions .btn-outline-light {
+        border-color: rgba(255,255,255,0.35);
+        color: #ffffff;
+    }
+
+    .loan-detail-actions .btn-outline-light:hover {
+        background: rgba(255,255,255,0.1);
+        color: #ffffff;
+    }
+
+    .loan-detail-card {
+        background: rgba(12, 18, 32, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 14px;
+        box-shadow: 0 18px 30px rgba(2, 8, 20, 0.45);
+        overflow: hidden;
+    }
+
+    .loan-detail-card .card-header {
+        background: linear-gradient(135deg, #1E2B3A 0%, #2C3E50 100%);
+        color: #f9f9f9;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .loan-detail-card .table {
+        margin-bottom: 0;
+        color: #f8f9fa;
+    }
+
+    .loan-detail-card .table tbody tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .loan-detail-card .table td {
+        border-top: 1px solid rgba(255,255,255,0.04);
+        padding: 0.6rem 0.85rem;
+        vertical-align: middle;
+        color: #f8f9fa;
+    }
+
+    .loan-detail-card .table td:first-child {
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.7);
+        width: 55%;
+    }
+
+    .loan-detail-card .table td:last-child {
+        text-align: right;
+        font-weight: 600;
+        color: #ffffff;
+    }
+
+    .loan-highlight-badge {
+        background: rgba(180, 155, 92, 0.15);
+        color: #e6c98d;
+        border: 1px solid rgba(180, 155, 92, 0.35);
+        border-radius: 30px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+    }
+
+    .chart-card {
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        box-shadow: 0 22px 45px rgba(0, 0, 0, 0.45);
+    }
+
+    .chart-card .card-header {
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        background: linear-gradient(135deg, rgba(13,27,43,0.95) 0%, rgba(21,34,54,0.95) 100%);
+        color: #fefefe;
+        font-weight: 600;
+    }
+
+    .chart-card canvas {
+        min-height: 340px;
+    }
+
+    .loan-detail-loading,
+    .loan-detail-error {
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 16px;
+        padding: 2.5rem;
+        text-align: center;
+        border: 1px solid rgba(255,255,255,0.05);
+        color: rgba(255,255,255,0.85);
+    }
+
+    .loan-detail-error {
+        border: 1px solid rgba(220, 53, 69, 0.35);
+        color: #f8d7da;
+    }
+
+    .loan-detail-page .info-chip {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 50px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.75);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+
+    @media (max-width: 991.98px) {
+        .loan-detail-actions {
+            margin-top: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block main_class %}container-fluid loan-detail-page py-4{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="row g-3 align-items-center">
+        <div class="col-lg-7 col-md-12">
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center align-items-start gap-3">
+                <div>
+                    <a href="{{ url_for('loan_history') }}" class="btn btn-outline-light"><i class="fas fa-arrow-left me-2"></i>Back to Loan History</a>
+                </div>
+                <div class="loan-detail-actions d-flex flex-wrap gap-2">
+                    <a id="downloadDocxButton" class="btn btn-outline-primary d-flex align-items-center" href="#" target="_blank">
+                        <i class="fas fa-file-word me-2"></i>Download DOCX
+                    </a>
+                    <button id="downloadExcelButton" class="btn btn-outline-info d-flex align-items-center">
+                        <i class="fas fa-file-excel me-2"></i>Export Excel
+                    </button>
+                    <button id="editLoanButton" class="btn btn-novellus-gold d-flex align-items-center">
+                        <i class="fas fa-edit me-2"></i>Edit &amp; Recalculate
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5 col-md-12 text-lg-end">
+            <h2 class="page-title mb-1">Loan: <span id="loanNameDisplay">{{ loan_name or 'Loading...' }}</span></h2>
+            <div class="subtitle">
+                <span class="info-chip"><i class="fas fa-id-badge"></i>ID: {{ loan_id }}</span>
+                <span class="info-chip"><i class="fas fa-calendar-alt"></i><span id="loanCreatedDisplay">Loading…</span></span>
+                <span class="info-chip"><i class="fas fa-coins"></i><span id="loanCurrencyDisplay">-</span></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loanDetailLoading" class="loan-detail-loading my-5" role="status">
+    <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+    <div>Retrieving saved loan data…</div>
+</div>
+
+<div id="loanDetailError" class="loan-detail-error my-5 d-none" role="alert"></div>
+
+<div id="loanDetailContent" class="d-none">
+    <div class="row g-4">
+        <div class="col-lg-5">
+            <div class="loan-detail-card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-list-alt me-2"></i>Loan Parameters</span>
+                    <span id="loanTypeBadge" class="loan-highlight-badge">-</span>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-borderless align-middle">
+                        <tbody id="loanParametersBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="loan-detail-card mb-4">
+                <div class="card-header"><i class="fas fa-redo-alt me-2"></i>Repayment Profile</div>
+                <div class="card-body p-0">
+                    <table class="table table-borderless align-middle">
+                        <tbody id="repaymentProfileBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="loan-detail-card mb-4">
+                <div class="card-header"><i class="fas fa-receipt me-2"></i>Fees &amp; Costs</div>
+                <div class="card-body p-0">
+                    <table class="table table-borderless align-middle">
+                        <tbody id="feesSectionBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="loan-detail-card">
+                <div class="card-header"><i class="fas fa-clipboard-check me-2"></i>Loan Summary</div>
+                <div class="card-body p-0">
+                    <table class="table table-borderless align-middle">
+                        <tbody id="loanSummaryBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="chart-grid">
+                <div class="card chart-card">
+                    <div class="card-header"><i class="fas fa-chart-pie me-2"></i>Loan Summary Breakdown</div>
+                    <div class="card-body">
+                        <canvas id="loanBreakdownChart"></canvas>
+                    </div>
+                </div>
+                <div class="card chart-card" id="interestPrincipalCard">
+                    <div class="card-header"><i class="fas fa-balance-scale me-2"></i>Interest vs Principal</div>
+                    <div class="card-body">
+                        <canvas id="interestPrincipalChart"></canvas>
+                    </div>
+                </div>
+                <div class="card chart-card" id="paymentScheduleCard">
+                    <div class="card-header"><i class="fas fa-stream me-2"></i>Payment Schedule Overview</div>
+                    <div class="card-body">
+                        <canvas id="paymentScheduleChart"></canvas>
+                    </div>
+                </div>
+                <div class="card chart-card" id="balanceChartCard">
+                    <div class="card-header"><i class="fas fa-chart-line me-2"></i>Balance &amp; Interest Over Time</div>
+                    <div class="card-body">
+                        <canvas id="balanceChart"></canvas>
+                    </div>
+                </div>
+                <div class="card chart-card d-none" id="trancheReleaseCard">
+                    <div class="card-header"><i class="fas fa-layer-group me-2"></i>Tranche Release Timeline</div>
+                    <div class="card-body">
+                        <canvas id="trancheReleaseChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+class LoanHistoryDetailPage {
+    constructor(options) {
+        this.loanId = options.loanId;
+        this.loanName = options.loanName || '';
+        this.currency = 'GBP';
+        this.currencySymbol = '£';
+        this.loanData = null;
+        this.scheduleData = [];
+        this.hasDevelopmentTranches = false;
+        this.init();
+    }
+
+    async init() {
+        try {
+            await this.loadLoan();
+        } catch (error) {
+            this.showError(error.message || 'Unable to load loan details');
+        }
+    }
+
+    async loadLoan() {
+        const loadingEl = document.getElementById('loanDetailLoading');
+        const contentEl = document.getElementById('loanDetailContent');
+        const errorEl = document.getElementById('loanDetailError');
+
+        loadingEl.classList.remove('d-none');
+        contentEl.classList.add('d-none');
+        errorEl.classList.add('d-none');
+
+        try {
+            const response = await fetch(`/api/loan/${this.loanId}`);
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Failed to fetch loan details');
+            }
+
+            this.loanData = data.loan;
+            this.currency = this.loanData.currency || 'GBP';
+            this.currencySymbol = this.loanData.currency_symbol || (this.currency === 'EUR' ? '€' : '£');
+            this.scheduleData = this.parseScheduleData(this.loanData.detailed_payment_schedule || []);
+            this.hasDevelopmentTranches = (this.loanData.loan_type || '').toLowerCase().includes('development');
+
+            this.renderHeader();
+            this.renderSections();
+            this.renderCharts();
+            this.bindActions();
+
+            loadingEl.classList.add('d-none');
+            contentEl.classList.remove('d-none');
+        } catch (error) {
+            this.showError(error.message);
+            throw error;
+        }
+    }
+
+    showError(message) {
+        const loadingEl = document.getElementById('loanDetailLoading');
+        const errorEl = document.getElementById('loanDetailError');
+        const contentEl = document.getElementById('loanDetailContent');
+
+        loadingEl.classList.add('d-none');
+        contentEl.classList.add('d-none');
+        errorEl.textContent = message;
+        errorEl.classList.remove('d-none');
+    }
+
+    renderHeader() {
+        if (!this.loanData) return;
+        const nameEl = document.getElementById('loanNameDisplay');
+        const createdEl = document.getElementById('loanCreatedDisplay');
+        const currencyEl = document.getElementById('loanCurrencyDisplay');
+        const typeBadge = document.getElementById('loanTypeBadge');
+
+        if (nameEl) nameEl.textContent = this.loanData.loan_name || this.loanName || 'Saved Loan';
+        if (createdEl) {
+            const created = this.loanData.created_at ? new Date(this.loanData.created_at.replace(' ', 'T')) : null;
+            createdEl.textContent = created ? created.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+        }
+        if (currencyEl) currencyEl.textContent = `${this.currencySymbol} (${this.currency})`;
+        if (typeBadge) typeBadge.textContent = this.formatLoanType(this.loanData.loan_type);
+
+        const docxButton = document.getElementById('downloadDocxButton');
+        if (docxButton) {
+            docxButton.href = `/loan/${this.loanId}/summary-docx`;
+        }
+    }
+
+    bindActions() {
+        const editButton = document.getElementById('editLoanButton');
+        if (editButton) {
+            editButton.addEventListener('click', () => {
+                const name = encodeURIComponent(this.loanData?.loan_name || this.loanName || 'Saved Loan');
+                window.location.href = `/calculator?edit=true&loanId=${this.loanId}&loanName=${name}`;
+            });
+        }
+
+        const excelButton = document.getElementById('downloadExcelButton');
+        if (excelButton) {
+            excelButton.addEventListener('click', async () => {
+                try {
+                    const resp = await fetch(`/generate-working-report/excel/${this.loanId}`);
+                    const payload = await resp.json();
+                    if (resp.ok && payload.success && payload.download_url) {
+                        window.open(payload.download_url, '_blank');
+                    } else {
+                        throw new Error(payload.error || 'Unable to generate Excel report');
+                    }
+                } catch (error) {
+                    console.error('Excel export failed', error);
+                    if (window.notifications?.error) {
+                        window.notifications.error(error.message || 'Excel export failed');
+                    } else {
+                        alert(error.message || 'Excel export failed');
+                    }
+                }
+            });
+        }
+    }
+
+    renderSections() {
+        this.populateTable('loanParametersBody', this.buildLoanParameters());
+        this.populateTable('repaymentProfileBody', this.buildRepaymentProfile());
+        this.populateTable('feesSectionBody', this.buildFeesSection());
+        this.populateTable('loanSummaryBody', this.buildLoanSummary());
+    }
+
+    populateTable(tbodyId, rows) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+        tbody.innerHTML = rows.map(row => `
+            <tr>
+                <td>${row.label}</td>
+                <td>${row.value}</td>
+            </tr>
+        `).join('');
+    }
+
+    buildLoanParameters() {
+        const loan = this.loanData || {};
+        return [
+            { label: 'Loan Name', value: this.escapeHTML(loan.loan_name || '—') },
+            { label: 'Loan Type', value: this.formatLoanType(loan.loan_type) },
+            { label: 'Currency', value: `${this.currencySymbol} (${this.currency})` },
+            { label: 'Amount Input', value: loan.amountInputType === 'net' ? 'Net Amount' : 'Gross Amount' },
+            loan.amountInputType === 'net'
+                ? { label: 'Net Amount', value: this.formatCurrency(loan.netAmount) }
+                : { label: 'Gross Amount', value: this.formatCurrency(loan.grossAmount) },
+            { label: 'Property Value', value: this.formatCurrency(loan.propertyValue) },
+            { label: 'Start Date', value: this.formatDate(loan.startDate) },
+            { label: 'End Date', value: this.formatDate(loan.endDate) },
+            { label: 'Loan Term (months)', value: loan.loanTerm ? `${loan.loanTerm} months` : '—' },
+            { label: 'Loan Term (days)', value: loan.loanTermDays ? `${loan.loanTermDays} days` : '—' },
+            loan.day1Advance ? { label: 'Day 1 Advance', value: this.formatCurrency(loan.day1Advance) } : null
+        ].filter(Boolean);
+    }
+
+    buildRepaymentProfile() {
+        const loan = this.loanData || {};
+        return [
+            { label: 'Repayment Option', value: this.formatRepaymentOption(loan.repaymentOption) },
+            loan.paymentTiming ? { label: 'Payment Timing', value: loan.paymentTiming === 'advance' ? 'In Advance' : 'In Arrears' } : null,
+            loan.paymentFrequency ? { label: 'Payment Frequency', value: this.capitalize(loan.paymentFrequency) } : null,
+            loan.monthlyPayment ? { label: 'Monthly Payment', value: this.formatCurrency(loan.monthlyPayment) } : null,
+            loan.quarterlyPayment ? { label: 'Quarterly Payment', value: this.formatCurrency(loan.quarterlyPayment) } : null,
+            loan.capitalRepayment ? { label: 'Capital Repayment', value: this.formatCurrency(loan.capitalRepayment) } : null,
+            loan.flexiblePayment ? { label: 'Flexible Payment', value: this.formatCurrency(loan.flexiblePayment) } : null
+        ].filter(Boolean);
+    }
+
+    buildFeesSection() {
+        const loan = this.loanData || {};
+        return [
+            { label: 'Arrangement Fee %', value: `${this.formatNumber(loan.arrangementFeePercentage)}%` },
+            { label: 'Arrangement Fee', value: this.formatCurrency(loan.arrangementFee) },
+            { label: 'Legal Fees', value: this.formatCurrency(loan.legalFees) },
+            { label: 'Site Visit Fee', value: this.formatCurrency(loan.siteVisitFee) },
+            { label: 'Title Insurance', value: this.formatCurrency(loan.titleInsurance) }
+        ];
+    }
+
+    buildLoanSummary() {
+        const loan = this.loanData || {};
+        return [
+            { label: 'Valuation', value: this.formatCurrency(loan.propertyValue) },
+            { label: 'Gross Amount', value: this.formatCurrency(loan.grossAmount) },
+            { label: 'Net Advance', value: this.formatCurrency(loan.netAdvance) },
+            { label: 'Total Net Advance', value: this.formatCurrency(loan.totalNetAdvance) },
+            { label: 'Total Interest', value: this.formatCurrency(loan.totalInterest) },
+            loan.retainedInterest ? { label: 'Retained Interest', value: this.formatCurrency(loan.retainedInterest) } : null,
+            { label: 'Start LTV', value: loan.startLtv ? `${this.formatNumber(loan.startLtv)}%` : '—' },
+            { label: 'End LTV', value: loan.endLtv ? `${this.formatNumber(loan.endLtv)}%` : '—' }
+        ].filter(Boolean);
+    }
+
+    renderCharts() {
+        const breakdownCanvas = document.getElementById('loanBreakdownChart');
+        if (breakdownCanvas && this.loanData) {
+            this.renderLoanBreakdownChart(breakdownCanvas);
+        }
+
+        if (window.chartManager && this.scheduleData.length > 0) {
+            chartManager.createInterestBreakdownChart('interestPrincipalChart', this.scheduleData, { currency: this.currencySymbol });
+            chartManager.createPaymentScheduleChart('paymentScheduleChart', this.scheduleData, { currency: this.currencySymbol });
+            chartManager.createLoanBalanceChart('balanceChart', this.scheduleData, { currency: this.currencySymbol });
+        } else {
+            ['interestPrincipalCard', 'paymentScheduleCard', 'balanceChartCard'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('d-none');
+            });
+        }
+
+        if (this.hasDevelopmentTranches) {
+            const trancheData = this.scheduleData.filter(entry => entry.tranche_release && entry.tranche_release > 0);
+            if (trancheData.length > 0) {
+                this.renderTrancheReleaseChart(trancheData);
+            }
+        }
+    }
+
+    renderLoanBreakdownChart(canvas) {
+        if (!canvas || !this.loanData) return;
+
+        const dataset = [
+            { label: 'Total Net Advance', value: this.loanData.totalNetAdvance || 0 },
+            { label: 'Arrangement Fee', value: this.loanData.arrangementFee || 0 },
+            { label: 'Legal Costs', value: this.loanData.legalFees || 0 },
+            { label: 'Site Visit Fee', value: this.loanData.siteVisitFee || 0 },
+            { label: 'Title Insurance', value: this.loanData.titleInsurance || 0 },
+            { label: 'Total Interest', value: this.loanData.totalInterest || 0 }
+        ];
+
+        const dataValues = dataset.map(item => item.value || 0);
+        if (dataValues.every(val => val === 0)) {
+            const card = canvas.closest('.card');
+            if (card) {
+                card.querySelector('.card-body').innerHTML = '<div class="text-center text-muted">Breakdown data not available.</div>';
+            }
+            return;
+        }
+
+        if (canvas.chartInstance) {
+            canvas.chartInstance.destroy();
+        }
+
+        canvas.chartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: dataset.map(item => item.label),
+                datasets: [{
+                    data: dataValues,
+                    backgroundColor: ['#0b0b16', '#b49b5c', '#ffffff', '#3a3a3a', '#6b6b6b', '#9e9e9e'],
+                    borderColor: '#0b0b16',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#f8f9fa' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((sum, item) => sum + item, 0);
+                                const percentage = total ? ((value / total) * 100).toFixed(1) : '0.0';
+                                return `${label}: ${this.currencySymbol}${value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    renderTrancheReleaseChart(trancheData) {
+        const card = document.getElementById('trancheReleaseCard');
+        const canvas = document.getElementById('trancheReleaseChart');
+        if (!card || !canvas) return;
+
+        card.classList.remove('d-none');
+
+        if (canvas.chartInstance) {
+            canvas.chartInstance.destroy();
+        }
+
+        const labels = trancheData.map(entry => `Period ${entry.period}`);
+        const values = trancheData.map(entry => entry.tranche_release);
+
+        canvas.chartInstance = new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Tranche Release',
+                    data: values,
+                    backgroundColor: 'rgba(180, 155, 92, 0.65)',
+                    borderColor: '#b49b5c',
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => `${this.currencySymbol}${context.parsed.y.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#f0f0f0' },
+                        grid: { color: 'rgba(255,255,255,0.06)' }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#f0f0f0',
+                            callback: (value) => `${this.currencySymbol}${Number(value).toLocaleString('en-GB')}`
+                        },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    }
+                }
+            }
+        });
+    }
+
+    parseScheduleData(rawSchedule) {
+        return rawSchedule.map(entry => {
+            const parseValue = (value) => {
+                if (typeof value === 'number') return value;
+                if (!value) return 0;
+                if (typeof value === 'string') {
+                    const cleaned = value.replace(/[^0-9.-]/g, '');
+                    const parsed = parseFloat(cleaned);
+                    return Number.isFinite(parsed) ? parsed : 0;
+                }
+                return 0;
+            };
+
+            return {
+                period: entry.period_number,
+                interest: parseValue(entry.interest_payment),
+                principal: parseValue(entry.principal_payment),
+                balance: parseValue(entry.closing_balance),
+                tranche_release: parseValue(entry.tranche_release),
+                interest_accrued: parseValue(entry.interest_calculation)
+            };
+        });
+    }
+
+    formatCurrency(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return '—';
+        return `${this.currencySymbol}${num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    formatNumber(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return '0.00';
+        return num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    formatDate(value) {
+        if (!value) return '—';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+        return date.toLocaleDateString('en-GB');
+    }
+
+    formatLoanType(type) {
+        if (!type) return '—';
+        const formatted = type.replace(/[_-]/g, ' ');
+        return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    }
+
+    formatRepaymentOption(option) {
+        if (!option) return '—';
+        const mapping = {
+            interest_only: 'Interest Only',
+            capital_and_interest: 'Capital & Interest',
+            capital: 'Capital Only',
+            flexible: 'Flexible',
+            term_interest_only: 'Term Interest Only',
+            development_roll_up: 'Development Roll Up'
+        };
+        return mapping[option] || this.capitalize(option.replace(/[_-]/g, ' '));
+    }
+
+    capitalize(str) {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    escapeHTML(value) {
+        return String(value).replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[char]);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    new LoanHistoryDetailPage({
+        loanId: {{ loan_id }},
+        loanName: {{ loan_name | tojson }}
+    });
+});
+</script>
+{% endblock %}
