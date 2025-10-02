@@ -40,7 +40,9 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency
     REPORTLAB_AVAILABLE = False
 
 
-BROTHER_FONT = "Brother 1816"
+
+BROTHER_FONT = "Brother 1816 Regular"
+
 BROTHER_STYLES = [
     "Normal",
     "Heading 1",
@@ -58,6 +60,7 @@ logger = logging.getLogger(__name__)
 def _apply_brother_font(doc):
     """Apply the Brother font and document wide spacing preferences."""
     from docx.oxml.ns import qn
+    from docx.oxml.shared import OxmlElement
     from docx.shared import Pt
     from docx.enum.text import WD_LINE_SPACING
 
@@ -71,7 +74,13 @@ def _apply_brother_font(doc):
         # Apply Brother font across different script categories
         font = style.font
         font.name = BROTHER_FONT
-        r_fonts = style._element.rPr.rFonts
+        r_pr = style._element.rPr
+        if r_pr is None:
+            r_pr = style._element.get_or_add_rPr()
+        r_fonts = r_pr.rFonts
+        if r_fonts is None:
+            r_fonts = OxmlElement("w:rFonts")
+            r_pr.append(r_fonts)
         r_fonts.set(qn("w:eastAsia"), BROTHER_FONT)
         r_fonts.set(qn("w:cs"), BROTHER_FONT)
         r_fonts.set(qn("w:ascii"), BROTHER_FONT)
