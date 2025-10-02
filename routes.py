@@ -89,6 +89,181 @@ LOAN_HISTORY_NOTE_STATUSES = {
     'Completed'
 }
 
+LOAN_TYPE_LABELS = {
+    'bridge': 'Bridge',
+    'term': 'Term',
+    'development': 'Development',
+    'development2': 'Development',
+}
+
+REPAYMENT_OPTION_LABELS = {
+    'none': 'Retained Interest',
+    'retained': 'Retained Interest',
+    'retained_interest': 'Retained Interest',
+    'service_only': 'Service Only',
+    'service_and_capital': 'Service & Capital',
+    'capital_payment_only': 'Capital Payment Only',
+    'flexible_payment': 'Flexible Payment',
+}
+
+
+def _safe_float(value):
+    try:
+        if value is None:
+            return 0.0
+        return float(value)
+    except (TypeError, ValueError, InvalidOperation):
+        return 0.0
+
+
+def _parse_numeric(value):
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        cleaned = value.replace('£', '').replace('€', '').replace(',', '').strip()
+        try:
+            return float(cleaned)
+        except ValueError:
+            return 0.0
+    return 0.0
+
+
+def _get_raw_value(raw_data, *keys):
+    if not isinstance(raw_data, dict):
+        return None
+    for key in keys:
+        if key in raw_data and raw_data[key] not in (None, ''):
+            return raw_data[key]
+    return None
+
+
+def _format_currency(value, currency_symbol):
+    return f"{currency_symbol}{_safe_float(value):,.2f}"
+
+
+def _serialize_payment_schedule(loan, currency_symbol):
+    property_value = _safe_float(loan.property_value)
+    schedule = PaymentSchedule.query.filter_by(loan_summary_id=loan.id).order_by(PaymentSchedule.period_number).all()
+    schedule_rows = []
+
+    for payment in schedule:
+        raw = {}
+        if payment.schedule_data:
+            try:
+                raw = json.loads(payment.schedule_data)
+                if isinstance(raw, str):
+                    raw = json.loads(raw)
+            except Exception:
+                raw = {}
+
+        opening_display = _get_raw_value(raw, 'opening_balance', 'openingBalance')
+        if not opening_display:
+            opening_display = _format_currency(payment.opening_balance, currency_symbol)
+
+        tranche_display = _get_raw_value(raw, 'tranche_release', 'trancheRelease')
+        if not tranche_display:
+            tranche_display = _format_currency(payment.tranche_release, currency_symbol)
+
+        interest_display = _get_raw_value(raw, 'interest', 'interestAmount', 'interest_amount')
+        if not interest_display:
+            interest_display = _format_currency(payment.interest_amount, currency_symbol)
+
+        principal_display = _get_raw_value(raw, 'principal', 'principalPayment', 'principal_payment')
+        if not principal_display:
+            principal_display = _format_currency(payment.principal_payment, currency_symbol)
+
+        total_payment_display = _get_raw_value(raw, 'total_payment', 'totalPayment')
+        if not total_payment_display:
+            total_payment_display = _format_currency(payment.total_payment, currency_symbol)
+
+        closing_display = _get_raw_value(raw, 'closing_balance', 'closingBalance')
+        if not closing_display:
+            closing_display = _format_currency(payment.closing_balance, currency_symbol)
+
+        interest_calc = _get_raw_value(raw, 'interest_calculation', 'interestCalculation') or (payment.interest_calculation or '')
+
+        start_period = _get_raw_value(raw, 'start_period', 'startPeriod', 'start_period_display') or ''
+        end_period = _get_raw_value(raw, 'end_period', 'endPeriod', 'end_period_display') or ''
+        days_held = _get_raw_value(raw, 'days_held', 'daysHeld', 'days') or ''
+
+        payment_date = _get_raw_value(raw, 'payment_date', 'paymentDate')
+        if not payment_date:
+            payment_date = payment.payment_date.strftime('%d/%m/%Y') if payment.payment_date else ''
+
+        balance_change = _get_raw_value(raw, 'balance_change', 'balanceChange') or (payment.balance_change or '')
+
+        closing_numeric = _parse_numeric(closing_display)
+        running_ltv = ''
+        if property_value:
+            try:
+                running_ltv = f"{(closing_numeric / property_value) * 100:.2f}%"
+            except ZeroDivisionError:
+                running_ltv = ''
+
+        schedule_rows.append({
+            'period': payment.period_number,
+            'payment_date': payment_date,
+            'start_period': start_period,
+            'end_period': end_period,
+            'days_held': days_held,
+            'opening_balance': opening_display,
+            'tranche_release': tranche_display,
+            'interest_calculation': interest_calc,
+            'interest_amount': interest_display,
+            'principal_payment': principal_display,
+            'total_payment': total_payment_display,
+            'closing_balance': closing_display,
+            'balance_change': balance_change,
+            'running_ltv': running_ltv,
+        })
+
+    return schedule_rows
+
+
+def _serialize_loan_detail(loan):
+    currency_symbol = '£' if loan.currency == 'GBP' else '€'
+    schedule_rows = _serialize_payment_schedule(loan, currency_symbol)
+
+    return {
+        'id': loan.id,
+        'loan_name': loan.loan_name,
+        'version': loan.version,
+        'created_at_display': loan.created_at.strftime('%d/%m/%Y %H:%M') if loan.created_at else '',
+        'loan_type': loan.loan_type,
+        'loan_type_label': LOAN_TYPE_LABELS.get(loan.loan_type, (loan.loan_type or '').title()),
+        'currency': loan.currency,
+        'currency_symbol': currency_symbol,
+        'amount_input_type': loan.amount_input_type or 'gross',
+        'interest_rate': _safe_float(loan.interest_rate),
+        'repayment_option': loan.repayment_option or 'none',
+        'repayment_option_label': REPAYMENT_OPTION_LABELS.get(loan.repayment_option or 'none', (loan.repayment_option or 'none').replace('_', ' ').title()),
+        'payment_timing': loan.payment_timing or '',
+        'payment_frequency': loan.payment_frequency or '',
+        'loan_term': loan.loan_term or 0,
+        'loan_term_days': loan.loan_term_days or 0,
+        'start_date_display': loan.start_date.strftime('%d/%m/%Y') if loan.start_date else '',
+        'end_date_display': loan.end_date.strftime('%d/%m/%Y') if loan.end_date else '',
+        'gross_amount': _safe_float(loan.gross_amount),
+        'net_amount': _safe_float(loan.net_amount),
+        'total_interest': _safe_float(loan.total_interest),
+        'arrangement_fee': _safe_float(loan.arrangement_fee),
+        'net_advance': _safe_float(loan.net_advance),
+        'total_net_advance': _safe_float(loan.total_net_advance),
+        'monthly_payment': _safe_float(loan.monthly_payment),
+        'quarterly_payment': _safe_float(loan.quarterly_payment),
+        'property_value': _safe_float(loan.property_value),
+        'legal_costs': _safe_float(loan.legal_costs),
+        'site_visit_fee': _safe_float(loan.site_visit_fee),
+        'title_insurance': _safe_float(loan.title_insurance),
+        'start_ltv': _safe_float(loan.start_ltv),
+        'end_ltv': _safe_float(loan.end_ltv),
+        'day1_advance': _safe_float(loan.day_1_advance),
+        'user_input_day1_advance': _safe_float(loan.user_input_day_1_advance),
+        'payment_schedule': schedule_rows,
+    }
+
 # Initialize Power BI scheduler if available
 if POWERBI_AVAILABLE:
     try:
@@ -2504,6 +2679,31 @@ def loan_history():
         app.logger.error(f"Error loading loan history: {str(e)}")
         return render_template('loan_history.html', loan_data=[])
 
+
+@app.route('/loan-history/<int:loan_id>')
+def loan_history_detail_page(loan_id):
+    """Display a dedicated page with saved loan details."""
+    try:
+        if not (
+            is_table_structure_valid(LoanSummary)
+            and is_table_structure_valid(PaymentSchedule)
+        ):
+            flash('Loan history is not available at the moment.', 'error')
+            return redirect(url_for('loan_history'))
+
+        loan = LoanSummary.query.get_or_404(loan_id)
+        loan_data = _serialize_loan_detail(loan)
+        loan_data['id'] = loan.id
+        loan_data['loan_name'] = loan.loan_name
+        loan_data['version'] = loan.version
+        loan_data['payment_schedule'] = loan_data.get('payment_schedule', [])
+        return render_template('loan_history_detail.html', loan=loan_data)
+
+    except Exception as e:
+        app.logger.error(f"Error loading loan history detail: {str(e)}")
+        flash('Error loading loan history details.', 'error')
+        return redirect(url_for('loan_history'))
+
 @app.route('/user-manual')
 def user_manual():
     """Display the User Manual page"""
@@ -4296,5 +4496,3 @@ def snowflake_sync():
     except Exception as e:
         app.logger.error(f"Snowflake sync failed: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
-
