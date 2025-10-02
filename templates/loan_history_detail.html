@@ -115,8 +115,15 @@
         font-weight: 600;
     }
 
+
+    .chart-card .card-body {
+        padding: 1.25rem 1.4rem;
+        min-height: 280px;
+    }
+
     .chart-card canvas {
-        min-height: 340px;
+        min-height: 280px;
+
     }
 
     .loan-detail-loading,
@@ -148,8 +155,10 @@
 
     .chart-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 1.5rem;
+
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.25rem;
+
     }
 
     @media (max-width: 991.98px) {
@@ -204,7 +213,9 @@
 <div id="loanDetailContent" class="d-none">
     <div class="row g-4">
         <div class="col-lg-5">
-            <div class="loan-detail-card mb-4">
+
+            <div class="loan-detail-card mb-3">
+
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-list-alt me-2"></i>Loan Parameters</span>
                     <span id="loanTypeBadge" class="loan-highlight-badge">-</span>
@@ -216,7 +227,9 @@
                 </div>
             </div>
 
-            <div class="loan-detail-card mb-4">
+
+            <div class="loan-detail-card mb-3">
+
                 <div class="card-header"><i class="fas fa-redo-alt me-2"></i>Repayment Profile</div>
                 <div class="card-body p-0">
                     <table class="table table-borderless align-middle">
@@ -225,7 +238,9 @@
                 </div>
             </div>
 
-            <div class="loan-detail-card mb-4">
+
+            <div class="loan-detail-card mb-3">
+
                 <div class="card-header"><i class="fas fa-receipt me-2"></i>Fees &amp; Costs</div>
                 <div class="card-body p-0">
                     <table class="table table-borderless align-middle">
@@ -234,7 +249,8 @@
                 </div>
             </div>
 
-            <div class="loan-detail-card">
+            <div class="loan-detail-card mb-0">
+
                 <div class="card-header"><i class="fas fa-clipboard-check me-2"></i>Loan Summary</div>
                 <div class="card-body p-0">
                     <table class="table table-borderless align-middle">
@@ -258,6 +274,14 @@
                         <canvas id="interestPrincipalChart"></canvas>
                     </div>
                 </div>
+
+                <div class="card chart-card d-none" id="ltvChartCard">
+                    <div class="card-header"><i class="fas fa-gauge-high me-2"></i>LTV Position</div>
+                    <div class="card-body">
+                        <canvas id="loanLtvChart"></canvas>
+                    </div>
+                </div>
+
                 <div class="card chart-card" id="paymentScheduleCard">
                     <div class="card-header"><i class="fas fa-stream me-2"></i>Payment Schedule Overview</div>
                     <div class="card-body">
@@ -294,8 +318,12 @@ class LoanHistoryDetailPage {
         this.currency = 'GBP';
         this.currencySymbol = '£';
         this.loanData = null;
+
+        this.inputData = {};
         this.scheduleData = [];
         this.hasDevelopmentTranches = false;
+        this.loanType = '';
+
         this.init();
     }
 
@@ -324,11 +352,25 @@ class LoanHistoryDetailPage {
                 throw new Error(data.error || 'Failed to fetch loan details');
             }
 
-            this.loanData = data.loan;
-            this.currency = this.loanData.currency || 'GBP';
-            this.currencySymbol = this.loanData.currency_symbol || (this.currency === 'EUR' ? '€' : '£');
-            this.scheduleData = this.parseScheduleData(this.loanData.detailed_payment_schedule || []);
-            this.hasDevelopmentTranches = (this.loanData.loan_type || '').toLowerCase().includes('development');
+
+            this.loanData = data.loan || {};
+            this.inputData = data.input_data || {};
+            this.loanName = this.loanData.loan_name || this.inputData.loan_name || this.loanName;
+            this.currency = this.loanData.currency || this.inputData.currency || 'GBP';
+            this.currencySymbol = this.loanData.currency_symbol
+                || this.inputData.currency_symbol
+                || this.inputData.currencySymbol
+                || (this.currency === 'EUR' ? '€' : '£');
+
+            const rawSchedule = this.loanData.detailed_payment_schedule
+                || this.inputData.detailed_payment_schedule
+                || [];
+            this.scheduleData = this.parseScheduleData(rawSchedule);
+
+            const typeValue = this.getFromSources(['loan_type', 'loanType']) || '';
+            this.loanType = typeValue.toString();
+            this.hasDevelopmentTranches = this.loanType.toLowerCase().includes('development');
+
 
             this.renderHeader();
             this.renderSections();
@@ -361,13 +403,18 @@ class LoanHistoryDetailPage {
         const currencyEl = document.getElementById('loanCurrencyDisplay');
         const typeBadge = document.getElementById('loanTypeBadge');
 
-        if (nameEl) nameEl.textContent = this.loanData.loan_name || this.loanName || 'Saved Loan';
+
+        const displayName = this.getFromSources(['loan_name', 'loanName']) || this.loanName || 'Saved Loan';
+        if (nameEl) nameEl.textContent = displayName;
+
         if (createdEl) {
             const created = this.loanData.created_at ? new Date(this.loanData.created_at.replace(' ', 'T')) : null;
             createdEl.textContent = created ? created.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
         }
         if (currencyEl) currencyEl.textContent = `${this.currencySymbol} (${this.currency})`;
-        if (typeBadge) typeBadge.textContent = this.formatLoanType(this.loanData.loan_type);
+
+        if (typeBadge) typeBadge.textContent = this.formatLoanType(this.loanType || this.loanData.loan_type);
+
 
         const docxButton = document.getElementById('downloadDocxButton');
         if (docxButton) {
@@ -417,6 +464,17 @@ class LoanHistoryDetailPage {
     populateTable(tbodyId, rows) {
         const tbody = document.getElementById(tbodyId);
         if (!tbody) return;
+
+        if (!rows || rows.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="2" class="text-center text-muted py-3">No data available</td>
+                </tr>
+            `;
+            return;
+        }
+
+
         tbody.innerHTML = rows.map(row => `
             <tr>
                 <td>${row.label}</td>
@@ -426,60 +484,260 @@ class LoanHistoryDetailPage {
     }
 
     buildLoanParameters() {
-        const loan = this.loanData || {};
-        return [
-            { label: 'Loan Name', value: this.escapeHTML(loan.loan_name || '—') },
-            { label: 'Loan Type', value: this.formatLoanType(loan.loan_type) },
-            { label: 'Currency', value: `${this.currencySymbol} (${this.currency})` },
-            { label: 'Amount Input', value: loan.amountInputType === 'net' ? 'Net Amount' : 'Gross Amount' },
-            loan.amountInputType === 'net'
-                ? { label: 'Net Amount', value: this.formatCurrency(loan.netAmount) }
-                : { label: 'Gross Amount', value: this.formatCurrency(loan.grossAmount) },
-            { label: 'Property Value', value: this.formatCurrency(loan.propertyValue) },
-            { label: 'Start Date', value: this.formatDate(loan.startDate) },
-            { label: 'End Date', value: this.formatDate(loan.endDate) },
-            { label: 'Loan Term (months)', value: loan.loanTerm ? `${loan.loanTerm} months` : '—' },
-            { label: 'Loan Term (days)', value: loan.loanTermDays ? `${loan.loanTermDays} days` : '—' },
-            loan.day1Advance ? { label: 'Day 1 Advance', value: this.formatCurrency(loan.day1Advance) } : null
-        ].filter(Boolean);
+
+        const rows = [];
+        const name = this.getFromSources(['loan_name', 'loanName']) || this.loanName || '—';
+        rows.push({ label: 'Loan Name', value: this.escapeHTML(name) });
+
+        const type = this.getFromSources(['loan_type', 'loanType']);
+        rows.push({ label: 'Loan Type', value: this.formatLoanType(type) });
+
+        rows.push({ label: 'Currency', value: `${this.currencySymbol} (${this.currency})` });
+
+        const amountInputType = (this.getFromSources(['amountInputType', 'amount_input_type']) || 'gross').toString().toLowerCase();
+        rows.push({ label: 'Amount Input', value: amountInputType === 'net' ? 'Net Amount' : 'Gross Amount' });
+
+        const grossAmount = this.getFromSources(['grossAmount', 'gross_amount', 'gross_amount_value']);
+        if (this.hasValue(grossAmount) && (amountInputType !== 'net' || this.toNumber(grossAmount) > 0)) {
+            rows.push({ label: 'Gross Amount', value: this.formatCurrency(grossAmount) });
+        }
+
+        const netAmount = this.getFromSources(['netAmount', 'net_amount']);
+        if (this.hasValue(netAmount)) {
+            rows.push({ label: 'Net Amount', value: this.formatCurrency(netAmount) });
+        }
+
+        const propertyValue = this.getFromSources(['propertyValue', 'property_value']);
+        if (this.hasValue(propertyValue)) {
+            rows.push({ label: 'Property Value', value: this.formatCurrency(propertyValue) });
+        }
+
+        const interestRate = this.getFromSources(['interestRate', 'interest_rate', 'annual_rate']);
+        if (this.hasValue(interestRate)) {
+            rows.push({ label: 'Interest Rate (p.a.)', value: this.formatPercent(interestRate) });
+        }
+
+        const monthlyRate = this.getFromSources(['monthly_rate', 'monthlyRate']);
+        if (this.hasValue(monthlyRate)) {
+            rows.push({ label: 'Monthly Rate', value: this.formatPercent(monthlyRate) });
+        }
+
+        const interestType = this.getFromSources(['interestType', 'interest_type']);
+        if (this.hasValue(interestType)) {
+            rows.push({ label: 'Interest Calculation', value: this.formatInterestType(interestType) });
+        }
+
+        const startDate = this.getFromSources(['startDate', 'start_date']);
+        if (this.hasValue(startDate)) {
+            rows.push({ label: 'Start Date', value: this.formatDate(startDate) });
+        }
+
+        const endDate = this.getFromSources(['endDate', 'end_date']);
+        if (this.hasValue(endDate)) {
+            rows.push({ label: 'End Date', value: this.formatDate(endDate) });
+        }
+
+        const loanTerm = this.getFromSources(['loanTerm', 'loan_term']);
+        if (this.hasValue(loanTerm)) {
+            rows.push({ label: 'Loan Term (months)', value: `${this.toNumber(loanTerm, 0)} months` });
+        }
+
+        const loanTermDays = this.getFromSources(['loanTermDays', 'loan_term_days']);
+        if (this.hasValue(loanTermDays)) {
+            rows.push({ label: 'Loan Term (days)', value: `${this.toNumber(loanTermDays, 0)} days` });
+        }
+
+        const use360 = this.getFromSources(['use360Days', 'use_360_days']);
+        if (use360 !== undefined && use360 !== null) {
+            rows.push({ label: '360 Day Method', value: this.formatBoolean(use360) });
+        }
+
+        const day1Advance = this.getFromSources(['day1Advance', 'day1_advance', 'userInputDay1Advance', 'user_input_day_1_advance']);
+        if (this.hasValue(day1Advance) && this.toNumber(day1Advance) !== 0) {
+            rows.push({ label: 'Day 1 Advance', value: this.formatCurrency(day1Advance) });
+        }
+
+        const ltvTarget = this.getFromSources(['ltvTarget', 'ltv_target']);
+        if (this.hasValue(ltvTarget) && this.toNumber(ltvTarget) > 0) {
+            rows.push({ label: 'Target LTV', value: this.formatPercent(ltvTarget) });
+        }
+
+        return rows;
     }
 
     buildRepaymentProfile() {
-        const loan = this.loanData || {};
-        return [
-            { label: 'Repayment Option', value: this.formatRepaymentOption(loan.repaymentOption) },
-            loan.paymentTiming ? { label: 'Payment Timing', value: loan.paymentTiming === 'advance' ? 'In Advance' : 'In Arrears' } : null,
-            loan.paymentFrequency ? { label: 'Payment Frequency', value: this.capitalize(loan.paymentFrequency) } : null,
-            loan.monthlyPayment ? { label: 'Monthly Payment', value: this.formatCurrency(loan.monthlyPayment) } : null,
-            loan.quarterlyPayment ? { label: 'Quarterly Payment', value: this.formatCurrency(loan.quarterlyPayment) } : null,
-            loan.capitalRepayment ? { label: 'Capital Repayment', value: this.formatCurrency(loan.capitalRepayment) } : null,
-            loan.flexiblePayment ? { label: 'Flexible Payment', value: this.formatCurrency(loan.flexiblePayment) } : null
-        ].filter(Boolean);
+        const rows = [];
+
+        const option = this.getFromSources(['repaymentOption', 'repayment_option']);
+        if (this.hasValue(option)) {
+            rows.push({ label: 'Repayment Option', value: this.formatRepaymentOption(option) });
+        }
+
+        const interestServicing = this.getFromSources(['interestServicing', 'interest_servicing', 'interestPaymentType', 'interest_payment_type']);
+        if (this.hasValue(interestServicing)) {
+            rows.push({
+                label: 'Interest Payment Type',
+                value: this.capitalize(String(interestServicing).replace(/[_-]/g, ' '))
+            });
+        }
+
+        const paymentTiming = this.getFromSources(['paymentTiming', 'payment_timing']);
+        if (this.hasValue(paymentTiming)) {
+            let label = this.capitalize(paymentTiming);
+            if (paymentTiming === 'advance') label = 'In Advance';
+            if (paymentTiming === 'arrears') label = 'In Arrears';
+            rows.push({ label: 'Payment Timing', value: label });
+        }
+
+        const paymentFrequency = this.getFromSources(['paymentFrequency', 'payment_frequency']);
+        if (this.hasValue(paymentFrequency)) {
+            rows.push({ label: 'Payment Frequency', value: this.capitalize(paymentFrequency) });
+        }
+
+        const monthlyPayment = this.getFromSources(['monthlyPayment', 'monthly_payment']);
+        if (this.hasValue(monthlyPayment) && this.toNumber(monthlyPayment) !== 0) {
+            rows.push({ label: 'Monthly Payment', value: this.formatCurrency(monthlyPayment) });
+        }
+
+        const quarterlyPayment = this.getFromSources(['quarterlyPayment', 'quarterly_payment']);
+        if (this.hasValue(quarterlyPayment) && this.toNumber(quarterlyPayment) !== 0) {
+            rows.push({ label: 'Quarterly Payment', value: this.formatCurrency(quarterlyPayment) });
+        }
+
+        const monthlyInterest = this.getFromSources(['monthlyInterestPayment', 'monthly_interest_payment']);
+        if (this.hasValue(monthlyInterest) && this.toNumber(monthlyInterest) !== 0) {
+            rows.push({ label: 'Monthly Interest Payment', value: this.formatCurrency(monthlyInterest) });
+        }
+
+        const quarterlyInterest = this.getFromSources(['quarterlyInterestPayment', 'quarterly_interest_payment']);
+        if (this.hasValue(quarterlyInterest) && this.toNumber(quarterlyInterest) !== 0) {
+            rows.push({ label: 'Quarterly Interest Payment', value: this.formatCurrency(quarterlyInterest) });
+        }
+
+        const capitalRepayment = this.getFromSources(['capitalRepayment', 'capital_repayment']);
+        if (this.hasValue(capitalRepayment) && this.toNumber(capitalRepayment) !== 0) {
+            rows.push({ label: 'Capital Repayment', value: this.formatCurrency(capitalRepayment) });
+        }
+
+        const flexiblePayment = this.getFromSources(['flexiblePayment', 'flexible_payment']);
+        if (this.hasValue(flexiblePayment) && this.toNumber(flexiblePayment) !== 0) {
+            rows.push({ label: 'Flexible Payment', value: this.formatCurrency(flexiblePayment) });
+        }
+
+        return rows;
     }
 
     buildFeesSection() {
-        const loan = this.loanData || {};
-        return [
-            { label: 'Arrangement Fee %', value: `${this.formatNumber(loan.arrangementFeePercentage)}%` },
-            { label: 'Arrangement Fee', value: this.formatCurrency(loan.arrangementFee) },
-            { label: 'Legal Fees', value: this.formatCurrency(loan.legalFees) },
-            { label: 'Site Visit Fee', value: this.formatCurrency(loan.siteVisitFee) },
-            { label: 'Title Insurance', value: this.formatCurrency(loan.titleInsurance) }
-        ];
+        const rows = [];
+
+        const arrangementPercent = this.getFromSources(['arrangementFeePercentage', 'arrangement_fee_percentage']);
+        if (this.hasValue(arrangementPercent)) {
+            rows.push({ label: 'Arrangement Fee %', value: this.formatPercent(arrangementPercent) });
+        }
+
+        const arrangementFee = this.getFromSources(['arrangementFee', 'arrangement_fee']);
+        if (this.hasValue(arrangementFee)) {
+            rows.push({ label: 'Arrangement Fee', value: this.formatCurrency(arrangementFee) });
+        }
+
+        const legalFees = this.getFromSources(['legalFees', 'legal_fees', 'legal_costs']);
+        if (this.hasValue(legalFees)) {
+            rows.push({ label: 'Legal Fees', value: this.formatCurrency(legalFees) });
+        }
+
+        const siteVisitFee = this.getFromSources(['siteVisitFee', 'site_visit_fee']);
+        if (this.hasValue(siteVisitFee)) {
+            rows.push({ label: 'Site Visit Fee', value: this.formatCurrency(siteVisitFee) });
+        }
+
+        const titleInsurance = this.getFromSources(['titleInsurance', 'title_insurance']);
+        if (this.hasValue(titleInsurance)) {
+            rows.push({ label: 'Title Insurance', value: this.formatCurrency(titleInsurance) });
+        }
+
+        const brokerFeePercent = this.getFromSources(['brokerFeePercentage', 'broker_fee_percentage']);
+        if (this.hasValue(brokerFeePercent)) {
+            rows.push({ label: 'Broker Fee %', value: this.formatPercent(brokerFeePercent) });
+        }
+
+        const brokerFee = this.getFromSources(['brokerFee', 'broker_fee']);
+        if (this.hasValue(brokerFee) && this.toNumber(brokerFee) !== 0) {
+            rows.push({ label: 'Broker Fee', value: this.formatCurrency(brokerFee) });
+        }
+
+        const exitFeePercent = this.getFromSources(['exitFeePercentage', 'exit_fee_percentage', 'exit_fee_percent']);
+        if (this.hasValue(exitFeePercent)) {
+            rows.push({ label: 'Exit Fee %', value: this.formatPercent(exitFeePercent) });
+        }
+
+        const exitFee = this.getFromSources(['exitFee', 'exit_fee']);
+        if (this.hasValue(exitFee) && this.toNumber(exitFee) !== 0) {
+            rows.push({ label: 'Exit Fee', value: this.formatCurrency(exitFee) });
+        }
+
+        return rows;
     }
 
     buildLoanSummary() {
-        const loan = this.loanData || {};
-        return [
-            { label: 'Valuation', value: this.formatCurrency(loan.propertyValue) },
-            { label: 'Gross Amount', value: this.formatCurrency(loan.grossAmount) },
-            { label: 'Net Advance', value: this.formatCurrency(loan.netAdvance) },
-            { label: 'Total Net Advance', value: this.formatCurrency(loan.totalNetAdvance) },
-            { label: 'Total Interest', value: this.formatCurrency(loan.totalInterest) },
-            loan.retainedInterest ? { label: 'Retained Interest', value: this.formatCurrency(loan.retainedInterest) } : null,
-            { label: 'Start LTV', value: loan.startLtv ? `${this.formatNumber(loan.startLtv)}%` : '—' },
-            { label: 'End LTV', value: loan.endLtv ? `${this.formatNumber(loan.endLtv)}%` : '—' }
-        ].filter(Boolean);
+        const rows = [];
+
+        const valuation = this.getFromSources(['propertyValue', 'property_value']);
+        if (this.hasValue(valuation)) {
+            rows.push({ label: 'Valuation', value: this.formatCurrency(valuation) });
+        }
+
+        const grossAmount = this.getFromSources(['grossAmount', 'gross_amount']);
+        if (this.hasValue(grossAmount)) {
+            rows.push({ label: 'Gross Amount', value: this.formatCurrency(grossAmount) });
+        }
+
+        const netAdvance = this.getFromSources(['netAdvance', 'net_advance']);
+        if (this.hasValue(netAdvance)) {
+            rows.push({ label: 'Net Advance', value: this.formatCurrency(netAdvance) });
+        }
+
+        const totalNetAdvance = this.getFromSources(['totalNetAdvance', 'total_net_advance']);
+        if (this.hasValue(totalNetAdvance)) {
+            rows.push({ label: 'Total Net Advance', value: this.formatCurrency(totalNetAdvance) });
+        }
+
+        const totalInterest = this.getFromSources(['totalInterest', 'total_interest']);
+        if (this.hasValue(totalInterest)) {
+            rows.push({ label: 'Total Interest', value: this.formatCurrency(totalInterest) });
+        }
+
+        const retainedInterest = this.getFromSources(['retainedInterest', 'retained_interest']);
+        if (this.hasValue(retainedInterest) && this.toNumber(retainedInterest) !== 0) {
+            rows.push({ label: 'Retained Interest', value: this.formatCurrency(retainedInterest) });
+        }
+
+        const interestSavings = this.getFromSources(['interestSavings', 'interest_savings']);
+        if (this.hasValue(interestSavings) && this.toNumber(interestSavings) !== 0) {
+            rows.push({ label: 'Interest Savings', value: this.formatCurrency(interestSavings) });
+        }
+
+        const savingsPercentage = this.getFromSources(['savingsPercentage', 'savings_percentage']);
+        if (this.hasValue(savingsPercentage) && this.toNumber(savingsPercentage) !== 0) {
+            rows.push({ label: 'Savings %', value: this.formatPercent(savingsPercentage) });
+        }
+
+        const startLtv = this.getFromSources(['startLtv', 'start_ltv', 'ltvRatio', 'ltv_ratio']);
+        if (this.hasValue(startLtv) && this.toNumber(startLtv) >= 0) {
+            rows.push({ label: 'Start LTV', value: this.formatPercent(startLtv) });
+        }
+
+        const endLtv = this.getFromSources(['endLtv', 'end_ltv']);
+        if (this.hasValue(endLtv) && this.toNumber(endLtv) >= 0) {
+            rows.push({ label: 'End LTV', value: this.formatPercent(endLtv) });
+        }
+
+        const totalCost = this.getFromSources(['totalCost', 'total_cost']);
+        if (this.hasValue(totalCost) && this.toNumber(totalCost) !== 0) {
+            rows.push({ label: 'Total Cost of Finance', value: this.formatCurrency(totalCost) });
+        }
+
+        return rows;
+
     }
 
     renderCharts() {
@@ -488,19 +746,53 @@ class LoanHistoryDetailPage {
             this.renderLoanBreakdownChart(breakdownCanvas);
         }
 
+
+        const chartCards = ['interestPrincipalCard', 'paymentScheduleCard', 'balanceChartCard'];
+
         if (window.chartManager && this.scheduleData.length > 0) {
-            chartManager.createInterestBreakdownChart('interestPrincipalChart', this.scheduleData, { currency: this.currencySymbol });
-            chartManager.createPaymentScheduleChart('paymentScheduleChart', this.scheduleData, { currency: this.currencySymbol });
-            chartManager.createLoanBalanceChart('balanceChart', this.scheduleData, { currency: this.currencySymbol });
+            const interestChart = chartManager.createInterestBreakdownChart('interestPrincipalChart', this.scheduleData, {
+                currency: this.currencySymbol
+            });
+            this.applyChartTheme(interestChart, { includeScales: false });
+
+            const paymentChart = chartManager.createPaymentScheduleChart('paymentScheduleChart', this.scheduleData, {
+                currency: this.currencySymbol
+            });
+            this.applyChartTheme(paymentChart);
+
+            const balanceChart = chartManager.createLoanBalanceChart('balanceChart', this.scheduleData, {
+                currency: this.currencySymbol
+            });
+            this.applyChartTheme(balanceChart);
+            chartCards.forEach(id => document.getElementById(id)?.classList.remove('d-none'));
         } else {
-            ['interestPrincipalCard', 'paymentScheduleCard', 'balanceChartCard'].forEach(id => {
+            chartCards.forEach(id => {
+
                 const el = document.getElementById(id);
                 if (el) el.classList.add('d-none');
             });
         }
 
+
+        const ltvCard = document.getElementById('ltvChartCard');
+        if (ltvCard) {
+            const ltvValue = this.toNumber(this.getFromSources(['endLtv', 'end_ltv', 'ltvRatio', 'ltv_ratio']), NaN);
+            if (window.chartManager && Number.isFinite(ltvValue) && ltvValue > 0) {
+                ltvCard.classList.remove('d-none');
+                const ltvChart = chartManager.createLTVChart('loanLtvChart', ltvValue, {});
+                this.applyChartTheme(ltvChart, { includeScales: false });
+            } else {
+                ltvCard.classList.add('d-none');
+            }
+        }
+
+        const trancheCard = document.getElementById('trancheReleaseCard');
+        if (trancheCard) {
+            trancheCard.classList.add('d-none');
+        }
         if (this.hasDevelopmentTranches) {
-            const trancheData = this.scheduleData.filter(entry => entry.tranche_release && entry.tranche_release > 0);
+            const trancheData = this.getTrancheDataset();
+
             if (trancheData.length > 0) {
                 this.renderTrancheReleaseChart(trancheData);
             }
@@ -607,12 +899,16 @@ class LoanHistoryDetailPage {
                 },
                 scales: {
                     x: {
-                        ticks: { color: '#f0f0f0' },
+
+                        ticks: { color: '#f8f9fa' },
+
                         grid: { color: 'rgba(255,255,255,0.06)' }
                     },
                     y: {
                         ticks: {
-                            color: '#f0f0f0',
+
+                            color: '#f8f9fa',
+
                             callback: (value) => `${this.currencySymbol}${Number(value).toLocaleString('en-GB')}`
                         },
                         grid: { color: 'rgba(255,255,255,0.05)' }
@@ -622,45 +918,77 @@ class LoanHistoryDetailPage {
         });
     }
 
-    parseScheduleData(rawSchedule) {
-        return rawSchedule.map(entry => {
-            const parseValue = (value) => {
-                if (typeof value === 'number') return value;
-                if (!value) return 0;
-                if (typeof value === 'string') {
-                    const cleaned = value.replace(/[^0-9.-]/g, '');
-                    const parsed = parseFloat(cleaned);
-                    return Number.isFinite(parsed) ? parsed : 0;
+
+    parseScheduleData(rawSchedule = []) {
+        return rawSchedule.map((entry = {}, index) => {
+            const getValue = (...keys) => {
+                for (const key of keys) {
+                    if (entry[key] !== undefined && entry[key] !== null && entry[key] !== '') {
+                        return entry[key];
+                    }
                 }
-                return 0;
+                return undefined;
             };
 
             return {
-                period: entry.period_number,
-                interest: parseValue(entry.interest_payment),
-                principal: parseValue(entry.principal_payment),
-                balance: parseValue(entry.closing_balance),
-                tranche_release: parseValue(entry.tranche_release),
-                interest_accrued: parseValue(entry.interest_calculation)
+                period: this.toNumber(getValue('period_number', 'period', 'index'), index + 1),
+                interest: this.toNumber(getValue('interest_payment', 'interest_amount', 'interest')),
+                principal: this.toNumber(getValue('principal_payment', 'principal')),
+                balance: this.toNumber(getValue('closing_balance', 'balance', 'outstanding_balance')),
+                tranche_release: this.toNumber(getValue('tranche_release', 'tranche', 'drawdown', 'drawdown_amount')),
+                interest_accrued: this.toNumber(getValue('interest_accrued', 'interest_calculation')),
+                total_payment: this.toNumber(getValue('total_payment', 'payment_total'))
+
             };
         });
     }
 
     formatCurrency(value) {
-        const num = Number(value);
+
+        const num = this.normalizeNumber(value);
+
         if (!Number.isFinite(num)) return '—';
         return `${this.currencySymbol}${num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
-    formatNumber(value) {
-        const num = Number(value);
-        if (!Number.isFinite(num)) return '0.00';
-        return num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    formatNumber(value, decimals = 2) {
+        const num = this.normalizeNumber(value);
+        if (!Number.isFinite(num)) {
+            return Number(decimals) === 0 ? '0' : '0.00';
+        }
+        return num.toLocaleString('en-GB', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    }
+
+    formatPercent(value, decimals = 2) {
+        const num = this.normalizeNumber(value);
+        if (!Number.isFinite(num)) return '—';
+        return `${num.toLocaleString('en-GB', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        })}%`;
+
     }
 
     formatDate(value) {
         if (!value) return '—';
-        const date = new Date(value);
+
+        let date = value instanceof Date ? value : null;
+        if (!date) {
+            if (typeof value === 'string' && value.includes('/')) {
+                const parts = value.split(/[\/-]/).map(part => Number(part));
+                if (parts.length === 3 && parts.every(Number.isFinite)) {
+                    date = new Date(parts[2], parts[1] - 1, parts[0]);
+                }
+            }
+            if (!date) {
+                date = new Date(value);
+            }
+        }
+
         if (Number.isNaN(date.getTime())) {
             return value;
         }
@@ -669,27 +997,199 @@ class LoanHistoryDetailPage {
 
     formatLoanType(type) {
         if (!type) return '—';
-        const formatted = type.replace(/[_-]/g, ' ');
-        return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+        const normalized = type.toString().toLowerCase();
+        const mapping = {
+            bridge: 'Bridge',
+            term: 'Term',
+            development: 'Development',
+            development2: 'Development',
+            development_finance: 'Development Finance',
+            bridge_refurbishment: 'Bridge - Refurbishment'
+        };
+        return mapping[normalized] || this.capitalize(normalized.replace(/[_-]/g, ' '));
+
     }
 
     formatRepaymentOption(option) {
         if (!option) return '—';
         const mapping = {
+
+            none: 'Interest Retained',
             interest_only: 'Interest Only',
             capital_and_interest: 'Capital & Interest',
             capital: 'Capital Only',
+            capital_payment_only: 'Capital Only',
             flexible: 'Flexible',
+            flexible_payment: 'Flexible Payment',
             term_interest_only: 'Term Interest Only',
-            development_roll_up: 'Development Roll Up'
+            development_roll_up: 'Development Roll Up',
+            service_only: 'Interest Serviced',
+            service_and_capital: 'Service & Capital',
+            roll_up: 'Roll Up'
+
         };
         return mapping[option] || this.capitalize(option.replace(/[_-]/g, ' '));
     }
+
+
+    formatInterestType(type) {
+        if (!type) return '—';
+        const mapping = {
+            simple: 'Simple',
+            retained: 'Retained',
+            compound_daily: 'Compound (Daily)',
+            compound_monthly: 'Compound (Monthly)',
+            compound_quarterly: 'Compound (Quarterly)',
+            daily: 'Daily',
+            monthly: 'Monthly',
+            quarterly: 'Quarterly'
+        };
+        const normalized = type.toString().toLowerCase();
+        return mapping[normalized] || this.capitalize(normalized.replace(/[_-]/g, ' '));
+    }
+
+    formatBoolean(value) {
+        return this.coerceBoolean(value) ? 'Yes' : 'No';
+    }
+
 
     capitalize(str) {
         if (!str) return '';
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
+
+
+    applyChartTheme(chart, { includeScales = true } = {}) {
+        if (!chart || !chart.options) return;
+
+        const { options } = chart;
+        const legendLabels = options.plugins?.legend?.labels;
+        if (legendLabels) {
+            legendLabels.color = '#f8f9fa';
+        }
+
+        if (options.plugins?.title) {
+            options.plugins.title.color = '#f8f9fa';
+        }
+
+        if (includeScales && options.scales) {
+            Object.values(options.scales).forEach(scale => {
+                if (!scale) return;
+                if (scale.ticks) {
+                    scale.ticks.color = '#f8f9fa';
+                }
+                if (scale.title) {
+                    scale.title.color = '#f8f9fa';
+                }
+                if (scale.grid && scale.grid.color) {
+                    scale.grid.color = 'rgba(255,255,255,0.08)';
+                }
+            });
+        }
+
+        chart.update('none');
+    }
+
+    coerceBoolean(value) {
+        if (typeof value === 'boolean') return value;
+        if (typeof value === 'number') return value !== 0;
+        if (typeof value === 'string') {
+            const normalized = value.trim().toLowerCase();
+            if (['true', 'yes', 'y', '1', 'on'].includes(normalized)) return true;
+            if (['false', 'no', 'n', '0', 'off'].includes(normalized)) return false;
+        }
+        return Boolean(value);
+    }
+
+    getFromSources(keys, defaultValue) {
+        const keyList = Array.isArray(keys) ? keys : [keys];
+        const sources = [this.loanData || {}, this.inputData || {}];
+        for (const key of keyList) {
+            for (const source of sources) {
+                if (!source) continue;
+                if (Object.prototype.hasOwnProperty.call(source, key)) {
+                    const value = source[key];
+                    if (this.hasValue(value) || value === 0 || value === false) {
+                        return value;
+                    }
+                }
+            }
+        }
+        return defaultValue;
+    }
+
+    hasValue(value) {
+        if (value === undefined || value === null) {
+            return false;
+        }
+        if (typeof value === 'string') {
+            return value.trim() !== '';
+        }
+        return true;
+    }
+
+    normalizeNumber(value) {
+        if (typeof value === 'number') {
+            return value;
+        }
+        if (typeof value === 'string') {
+            const cleaned = value.replace(/[^0-9.-]/g, '');
+            if (cleaned === '' || cleaned === '-' || cleaned === '.' || cleaned === '-.') {
+                return NaN;
+            }
+            const parsed = parseFloat(cleaned);
+            return Number.isFinite(parsed) ? parsed : NaN;
+        }
+        if (value instanceof Date) {
+            return value.getTime();
+        }
+        if (typeof value === 'boolean') {
+            return value ? 1 : 0;
+        }
+        if (value !== undefined && value !== null && Number.isFinite(Number(value))) {
+            return Number(value);
+        }
+        return NaN;
+    }
+
+    toNumber(value, defaultValue = 0) {
+        const num = this.normalizeNumber(value);
+        return Number.isFinite(num) ? num : defaultValue;
+    }
+
+    getTrancheDataset() {
+        const dataset = [];
+        const detailed = Array.isArray(this.loanData?.detailed_tranche_schedule)
+            ? this.loanData.detailed_tranche_schedule
+            : [];
+
+        if (detailed.length > 0) {
+            detailed.forEach((entry, index) => {
+                const amount = this.toNumber(
+                    entry?.tranche_release ?? entry?.amount ?? entry?.drawdown ?? entry?.release_amount,
+                    NaN
+                );
+                if (!Number.isFinite(amount) || amount === 0) {
+                    return;
+                }
+                const periodValue = entry?.period ?? entry?.period_number ?? entry?.month ?? index + 1;
+                dataset.push({ period: periodValue, tranche_release: amount });
+            });
+        }
+
+        if (dataset.length === 0 && Array.isArray(this.scheduleData)) {
+            this.scheduleData.forEach(entry => {
+                if (!entry) return;
+                const amount = this.toNumber(entry.tranche_release, NaN);
+                if (!Number.isFinite(amount) || amount === 0) return;
+                dataset.push({ period: entry.period, tranche_release: amount });
+            });
+        }
+
+        return dataset;
+    }
+
 
     escapeHTML(value) {
         return String(value).replace(/[&<>"']/g, (char) => ({
