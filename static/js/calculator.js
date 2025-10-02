@@ -2122,7 +2122,9 @@ class LoanCalculator {
     setDefaultDate() {
         const startDateInput = document.getElementById('startDate');
         const autoStartDateInput = document.getElementById('autoStartDate');
-        const today = LoanCalculator.formatDateForStorage(new Date());
+
+        const today = this.formatForDateInput(new Date());
+
         const urlParams = new URLSearchParams(window.location.search);
         const isEditMode = urlParams.get('edit') === 'true';
 
@@ -2254,27 +2256,46 @@ class LoanCalculator {
             }
 
             // Generate tranche dates (monthly intervals)
-            const start = new Date(startDate);
+
+            const start = this.parseDateInput(startDate);
+            if (!start) {
+                const message = 'Please select a valid start date';
+                if (window.notifications) {
+                    window.notifications.warning(message);
+                } else {
+                    alert(message);
+                }
+                return;
+            }
+            const monthInterval = Math.max(1, Math.floor(loanPeriod / trancheCount));
+
 
             console.log('Generating', trancheCount, 'tranches with consecutive monthly intervals');
 
             // Create tranches
             for (let i = 0; i < trancheCount; i++) {
-                const releaseDate = new Date(start);
-                // Start auto-generated tranches one month after loan start and progress consecutively
-                const baseDay = start.getUTCDate();
-                releaseDate.setUTCMonth(start.getUTCMonth() + i + 1);
-                releaseDate.setUTCDate(baseDay);
-                releaseDate.setUTCHours(0, 0, 0, 0);
+
+                const releaseDate = new Date(start.getTime());
+                // Start auto-generated tranches one month after loan start
+                releaseDate.setMonth(releaseDate.getMonth() + (i * monthInterval) + 1);
+
                 
                 const formattedDate = LoanCalculator.formatDateForStorage(releaseDate);
                 console.log(`Creating tranche ${i + 1}:`, {
                     amount: trancheAmount,
-                    date: formattedDate,
+
+                    date: this.formatForDateInput(releaseDate),
                     rate: interestRate
                 });
 
-                this.createTrancheItem(i + 1, trancheAmount, formattedDate, interestRate, `Tranche ${i + 1}`);
+                this.createTrancheItem(
+                    i + 1,
+                    trancheAmount,
+                    this.formatForDateInput(releaseDate),
+                    interestRate,
+                    `Tranche ${i + 1}`
+                );
+
             }
 
             // Switch to manual mode to show generated tranches
@@ -2578,6 +2599,53 @@ class LoanCalculator {
         }
     }
 
+    formatForDateInput(date) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+            return '';
+        }
+
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    }
+
+    parseDateInput(value) {
+        if (typeof value !== 'string') {
+            return null;
+        }
+
+        const [yearStr, monthStr, dayStr] = value.split('-');
+        if (!yearStr || !monthStr || !dayStr) {
+            return null;
+        }
+
+        const year = Number(yearStr);
+        const month = Number(monthStr);
+        const day = Number(dayStr);
+
+        if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+            return null;
+        }
+
+        const monthIndex = month - 1;
+        if (monthIndex < 0 || monthIndex > 11) {
+            return null;
+        }
+
+        const parsed = new Date(year, monthIndex, day);
+        if (Number.isNaN(parsed.getTime())) {
+            return null;
+        }
+
+        if (parsed.getFullYear() !== year || parsed.getMonth() !== monthIndex || parsed.getDate() !== day) {
+            return null;
+        }
+
+        return parsed;
+    }
+
     updateCurrencySymbols() {
         const currency = document.getElementById('currency').value;
         const symbol = currency === 'EUR' ? '€' : '£';
@@ -2591,7 +2659,9 @@ class LoanCalculator {
         const urlParams = new URLSearchParams(window.location.search);
         const isEditMode = urlParams.get('edit') === 'true';
         if (!isEditMode && startDateInput && !startDateInput.value) {
-            const today = LoanCalculator.formatDateForStorage(new Date());
+
+            const today = this.formatForDateInput(new Date());
+
             startDateInput.value = today;
             // Calculate end date after setting default start date
             setTimeout(() => calculateEndDate(), 50);
