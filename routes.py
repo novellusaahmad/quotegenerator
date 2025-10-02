@@ -2488,7 +2488,7 @@ def loan_history():
 
         # Get all loan summaries
         loans = LoanSummary.query.order_by(LoanSummary.created_at.desc()).all()
-        
+
         # Get payment schedules for each loan
         loan_data = []
         for loan in loans:
@@ -2497,12 +2497,33 @@ def loan_history():
                 'loan': loan,
                 'payment_schedule': payment_schedule
             })
-        
+
         return render_template('loan_history.html', loan_data=loan_data)
-        
+
     except Exception as e:
         app.logger.error(f"Error loading loan history: {str(e)}")
         return render_template('loan_history.html', loan_data=[])
+
+
+@app.route('/loan-history/<int:loan_id>')
+def loan_history_detail_page(loan_id):
+    """Render the dedicated loan history detail page for a saved loan."""
+    try:
+        if not is_table_structure_valid(LoanSummary):
+            flash('Loan history is currently unavailable. Please try again later.', 'error')
+            return redirect(url_for('loan_history'))
+
+        loan = LoanSummary.query.get_or_404(loan_id)
+
+        return render_template(
+            'loan_history_detail.html',
+            loan_id=loan.id,
+            loan_name=loan.loan_name or ''
+        )
+    except Exception as exc:
+        app.logger.error(f"Error rendering loan history detail page: {exc}")
+        flash('Unable to display the saved loan details.', 'error')
+        return redirect(url_for('loan_history'))
 
 @app.route('/user-manual')
 def user_manual():
