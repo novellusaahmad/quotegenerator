@@ -157,7 +157,7 @@
 
     .chart-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 1fr);
         gap: 1.5rem;
     }
 
@@ -394,36 +394,16 @@
                         <canvas id="loanBreakdownChart"></canvas>
                     </div>
                 </div>
-                <div class="card chart-card" id="interestPrincipalCard">
-                    <div class="card-header"><i class="fas fa-balance-scale me-2"></i>Interest vs Principal</div>
-                    <div class="card-body">
-                        <canvas id="interestPrincipalChart"></canvas>
-                    </div>
-                </div>
-
                 <div class="card chart-card d-none" id="ltvChartCard">
                     <div class="card-header"><i class="fas fa-gauge-high me-2"></i>LTV Position</div>
                     <div class="card-body">
                         <canvas id="loanLtvChart"></canvas>
                     </div>
                 </div>
-
-                <div class="card chart-card" id="paymentScheduleCard">
-                    <div class="card-header"><i class="fas fa-stream me-2"></i>Payment Schedule Overview</div>
-                    <div class="card-body">
-                        <canvas id="paymentScheduleChart"></canvas>
-                    </div>
-                </div>
-                <div class="card chart-card" id="balanceChartCard">
+                <div class="card chart-card d-none" id="balanceChartCard">
                     <div class="card-header"><i class="fas fa-chart-line me-2"></i>Balance &amp; Interest Over Time</div>
                     <div class="card-body">
                         <canvas id="balanceChart"></canvas>
-                    </div>
-                </div>
-                <div class="card chart-card d-none" id="trancheReleaseCard">
-                    <div class="card-header"><i class="fas fa-layer-group me-2"></i>Tranche Release Timeline</div>
-                    <div class="card-body">
-                        <canvas id="trancheReleaseChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -957,30 +937,15 @@ class LoanHistoryDetailPage {
         }
 
 
-        const chartCards = ['interestPrincipalCard', 'paymentScheduleCard', 'balanceChartCard'];
-
+        const balanceCard = document.getElementById('balanceChartCard');
         if (window.chartManager && this.scheduleData.length > 0) {
-            const interestChart = chartManager.createInterestBreakdownChart('interestPrincipalChart', this.scheduleData, {
-                currency: this.currencySymbol
-            });
-            this.applyChartTheme(interestChart, { includeScales: false });
-
-            const paymentChart = chartManager.createPaymentScheduleChart('paymentScheduleChart', this.scheduleData, {
-                currency: this.currencySymbol
-            });
-            this.applyChartTheme(paymentChart);
-
             const balanceChart = chartManager.createLoanBalanceChart('balanceChart', this.scheduleData, {
                 currency: this.currencySymbol
             });
             this.applyChartTheme(balanceChart);
-            chartCards.forEach(id => document.getElementById(id)?.classList.remove('d-none'));
-        } else {
-            chartCards.forEach(id => {
-
-                const el = document.getElementById(id);
-                if (el) el.classList.add('d-none');
-            });
+            balanceCard?.classList.remove('d-none');
+        } else if (balanceCard) {
+            balanceCard.classList.add('d-none');
         }
 
 
@@ -996,17 +961,6 @@ class LoanHistoryDetailPage {
             }
         }
 
-        const trancheCard = document.getElementById('trancheReleaseCard');
-        if (trancheCard) {
-            trancheCard.classList.add('d-none');
-        }
-        if (this.hasDevelopmentTranches) {
-            const trancheData = this.getTrancheDataset();
-
-            if (trancheData.length > 0) {
-                this.renderTrancheReleaseChart(trancheData);
-            }
-        }
     }
 
     renderLoanBreakdownChart(canvas) {
@@ -1054,7 +1008,7 @@ class LoanHistoryDetailPage {
                 plugins: {
                     legend: {
                         position: 'right',
-                        labels: { color: '#f8f9fa' }
+                        labels: { color: '#212529' }
                     },
                     tooltip: {
                         callbacks: {
@@ -1071,69 +1025,6 @@ class LoanHistoryDetailPage {
             }
         });
     }
-
-    renderTrancheReleaseChart(trancheData) {
-        const card = document.getElementById('trancheReleaseCard');
-        const canvas = document.getElementById('trancheReleaseChart');
-        if (!card || !canvas) return;
-
-        card.classList.remove('d-none');
-
-        if (canvas.chartInstance) {
-            canvas.chartInstance.destroy();
-        }
-
-        const labels = trancheData.map(entry => `Period ${entry.period}`);
-        const values = trancheData.map(entry => entry.tranche_release);
-
-        const palette = this.getThemeColors();
-        const primary = palette[0] || '#b49b5c';
-
-        canvas.chartInstance = new Chart(canvas.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [{
-                    label: 'Tranche Release',
-                    data: values,
-                    backgroundColor: this.addAlpha(primary, 0.65),
-                    borderColor: primary,
-                    borderWidth: 1.5,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => `${this.currencySymbol}${context.parsed.y.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-
-                        ticks: { color: '#f8f9fa' },
-
-                        grid: { color: 'rgba(255,255,255,0.06)' }
-                    },
-                    y: {
-                        ticks: {
-
-                            color: '#f8f9fa',
-
-                            callback: (value) => `${this.currencySymbol}${Number(value).toLocaleString('en-GB')}`
-                        },
-                        grid: { color: 'rgba(255,255,255,0.05)' }
-                    }
-                }
-            }
-        });
-    }
-
 
     parseScheduleData(rawSchedule = []) {
         return rawSchedule.map((entry = {}, index) => {
@@ -1506,26 +1397,29 @@ class LoanHistoryDetailPage {
         if (!chart || !chart.options) return;
 
         const { options } = chart;
+        const textColor = '#212529';
+        const gridColor = 'rgba(0, 0, 0, 0.08)';
+
         const legendLabels = options.plugins?.legend?.labels;
         if (legendLabels) {
-            legendLabels.color = '#f8f9fa';
+            legendLabels.color = textColor;
         }
 
         if (options.plugins?.title) {
-            options.plugins.title.color = '#f8f9fa';
+            options.plugins.title.color = textColor;
         }
 
         if (includeScales && options.scales) {
             Object.values(options.scales).forEach(scale => {
                 if (!scale) return;
                 if (scale.ticks) {
-                    scale.ticks.color = '#f8f9fa';
+                    scale.ticks.color = textColor;
                 }
                 if (scale.title) {
-                    scale.title.color = '#f8f9fa';
+                    scale.title.color = textColor;
                 }
                 if (scale.grid && scale.grid.color) {
-                    scale.grid.color = 'rgba(255,255,255,0.08)';
+                    scale.grid.color = gridColor;
                 }
             });
         }
