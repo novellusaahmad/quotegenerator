@@ -2,7 +2,7 @@
 
 {% block title %}Loan History Detail - Novellus Financial{% endblock %}
 
-{% block body_attr %}class="gold-nav"{% endblock %}
+{% block body_attr %}class="gold-nav" data-currency="GBP"{% endblock %}
 
 {% block nav_heading %}
 <span class="navbar-text text-white text-center fw-bold"><i class="fas fa-file-invoice-dollar me-2"></i>Loan History Detail</span>
@@ -15,17 +15,18 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
 <style>
     body.gold-nav {
-        background-color: #0b0b16;
-        color: #f0f0f0;
+        background-color: var(--surface-background, #0b0b16);
+        color: var(--surface-light, #f0f0f0);
     }
 
     .loan-detail-page .page-title {
         font-weight: 600;
         color: #ffffff;
+        letter-spacing: 0.3px;
     }
 
     .loan-detail-page .subtitle {
-        color: rgba(255, 255, 255, 0.65);
+        color: rgba(255, 255, 255, 0.75);
         font-size: 0.9rem;
     }
 
@@ -42,24 +43,25 @@
     }
 
     .loan-detail-actions .btn-outline-light:hover {
-        background: rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.15);
         color: #ffffff;
     }
 
     .loan-detail-card {
         background: rgba(12, 18, 32, 0.92);
+        background: linear-gradient(160deg, rgba(15,23,42,0.95) 0%, rgba(11,15,26,0.95) 100%);
         border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 14px;
-        box-shadow: 0 18px 30px rgba(2, 8, 20, 0.45);
+        border-radius: 16px;
+        box-shadow: 0 18px 32px rgba(2, 8, 20, 0.55);
         overflow: hidden;
     }
 
     .loan-detail-card .card-header {
-        background: linear-gradient(135deg, #1E2B3A 0%, #2C3E50 100%);
+        background: linear-gradient(135deg, var(--primary-color, #1E2B3A) 0%, var(--secondary-color, #2C3E50) 100%);
         color: #f9f9f9;
         font-weight: 600;
         letter-spacing: 0.4px;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid rgba(255,255,255,0.08);
     }
 
     .loan-detail-card .table {
@@ -72,7 +74,7 @@
     }
 
     .loan-detail-card .table td {
-        border-top: 1px solid rgba(255,255,255,0.04);
+        border-top: 1px solid rgba(255,255,255,0.06);
         padding: 0.6rem 0.85rem;
         vertical-align: middle;
         color: #f8f9fa;
@@ -80,7 +82,7 @@
 
     .loan-detail-card .table td:first-child {
         font-weight: 500;
-        color: rgba(255, 255, 255, 0.7);
+        color: rgba(255, 255, 255, 0.72);
         width: 55%;
     }
 
@@ -91,26 +93,26 @@
     }
 
     .loan-highlight-badge {
-        background: rgba(180, 155, 92, 0.15);
-        color: #e6c98d;
-        border: 1px solid rgba(180, 155, 92, 0.35);
+        background: rgba(180, 155, 92, 0.18);
+        border: 1px solid rgba(180, 155, 92, 0.4);
         border-radius: 30px;
         padding: 0.25rem 0.75rem;
         font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.7px;
+        color: var(--surface-light, #f8f9fa);
     }
 
     .chart-card {
-        background: rgba(15, 23, 42, 0.95);
+        background: linear-gradient(160deg, rgba(14, 20, 34, 0.96) 0%, rgba(9, 13, 22, 0.96) 100%);
         border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 16px;
-        box-shadow: 0 22px 45px rgba(0, 0, 0, 0.45);
+        border-radius: 18px;
+        box-shadow: 0 22px 45px rgba(0, 0, 0, 0.5);
     }
 
     .chart-card .card-header {
         border-bottom: 1px solid rgba(255,255,255,0.08);
-        background: linear-gradient(135deg, rgba(13,27,43,0.95) 0%, rgba(21,34,54,0.95) 100%);
+        background: linear-gradient(135deg, var(--primary-dark, rgba(13,27,43,0.95)) 0%, var(--secondary-dark, rgba(21,34,54,0.95)) 100%);
         color: #fefefe;
         font-weight: 600;
     }
@@ -128,16 +130,16 @@
 
     .loan-detail-loading,
     .loan-detail-error {
-        background: rgba(15, 23, 42, 0.9);
-        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.92);
+        border-radius: 18px;
         padding: 2.5rem;
         text-align: center;
-        border: 1px solid rgba(255,255,255,0.05);
-        color: rgba(255,255,255,0.85);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.88);
     }
 
     .loan-detail-error {
-        border: 1px solid rgba(220, 53, 69, 0.35);
+        border: 1px solid rgba(220, 53, 69, 0.4);
         color: #f8d7da;
     }
 
@@ -147,7 +149,7 @@
         border-radius: 50px;
         padding: 0.35rem 0.75rem;
         font-size: 0.8rem;
-        color: rgba(255,255,255,0.75);
+        color: rgba(255,255,255,0.78);
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
@@ -155,15 +157,129 @@
 
     .chart-grid {
         display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.5rem;
+    }
 
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.25rem;
+    .schedule-card .card-body {
+        padding: 0;
+    }
 
+    .schedule-table-wrapper {
+        max-height: 420px;
+        overflow: auto;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+        white-space: nowrap;
+        font-size: 0.85rem;
+    }
+
+    .schedule-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: linear-gradient(135deg, var(--primary-color, #1E2B3A) 0%, var(--secondary-color, #2C3E50) 100%) !important;
+    }
+
+    .schedule-table tbody tr:hover {
+        background: rgba(255,255,255,0.06);
+    }
+
+    .notes-card .card-body {
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .loan-note-item {
+        background: rgba(0,0,0,0.2);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+    }
+
+    .loan-note-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.75);
+    }
+
+    .loan-note-text {
+        color: rgba(255,255,255,0.9);
+        font-size: 0.9rem;
+        line-height: 1.45;
+        margin-bottom: 0;
+    }
+
+    .note-status-pill {
+        border-radius: 999px;
+        padding: 0.25rem 0.7rem;
+        font-size: 0.7rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .note-status-general { background: rgba(255,255,255,0.08); color: #fff; }
+    .note-status-call { background: rgba(13,110,253,0.2); color: #69b0ff; }
+    .note-status-email { background: rgba(56,189,248,0.2); color: #8bdfff; }
+    .note-status-underwriting { background: rgba(148,163,184,0.25); color: #cbd5f5; }
+    .note-status-legal { background: rgba(220, 38, 38, 0.22); color: #feb2b2; }
+    .note-status-completed { background: rgba(34,197,94,0.22); color: #86efac; }
+
+    .notes-empty-state {
+        text-align: center;
+        padding: 1.5rem 1rem;
+        color: rgba(255,255,255,0.65);
+        border: 1px dashed rgba(255,255,255,0.1);
+        border-radius: 12px;
+    }
+
+    .notes-form .form-select,
+    .notes-form .form-control {
+        background-color: rgba(8,12,24,0.7);
+        border: 1px solid rgba(255,255,255,0.15);
+        color: #fff;
+    }
+
+    .notes-form .form-select:focus,
+    .notes-form .form-control:focus {
+        background-color: rgba(8,12,24,0.9);
+        border-color: var(--primary-color, #AD965F);
+        box-shadow: none;
+        color: #fff;
+    }
+
+    @media (max-width: 1199.98px) {
+        .chart-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
     @media (max-width: 991.98px) {
         .loan-detail-actions {
             margin-top: 1rem;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .schedule-table-wrapper {
+            max-height: none;
+        }
+
+        .loan-detail-card .table td:first-child,
+        .loan-detail-card .table td:last-child {
+            text-align: left;
         }
     }
 </style>
@@ -303,6 +419,73 @@
             </div>
         </div>
     </div>
+
+    <div class="row g-4 mt-1">
+        <div class="col-xl-8">
+            <div class="card loan-detail-card schedule-card h-100">
+                <div class="card-header"><i class="fas fa-table me-2"></i>Detailed Payment Schedule</div>
+                <div class="card-body">
+                    <div class="schedule-table-wrapper">
+                        <table class="table table-hover table-borderless align-middle mb-0 schedule-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Period</th>
+                                    <th scope="col">Date</th>
+                                    <th scope="col" class="text-end">Opening Balance</th>
+                                    <th scope="col" class="text-end">Interest</th>
+                                    <th scope="col" class="text-end">Principal</th>
+                                    <th scope="col" class="text-end">Total Payment</th>
+                                    <th scope="col" class="text-end">Closing Balance</th>
+                                    <th scope="col" class="text-end">Tranche Release</th>
+                                </tr>
+                            </thead>
+                            <tbody id="paymentScheduleTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">Payment schedule will appear once loaded.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card loan-detail-card notes-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-comment-dots me-2"></i>Loan Notes</span>
+                    <span class="loan-highlight-badge" id="loanNotesCount">0 Notes</span>
+                </div>
+                <div class="card-body">
+                    <form id="addLoanNoteForm" class="notes-form">
+                        <div class="row g-2">
+                            <div class="col-12">
+                                <label for="noteStatus" class="form-label small text-uppercase text-muted mb-1">Status</label>
+                                <select id="noteStatus" class="form-select form-select-sm">
+                                    <option value="General">General</option>
+                                    <option value="Call">Call</option>
+                                    <option value="Email">Email</option>
+                                    <option value="Underwriting">Underwriting</option>
+                                    <option value="Legal">Legal</option>
+                                    <option value="Completed">Completed</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="noteText" class="form-label small text-uppercase text-muted mb-1">Add Note</label>
+                                <textarea id="noteText" class="form-control" rows="3" placeholder="Capture loan updates, next actions or key observations..."></textarea>
+                            </div>
+                            <div class="col-12 text-end">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus me-1"></i>Add Note
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="loanNotesFeedback" class="text-danger small d-none"></div>
+                    <div id="loanNotesList" class="d-flex flex-column gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -311,6 +494,14 @@
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
 <script>
+const CURRENCY_LOGOS = {
+    GBP: "{{ url_for('static', filename='novellus_logo_gbp.png') }}",
+    EUR: "{{ url_for('static', filename='novellus_logo_eur.png') }}",
+    DEFAULT: "{{ url_for('static', filename='novellus_logo.png') }}"
+};
+
+const NOTE_STATUSES = ['General', 'Call', 'Email', 'Underwriting', 'Legal', 'Completed'];
+
 class LoanHistoryDetailPage {
     constructor(options) {
         this.loanId = options.loanId;
@@ -323,6 +514,8 @@ class LoanHistoryDetailPage {
         this.scheduleData = [];
         this.hasDevelopmentTranches = false;
         this.loanType = '';
+        this.notes = [];
+        this.noteError = '';
 
         this.init();
     }
@@ -371,11 +564,12 @@ class LoanHistoryDetailPage {
             this.loanType = typeValue.toString();
             this.hasDevelopmentTranches = this.loanType.toLowerCase().includes('development');
 
-
+            this.applyCurrencyTheme();
             this.renderHeader();
             this.renderSections();
             this.renderCharts();
             this.bindActions();
+            await this.loadNotes();
 
             loadingEl.classList.add('d-none');
             contentEl.classList.remove('d-none');
@@ -452,6 +646,11 @@ class LoanHistoryDetailPage {
                 }
             });
         }
+
+        const noteForm = document.getElementById('addLoanNoteForm');
+        if (noteForm) {
+            noteForm.addEventListener('submit', (event) => this.handleNoteSubmit(event));
+        }
     }
 
     renderSections() {
@@ -459,6 +658,7 @@ class LoanHistoryDetailPage {
         this.populateTable('repaymentProfileBody', this.buildRepaymentProfile());
         this.populateTable('feesSectionBody', this.buildFeesSection());
         this.populateTable('loanSummaryBody', this.buildLoanSummary());
+        this.renderPaymentSchedule();
     }
 
     populateTable(tbodyId, rows) {
@@ -824,14 +1024,17 @@ class LoanHistoryDetailPage {
             canvas.chartInstance.destroy();
         }
 
+        const palette = this.getThemeColors();
+        const border = this.addAlpha(palette[0] || '#0b0b16', 0.85);
+
         canvas.chartInstance = new Chart(canvas.getContext('2d'), {
             type: 'doughnut',
             data: {
                 labels: dataset.map(item => item.label),
                 datasets: [{
                     data: dataValues,
-                    backgroundColor: ['#0b0b16', '#b49b5c', '#ffffff', '#3a3a3a', '#6b6b6b', '#9e9e9e'],
-                    borderColor: '#0b0b16',
+                    backgroundColor: palette,
+                    borderColor: border,
                     borderWidth: 2
                 }]
             },
@@ -873,6 +1076,9 @@ class LoanHistoryDetailPage {
         const labels = trancheData.map(entry => `Period ${entry.period}`);
         const values = trancheData.map(entry => entry.tranche_release);
 
+        const palette = this.getThemeColors();
+        const primary = palette[0] || '#b49b5c';
+
         canvas.chartInstance = new Chart(canvas.getContext('2d'), {
             type: 'bar',
             data: {
@@ -880,8 +1086,8 @@ class LoanHistoryDetailPage {
                 datasets: [{
                     label: 'Tranche Release',
                     data: values,
-                    backgroundColor: 'rgba(180, 155, 92, 0.65)',
-                    borderColor: '#b49b5c',
+                    backgroundColor: this.addAlpha(primary, 0.65),
+                    borderColor: primary,
                     borderWidth: 1.5,
                     borderRadius: 6
                 }]
@@ -932,15 +1138,232 @@ class LoanHistoryDetailPage {
 
             return {
                 period: this.toNumber(getValue('period_number', 'period', 'index'), index + 1),
+                payment_date: getValue('payment_date', 'paymentDate', 'date'),
+                opening_balance: this.toNumber(getValue('opening_balance', 'openingBalance', 'opening_balance_value')),
                 interest: this.toNumber(getValue('interest_payment', 'interest_amount', 'interest')),
                 principal: this.toNumber(getValue('principal_payment', 'principal')),
                 balance: this.toNumber(getValue('closing_balance', 'balance', 'outstanding_balance')),
+                closing_balance: this.toNumber(getValue('closing_balance', 'closingBalance', 'outstanding_balance')),
                 tranche_release: this.toNumber(getValue('tranche_release', 'tranche', 'drawdown', 'drawdown_amount')),
                 interest_accrued: this.toNumber(getValue('interest_accrued', 'interest_calculation')),
                 total_payment: this.toNumber(getValue('total_payment', 'payment_total'))
 
             };
         });
+    }
+
+    async loadNotes() {
+        const listEl = document.getElementById('loanNotesList');
+        if (listEl) {
+            listEl.innerHTML = '<div class="notes-empty-state">Loading notes…</div>';
+        }
+
+        try {
+            const response = await fetch(`/api/loan/${this.loanId}/notes`);
+            const payload = await response.json();
+
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.error || 'Unable to retrieve loan notes');
+            }
+
+            this.notes = Array.isArray(payload.notes) ? payload.notes : [];
+            this.noteError = '';
+        } catch (error) {
+            console.error('Failed to load notes', error);
+            this.notes = [];
+            this.noteError = error.message || 'Unable to load notes for this loan.';
+        }
+
+        this.renderNotes();
+    }
+
+    renderPaymentSchedule() {
+        const tbody = document.getElementById('paymentScheduleTableBody');
+        if (!tbody) return;
+
+        if (!this.scheduleData || this.scheduleData.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">No payment schedule data is available for this loan.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        const rows = this.scheduleData.map(entry => {
+            const paymentDate = this.formatDate(entry.payment_date);
+            const opening = this.formatCurrency(entry.opening_balance);
+            const interest = this.formatCurrency(entry.interest);
+            const principal = this.formatCurrency(entry.principal);
+            const total = this.formatCurrency(entry.total_payment);
+            const closing = this.formatCurrency(entry.closing_balance ?? entry.balance);
+            const tranche = this.formatCurrency(entry.tranche_release);
+
+            return `
+                <tr>
+                    <td>${entry.period}</td>
+                    <td>${paymentDate}</td>
+                    <td class="text-end">${opening}</td>
+                    <td class="text-end">${interest}</td>
+                    <td class="text-end">${principal}</td>
+                    <td class="text-end">${total}</td>
+                    <td class="text-end">${closing}</td>
+                    <td class="text-end">${tranche}</td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = rows.join('');
+    }
+
+    renderNotes() {
+        const listEl = document.getElementById('loanNotesList');
+        const countEl = document.getElementById('loanNotesCount');
+        const feedback = document.getElementById('loanNotesFeedback');
+
+        if (countEl) {
+            const count = this.notes?.length || 0;
+            countEl.textContent = `${count} ${count === 1 ? 'Note' : 'Notes'}`;
+        }
+
+        if (!listEl) {
+            return;
+        }
+
+        if (feedback) {
+            if (this.noteError) {
+                feedback.textContent = this.noteError;
+                feedback.classList.remove('d-none');
+            } else {
+                feedback.textContent = '';
+                feedback.classList.add('d-none');
+            }
+        }
+
+        if (!this.notes || this.notes.length === 0) {
+            listEl.innerHTML = '<div class="notes-empty-state">No notes have been recorded yet. Use the form above to capture key updates.</div>';
+            return;
+        }
+
+        const items = this.notes.map(note => this.renderNoteItem(note));
+        listEl.innerHTML = items.join('');
+    }
+
+    renderNoteItem(note = {}) {
+        const author = this.escapeHTML(note.author || 'System');
+        const status = this.escapeHTML(note.status || 'General');
+        const statusClass = this.getStatusClass(status);
+        const created = this.formatDateTime(note.created_at);
+        const text = this.escapeHTML(note.text || '').replace(/\n/g, '<br>');
+
+        return `
+            <div class="loan-note-item">
+                <div class="loan-note-header">
+                    <span class="fw-semibold">${author}</span>
+                    <span class="note-status-pill ${statusClass}">${status}</span>
+                </div>
+                <p class="loan-note-text">${text || '<span class="text-muted">No details provided.</span>'}</p>
+                <div class="small text-muted">${created}</div>
+            </div>
+        `;
+    }
+
+    async handleNoteSubmit(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const statusSelect = document.getElementById('noteStatus');
+        const textArea = document.getElementById('noteText');
+        const feedback = document.getElementById('loanNotesFeedback');
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        const text = (textArea?.value || '').trim();
+        let status = statusSelect?.value || 'General';
+        if (!NOTE_STATUSES.includes(status)) {
+            status = 'General';
+        }
+
+        if (!text) {
+            if (feedback) {
+                feedback.textContent = 'Please enter a note before saving.';
+                feedback.classList.remove('d-none');
+            }
+            return;
+        }
+
+        if (feedback) {
+            feedback.textContent = '';
+            feedback.classList.add('d-none');
+        }
+
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Saving…';
+        }
+
+        try {
+            const response = await fetch(`/api/loan/${this.loanId}/notes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text, status })
+            });
+            const payload = await response.json();
+
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.error || 'Unable to save note');
+            }
+
+            if (textArea) {
+                textArea.value = '';
+            }
+
+            if (statusSelect) {
+                statusSelect.value = status;
+            }
+
+            if (window.notifications?.success) {
+                window.notifications.success('Note saved successfully.');
+            }
+
+            const savedNote = payload.note || null;
+            if (savedNote) {
+                this.notes = [savedNote, ...(this.notes || [])];
+            }
+
+            this.noteError = '';
+            this.renderNotes();
+        } catch (error) {
+            console.error('Failed to save note', error);
+            if (feedback) {
+                feedback.textContent = error.message || 'Unable to save note at this time.';
+                feedback.classList.remove('d-none');
+            }
+            if (window.notifications?.error) {
+                window.notifications.error(error.message || 'Unable to save note at this time.');
+            }
+        } finally {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-plus me-1"></i>Add Note';
+            }
+        }
+    }
+
+    getStatusClass(status = '') {
+        const normalized = status.toString().trim().toLowerCase();
+        switch (normalized) {
+            case 'call':
+                return 'note-status-call';
+            case 'email':
+                return 'note-status-email';
+            case 'underwriting':
+                return 'note-status-underwriting';
+            case 'legal':
+                return 'note-status-legal';
+            case 'completed':
+                return 'note-status-completed';
+            default:
+                return 'note-status-general';
+        }
     }
 
     formatCurrency(value) {
@@ -993,6 +1416,15 @@ class LoanHistoryDetailPage {
             return value;
         }
         return date.toLocaleDateString('en-GB');
+    }
+
+    formatDateTime(value) {
+        if (!value) return '—';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return this.formatDate(value);
+        }
+        return date.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
     }
 
     formatLoanType(type) {
@@ -1088,7 +1520,100 @@ class LoanHistoryDetailPage {
             });
         }
 
+        this.applyDatasetColors(chart);
         chart.update('none');
+    }
+
+    applyDatasetColors(chart) {
+        if (!chart?.data?.datasets) return;
+        const palette = this.getThemeColors();
+        const [primary, secondary, tertiary, quaternary] = palette;
+
+        chart.data.datasets.forEach((dataset, index) => {
+            const label = (dataset.label || '').toLowerCase();
+            if (label.includes('principal')) {
+                const color = primary || '#AD965F';
+                dataset.backgroundColor = this.addAlpha(color, 0.75);
+                dataset.borderColor = color;
+            } else if (label.includes('interest')) {
+                const color = secondary || quaternary || '#20B2AA';
+                dataset.backgroundColor = this.addAlpha(color, 0.75);
+                dataset.borderColor = color;
+            } else if (label.includes('balance') || dataset.type === 'line') {
+                const color = tertiary || primary || '#6c757d';
+                dataset.borderColor = color;
+                dataset.backgroundColor = this.addAlpha(color, dataset.fill ? 0.2 : 0.08);
+            } else {
+                const color = palette[index % palette.length] || primary || '#AD965F';
+                if (Array.isArray(dataset.backgroundColor)) {
+                    dataset.backgroundColor = dataset.backgroundColor.map((_, idx) => this.addAlpha(palette[idx % palette.length] || color, 0.8));
+                } else {
+                    dataset.backgroundColor = this.addAlpha(color, 0.75);
+                }
+                dataset.borderColor = color;
+            }
+        });
+    }
+
+    addAlpha(color, alpha = 1) {
+        if (!color) return `rgba(180, 155, 92, ${alpha})`;
+        if (color.startsWith('#')) {
+            const hex = color.replace('#', '');
+            const normalized = hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex;
+            const bigint = parseInt(normalized, 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        if (color.startsWith('rgb')) {
+            return color.replace(/rgba?\(([^)]+)\)/, (_, inner) => {
+                const parts = inner.split(',').map(part => part.trim());
+                const [r, g, b] = parts;
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            });
+        }
+        return color;
+    }
+
+    getThemeColors() {
+        return [
+            this.getThemeColor('--chart-primary', '#AD965F'),
+            this.getThemeColor('--chart-secondary', '#DAA520'),
+            this.getThemeColor('--chart-tertiary', '#CDA44C'),
+            this.getThemeColor('--chart-quaternary', '#E6C547'),
+            this.getThemeColor('--chart-quinary', '#F2E185')
+        ].filter(Boolean);
+    }
+
+    getThemeColor(variable, fallback) {
+        const style = getComputedStyle(document.body);
+        const value = style.getPropertyValue(variable);
+        return value && value.trim() ? value.trim() : fallback;
+    }
+
+    applyCurrencyTheme() {
+        const currencyCode = (this.currency || 'GBP').toUpperCase();
+        const body = document.body;
+        const html = document.documentElement;
+        if (body) {
+            body.setAttribute('data-currency', currencyCode);
+        }
+        if (html) {
+            html.setAttribute('data-currency', currencyCode);
+        }
+
+        const logoSrc = CURRENCY_LOGOS[currencyCode] || CURRENCY_LOGOS.DEFAULT;
+        const navLogo = document.getElementById('navbarLogo');
+        const footerLogo = document.getElementById('footerLogo');
+        if (navLogo && logoSrc) {
+            navLogo.src = logoSrc;
+            navLogo.style.filter = 'none';
+        }
+        if (footerLogo && logoSrc) {
+            footerLogo.src = logoSrc;
+            footerLogo.style.filter = 'none';
+        }
     }
 
     coerceBoolean(value) {
