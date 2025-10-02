@@ -92,6 +92,7 @@
                                     <th>Total Interest</th>
                                     <th>Created</th>
                                     <th>Power BI Report</th>
+                                    <th>Notes</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -258,11 +259,9 @@ class LoanHistoryManager {
         this.currentLoanId = null;
         this.powerBIReports = {};
         this.loanBreakdownChart = null;
-        this.balanceOverTimeChart = null;
-        this.defaultScheduleHeader = null;
-        this.scheduleVisible = false;
-        this.trancheVisible = false;
-        this.balanceChartAvailable = false;
+
+        this.focusNotesAfterLoad = false;
+
         this.noteStatuses = ['General', 'Call', 'Email', 'Underwriting', 'Legal', 'Completed'];
         this.noteStatusClasses = {
             'General': 'bg-secondary',
@@ -511,6 +510,122 @@ class LoanHistoryManager {
         return items.join('');
     }
 
+    renderNotesSummary(loan) {
+        const count = Number(loan.history_note_count || 0);
+        const lastNote = loan.last_note || null;
+        const countLabel = count === 1 ? 'note' : 'notes';
+        const countBadge = `<span class="badge rounded-pill note-count-badge">${count}</span>`;
+
+        let summaryHtml = `<div class="d-flex flex-column gap-1 notes-summary">`;
+        summaryHtml += `
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                ${countBadge}
+                <span class="small text-muted">${countLabel}</span>
+                ${lastNote ? `<span class="badge ${this.getStatusBadgeClass(lastNote.status || 'General')}">${this.escapeHtml(lastNote.status || 'General')}</span>` : ''}
+            </div>
+        `;
+
+        if (lastNote) {
+            const timestamp = this.formatNoteTimestamp(lastNote.created_at);
+            const author = this.escapeHtml(lastNote.author || 'System');
+            const previewText = this.escapeHtml(lastNote.text_preview || '');
+            summaryHtml += `
+                <div class="small text-muted">${author}${timestamp ? ` • ${timestamp}` : ''}</div>
+                ${previewText ? `<div class="small text-muted note-preview" title="${previewText}">${this.truncateText(previewText, 120)}</div>` : ''}
+            `;
+        } else {
+            summaryHtml += `<div class="small text-muted">No notes yet</div>`;
+        }
+
+        summaryHtml += `
+            <button class="btn btn-sm btn-outline-primary note-action-button align-self-start" onclick="loanHistory.viewLoanDetails(${loan.id}, { focusNotes: true })">
+                <i class="fas fa-sticky-note me-1"></i>${count ? 'View notes' : 'Add note'}
+            </button>
+        `;
+        summaryHtml += '</div>';
+
+        return summaryHtml;
+    }
+
+    truncateText(value, maxLength = 120) {
+        if (!value) {
+            return '';
+        }
+        const str = String(value);
+        return str.length > maxLength ? `${str.slice(0, maxLength).trim()}…` : str;
+    }
+
+    updateLoanCollections(loanId, updater) {
+        let updated = false;
+        const targetId = Number(loanId);
+        const applyUpdate = (collection) => {
+            if (!Array.isArray(collection)) {
+                return;
+            }
+            const loan = collection.find(item => Number(item.id) === targetId);
+            if (loan) {
+                const result = updater(loan);
+                if (result !== false) {
+                    updated = true;
+                }
+            }
+        };
+
+        applyUpdate(this.loans);
+        applyUpdate(this.filteredLoans);
+        return updated;
+    }
+
+    syncLoanNotesSummary(loanId, notes = [], options = {}) {
+        const { reRender = true } = options;
+        const noteArray = Array.isArray(notes) ? notes : [];
+        const count = noteArray.length;
+        const latestNote = count ? noteArray[0] : null;
+
+        const didUpdate = this.updateLoanCollections(loanId, (loan) => {
+            const previousCount = Number(loan.history_note_count || 0);
+            const previousSummary = JSON.stringify(loan.last_note || null);
+            const nextSummary = latestNote
+                ? {
+                    status: latestNote.status || 'General',
+                    author: latestNote.author || 'System',
+                    created_at: latestNote.created_at || null,
+                    text_preview: this.truncateText(latestNote.text || '', 160)
+                }
+                : null;
+
+            if (previousCount === count && JSON.stringify(nextSummary) === previousSummary) {
+                return false;
+            }
+
+            loan.history_note_count = count;
+            loan.last_note = nextSummary;
+            return true;
+        });
+
+        if (didUpdate && reRender) {
+            this.renderLoansTable();
+        }
+    }
+
+    scrollToNotesSection() {
+        this.focusNotesAfterLoad = false;
+        const card = document.getElementById('loanNotesCard');
+        if (!card) {
+            return;
+        }
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        card.classList.add('note-focus-highlight');
+        setTimeout(() => card.classList.remove('note-focus-highlight'), 2000);
+
+        setTimeout(() => {
+            const textArea = document.getElementById('loanNoteText');
+            if (textArea) {
+                textArea.focus();
+            }
+        }, 350);
+    }
+
     clearFilters() {
         document.getElementById('searchInput').value = '';
         document.getElementById('loanTypeFilter').value = '';
@@ -536,7 +651,7 @@ class LoanHistoryManager {
         }
         
         if (this.filteredLoans.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No loans match your filters</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">No loans match your filters</td></tr>';
             return;
         }
 
@@ -575,6 +690,7 @@ class LoanHistoryManager {
                     </div>
                     <div class="small text-muted mt-1">${loan.currency}</div>
                 </td>
+                <td>${this.renderNotesSummary(loan)}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-secondary bg-white text-dark me-1" onclick="loanHistory.viewLoanDetails(${loan.id})" title="View Details">
                         <i class="fas fa-eye"></i>
@@ -610,9 +726,11 @@ class LoanHistoryManager {
         }, 100);
     }
 
-    async viewLoanDetails(loanId) {
+    async viewLoanDetails(loanId, options = {}) {
         try {
             this.currentLoanId = loanId;
+            const { focusNotes = false } = options;
+            this.focusNotesAfterLoad = focusNotes;
             const modal = new bootstrap.Modal(document.getElementById('loanDetailsModal'));
             
             // Show loading state
@@ -640,8 +758,13 @@ class LoanHistoryManager {
                 docxBtn.href = `/loan/${loanId}/summary-docx`;
                 docxBtn.style.display = 'inline-block';
             }
-            
+
+            if (this.focusNotesAfterLoad) {
+                setTimeout(() => this.scrollToNotesSection(), 300);
+            }
+
         } catch (error) {
+            this.focusNotesAfterLoad = false;
             console.error('Error loading loan details:', error);
             document.getElementById('loanDetailsContent').innerHTML = `
                 <div class="alert alert-danger">
@@ -1656,6 +1779,11 @@ class LoanHistoryManager {
         form.dataset.loanId = loan.id;
         form.addEventListener('submit', (event) => this.handleAddLoanNote(event));
 
+        this.syncLoanNotesSummary(
+            loan.id,
+            Array.isArray(loan.history_notes) ? loan.history_notes : [],
+            { reRender: false }
+        );
         this.renderLoanNotesList(Array.isArray(loan.history_notes) ? loan.history_notes : []);
         this.loadLoanNotes(loan.id);
     }
@@ -1675,7 +1803,9 @@ class LoanHistoryManager {
                 throw new Error(data.error || 'Failed to load notes');
             }
 
-            this.renderLoanNotesList(Array.isArray(data.notes) ? data.notes : []);
+            const notes = Array.isArray(data.notes) ? data.notes : [];
+            this.renderLoanNotesList(notes);
+            this.syncLoanNotesSummary(loanId, notes);
         } catch (error) {
             console.error('Failed to load loan notes:', error);
             if (window.notifications) {
@@ -2129,6 +2259,39 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .bg-novellus-navy {
     background-color: #1E2B3A !important;
+}
+
+.notes-summary {
+    min-width: 180px;
+}
+
+.note-count-badge {
+    background-color: rgba(30, 43, 58, 0.1);
+    color: #1E2B3A;
+    border: 1px solid rgba(30, 43, 58, 0.2);
+    font-weight: 600;
+}
+
+.note-preview {
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.note-action-button {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.note-action-button i {
+    font-size: 0.7rem;
+}
+
+.note-focus-highlight {
+    box-shadow: 0 0 0 0.3rem rgba(184, 134, 11, 0.2);
+    border-radius: 0.75rem;
+    transition: box-shadow 0.3s ease;
 }
 .bg-novellus-gold {
     background-color: #B8860B !important;

@@ -2587,6 +2587,27 @@ def get_saved_loans():
                 'tranches': []
             }
 
+            # Include a summary of saved history notes so the UI can surface
+            # note activity without loading the full loan record.
+            try:
+                note_count = loan.history_notes.count()
+                latest_note = loan.history_notes.order_by(LoanHistoryNote.created_at.desc()).first()
+            except Exception:
+                note_count = 0
+                latest_note = None
+
+            loan_data['history_note_count'] = note_count
+            if latest_note:
+                loan_data['last_note'] = {
+                    'id': latest_note.id,
+                    'status': latest_note.status,
+                    'author': latest_note.author,
+                    'created_at': latest_note.created_at.isoformat() if latest_note.created_at else None,
+                    'text_preview': (latest_note.text or '')[:160],
+                }
+            else:
+                loan_data['last_note'] = None
+
             # Derive reference monthly and quarterly interest payments
             try:
                 gross_decimal = Decimal(str(loan_data['gross_amount']))
