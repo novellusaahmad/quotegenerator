@@ -23,12 +23,14 @@
             right: 0;
             bottom: 0;
             z-index: 1;
+            background: linear-gradient(135deg, rgba(30, 43, 58, 0.75), rgba(30, 43, 58, 0.35));
         }
         .hero-content {
             position: relative;
             z-index: 2;
-            color: white;
+            color: #fff;
             text-align: center;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
         .logo-container {
             margin-bottom: 2rem;
@@ -42,15 +44,15 @@
             font-size: 3.5rem;
             font-weight: 700;
             margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(51,51,51,0.5);
-            color: rgb(51,51,51);
+            color: #ffffff;
+            text-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
         }
         .hero-subtitle {
             font-size: 1.5rem;
             margin-bottom: 3rem;
-            text-shadow: 1px 1px 2px rgba(51,51,51,0.5);
-            color: rgb(51,51,51);
+            color: rgba(255, 255, 255, 0.92);
             font-weight: 300;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
         .navigation-cards {
             display: grid;
@@ -98,22 +100,25 @@
             line-height: 1.6;
         }
         .nav-card-button {
-            background-color: #AD965F;
+            background: linear-gradient(135deg, #AD965F 0%, #8B6914 100%);
             color: white;
             border: none;
             padding: 12px 30px;
             border-radius: 25px;
-            font-weight: 600;
+            font-weight: 700;
             text-decoration: none;
             display: inline-block;
             transition: all 0.3s ease;
             margin-top: auto;
+            box-shadow: 0 12px 24px rgba(173, 150, 95, 0.4);
         }
-        .nav-card-button:hover {
-            background-color: #977c4d;
+        .nav-card-button:hover,
+        .nav-card-button:focus {
+            background: linear-gradient(135deg, #8B6914 0%, #5D4409 100%);
             color: white;
-            transform: scale(1.05);
+            transform: translateY(-2px);
             text-decoration: none;
+            box-shadow: 0 16px 30px rgba(93, 68, 9, 0.45);
         }
         .features-section {
             padding: 4rem 0;

@@ -360,9 +360,26 @@
     color: white;
 }
 
-.btn-outline-secondary {
-    border-color: var(--novellus-navy);
+.btn-outline-primary {
+    border: 2px solid var(--novellus-gold);
     color: var(--novellus-navy);
+    background-color: #fff;
+    font-weight: 600;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    background-color: var(--novellus-gold);
+    border-color: var(--novellus-gold);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(173, 150, 95, 0.35);
+}
+
+.btn-outline-secondary {
+    border: 2px solid var(--novellus-navy);
+    color: var(--novellus-navy);
+    background-color: #fff;
+    font-weight: 600;
 }
 
 .btn-outline-secondary:hover,
@@ -370,7 +387,7 @@
     background-color: var(--novellus-navy);
     border-color: var(--novellus-navy);
     color: white;
-    box-shadow: none;
+    box-shadow: 0 4px 12px rgba(30, 43, 58, 0.3);
 }
 
 /* Alert styling */
@@ -507,9 +524,26 @@ button[type="submit"] {
     color: white;
 }
 
-.btn-outline-secondary {
-    border-color: var(--novellus-navy-lighter);
+.btn-outline-primary {
+    border: 2px solid var(--novellus-gold);
     color: var(--novellus-navy);
+    background-color: #fff;
+    font-weight: 600;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+    background-color: var(--novellus-gold);
+    border-color: var(--novellus-gold);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(173, 150, 95, 0.35);
+}
+
+.btn-outline-secondary {
+    border: 2px solid var(--novellus-navy);
+    color: var(--novellus-navy);
+    background-color: #fff;
+    font-weight: 600;
 }
 
 .btn-outline-secondary:hover,
@@ -517,7 +551,7 @@ button[type="submit"] {
     background-color: var(--novellus-navy);
     border-color: var(--novellus-navy);
     color: white;
-    box-shadow: none;
+    box-shadow: 0 4px 12px rgba(30, 43, 58, 0.3);
 }
 
 .btn-outline-secondary.active {
@@ -624,7 +658,7 @@ h4, h5, h6 {
 }
 
 .text-primary {
-    color: var(--novellus-gold) !important;
+    color: var(--novellus-gold-dark) !important;
 }
 
 /* User dropdown and badges */
