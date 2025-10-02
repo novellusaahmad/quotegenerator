@@ -173,8 +173,8 @@
 
     .schedule-card.loan-detail-card .card-header,
     .notes-card.loan-detail-card .card-header {
-        background: #f1f5f9;
-        color: #000;
+        background: #000;
+        color: #fff;
         border-bottom: 1px solid #000;
     }
 
@@ -498,8 +498,11 @@
 
     <div class="row g-4 mt-1">
         <div class="col-xl-8">
-            <div class="card-header" id="loanHistoryScheduleCard">
-                <div class="card-header"><i class="fas fa-table me-2"></i>Detailed Payment Schedule</div>
+            <div class="loan-detail-card schedule-card" id="loanHistoryScheduleCard">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="fas fa-table me-2"></i>
+                    <span>Detailed Payment Schedule</span>
+                </div>
                 <div class="card-body">
                     <div id="detailedPaymentScheduleCard">
                         <table class="detailed-payment-table">
@@ -528,9 +531,9 @@
             </div>
         </div>
         <div class="col-xl-4">
-            <div class="card-header">
-                <div class="card-header">
-                    <span><i class="fas fa-comment-dots me-2"></i>Loan Notes</span>
+            <div class="loan-detail-card notes-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="d-flex align-items-center gap-2"><i class="fas fa-comment-dots"></i>Loan Notes</span>
                     <span class="loan-highlight-badge" id="loanNotesCount">0 Notes</span>
                 </div>
                 <div class="card-body">
