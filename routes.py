@@ -139,6 +139,16 @@ def _get_raw_value(raw_data, *keys):
     return None
 
 
+def _coerce_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        return value.strip().lower() in {'true', '1', 'yes', 'on'}
+    return False
+
+
 def _format_currency(value, currency_symbol):
     return f"{currency_symbol}{_safe_float(value):,.2f}"
 
@@ -226,6 +236,83 @@ def _serialize_loan_detail(loan):
     currency_symbol = '£' if loan.currency == 'GBP' else '€'
     schedule_rows = _serialize_payment_schedule(loan, currency_symbol)
 
+    try:
+        raw_input_data = json.loads(loan.input_data) if getattr(loan, 'input_data', None) else {}
+    except (TypeError, ValueError, json.JSONDecodeError):
+        current_app.logger.warning(f"Could not parse loan input_data for loan {loan.id}")
+        raw_input_data = {}
+
+    def _input_value(*keys):
+        return _get_raw_value(raw_input_data, *keys)
+
+    rate_input_type = (_input_value('rate_input_type', 'rateInputType') or 'annual').lower()
+    if rate_input_type not in {'monthly', 'annual'}:
+        rate_input_type = 'annual'
+
+    interest_type_raw = (_input_value('interest_type', 'interestType') or '').lower()
+    loan_end_type = (_input_value('loan_end_type', 'loanEndType') or '').lower()
+    gross_amount_type = (_input_value('gross_amount_type', 'grossAmountType') or '').lower()
+    amount_input_type = (_input_value('amount_input_type', 'amountInputType') or (loan.amount_input_type or 'gross')).lower()
+    payment_timing_value = (_input_value('payment_timing', 'paymentTiming') or (loan.payment_timing or '')).lower()
+    payment_frequency_value = (_input_value('payment_frequency', 'paymentFrequency') or (loan.payment_frequency or '')).lower()
+
+    def _format_date(value):
+        if not value:
+            return ''
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y'):
+            try:
+                return datetime.strptime(value, fmt).strftime('%d/%m/%Y')
+            except ValueError:
+                continue
+        return value
+
+    start_date_input_display = _format_date(_input_value('startDate', 'start_date')) or loan.start_date_display
+    end_date_input_display = _format_date(_input_value('endDate', 'end_date')) or loan.end_date_display
+
+    gross_amount_percentage_input = _safe_float(
+        _input_value('gross_amount_percentage', 'grossAmountPercentage')
+    )
+    if gross_amount_percentage_input == 0 and loan.property_value:
+        try:
+            gross_amount_percentage_input = (
+                float(loan.gross_amount or 0) / float(loan.property_value) * 100
+            ) if loan.property_value else 0.0
+        except (TypeError, ValueError, ZeroDivisionError, InvalidOperation):
+            gross_amount_percentage_input = 0.0
+
+    use_360_days_flag = _coerce_bool(_input_value('use_360_days', 'use360Days', 'use_360'))
+
+    gross_amount_input = _safe_float(_input_value('gross_amount', 'grossAmount')) or _safe_float(loan.gross_amount)
+    net_amount_input = _safe_float(_input_value('net_amount', 'netAmount')) or _safe_float(loan.net_amount)
+    property_value_input = _safe_float(_input_value('property_value', 'propertyValue')) or _safe_float(loan.property_value)
+    day1_advance_input = _safe_float(_input_value('day1Advance', 'day_1_advance', 'day1_advance')) or _safe_float(loan.day_1_advance)
+    user_input_day1 = _safe_float(_input_value('userInputDay1Advance', 'user_input_day1_advance')) or _safe_float(loan.user_input_day_1_advance)
+    capital_repayment_input = _safe_float(_input_value('capital_repayment', 'capitalRepayment'))
+    flexible_payment_input = _safe_float(_input_value('flexible_payment', 'flexiblePayment'))
+    arrangement_fee_percentage_input = _safe_float(
+        _input_value('arrangement_fee_percentage', 'arrangementFeePercentage')
+    ) or _safe_float(loan.arrangement_fee_percentage)
+    title_insurance_rate_input = _safe_float(
+        _input_value('title_insurance_rate', 'titleInsuranceRate')
+    )
+    legal_fees_input = _safe_float(_input_value('legal_fees', 'legalFees', 'legal_costs')) or _safe_float(loan.legal_costs)
+    site_visit_fee_input = _safe_float(_input_value('site_visit_fee', 'siteVisitFee')) or _safe_float(loan.site_visit_fee)
+    annual_rate_input = _safe_float(
+        _input_value('annual_rate', 'annualRateValue', 'annualRate', 'interest_rate')
+    ) or _safe_float(loan.interest_rate)
+    monthly_rate_input = _safe_float(_input_value('monthly_rate', 'monthlyRateValue', 'monthlyRate'))
+    repayment_option_value = (_input_value('repayment_option', 'repaymentOption') or loan.repayment_option or 'none')
+
+    amount_input_label = 'Gross Amount' if amount_input_type == 'gross' else 'Net Amount'
+    gross_amount_type_label = 'Percentage of Property Value' if gross_amount_type == 'percentage' else 'Fixed Amount'
+    rate_input_type_label = 'Monthly Rate' if rate_input_type == 'monthly' else 'Annual Rate'
+    interest_type_label = interest_type_raw.replace('_', ' ').title() if interest_type_raw else 'Simple'
+    loan_end_type_label = 'Term (months)' if loan_end_type in ('', 'term') else 'End Date'
+    payment_timing_label = 'In Advance' if payment_timing_value == 'advance' else ('In Arrears' if payment_timing_value == 'arrears' else '—')
+    payment_frequency_label = payment_frequency_value.title() if payment_frequency_value else '—'
+    currency_code = loan.currency or (_input_value('currency') or 'GBP')
+    currency_display = f"{currency_code} ({currency_symbol})"
+
     return {
         'id': loan.id,
         'loan_name': loan.loan_name,
@@ -235,33 +322,81 @@ def _serialize_loan_detail(loan):
         'loan_type_label': LOAN_TYPE_LABELS.get(loan.loan_type, (loan.loan_type or '').title()),
         'currency': loan.currency,
         'currency_symbol': currency_symbol,
+        'currency_code': currency_code,
+        'currency_display': currency_display,
         'amount_input_type': loan.amount_input_type or 'gross',
+        'amount_input_type_label': amount_input_label,
         'interest_rate': _safe_float(loan.interest_rate),
         'repayment_option': loan.repayment_option or 'none',
         'repayment_option_label': REPAYMENT_OPTION_LABELS.get(loan.repayment_option or 'none', (loan.repayment_option or 'none').replace('_', ' ').title()),
+        'repayment_option_input': repayment_option_value,
         'payment_timing': loan.payment_timing or '',
         'payment_frequency': loan.payment_frequency or '',
+        'payment_timing_label': payment_timing_label,
+        'payment_frequency_label': payment_frequency_label,
         'loan_term': loan.loan_term or 0,
         'loan_term_days': loan.loan_term_days or 0,
         'start_date_display': loan.start_date.strftime('%d/%m/%Y') if loan.start_date else '',
         'end_date_display': loan.end_date.strftime('%d/%m/%Y') if loan.end_date else '',
+        'start_date_input_display': start_date_input_display,
+        'end_date_input_display': end_date_input_display,
         'gross_amount': _safe_float(loan.gross_amount),
         'net_amount': _safe_float(loan.net_amount),
+        'gross_amount_input': gross_amount_input,
+        'net_amount_input': net_amount_input,
+        'gross_amount_percentage': _safe_float(getattr(loan, 'gross_amount_percentage', 0.0)),
+        'gross_amount_percentage_input': gross_amount_percentage_input,
+        'gross_amount_type': gross_amount_type,
+        'gross_amount_type_label': gross_amount_type_label,
         'total_interest': _safe_float(loan.total_interest),
         'arrangement_fee': _safe_float(loan.arrangement_fee),
+        'arrangement_fee_percentage': _safe_float(getattr(loan, 'arrangement_fee_percentage', 0.0)),
+        'arrangement_fee_percentage_input': arrangement_fee_percentage_input,
         'net_advance': _safe_float(loan.net_advance),
         'total_net_advance': _safe_float(loan.total_net_advance),
         'monthly_payment': _safe_float(loan.monthly_payment),
         'quarterly_payment': _safe_float(loan.quarterly_payment),
+        'monthly_interest_payment': _safe_float(getattr(loan, 'monthly_interest_payment', 0.0)),
+        'quarterly_interest_payment': _safe_float(getattr(loan, 'quarterly_interest_payment', 0.0)),
         'property_value': _safe_float(loan.property_value),
+        'property_value_input': property_value_input,
         'legal_costs': _safe_float(loan.legal_costs),
+        'legal_fees_input': legal_fees_input,
         'site_visit_fee': _safe_float(loan.site_visit_fee),
+        'site_visit_fee_input': site_visit_fee_input,
         'title_insurance': _safe_float(loan.title_insurance),
+        'title_insurance_rate_input': title_insurance_rate_input,
         'start_ltv': _safe_float(loan.start_ltv),
         'end_ltv': _safe_float(loan.end_ltv),
+        'ltv_target': _safe_float(getattr(loan, 'ltv_target', 0.0)),
         'day1_advance': _safe_float(loan.day_1_advance),
         'user_input_day1_advance': _safe_float(loan.user_input_day_1_advance),
+        'day1_advance_input': day1_advance_input,
+        'user_input_day1_advance_input': user_input_day1,
+        'loan_name_input': _input_value('loanName', 'loan_name') or loan.loan_name,
+        'loan_term_input': _input_value('loanTerm', 'loan_term') or loan.loan_term,
+        'loan_end_type': loan_end_type,
+        'loan_end_type_label': loan_end_type_label,
+        'rate_input_type': rate_input_type,
+        'rate_input_type_label': rate_input_type_label,
+        'interest_type': interest_type_raw,
+        'interest_type_label': interest_type_label,
+        'annual_rate_input': annual_rate_input,
+        'monthly_rate_input': monthly_rate_input,
+        'use_360_days': use_360_days_flag,
+        'use_360_days_label': 'Yes' if use_360_days_flag else 'No',
+        'amount_input_type_input': amount_input_type,
+        'payment_timing_input': payment_timing_value,
+        'payment_frequency_input': payment_frequency_value,
+        'capital_repayment': _safe_float(getattr(loan, 'capital_repayment', 0.0)),
+        'capital_repayment_input': capital_repayment_input,
+        'flexible_payment': _safe_float(getattr(loan, 'flexible_payment', 0.0)),
+        'flexible_payment_input': flexible_payment_input,
+        'interest_only_total': _safe_float(getattr(loan, 'interest_only_total', 0.0)),
+        'interest_savings': _safe_float(getattr(loan, 'interest_savings', 0.0)),
+        'savings_percentage': _safe_float(getattr(loan, 'savings_percentage', 0.0)),
         'payment_schedule': schedule_rows,
+        'input_data': raw_input_data,
     }
 
 # Initialize Power BI scheduler if available

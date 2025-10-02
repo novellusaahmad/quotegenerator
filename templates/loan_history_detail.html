@@ -15,13 +15,21 @@
     {{ loan.currency_symbol }}{{ "{:,.2f}".format(value or 0) }}
 {% endmacro %}
 
-{% set amount_input_label = 'Gross Amount' if loan.amount_input_type == 'gross' else 'Net Amount' %}
-
 {% block content %}
 <div class="container-fluid mt-4">
-    <a href="{{ url_for('loan_history') }}" class="btn btn-outline-secondary mb-3">
-        <i class="fas fa-arrow-left me-2"></i>Back to Loan History
-    </a>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <a href="{{ url_for('loan_history') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Loan History
+        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-primary" href="{{ url_for('download_loan_summary_docx', loan_id=loan.id) }}" target="_blank">
+                <i class="fas fa-file-word me-1"></i>Download DOCX
+            </a>
+            <a class="btn btn-novellus-gold" href="/calculator?edit=true&loanId={{ loan.id }}&loanName={{ loan.loan_name|urlencode }}">
+                <i class="fas fa-edit me-1"></i>Edit &amp; Recalculate
+            </a>
+        </div>
+    </div>
 
     <div class="row g-4 mb-4 align-items-stretch">
         <div class="col-12 col-xl-4">
@@ -42,19 +50,50 @@
                     <div class="row g-3">
                         <div class="col-sm-6">
                             <div class="fw-semibold text-muted">Start Date</div>
-                            <div>{{ loan.start_date_display or '—' }}</div>
+                            <div>{{ loan.start_date_input_display or '—' }}</div>
                         </div>
                         <div class="col-sm-6">
                             <div class="fw-semibold text-muted">End Date</div>
-                            <div>{{ loan.end_date_display or '—' }}</div>
+                            <div>{{ loan.end_date_input_display or '—' }}</div>
                         </div>
                         <div class="col-sm-6">
-                            <div class="fw-semibold text-muted">Term</div>
-                            <div>{{ loan.loan_term }} months ({{ loan.loan_term_days }} days)</div>
+                            <div class="fw-semibold text-muted">Loan Term</div>
+                            <div>
+                                {% if loan.loan_term_input %}
+                                    {{ loan.loan_term_input }} months
+                                {% elif loan.loan_term %}
+                                    {{ loan.loan_term }} months
+                                {% else %}
+                                    —
+                                {% endif %}
+                                {% if loan.loan_term_days %}
+                                    ({{ loan.loan_term_days }} days)
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="col-sm-6">
-                            <div class="fw-semibold text-muted">Interest Rate</div>
-                            <div>{{ "{:.2f}".format(loan.interest_rate) }}%</div>
+                            <div class="fw-semibold text-muted">Loan End Type</div>
+                            <div>{{ loan.loan_end_type_label }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">{{ loan.rate_input_type_label }}</div>
+                            <div>
+                                {% if loan.rate_input_type == 'monthly' %}
+                                    {{ "{:.4f}".format(loan.monthly_rate_input) }}%
+                                {% else %}
+                                    {{ "{:.2f}".format(loan.annual_rate_input) }}%
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if loan.rate_input_type == 'monthly' %}
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">Annual Equivalent Rate</div>
+                            <div>{{ "{:.2f}".format(loan.annual_rate_input) }}%</div>
+                        </div>
+                        {% endif %}
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">Interest Calculation</div>
+                            <div>{{ loan.interest_type_label }}</div>
                         </div>
                         <div class="col-sm-6">
                             <div class="fw-semibold text-muted">Repayment Option</div>
@@ -62,59 +101,102 @@
                         </div>
                         <div class="col-sm-6">
                             <div class="fw-semibold text-muted">Payment Timing</div>
-                            <div>{{ loan.payment_timing|default('—')|replace('advance','In Advance')|replace('arrears','In Arrears') }}</div>
+                            <div>{{ loan.payment_timing_label }}</div>
                         </div>
                         <div class="col-sm-6">
                             <div class="fw-semibold text-muted">Payment Frequency</div>
-                            <div>{{ loan.payment_frequency|default('—')|capitalize }}</div>
+                            <div>{{ loan.payment_frequency_label }}</div>
                         </div>
-                        <div class="col-sm-6">
-                            <div class="fw-semibold text-muted">Day 1 Advance</div>
-                            <div>{{ currency(loan.day1_advance) }}</div>
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <a class="btn btn-outline-primary" href="{{ url_for('download_loan_summary_docx', loan_id=loan.id) }}" target="_blank">
-                            <i class="fas fa-file-word me-1"></i>Download DOCX
-                        </a>
-                        <a class="btn btn-novellus-gold" href="/calculator?edit=true&loanId={{ loan.id }}&loanName={{ loan.loan_name|urlencode }}">
-                            <i class="fas fa-edit me-1"></i>Edit &amp; Recalculate
-                        </a>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-12 col-xl-8">
-            <div class="row row-cols-1 row-cols-lg-2 row-cols-xl-2 row-cols-xxl-4 g-4">
+            <div class="row row-cols-1 row-cols-lg-2 g-4">
                 <div class="col">
                     <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-light fw-bold"><i class="fas fa-list me-2"></i>User Inputs</div>
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-list me-2"></i>Loan Parameters</div>
                         <div class="card-body p-0">
                             <table class="table mb-0">
                                 <tbody>
                                     <tr>
-                                        <th class="w-50">Loan Type</th>
+                                        <th class="w-50">Loan Name</th>
+                                        <td>{{ loan.loan_name_input }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Loan Type</th>
                                         <td>{{ loan.loan_type_label }}</td>
                                     </tr>
                                     <tr>
-                                        <th>{{ amount_input_label }}</th>
+                                        <th>Currency</th>
+                                        <td>{{ loan.currency_display }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Property Value</th>
+                                        <td>{{ currency(loan.property_value_input or loan.property_value) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Amount Input</th>
+                                        <td>{{ loan.amount_input_type_label }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Gross Amount</th>
+                                        <td>{{ currency(loan.gross_amount_input or loan.gross_amount) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Gross Amount Type</th>
+                                        <td>{{ loan.gross_amount_type_label }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Gross % of Property</th>
                                         <td>
-                                            {% if loan.amount_input_type == 'gross' %}
-                                                {{ currency(loan.gross_amount) }}
+                                            {% if loan.gross_amount_percentage_input %}
+                                                {{ "{:.2f}".format(loan.gross_amount_percentage_input) }}%
                                             {% else %}
-                                                {{ currency(loan.net_amount) }}
+                                                —
                                             {% endif %}
                                         </td>
                                     </tr>
                                     <tr>
-                                        <th>Property Value</th>
-                                        <td>{{ currency(loan.property_value) }}</td>
+                                        <th>Net Amount</th>
+                                        <td>{{ currency(loan.net_amount_input or loan.net_amount) }}</td>
+                                    </tr>
+                                    {% if loan.user_input_day1_advance_input %}
+                                    <tr>
+                                        <th>Day 1 Advance (Input)</th>
+                                        <td>{{ currency(loan.user_input_day1_advance_input) }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if loan.day1_advance and loan.day1_advance != loan.user_input_day1_advance_input %}
+                                    <tr>
+                                        <th>Day 1 Advance (Calculated)</th>
+                                        <td>{{ currency(loan.day1_advance) }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    <tr>
+                                        <th>Loan End Type</th>
+                                        <td>{{ loan.loan_end_type_label }}</td>
                                     </tr>
                                     <tr>
-                                        <th>User Input Day 1 Advance</th>
-                                        <td>{{ currency(loan.user_input_day1_advance) }}</td>
+                                        <th>Start Date</th>
+                                        <td>{{ loan.start_date_input_display or '—' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>End Date</th>
+                                        <td>{{ loan.end_date_input_display or '—' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Loan Term (Months)</th>
+                                        <td>{{ loan.loan_term_input or loan.loan_term or '—' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Loan Term (Days)</th>
+                                        <td>{{ loan.loan_term_days or '—' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Use 360-Day Rate</th>
+                                        <td>{{ loan.use_360_days_label }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -124,73 +206,97 @@
 
                 <div class="col">
                     <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-light fw-bold"><i class="fas fa-calculator me-2"></i>Loan Summary</div>
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-chart-line me-2"></i>Repayment Profile</div>
                         <div class="card-body p-0">
                             <table class="table mb-0">
                                 <tbody>
                                     <tr>
-                                        <th class="w-50">Gross Amount</th>
-                                        <td>{{ currency(loan.gross_amount) }}</td>
+                                        <th class="w-50">Repayment Option</th>
+                                        <td>{{ loan.repayment_option_label }}</td>
                                     </tr>
                                     <tr>
-                                        <th>Net Amount</th>
-                                        <td>{{ currency(loan.net_amount) }}</td>
+                                        <th>Interest Calculation</th>
+                                        <td>{{ loan.interest_type_label }}</td>
                                     </tr>
                                     <tr>
-                                        <th>Total Interest</th>
-                                        <td>{{ currency(loan.total_interest) }}</td>
+                                        <th>{{ loan.rate_input_type_label }}</th>
+                                        <td>
+                                            {% if loan.rate_input_type == 'monthly' %}
+                                                {{ "{:.4f}".format(loan.monthly_rate_input) }}%
+                                            {% else %}
+                                                {{ "{:.2f}".format(loan.annual_rate_input) }}%
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% if loan.rate_input_type == 'monthly' %}
+                                    <tr>
+                                        <th>Annual Equivalent Rate</th>
+                                        <td>{{ "{:.2f}".format(loan.annual_rate_input) }}%</td>
+                                    </tr>
+                                    {% endif %}
+                                    <tr>
+                                        <th>Payment Timing</th>
+                                        <td>{{ loan.payment_timing_label }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Payment Frequency</th>
+                                        <td>{{ loan.payment_frequency_label }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Capital Repayment</th>
+                                        <td>{{ currency(loan.capital_repayment_input or loan.capital_repayment) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Flexible Payment</th>
+                                        <td>{{ currency(loan.flexible_payment_input or loan.flexible_payment) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>LTV Target</th>
+                                        <td>
+                                            {% if loan.ltv_target %}
+                                                {{ "{:.2f}".format(loan.ltv_target) }}%
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-coins me-2"></i>Fees Section</div>
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="w-50">Arrangement Fee %</th>
+                                        <td>{{ "{:.2f}".format(loan.arrangement_fee_percentage_input) }}%</td>
                                     </tr>
                                     <tr>
                                         <th>Arrangement Fee</th>
                                         <td>{{ currency(loan.arrangement_fee) }}</td>
                                     </tr>
                                     <tr>
-                                        <th>Legal Costs</th>
-                                        <td>{{ currency(loan.legal_costs) }}</td>
+                                        <th>Legal Fees</th>
+                                        <td>{{ currency(loan.legal_fees_input or loan.legal_costs) }}</td>
                                     </tr>
                                     <tr>
                                         <th>Site Visit Fee</th>
-                                        <td>{{ currency(loan.site_visit_fee) }}</td>
+                                        <td>{{ currency(loan.site_visit_fee_input or loan.site_visit_fee) }}</td>
                                     </tr>
                                     <tr>
-                                        <th>Title Insurance</th>
-                                        <td>{{ currency(loan.title_insurance) }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Net Advance</th>
-                                        <td>{{ currency(loan.net_advance) }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Total Net Advance</th>
-                                        <td>{{ currency(loan.total_net_advance) }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col">
-                    <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-light fw-bold"><i class="fas fa-coins me-2"></i>Fees</div>
-                        <div class="card-body p-0">
-                            <table class="table mb-0">
-                                <tbody>
-                                    <tr>
-                                        <th class="w-50">Arrangement Fee</th>
-                                        <td>{{ currency(loan.arrangement_fee) }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Arrangement Fee %</th>
-                                        <td>{{ "{:.2f}".format(loan.arrangement_fee / loan.gross_amount * 100 if loan.gross_amount else 0) }}%</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Legal Costs</th>
-                                        <td>{{ currency(loan.legal_costs) }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Site Visit Fee</th>
-                                        <td>{{ currency(loan.site_visit_fee) }}</td>
+                                        <th>Title Insurance %</th>
+                                        <td>
+                                            {% if loan.title_insurance_rate_input %}
+                                                {{ "{:.4f}".format(loan.title_insurance_rate_input) }}%
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     <tr>
                                         <th>Title Insurance</th>
@@ -208,17 +314,49 @@
 
                 <div class="col">
                     <div class="card border-0 shadow-sm h-100">
-                        <div class="card-header bg-light fw-bold"><i class="fas fa-hand-holding-usd me-2"></i>Payments &amp; LTV</div>
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-calculator me-2"></i>Loan Summary</div>
                         <div class="card-body p-0">
                             <table class="table mb-0">
                                 <tbody>
                                     <tr>
-                                        <th class="w-50">Monthly Payment</th>
+                                        <th class="w-50">Property Value</th>
+                                        <td>{{ currency(loan.property_value) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Gross Amount</th>
+                                        <td>{{ currency(loan.gross_amount) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Net Amount</th>
+                                        <td>{{ currency(loan.net_amount) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Net Advance</th>
+                                        <td>{{ currency(loan.net_advance) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Net Advance</th>
+                                        <td>{{ currency(loan.total_net_advance) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Interest</th>
+                                        <td>{{ currency(loan.total_interest) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Monthly Payment</th>
                                         <td>{{ currency(loan.monthly_payment) }}</td>
                                     </tr>
                                     <tr>
                                         <th>Quarterly Payment</th>
                                         <td>{{ currency(loan.quarterly_payment) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Monthly Interest Payment</th>
+                                        <td>{{ currency(loan.monthly_interest_payment) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Quarterly Interest Payment</th>
+                                        <td>{{ currency(loan.quarterly_interest_payment) }}</td>
                                     </tr>
                                     <tr>
                                         <th>Day 1 Advance</th>
