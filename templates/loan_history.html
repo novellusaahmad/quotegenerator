@@ -726,6 +726,7 @@ class LoanHistoryManager {
         }, 100);
     }
 
+
     async viewLoanDetails(loanId, options = {}) {
         try {
             this.currentLoanId = loanId;
@@ -776,6 +777,7 @@ class LoanHistoryManager {
                 window.notifications.error(`Error loading loan details: ${error.message}`);
             }
         }
+
     }
 
     renderLoanDetails(loan) {
