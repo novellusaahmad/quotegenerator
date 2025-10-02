@@ -40,7 +40,7 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency
     REPORTLAB_AVAILABLE = False
 
 
-BROTHER_FONT = "Brother 1816 Light"
+BROTHER_FONT = "Brother 1816 Regular"
 BROTHER_STYLES = [
     "Normal",
     "Heading 1",
@@ -56,8 +56,9 @@ logger = logging.getLogger(__name__)
 
 
 def _apply_brother_font(doc):
-    """Apply the Brother font and tightened spacing to common Word styles."""
+    """Apply the Brother font and document wide spacing preferences."""
     from docx.oxml.ns import qn
+    from docx.oxml.shared import OxmlElement
     from docx.shared import Pt
     from docx.enum.text import WD_LINE_SPACING
 
@@ -71,13 +72,22 @@ def _apply_brother_font(doc):
         # Apply Brother font across different script categories
         font = style.font
         font.name = BROTHER_FONT
-        r_fonts = style._element.rPr.rFonts
+        r_pr = style._element.rPr
+        if r_pr is None:
+            r_pr = style._element.get_or_add_rPr()
+        r_fonts = r_pr.rFonts
+        if r_fonts is None:
+            r_fonts = OxmlElement("w:rFonts")
+            r_pr.append(r_fonts)
         r_fonts.set(qn("w:eastAsia"), BROTHER_FONT)
         r_fonts.set(qn("w:cs"), BROTHER_FONT)
+        r_fonts.set(qn("w:ascii"), BROTHER_FONT)
+        r_fonts.set(qn("w:hAnsi"), BROTHER_FONT)
 
-        # Tighten line spacing to match design spec
+        # Apply line spacing and remove default paragraph gaps
         pf = style.paragraph_format
-        pf.line_spacing_rule = WD_LINE_SPACING.SINGLE
+        pf.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+        pf.line_spacing = 1.15
         pf.space_after = Pt(0)
 
 def generate_quote_pdf(quote_data, application_data=None):
@@ -260,7 +270,7 @@ def generate_loan_summary_docx(loan, extra_fields=None):
     try:
         from docx import Document
         from docx.shared import Inches, Pt, RGBColor
-        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
         from docx.oxml.shared import OxmlElement, qn
         from docx.opc.constants import RELATIONSHIP_TYPE as RT
         from docx.oxml import parse_xml
@@ -303,6 +313,49 @@ def generate_loan_summary_docx(loan, extra_fields=None):
         new_run.append(w_text)
         hyperlink.append(new_run)
         paragraph._p.append(hyperlink)
+
+    def _set_run_font(run, underline=None, bold=None, color=None, size=None):
+        """Ensure ``run`` uses the Brother font and optional styling."""
+        r_pr = run._element.get_or_add_rPr()
+        r_fonts = r_pr.rFonts
+        if r_fonts is None:
+            r_fonts = OxmlElement("w:rFonts")
+            r_pr.append(r_fonts)
+        for attr in ("ascii", "hAnsi", "eastAsia", "cs"):
+            r_fonts.set(qn(f"w:{attr}"), BROTHER_FONT)
+        font = run.font
+        font.name = BROTHER_FONT
+        if underline is not None:
+            font.underline = underline
+        if bold is not None:
+            font.bold = bold
+        if color is not None:
+            font.color.rgb = color
+        if size is not None:
+            font.size = size
+
+    def _apply_paragraph_spacing(paragraph, space_after=None):
+        pf = paragraph.paragraph_format
+        pf.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
+        pf.line_spacing = 1.15
+        if space_after is not None:
+            pf.space_after = space_after
+        for run in paragraph.runs:
+            _set_run_font(run)
+
+    def _iter_document_paragraphs(document):
+        for paragraph in document.paragraphs:
+            yield paragraph
+        for table in document.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        yield paragraph
+        for section in document.sections:
+            for paragraph in section.header.paragraphs:
+                yield paragraph
+            for paragraph in section.footer.paragraphs:
+                yield paragraph
 
     # Header with logo
     section = doc.sections[0]
@@ -380,7 +433,58 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             doc.add_paragraph(f"Property Address: {addresses[0]}")
 
     # Table with header row whose color depends on currency
-    table = doc.add_table(rows=9, cols=3)
+    currency_symbol = '€' if getattr(loan, 'currency', 'GBP') == 'EUR' else '£'
+    arr_fee_pct = f"{float(getattr(loan, 'arrangement_fee_percentage', 0) or 0):.2f}%"
+    ltv_ratio = getattr(loan, 'ltv_ratio', getattr(loan, 'start_ltv', 0))
+
+    term_val = getattr(loan, 'loan_term', 0) or 0
+    term_text = str(term_val)
+    interest_term_text = f"{term_val} Month{'s' if term_val != 1 else ''}"
+
+    loan_type = (getattr(loan, 'loan_type', '') or '').lower()
+    legal_cost_total = (
+        (getattr(loan, 'legal_costs', 0) or 0)
+        + (getattr(loan, 'site_visit_fee', 0) or 0)
+        + (getattr(loan, 'title_insurance', 0) or 0)
+    )
+
+    rows = [
+        ("Valuation", "", f"{currency_symbol}{float(getattr(loan, 'property_value', 0) or 0):,.2f}"),
+        ("Gross Amount", "", f"{currency_symbol}{float(getattr(loan, 'gross_amount', 0) or 0):,.2f}"),
+        ("Term (Months)", term_text, ""),
+        (
+            "Arrangement Fee",
+            arr_fee_pct,
+            f"{currency_symbol}{float(getattr(loan, 'arrangement_fee', 0) or 0):,.2f}",
+        ),
+        (
+            "Legal Costs & Title Insurance*",
+            "",
+            f"{currency_symbol}{float(legal_cost_total):,.2f}",
+        ),
+        (
+            "Number Months (Interest)",
+            interest_term_text,
+            f"{currency_symbol}{float(getattr(loan, 'total_interest', 0) or 0):,.2f}",
+        ),
+        (
+            "Total Net Advance",
+            "",
+            f"{currency_symbol}{float(getattr(loan, 'total_net_advance', 0) or 0):,.2f}",
+        ),
+    ]
+
+    if loan_type != 'bridge':
+        rows.insert(
+            6,
+            (
+                "Day 1 Net Advance",
+                "",
+                f"{currency_symbol}{float((getattr(loan, 'day_1_advance', None) or getattr(loan, 'net_advance', 0) or 0)):,.2f}",
+            ),
+        )
+
+    table = doc.add_table(rows=len(rows) + 1, cols=3)
     table.style = 'Table Grid'
     table.autofit = False
     col_widths = (Inches(3.5), Inches(1.2), Inches(2.3))
@@ -417,45 +521,6 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             tbl_borders.append(element)
         element.set(qn("w:val"), "none")
 
-    currency_symbol = '€' if getattr(loan, 'currency', 'GBP') == 'EUR' else '£'
-    arr_fee_pct = f"{float(getattr(loan, 'arrangement_fee_percentage', 0) or 0):.2f}%"
-    ltv_ratio = getattr(loan, 'ltv_ratio', getattr(loan, 'start_ltv', 0))
-
-    term_val = getattr(loan, 'loan_term', 0) or 0
-    term_text = str(term_val)
-    interest_term_text = f"{term_val} Month{'s' if term_val != 1 else ''}"
-
-    rows = [
-        ("Valuation", "", f"{currency_symbol}{float(getattr(loan, 'property_value', 0) or 0):,.2f}"),
-        ("Gross Amount", "", f"{currency_symbol}{float(getattr(loan, 'gross_amount', 0) or 0):,.2f}"),
-        ("Term (Months)", term_text, ""),
-        (
-            "Arrangement Fee",
-            arr_fee_pct,
-            f"{currency_symbol}{float(getattr(loan, 'arrangement_fee', 0) or 0):,.2f}",
-        ),
-        (
-            "Legal Costs & Title Insurance*",
-            "",
-            f"{currency_symbol}{float((getattr(loan, 'legal_costs', 0) or 0) + (getattr(loan, 'title_insurance', 0) or 0)):,.2f}",
-        ),
-        (
-            "Number Months (Interest)",
-            interest_term_text,
-            f"{currency_symbol}{float(getattr(loan, 'total_interest', 0) or 0):,.2f}",
-        ),
-        (
-            "Day 1 Net Advance",
-            "",
-            f"{currency_symbol}{float((getattr(loan, 'day_1_advance', None) or getattr(loan, 'net_advance', 0) or 0)):,.2f}",
-        ),
-        (
-            "Total Net Advance",
-            "",
-            f"{currency_symbol}{float(getattr(loan, 'total_net_advance', 0) or 0):,.2f}",
-        ),
-    ]
-
     def _is_numeric(text):
         """Return True if ``text`` represents a number, currency or percentage."""
         if text is None:
@@ -477,9 +542,9 @@ def generate_loan_summary_docx(loan, extra_fields=None):
     heading_cell.merge(table.cell(0, 2))
     heading_para = heading_cell.paragraphs[0]
     heading_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _apply_paragraph_spacing(heading_para)
     heading_run = heading_para.runs[0]
-    heading_run.font.bold = True
-    heading_run.font.color.rgb = RGBColor(0, 0, 0)
+    _set_run_font(heading_run, bold=True, color=RGBColor(0, 0, 0))
 
     # Apply currency-specific color to header
     header_color = "509664" if currency == 'EUR' else "#D1BE5D"
@@ -492,18 +557,21 @@ def generate_loan_summary_docx(loan, extra_fields=None):
         table.cell(i, 0).text = c1
         p0 = table.cell(i, 0).paragraphs[0]
         p0.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        _apply_paragraph_spacing(p0)
 
         table.cell(i, 1).text = c2
         p1 = table.cell(i, 1).paragraphs[0]
         p1.alignment = WD_ALIGN_PARAGRAPH.RIGHT if _is_numeric(c2) else WD_ALIGN_PARAGRAPH.LEFT
+        _apply_paragraph_spacing(p1)
 
         table.cell(i, 2).text = c3
         p2 = table.cell(i, 2).paragraphs[0]
         p2.alignment = WD_ALIGN_PARAGRAPH.RIGHT if _is_numeric(c3) else WD_ALIGN_PARAGRAPH.LEFT
+        _apply_paragraph_spacing(p2)
 
         for col in (1, 2):
             for run in table.cell(i, col).paragraphs[0].runs:
-                run.font.bold = True
+                _set_run_font(run, bold=True)
 
     # Shade alternating rows
     for row_idx, row in enumerate(table.rows[1:], start=1):
@@ -618,8 +686,9 @@ def generate_loan_summary_docx(loan, extra_fields=None):
 
     for heading, bullets in sections:
         hp = doc.add_heading(_replace_tokens(heading), level=1)
+        _apply_paragraph_spacing(hp, space_after=Pt(12))
         for run in hp.runs:
-            run.font.color.rgb = RGBColor(0, 0, 0)
+            _set_run_font(run, underline=True, color=RGBColor(0, 0, 0))
         for idx, bullet in enumerate(bullets, 1):
             placeholder_map = {}
             text = bullet
@@ -634,12 +703,12 @@ def generate_loan_summary_docx(loan, extra_fields=None):
                 continue
             p = doc.add_paragraph()
             p.paragraph_format.left_indent = Inches(0.25)
+            _apply_paragraph_spacing(p, space_after=Pt(12))
             num_run = p.add_run(f"{idx}. ")
-            num_run.font.color.rgb = RGBColor(0, 0, 0)
+            _set_run_font(num_run, color=RGBColor(0, 0, 0))
             for t, b in parts:
                 run = p.add_run(t)
-                run.bold = b
-                run.font.color.rgb = RGBColor(0, 0, 0)
+                _set_run_font(run, bold=b, color=RGBColor(0, 0, 0))
 
     doc.add_paragraph("")
     doc.add_paragraph("Yours sincerely, [or faithfully if Dear Sir],")
@@ -683,12 +752,12 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             footer_para.add_run(line)
 
     for run in footer_para.runs:
-        run.font.size = Pt(8)
-        if currency == 'EUR':
-            run.font.color.rgb = RGBColor(0x50, 0x96, 0x64)
-        else:
-            run.font.color.rgb = RGBColor(0, 0, 0)
+        color = RGBColor(0x50, 0x96, 0x64) if currency == 'EUR' else RGBColor(0, 0, 0)
+        _set_run_font(run, color=color, size=Pt(8))
 
+    for paragraph in _iter_document_paragraphs(doc):
+        for run in paragraph.runs:
+            _set_run_font(run)
 
     with tempfile.NamedTemporaryFile(suffix='.docx', delete=False) as tmp_file:
         doc.save(tmp_file.name)
