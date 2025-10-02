@@ -161,6 +161,16 @@
 
     }
 
+    @media (min-width: 992px) {
+        .loan-summary-column {
+            overflow-x: auto;
+        }
+
+        .loan-summary-column .loan-detail-card .table td {
+            white-space: nowrap;
+        }
+    }
+
     @media (max-width: 991.98px) {
         .loan-detail-actions {
             margin-top: 1rem;
@@ -212,7 +222,7 @@
 
 <div id="loanDetailContent" class="d-none">
     <div class="row g-4">
-        <div class="col-lg-5">
+        <div class="col-lg-4 col-xl-3 loan-summary-column">
 
             <div class="loan-detail-card mb-3">
 
@@ -260,7 +270,7 @@
             </div>
         </div>
 
-        <div class="col-lg-7">
+        <div class="col-lg-8 col-xl-9">
             <div class="chart-grid">
                 <div class="card chart-card">
                     <div class="card-header"><i class="fas fa-chart-pie me-2"></i>Loan Summary Breakdown</div>
