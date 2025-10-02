@@ -163,31 +163,71 @@
         gap: 1.5rem;
     }
 
+    .schedule-card.loan-detail-card {
+        background: #ffffff;
+        border: 1px solid #000;
+        box-shadow: 0 18px 32px rgba(2, 8, 20, 0.35);
+        color: #000;
+    }
+
+    .schedule-card.loan-detail-card .card-header {
+        background: #1E2B3A;
+        color: #ffffff;
+        border-bottom: 1px solid #000;
+    }
+
     .schedule-card .card-body {
-        padding: 0;
+        padding: 1.25rem;
+        background: #ffffff;
     }
 
-    .schedule-table-wrapper {
-        max-height: 420px;
-        overflow: auto;
+    .detailed-payment-table {
+        width: 100%;
+        border: 1px solid #000;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+        color: #000;
+        background: #ffffff;
     }
 
-    .schedule-table th,
-    .schedule-table td {
+    .detailed-payment-table thead th {
+        background: #f8f9fa;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    .detailed-payment-table th,
+    .detailed-payment-table td {
+        border-right: 1px solid #000;
+        border-bottom: 1px solid #000;
+        padding: 0.4rem 0.5rem;
         white-space: nowrap;
-        font-size: 0.85rem;
     }
 
-    .schedule-table thead th {
-        position: sticky;
-        top: 0;
-        z-index: 2;
-        background-color: var(--primary-color, #1E2B3A) !important;
-        background-image: none !important;
+    .detailed-payment-table th:last-child,
+    .detailed-payment-table td:last-child {
+        border-right: none;
     }
 
-    .schedule-table tbody tr:hover {
-        background: rgba(255,255,255,0.06);
+    .detailed-payment-table tbody tr:nth-child(odd) {
+        background: #ffffff;
+    }
+
+    .detailed-payment-table tbody tr:nth-child(even) {
+        background: #f8f9fa;
+    }
+
+    .detailed-payment-table tbody tr.schedule-total-row {
+        background: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .detailed-payment-table .text-end {
+        text-align: right !important;
+    }
+
+    .detailed-payment-table .text-center {
+        text-align: center !important;
     }
 
     .loan-detail-page .card,
@@ -449,26 +489,28 @@
 
     <div class="row g-4 mt-1">
         <div class="col-xl-8">
-            <div class="card loan-detail-card schedule-card h-100">
+            <div class="card loan-detail-card schedule-card h-100" id="loanHistoryScheduleCard">
                 <div class="card-header"><i class="fas fa-table me-2"></i>Detailed Payment Schedule</div>
                 <div class="card-body">
-                    <div class="schedule-table-wrapper">
-                        <table class="table table-hover table-borderless align-middle mb-0 schedule-table">
+                    <div id="detailedPaymentScheduleCard">
+                        <table class="detailed-payment-table">
                             <thead>
                                 <tr>
-                                    <th scope="col">Period</th>
-                                    <th scope="col">Date</th>
-                                    <th scope="col" class="text-end">Opening Balance</th>
-                                    <th scope="col" class="text-end">Interest</th>
-                                    <th scope="col" class="text-end">Principal</th>
-                                    <th scope="col" class="text-end">Total Payment</th>
-                                    <th scope="col" class="text-end">Closing Balance</th>
-                                    <th scope="col" class="text-end">Tranche Release</th>
+                                    <th class="text-center">Payment Date</th>
+                                    <th class="text-center">Opening Balance</th>
+                                    <th class="text-center">Tranche Release</th>
+                                    <th class="text-center">Interest Calculation</th>
+                                    <th class="text-center">Interest Amount</th>
+                                    <th class="text-center">Interest Saving</th>
+                                    <th class="text-center">Principal Payment</th>
+                                    <th class="text-center">Total Payment</th>
+                                    <th class="text-center">Closing Balance</th>
+                                    <th class="text-center">Balance Change</th>
                                 </tr>
                             </thead>
                             <tbody id="paymentScheduleTableBody">
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">Payment schedule will appear once loaded.</td>
+                                    <td colspan="10" class="py-4 text-center text-muted">Payment schedule will appear once loaded.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -548,6 +590,8 @@ class LoanHistoryDetailPage {
 
         this.inputData = {};
         this.scheduleData = [];
+        this.rawSchedule = [];
+        this.defaultScheduleHeader = null;
         this.hasDevelopmentTranches = false;
         this.loanType = '';
         this.notes = [];
@@ -594,7 +638,8 @@ class LoanHistoryDetailPage {
             const rawSchedule = this.loanData.detailed_payment_schedule
                 || this.inputData.detailed_payment_schedule
                 || [];
-            this.scheduleData = this.parseScheduleData(rawSchedule);
+            this.rawSchedule = Array.isArray(rawSchedule) ? rawSchedule : [];
+            this.scheduleData = this.parseScheduleData(this.rawSchedule);
 
             const typeValue = this.getFromSources(['loan_type', 'loanType']) || '';
             this.loanType = typeValue.toString();
@@ -1083,18 +1128,45 @@ class LoanHistoryDetailPage {
                 return undefined;
             };
 
+            const openingRaw = getValue('opening_balance', 'openingBalance', 'opening_balance_value', 'capital_outstanding');
+            const closingRaw = getValue('closing_balance', 'closingBalance', 'outstanding_balance', 'balance');
+            const interestRaw = getValue('interest_payment', 'interest_amount', 'interest');
+            const principalRaw = getValue('principal_payment', 'principal', 'capital_repayment');
+            const totalPaymentRaw = getValue('total_payment', 'payment_total', 'total_repayment');
+            const trancheRaw = getValue('tranche_release', 'tranche', 'drawdown', 'drawdown_amount');
+            const accruedRaw = getValue('interest_accrued', 'interest_calculation', 'interest_accrued_amount');
+
             return {
                 period: this.toNumber(getValue('period_number', 'period', 'index'), index + 1),
+                period_display: getValue('period_label', 'period_display', 'period_number', 'period', 'index') ?? index + 1,
+                start_period: getValue('start_period', 'startPeriod', 'period_start', 'start_of_period', 'periodStart'),
+                end_period: getValue('end_period', 'endPeriod', 'period_end', 'end_of_period', 'periodEnd'),
+                days_held: getValue('days_held', 'daysHeld', 'days'),
                 payment_date: getValue('payment_date', 'paymentDate', 'date'),
-                opening_balance: this.toNumber(getValue('opening_balance', 'openingBalance', 'opening_balance_value')),
-                interest: this.toNumber(getValue('interest_payment', 'interest_amount', 'interest')),
-                principal: this.toNumber(getValue('principal_payment', 'principal')),
-                balance: this.toNumber(getValue('closing_balance', 'balance', 'outstanding_balance')),
-                closing_balance: this.toNumber(getValue('closing_balance', 'closingBalance', 'outstanding_balance')),
-                tranche_release: this.toNumber(getValue('tranche_release', 'tranche', 'drawdown', 'drawdown_amount')),
-                interest_accrued: this.toNumber(getValue('interest_accrued', 'interest_calculation')),
-                total_payment: this.toNumber(getValue('total_payment', 'payment_total'))
-
+                opening_balance: this.toNumber(openingRaw),
+                opening_balance_raw: openingRaw,
+                capital_outstanding: getValue('capital_outstanding', 'capitalOutstanding', 'opening_balance', 'openingBalance'),
+                interest: this.toNumber(interestRaw),
+                interest_raw: interestRaw,
+                principal: this.toNumber(principalRaw),
+                principal_raw: principalRaw,
+                total_payment: this.toNumber(totalPaymentRaw),
+                total_payment_raw: totalPaymentRaw,
+                balance: this.toNumber(closingRaw),
+                closing_balance: this.toNumber(closingRaw),
+                closing_balance_raw: closingRaw,
+                tranche_release: this.toNumber(trancheRaw),
+                tranche_release_raw: trancheRaw,
+                interest_accrued: this.toNumber(accruedRaw),
+                interest_accrued_raw: this.toNumber(accruedRaw),
+                interest_retained_raw: getValue('interest_retained', 'retained_interest'),
+                interest_refund_raw: getValue('interest_refund', 'interest_refunded'),
+                interest_serviced_raw: getValue('interest_serviced', 'serviced_interest'),
+                annual_interest_rate: getValue('annual_interest_rate', 'interest_rate', 'annual_interest'),
+                interest_pa: getValue('interest_pa', 'interest_factor_pd', 'interestFactor'),
+                running_ltv: getValue('running_ltv', 'runningLtv'),
+                scheduled_repayment_raw: getValue('scheduled_repayment', 'scheduledRepayment', 'scheduled_payment'),
+                capital_repayment_raw: getValue('capital_repayment', 'principal_payment', 'principal')
             };
         });
     }
@@ -1125,37 +1197,411 @@ class LoanHistoryDetailPage {
     }
 
     renderPaymentSchedule() {
+        const scheduleCard = document.getElementById('loanHistoryScheduleCard');
+        const container = document.getElementById('detailedPaymentScheduleCard');
         const tbody = document.getElementById('paymentScheduleTableBody');
-        if (!tbody) return;
+        const headerRow = container?.querySelector('thead tr');
 
-        if (!this.scheduleData || this.scheduleData.length === 0) {
+        if (!container || !tbody || !headerRow) {
+            return;
+        }
+
+        if (!this.defaultScheduleHeader) {
+            this.defaultScheduleHeader = headerRow.innerHTML;
+        }
+
+        const loanType = (this.loanType || this.getFromSources(['loan_type', 'loanType']) || '').toString().toLowerCase();
+        const repaymentOption = (this.getFromSources(['repaymentOption', 'repayment_option']) || '').toString().toLowerCase();
+
+        const shouldHideSchedule = loanType === 'development'
+            || loanType === 'development2'
+            || ((loanType === 'term' || loanType === 'bridge') && repaymentOption === 'none');
+
+        if (shouldHideSchedule) {
+            if (scheduleCard) {
+                scheduleCard.classList.add('d-none');
+            }
+            return;
+        }
+
+        scheduleCard?.classList.remove('d-none');
+
+        const schedule = Array.isArray(this.rawSchedule) ? this.rawSchedule : [];
+        const currentSymbol = this.currencySymbol;
+
+        const defaultHeader = `
+            <th class="text-center">Payment Date</th>
+            <th class="text-center">Opening Balance</th>
+            <th class="text-center">Tranche Release</th>
+            <th class="text-center">Interest Calculation</th>
+            <th class="text-center">Interest Amount</th>
+            <th class="text-center">Interest Saving</th>
+            <th class="text-center">Principal Payment</th>
+            <th class="text-center">Total Payment</th>
+            <th class="text-center">Closing Balance</th>
+            <th class="text-center">Balance Change</th>
+        `;
+
+        const pickValue = (entry, keys, fallback = '') => {
+            const keyList = Array.isArray(keys) ? keys : [keys];
+            for (const key of keyList) {
+                if (entry && entry[key] !== undefined && entry[key] !== null && entry[key] !== '') {
+                    return entry[key];
+                }
+            }
+            return fallback;
+        };
+
+        const replaceCurrency = (value) => {
+            if (value === undefined || value === null) {
+                return '';
+            }
+            return String(value).replace(/[£€]/g, currentSymbol);
+        };
+
+        const getCurrencyValue = (entry, keys) => {
+            const raw = pickValue(entry, keys, '');
+            if (raw === '') {
+                return { display: '', numeric: 0 };
+            }
+            const normalized = replaceCurrency(raw);
+            return {
+                display: normalized,
+                numeric: this.toNumber(normalized, 0)
+            };
+        };
+
+        const safeDisplay = (value, placeholder = '') => {
+            if (value === undefined || value === null || value === '') {
+                return placeholder;
+            }
+            return this.escapeHTML(String(value));
+        };
+
+        const formatTotalCurrency = (value) => {
+            const amount = Number.isFinite(value) ? value : 0;
+            return `${currentSymbol}${amount.toLocaleString('en-GB', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+        };
+
+        if (!schedule.length) {
+            headerRow.innerHTML = defaultHeader;
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">No payment schedule data is available for this loan.</td>
+                    <td colspan="10" class="py-3 text-center text-muted">No payment schedule data is available for this loan.</td>
                 </tr>
             `;
             return;
         }
 
-        const rows = this.scheduleData.map(entry => {
-            const paymentDate = this.formatDate(entry.payment_date);
-            const opening = this.formatCurrency(entry.opening_balance);
-            const interest = this.formatCurrency(entry.interest);
-            const principal = this.formatCurrency(entry.principal);
-            const total = this.formatCurrency(entry.total_payment);
-            const closing = this.formatCurrency(entry.closing_balance ?? entry.balance);
-            const tranche = this.formatCurrency(entry.tranche_release);
+        const isServicedOnly = repaymentOption === 'service_only';
+        const isServicedCapital = repaymentOption === 'service_and_capital';
+        const isFlexiblePayment = repaymentOption === 'flexible_payment';
+        const isCapitalPaymentOnly = repaymentOption === 'capital_payment_only';
+
+        if (isServicedOnly) {
+            headerRow.innerHTML = `
+                <th class="text-center">Start of Period</th>
+                <th class="text-center">End of Period</th>
+                <th class="text-center">Days Held</th>
+                <th class="text-center">Opening Balance</th>
+                <th class="text-center">Interest Calculation</th>
+                <th class="text-center">Interest Serviced</th>
+            `;
+
+            let totalInterest = 0;
+            let totalDays = 0;
+
+            const rows = schedule.map((entry) => {
+                const start = pickValue(entry, ['start_period', 'startPeriod', 'period_start', 'start_of_period', 'periodStart']);
+                const end = pickValue(entry, ['end_period', 'endPeriod', 'period_end', 'end_of_period', 'periodEnd']);
+                const days = pickValue(entry, ['days_held', 'daysHeld', 'days']);
+                const opening = getCurrencyValue(entry, ['opening_balance', 'openingBalance', 'capital_outstanding']);
+                const interestCalculationRaw = replaceCurrency(pickValue(entry, ['interest_calculation', 'interestCalculation']));
+                const interestCalculation = interestCalculationRaw
+                    ? interestCalculationRaw.replace(/\s*\+\s*fees/gi, '').trim()
+                    : '';
+                const interestAmount = getCurrencyValue(entry, ['interest_amount', 'interestAmount', 'interest_serviced', 'interest_payment', 'interest']);
+
+                totalInterest += interestAmount.numeric;
+                totalDays += Number(days) || 0;
+
+                return `
+                    <tr>
+                        <td class="text-center">${safeDisplay(start)}</td>
+                        <td class="text-center">${safeDisplay(end)}</td>
+                        <td class="text-center">${safeDisplay(days)}</td>
+                        <td class="text-end">${safeDisplay(opening.display)}</td>
+                        <td class="text-center">${safeDisplay(interestCalculation)}</td>
+                        <td class="text-end">${safeDisplay(interestAmount.display)}</td>
+                    </tr>
+                `;
+            });
+
+            rows.push(`
+                <tr class="schedule-total-row">
+                    <td colspan="2" class="text-end">Total</td>
+                    <td class="text-center">${this.escapeHTML(String(totalDays))}</td>
+                    <td></td>
+                    <td></td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalInterest))}</td>
+                </tr>
+            `);
+
+            tbody.innerHTML = rows.join('');
+            return;
+        }
+
+        if (isServicedCapital) {
+            headerRow.innerHTML = `
+                <th class="text-center">Period</th>
+                <th class="text-center">Start of Period</th>
+                <th class="text-center">End of Period</th>
+                <th class="text-center">Days Held</th>
+                <th class="text-center">Capital Outstanding</th>
+                <th class="text-center">Annual Interest %</th>
+                <th class="text-center">Interest Factor P.D.</th>
+                <th class="text-center">Scheduled Repayment</th>
+                <th class="text-center">Total Repayment</th>
+                <th class="text-center">Interest Accrued</th>
+                <th class="text-center">Interest Retained</th>
+                <th class="text-center">Interest Refund</th>
+                <th class="text-center">Running LTV</th>
+            `;
+
+            let totalScheduled = 0;
+            let totalRepayment = 0;
+            let totalAccrued = 0;
+            let totalRetained = 0;
+            let totalRefund = 0;
+            let totalDays = 0;
+
+            const rows = schedule.map((entry, index) => {
+                const capitalOutstanding = getCurrencyValue(entry, ['capital_outstanding', 'capitalOutstanding', 'opening_balance', 'openingBalance']);
+                const scheduled = getCurrencyValue(entry, ['scheduled_repayment', 'scheduledRepayment', 'scheduled_payment']);
+                const totalRepay = getCurrencyValue(entry, ['total_repayment', 'totalRepayment', 'payment_total']);
+                const accrued = getCurrencyValue(entry, ['interest_accrued', 'interestAccrued']);
+                const retained = getCurrencyValue(entry, ['interest_retained', 'retained_interest']);
+                const refund = getCurrencyValue(entry, ['interest_refund', 'interest_refunded']);
+
+                totalScheduled += scheduled.numeric;
+                totalRepayment += totalRepay.numeric;
+                totalAccrued += accrued.numeric;
+                totalRetained += retained.numeric;
+                totalRefund += refund.numeric;
+                totalDays += Number(pickValue(entry, ['days_held', 'daysHeld', 'days'])) || 0;
+
+                return `
+                    <tr>
+                        <td class="text-center">${this.escapeHTML(String(index + 1))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['start_period', 'startPeriod', 'period_start', 'start_of_period', 'periodStart']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['end_period', 'endPeriod', 'period_end', 'end_of_period', 'periodEnd']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['days_held', 'daysHeld', 'days']))}</td>
+                        <td class="text-end">${safeDisplay(capitalOutstanding.display)}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['annual_interest_rate', 'interest_rate']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['interest_pa', 'interest_factor_pd']))}</td>
+                        <td class="text-end">${safeDisplay(scheduled.display)}</td>
+                        <td class="text-end">${safeDisplay(totalRepay.display)}</td>
+                        <td class="text-end">${safeDisplay(accrued.display)}</td>
+                        <td class="text-end">${safeDisplay(retained.display)}</td>
+                        <td class="text-end">${safeDisplay(refund.display)}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['running_ltv', 'runningLtv']))}</td>
+                    </tr>
+                `;
+            });
+
+            rows.push(`
+                <tr class="schedule-total-row">
+                    <td colspan="3" class="text-end">Total</td>
+                    <td class="text-center">${this.escapeHTML(String(totalDays))}</td>
+                    <td colspan="3"></td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalScheduled))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRepayment))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalAccrued))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRetained))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRefund))}</td>
+                    <td></td>
+                </tr>
+            `);
+
+            tbody.innerHTML = rows.join('');
+            return;
+        }
+
+        if (isFlexiblePayment) {
+            headerRow.innerHTML = `
+                <th class="text-center">Period</th>
+                <th class="text-center">Start of Period</th>
+                <th class="text-center">End of Period</th>
+                <th class="text-center">Days Held</th>
+                <th class="text-center">Capital Outstanding</th>
+                <th class="text-center">Annual Interest %</th>
+                <th class="text-center">Interest Factor P.D.</th>
+                <th class="text-center">Total Repayment</th>
+                <th class="text-center">Capital Repayment</th>
+                <th class="text-center">Interest Accrued</th>
+                <th class="text-center">Interest Retained</th>
+                <th class="text-center">Interest Refund</th>
+                <th class="text-center">Running LTV</th>
+            `;
+
+            let totalRepayment = 0;
+            let totalCapital = 0;
+            let totalAccrued = 0;
+            let totalRetained = 0;
+            let totalRefund = 0;
+            let totalDays = 0;
+
+            const rows = schedule.map((entry, index) => {
+                const capitalOutstanding = getCurrencyValue(entry, ['capital_outstanding', 'capitalOutstanding', 'opening_balance', 'openingBalance']);
+                const totalRepay = getCurrencyValue(entry, ['total_repayment', 'totalRepayment', 'payment_total']);
+                const capitalRepay = getCurrencyValue(entry, ['capital_repayment', 'capitalRepayment', 'principal_payment', 'principal']);
+                const accrued = getCurrencyValue(entry, ['interest_accrued', 'interestAccrued']);
+                const retained = getCurrencyValue(entry, ['interest_retained', 'retained_interest']);
+                const refund = getCurrencyValue(entry, ['interest_refund', 'interest_refunded']);
+
+                totalRepayment += totalRepay.numeric;
+                totalCapital += capitalRepay.numeric;
+                totalAccrued += accrued.numeric;
+                totalRetained += retained.numeric;
+                totalRefund += refund.numeric;
+                totalDays += Number(pickValue(entry, ['days_held', 'daysHeld', 'days'])) || 0;
+
+                return `
+                    <tr>
+                        <td class="text-center">${this.escapeHTML(String(index + 1))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['start_period', 'startPeriod', 'period_start', 'start_of_period', 'periodStart']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['end_period', 'endPeriod', 'period_end', 'end_of_period', 'periodEnd']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['days_held', 'daysHeld', 'days']))}</td>
+                        <td class="text-end">${safeDisplay(capitalOutstanding.display)}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['annual_interest_rate', 'interest_rate']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['interest_pa', 'interest_factor_pd']))}</td>
+                        <td class="text-end">${safeDisplay(totalRepay.display)}</td>
+                        <td class="text-end">${safeDisplay(capitalRepay.display)}</td>
+                        <td class="text-end">${safeDisplay(accrued.display)}</td>
+                        <td class="text-end">${safeDisplay(retained.display)}</td>
+                        <td class="text-end">${safeDisplay(refund.display)}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['running_ltv', 'runningLtv']))}</td>
+                    </tr>
+                `;
+            });
+
+            rows.push(`
+                <tr class="schedule-total-row">
+                    <td colspan="3" class="text-end">Total</td>
+                    <td class="text-center">${this.escapeHTML(String(totalDays))}</td>
+                    <td colspan="3"></td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRepayment))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalCapital))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalAccrued))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRetained))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRefund))}</td>
+                    <td></td>
+                </tr>
+            `);
+
+            tbody.innerHTML = rows.join('');
+            return;
+        }
+
+        if (isCapitalPaymentOnly) {
+            headerRow.innerHTML = `
+                <th class="text-center">Period</th>
+                <th class="text-center">Start of Period</th>
+                <th class="text-center">End of Period</th>
+                <th class="text-center">Days Held</th>
+                <th class="text-center">Capital Outstanding</th>
+                <th class="text-center">Annual Interest %</th>
+                <th class="text-center">Interest Factor P.D.</th>
+                <th class="text-center">Scheduled Repayment</th>
+                <th class="text-center">Interest Accrued</th>
+                <th class="text-center">Interest Retained</th>
+                <th class="text-center">Interest Refund</th>
+                <th class="text-center">Running LTV</th>
+            `;
+
+            let totalScheduled = 0;
+            let totalAccrued = 0;
+            let totalRetained = 0;
+            let totalRefund = 0;
+            let totalDays = 0;
+
+            const rows = schedule.map((entry, index) => {
+                const capitalOutstanding = getCurrencyValue(entry, ['capital_outstanding', 'capitalOutstanding', 'opening_balance', 'openingBalance']);
+                const scheduled = getCurrencyValue(entry, ['scheduled_repayment', 'scheduledRepayment', 'scheduled_payment']);
+                const accrued = getCurrencyValue(entry, ['interest_accrued', 'interestAccrued']);
+                const retained = getCurrencyValue(entry, ['interest_retained', 'retained_interest']);
+                const refund = getCurrencyValue(entry, ['interest_refund', 'interest_refunded']);
+
+                totalScheduled += scheduled.numeric;
+                totalAccrued += accrued.numeric;
+                totalRetained += retained.numeric;
+                totalRefund += refund.numeric;
+                totalDays += Number(pickValue(entry, ['days_held', 'daysHeld', 'days'])) || 0;
+
+                return `
+                    <tr>
+                        <td class="text-center">${this.escapeHTML(String(index + 1))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['start_period', 'startPeriod', 'period_start', 'start_of_period', 'periodStart']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['end_period', 'endPeriod', 'period_end', 'end_of_period', 'periodEnd']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['days_held', 'daysHeld', 'days']))}</td>
+                        <td class="text-end">${safeDisplay(capitalOutstanding.display)}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['annual_interest_rate', 'interest_rate']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['interest_pa', 'interest_factor_pd']))}</td>
+                        <td class="text-end">${safeDisplay(scheduled.display)}</td>
+                        <td class="text-end">${safeDisplay(accrued.display)}</td>
+                        <td class="text-end">${safeDisplay(retained.display)}</td>
+                        <td class="text-end">${safeDisplay(refund.display)}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['running_ltv', 'runningLtv']))}</td>
+                    </tr>
+                `;
+            });
+
+            rows.push(`
+                <tr class="schedule-total-row">
+                    <td colspan="3" class="text-end">Total</td>
+                    <td class="text-center">${this.escapeHTML(String(totalDays))}</td>
+                    <td colspan="3"></td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalScheduled))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalAccrued))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRetained))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRefund))}</td>
+                    <td></td>
+                </tr>
+            `);
+
+            tbody.innerHTML = rows.join('');
+            return;
+        }
+
+        headerRow.innerHTML = defaultHeader;
+
+        const rows = schedule.map((entry) => {
+            const paymentDate = pickValue(entry, ['payment_date', 'paymentDate', 'date']);
+            const opening = getCurrencyValue(entry, ['opening_balance', 'openingBalance']);
+            const tranche = getCurrencyValue(entry, ['tranche_release', 'tranche', 'drawdown', 'drawdown_amount']);
+            const interestCalc = replaceCurrency(pickValue(entry, ['interest_calculation', 'interestCalculation']));
+            const interestAmount = getCurrencyValue(entry, ['interest_amount', 'interestAmount', 'interest']);
+            const interestSaving = getCurrencyValue(entry, ['interest_saving', 'interestSaving']);
+            const principal = getCurrencyValue(entry, ['principal_payment', 'principal']);
+            const totalPayment = getCurrencyValue(entry, ['total_payment', 'payment_total']);
+            const closing = getCurrencyValue(entry, ['closing_balance', 'closingBalance', 'balance']);
+            const balanceChange = pickValue(entry, ['balance_change', 'balanceChange']);
 
             return `
                 <tr>
-                    <td>${entry.period}</td>
-                    <td>${paymentDate}</td>
-                    <td class="text-end">${opening}</td>
-                    <td class="text-end">${interest}</td>
-                    <td class="text-end">${principal}</td>
-                    <td class="text-end">${total}</td>
-                    <td class="text-end">${closing}</td>
-                    <td class="text-end">${tranche}</td>
+                    <td class="text-center">${safeDisplay(paymentDate)}</td>
+                    <td class="text-end">${safeDisplay(opening.display)}</td>
+                    <td class="text-end">${safeDisplay(tranche.display)}</td>
+                    <td class="text-center">${safeDisplay(interestCalc)}</td>
+                    <td class="text-end">${safeDisplay(interestAmount.display)}</td>
+                    <td class="text-end">${safeDisplay(interestSaving.display)}</td>
+                    <td class="text-end">${safeDisplay(principal.display)}</td>
+                    <td class="text-end">${safeDisplay(totalPayment.display)}</td>
+                    <td class="text-end">${safeDisplay(closing.display)}</td>
+                    <td class="text-center">${safeDisplay(balanceChange, '—')}</td>
                 </tr>
             `;
         });
