@@ -10,6 +10,48 @@
 <link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/notifications.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/currency-themes.css') }}">
+<style>
+    /* Ensure loan history detail modal uses consistent, non-gradient styling */
+    #loanDetailsModal .modal-header,
+    #loanDetailsModal .card-header,
+    #loanDetailsModal .table thead th {
+        background-image: none !important;
+    }
+
+    #loanDetailsModal .modal-header {
+        background-color: var(--novellus-navy, #1E2B3A) !important;
+        color: #FFFFFF !important;
+        border-bottom: 2px solid var(--novellus-gold, #AD965F) !important;
+    }
+
+    #loanDetailsModal .card-header {
+        background-color: var(--novellus-navy-lightest, #E8EBF0) !important;
+        color: var(--novellus-navy, #1E2B3A) !important;
+        border-bottom: 2px solid var(--novellus-gold, #AD965F) !important;
+    }
+
+    #loanDetailsModal .card-header h6,
+    #loanDetailsModal .card-header i {
+        color: inherit !important;
+    }
+
+    #loanDetailsModal .novellus-chart-card .card-header {
+        background-color: var(--novellus-navy, #1E2B3A) !important;
+        color: #FFFFFF !important;
+        border-bottom-color: rgba(255, 255, 255, 0.15) !important;
+    }
+
+    #loanDetailsModal .novellus-chart-card .card-header h6,
+    #loanDetailsModal .novellus-chart-card .card-header i {
+        color: #FFFFFF !important;
+    }
+
+    #loanDetailsModal .table thead th {
+        background-color: #f8f9fa !important;
+        color: var(--novellus-navy, #1E2B3A) !important;
+        border-bottom: 2px solid var(--novellus-border, #E0E6EC) !important;
+    }
+</style>
 {% endblock %}
 
 
