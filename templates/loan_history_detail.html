@@ -484,10 +484,19 @@
 <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
 <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
 <script>
-const CURRENCY_LOGOS = {
-    GBP: "{{ url_for('static', filename='novellus_logo_gbp.png') }}",
-    EUR: "{{ url_for('static', filename='novellus_logo_eur.png') }}",
-    DEFAULT: "{{ url_for('static', filename='novellus_logo.png') }}"
+const CURRENCY_LOGO_CONFIG = {
+    GBP: {
+        src: "{{ url_for('static', filename='novellus_logo.png') }}",
+        filter: 'brightness(100%) saturate(100%)'
+    },
+    EUR: {
+        src: "{{ url_for('static', filename='novellus_logo.png') }}",
+        filter: 'hue-rotate(90deg) saturate(100%) brightness(100%)'
+    },
+    DEFAULT: {
+        src: "{{ url_for('static', filename='novellus_logo.png') }}",
+        filter: 'brightness(100%) saturate(100%)'
+    }
 };
 
 const NOTE_STATUSES = ['General', 'Call', 'Email', 'Underwriting', 'Legal', 'Completed'];
@@ -1507,16 +1516,32 @@ class LoanHistoryDetailPage {
             html.setAttribute('data-currency', currencyCode);
         }
 
-        const logoSrc = CURRENCY_LOGOS[currencyCode] || CURRENCY_LOGOS.DEFAULT;
+        const logoConfig = CURRENCY_LOGO_CONFIG[currencyCode] || CURRENCY_LOGO_CONFIG.DEFAULT;
         const navLogo = document.getElementById('navbarLogo');
         const footerLogo = document.getElementById('footerLogo');
-        if (navLogo && logoSrc) {
-            navLogo.src = logoSrc;
-            navLogo.style.filter = 'none';
+        if (navLogo && logoConfig) {
+            this.applyLogoConfig(navLogo, logoConfig, 32);
+            navLogo.classList.add('navbar-logo');
         }
-        if (footerLogo && logoSrc) {
-            footerLogo.src = logoSrc;
-            footerLogo.style.filter = 'none';
+        if (footerLogo && logoConfig) {
+            this.applyLogoConfig(footerLogo, logoConfig, 24);
+        }
+    }
+
+    applyLogoConfig(element, config, height) {
+        if (!element || !config) {
+            return;
+        }
+
+        element.src = config.src;
+        element.style.height = `${height}px`;
+        element.style.width = 'auto';
+        element.style.objectFit = 'contain';
+
+        if (config.filter) {
+            element.style.filter = config.filter;
+        } else {
+            element.style.removeProperty('filter');
         }
     }
 
