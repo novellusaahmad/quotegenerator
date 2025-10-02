@@ -715,7 +715,8 @@ class LoanHistoryDetailPage {
         const editButton = document.getElementById('editLoanButton');
         if (editButton) {
             editButton.addEventListener('click', () => {
-                const name = encodeURIComponent(this.loanData?.loan_name || this.loanName || 'Saved Loan');
+                const rawName = (this.loanData && this.loanData.loan_name) || this.loanName || 'Saved Loan';
+                const name = encodeURIComponent(rawName);
                 window.location.href = `/calculator?edit=true&loanId=${this.loanId}&loanName=${name}`;
             });
         }
@@ -733,7 +734,7 @@ class LoanHistoryDetailPage {
                     }
                 } catch (error) {
                     console.error('Excel export failed', error);
-                    if (window.notifications?.error) {
+                    if (window.notifications && typeof window.notifications.error === 'function') {
                         window.notifications.error(error.message || 'Excel export failed');
                     } else {
                         alert(error.message || 'Excel export failed');
@@ -1048,7 +1049,9 @@ class LoanHistoryDetailPage {
                 currency: this.currencySymbol
             });
             this.applyChartTheme(balanceChart);
-            balanceCard?.classList.remove('d-none');
+            if (balanceCard) {
+                balanceCard.classList.remove('d-none');
+            }
         } else if (balanceCard) {
             balanceCard.classList.add('d-none');
         }
@@ -1150,9 +1153,16 @@ class LoanHistoryDetailPage {
             const trancheRaw = getValue('tranche_release', 'tranche', 'drawdown', 'drawdown_amount');
             const accruedRaw = getValue('interest_accrued', 'interest_calculation', 'interest_accrued_amount');
 
+
+            const periodDisplayRaw = getValue('period_label', 'period_display', 'period_number', 'period', 'index');
+            const periodDisplay = (periodDisplayRaw !== undefined && periodDisplayRaw !== null)
+                ? periodDisplayRaw
+                : index + 1;
+
             return {
                 period: this.toNumber(getValue('period_number', 'period', 'index'), index + 1),
-                period_display: getValue('period_label', 'period_display', 'period_number', 'period', 'index') ?? index + 1,
+                period_display: periodDisplay,
+
                 start_period: getValue('start_period', 'startPeriod', 'period_start', 'start_of_period', 'periodStart'),
                 end_period: getValue('end_period', 'endPeriod', 'period_end', 'end_of_period', 'periodEnd'),
                 days_held: getValue('days_held', 'daysHeld', 'days'),
@@ -1214,7 +1224,9 @@ class LoanHistoryDetailPage {
         const scheduleCard = document.getElementById('loanHistoryScheduleCard');
         const container = document.getElementById('detailedPaymentScheduleCard');
         const tbody = document.getElementById('paymentScheduleTableBody');
-        const headerRow = container?.querySelector('thead tr');
+
+        const headerRow = container ? container.querySelector('thead tr') : null;
+
 
         if (!container || !tbody || !headerRow) {
             return;
@@ -1261,6 +1273,7 @@ class LoanHistoryDetailPage {
             return String(value).replace(/[£€]/g, currentSymbol);
         };
 
+
         const getCurrencyValue = (entry, keys) => {
             const raw = pickValue(entry, keys, '');
             if (raw === '') {
@@ -1272,6 +1285,7 @@ class LoanHistoryDetailPage {
                 numeric: this.toNumber(normalized, 0)
             };
         };
+
 
         const safeDisplay = (value, placeholder = '') => {
             if (value === undefined || value === null || value === '') {
@@ -1288,7 +1302,11 @@ class LoanHistoryDetailPage {
             })}`;
         };
 
-        scheduleCard?.classList.remove('d-none');
+
+        if (scheduleCard) {
+            scheduleCard.classList.remove('d-none');
+        }
+
 
         if (!schedule.length) {
             headerRow.innerHTML = defaultHeader;
@@ -1297,79 +1315,7 @@ class LoanHistoryDetailPage {
                     <td colspan="10" class="py-3 text-center text-muted">No payment schedule data is available for this loan.</td>
 
                 </tr>
-            `);
-
-            tbody.innerHTML = rows.join('');
-            return;
-        }
-
-        if (isCapitalPaymentOnly) {
-            headerRow.innerHTML = `
-                <th class="text-center">Period</th>
-                <th class="text-center">Start of Period</th>
-                <th class="text-center">End of Period</th>
-                <th class="text-center">Days Held</th>
-                <th class="text-center">Capital Outstanding</th>
-                <th class="text-center">Annual Interest %</th>
-                <th class="text-center">Interest Factor P.D.</th>
-                <th class="text-center">Scheduled Repayment</th>
-                <th class="text-center">Interest Accrued</th>
-                <th class="text-center">Interest Retained</th>
-                <th class="text-center">Interest Refund</th>
-                <th class="text-center">Running LTV</th>
             `;
-
-            let totalScheduled = 0;
-            let totalAccrued = 0;
-            let totalRetained = 0;
-            let totalRefund = 0;
-            let totalDays = 0;
-
-            const rows = schedule.map((entry, index) => {
-                const capitalOutstanding = getCurrencyValue(entry, ['capital_outstanding', 'capitalOutstanding', 'opening_balance', 'openingBalance']);
-                const scheduled = getCurrencyValue(entry, ['scheduled_repayment', 'scheduledRepayment', 'scheduled_payment']);
-                const accrued = getCurrencyValue(entry, ['interest_accrued', 'interestAccrued']);
-                const retained = getCurrencyValue(entry, ['interest_retained', 'retained_interest']);
-                const refund = getCurrencyValue(entry, ['interest_refund', 'interest_refunded']);
-
-                totalScheduled += scheduled.numeric;
-                totalAccrued += accrued.numeric;
-                totalRetained += retained.numeric;
-                totalRefund += refund.numeric;
-                totalDays += Number(pickValue(entry, ['days_held', 'daysHeld', 'days'])) || 0;
-
-                return `
-                    <tr>
-                        <td class="text-center">${this.escapeHTML(String(index + 1))}</td>
-                        <td class="text-center">${safeDisplay(pickValue(entry, ['start_period', 'startPeriod', 'period_start', 'start_of_period', 'periodStart']))}</td>
-                        <td class="text-center">${safeDisplay(pickValue(entry, ['end_period', 'endPeriod', 'period_end', 'end_of_period', 'periodEnd']))}</td>
-                        <td class="text-center">${safeDisplay(pickValue(entry, ['days_held', 'daysHeld', 'days']))}</td>
-                        <td class="text-end">${safeDisplay(capitalOutstanding.display)}</td>
-                        <td class="text-center">${safeDisplay(pickValue(entry, ['annual_interest_rate', 'interest_rate']))}</td>
-                        <td class="text-center">${safeDisplay(pickValue(entry, ['interest_pa', 'interest_factor_pd']))}</td>
-                        <td class="text-end">${safeDisplay(scheduled.display)}</td>
-                        <td class="text-end">${safeDisplay(accrued.display)}</td>
-                        <td class="text-end">${safeDisplay(retained.display)}</td>
-                        <td class="text-end">${safeDisplay(refund.display)}</td>
-                        <td class="text-center">${safeDisplay(pickValue(entry, ['running_ltv', 'runningLtv']))}</td>
-                    </tr>
-                `;
-            });
-
-            rows.push(`
-                <tr class="schedule-total-row">
-                    <td colspan="3" class="text-end">Total</td>
-                    <td class="text-center">${this.escapeHTML(String(totalDays))}</td>
-                    <td colspan="3"></td>
-                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalScheduled))}</td>
-                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalAccrued))}</td>
-                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRetained))}</td>
-                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRefund))}</td>
-                    <td></td>
-                </tr>
-            `);
-
-            tbody.innerHTML = rows.join('');
             return;
         }
 
@@ -1501,12 +1447,14 @@ class LoanHistoryDetailPage {
                     <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRetained))}</td>
                     <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRefund))}</td>
                     <td></td>
+
                 </tr>
             `);
 
             tbody.innerHTML = rows.join('');
             return;
         }
+
 
         if (isFlexiblePayment) {
             headerRow.innerHTML = `
@@ -1583,6 +1531,7 @@ class LoanHistoryDetailPage {
             tbody.innerHTML = rows.join('');
             return;
         }
+
 
         if (isCapitalPaymentOnly) {
             headerRow.innerHTML = `
@@ -1693,7 +1642,7 @@ class LoanHistoryDetailPage {
         const feedback = document.getElementById('loanNotesFeedback');
 
         if (countEl) {
-            const count = this.notes?.length || 0;
+            const count = Array.isArray(this.notes) ? this.notes.length : 0;
             countEl.textContent = `${count} ${count === 1 ? 'Note' : 'Notes'}`;
         }
 
@@ -1747,8 +1696,8 @@ class LoanHistoryDetailPage {
         const feedback = document.getElementById('loanNotesFeedback');
         const submitButton = form.querySelector('button[type="submit"]');
 
-        const text = (textArea?.value || '').trim();
-        let status = statusSelect?.value || 'General';
+        const text = ((textArea && textArea.value) || '').trim();
+        let status = (statusSelect && statusSelect.value) || 'General';
         if (!NOTE_STATUSES.includes(status)) {
             status = 'General';
         }
@@ -1791,7 +1740,7 @@ class LoanHistoryDetailPage {
                 statusSelect.value = status;
             }
 
-            if (window.notifications?.success) {
+            if (window.notifications && typeof window.notifications.success === 'function') {
                 window.notifications.success('Note saved successfully.');
             }
 
@@ -1808,8 +1757,10 @@ class LoanHistoryDetailPage {
                 feedback.textContent = error.message || 'Unable to save note at this time.';
                 feedback.classList.remove('d-none');
             }
-            if (window.notifications?.error) {
+            if (window.notifications && typeof window.notifications.error === 'function') {
                 window.notifications.error(error.message || 'Unable to save note at this time.');
+            } else {
+                alert(error.message || 'Unable to save note at this time.');
             }
         } finally {
             if (submitButton) {
@@ -1970,12 +1921,14 @@ class LoanHistoryDetailPage {
         const textColor = '#212529';
         const gridColor = 'rgba(0, 0, 0, 0.08)';
 
-        const legendLabels = options.plugins?.legend?.labels;
+        const legendLabels = options.plugins && options.plugins.legend
+            ? options.plugins.legend.labels
+            : undefined;
         if (legendLabels) {
             legendLabels.color = textColor;
         }
 
-        if (options.plugins?.title) {
+        if (options.plugins && options.plugins.title) {
             options.plugins.title.color = textColor;
         }
 
@@ -1999,7 +1952,7 @@ class LoanHistoryDetailPage {
     }
 
     applyDatasetColors(chart) {
-        if (!chart?.data?.datasets) return;
+        if (!chart || !chart.data || !chart.data.datasets) return;
         const palette = this.getThemeColors();
         const [primary, secondary, tertiary, quaternary] = palette;
 
@@ -2175,20 +2128,37 @@ class LoanHistoryDetailPage {
 
     getTrancheDataset() {
         const dataset = [];
-        const detailed = Array.isArray(this.loanData?.detailed_tranche_schedule)
+        const detailedSchedule = (this.loanData && Array.isArray(this.loanData.detailed_tranche_schedule))
             ? this.loanData.detailed_tranche_schedule
             : [];
 
-        if (detailed.length > 0) {
-            detailed.forEach((entry, index) => {
+        const selectValue = (item, keys, fallback) => {
+            if (!item) {
+                return fallback;
+            }
+            for (let i = 0; i < keys.length; i += 1) {
+                const key = keys[i];
+                if (item[key] !== undefined && item[key] !== null) {
+                    return item[key];
+                }
+            }
+            return fallback;
+        };
+
+        if (detailedSchedule.length > 0) {
+            detailedSchedule.forEach((entry, index) => {
                 const amount = this.toNumber(
-                    entry?.tranche_release ?? entry?.amount ?? entry?.drawdown ?? entry?.release_amount,
+                    selectValue(entry, ['tranche_release', 'amount', 'drawdown', 'release_amount'], undefined),
                     NaN
                 );
                 if (!Number.isFinite(amount) || amount === 0) {
                     return;
                 }
-                const periodValue = entry?.period ?? entry?.period_number ?? entry?.month ?? index + 1;
+                const periodValue = selectValue(
+                    entry,
+                    ['period', 'period_number', 'month'],
+                    index + 1
+                );
                 dataset.push({ period: periodValue, tranche_release: amount });
             });
         }
@@ -2219,7 +2189,7 @@ class LoanHistoryDetailPage {
 
 document.addEventListener('DOMContentLoaded', () => {
     new LoanHistoryDetailPage({
-        loanId: {{ loan_id }},
+        loanId: {{ loan_id | tojson }},
         loanName: {{ loan_name | tojson }}
     });
 });
