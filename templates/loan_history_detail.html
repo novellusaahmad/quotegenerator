@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Loan History Details{% endblock %}
+
+{% block body_attr %}class="gold-nav"{% endblock %}
+
+{% block nav_heading %}<span class="navbar-text text-white text-center fw-bold"><i class="fas fa-eye me-2"></i>Loan History Details</span>{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/novellus-theme.css') }}" rel="stylesheet"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/currency-themes.css') }}">
+{% endblock %}
+
+{% macro currency(value) %}
+    {{ loan.currency_symbol }}{{ "{:,.2f}".format(value or 0) }}
+{% endmacro %}
+
+{% set amount_input_label = 'Gross Amount' if loan.amount_input_type == 'gross' else 'Net Amount' %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <a href="{{ url_for('loan_history') }}" class="btn btn-outline-secondary mb-3">
+        <i class="fas fa-arrow-left me-2"></i>Back to Loan History
+    </a>
+
+    <div class="row g-4 mb-4 align-items-stretch">
+        <div class="col-12 col-xl-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-novellus-navy text-white d-flex flex-wrap justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">{{ loan.loan_name }}</h5>
+                        {% if loan.created_at_display %}
+                        <small class="text-light">Saved on {{ loan.created_at_display }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-dark">Version {{ loan.version }}</span>
+                        <span class="badge bg-warning text-dark">{{ loan.loan_type_label }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">Start Date</div>
+                            <div>{{ loan.start_date_display or '—' }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">End Date</div>
+                            <div>{{ loan.end_date_display or '—' }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">Term</div>
+                            <div>{{ loan.loan_term }} months ({{ loan.loan_term_days }} days)</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">Interest Rate</div>
+                            <div>{{ "{:.2f}".format(loan.interest_rate) }}%</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">Repayment Option</div>
+                            <div>{{ loan.repayment_option_label }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">Payment Timing</div>
+                            <div>{{ loan.payment_timing|default('—')|replace('advance','In Advance')|replace('arrears','In Arrears') }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">Payment Frequency</div>
+                            <div>{{ loan.payment_frequency|default('—')|capitalize }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="fw-semibold text-muted">Day 1 Advance</div>
+                            <div>{{ currency(loan.day1_advance) }}</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a class="btn btn-outline-primary" href="{{ url_for('download_loan_summary_docx', loan_id=loan.id) }}" target="_blank">
+                            <i class="fas fa-file-word me-1"></i>Download DOCX
+                        </a>
+                        <a class="btn btn-novellus-gold" href="/calculator?edit=true&loanId={{ loan.id }}&loanName={{ loan.loan_name|urlencode }}">
+                            <i class="fas fa-edit me-1"></i>Edit &amp; Recalculate
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-8">
+            <div class="row row-cols-1 row-cols-lg-2 row-cols-xl-2 row-cols-xxl-4 g-4">
+                <div class="col">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-list me-2"></i>User Inputs</div>
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="w-50">Loan Type</th>
+                                        <td>{{ loan.loan_type_label }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>{{ amount_input_label }}</th>
+                                        <td>
+                                            {% if loan.amount_input_type == 'gross' %}
+                                                {{ currency(loan.gross_amount) }}
+                                            {% else %}
+                                                {{ currency(loan.net_amount) }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Property Value</th>
+                                        <td>{{ currency(loan.property_value) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>User Input Day 1 Advance</th>
+                                        <td>{{ currency(loan.user_input_day1_advance) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-calculator me-2"></i>Loan Summary</div>
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="w-50">Gross Amount</th>
+                                        <td>{{ currency(loan.gross_amount) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Net Amount</th>
+                                        <td>{{ currency(loan.net_amount) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Interest</th>
+                                        <td>{{ currency(loan.total_interest) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Arrangement Fee</th>
+                                        <td>{{ currency(loan.arrangement_fee) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Legal Costs</th>
+                                        <td>{{ currency(loan.legal_costs) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Site Visit Fee</th>
+                                        <td>{{ currency(loan.site_visit_fee) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Title Insurance</th>
+                                        <td>{{ currency(loan.title_insurance) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Net Advance</th>
+                                        <td>{{ currency(loan.net_advance) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Net Advance</th>
+                                        <td>{{ currency(loan.total_net_advance) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-coins me-2"></i>Fees</div>
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="w-50">Arrangement Fee</th>
+                                        <td>{{ currency(loan.arrangement_fee) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Arrangement Fee %</th>
+                                        <td>{{ "{:.2f}".format(loan.arrangement_fee / loan.gross_amount * 100 if loan.gross_amount else 0) }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Legal Costs</th>
+                                        <td>{{ currency(loan.legal_costs) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Site Visit Fee</th>
+                                        <td>{{ currency(loan.site_visit_fee) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Title Insurance</th>
+                                        <td>{{ currency(loan.title_insurance) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total Fees</th>
+                                        <td>{{ currency(loan.arrangement_fee + loan.legal_costs + loan.site_visit_fee + loan.title_insurance) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-light fw-bold"><i class="fas fa-hand-holding-usd me-2"></i>Payments &amp; LTV</div>
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <tbody>
+                                    <tr>
+                                        <th class="w-50">Monthly Payment</th>
+                                        <td>{{ currency(loan.monthly_payment) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Quarterly Payment</th>
+                                        <td>{{ currency(loan.quarterly_payment) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Day 1 Advance</th>
+                                        <td>{{ currency(loan.day1_advance) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Start LTV</th>
+                                        <td>{{ "{:.2f}".format(loan.start_ltv) }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <th>End LTV</th>
+                                        <td>{{ "{:.2f}".format(loan.end_ltv) }}%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-5">
+        <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-table me-2"></i>Payment Schedule</span>
+            <span class="text-muted small">{{ loan.payment_schedule|length }} periods</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Period</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Days Held</th>
+                        <th>Payment Date</th>
+                        <th class="text-end">Opening Balance</th>
+                        <th class="text-end">Tranche Release</th>
+                        <th>Calculation</th>
+                        <th class="text-end">Interest</th>
+                        <th class="text-end">Principal</th>
+                        <th class="text-end">Total Payment</th>
+                        <th class="text-end">Closing Balance</th>
+                        <th class="text-end">Balance Change</th>
+                        <th class="text-end">Running LTV</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in loan.payment_schedule %}
+                    <tr>
+                        <td>{{ row.period }}</td>
+                        <td>{{ row.start_period or '—' }}</td>
+                        <td>{{ row.end_period or '—' }}</td>
+                        <td>{{ row.days_held or '—' }}</td>
+                        <td>{{ row.payment_date or '—' }}</td>
+                        <td class="text-end">{{ row.opening_balance }}</td>
+                        <td class="text-end">{{ row.tranche_release }}</td>
+                        <td>{{ row.interest_calculation }}</td>
+                        <td class="text-end text-danger">{{ row.interest_amount }}</td>
+                        <td class="text-end text-primary">{{ row.principal_payment }}</td>
+                        <td class="text-end fw-semibold">{{ row.total_payment }}</td>
+                        <td class="text-end">{{ row.closing_balance }}</td>
+                        <td class="text-end">{{ row.balance_change }}</td>
+                        <td class="text-end">{{ row.running_ltv or '' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
