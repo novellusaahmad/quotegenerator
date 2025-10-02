@@ -35,7 +35,7 @@ class ChartManager {
         const interestData = schedule.map(payment => payment.interest || 0);
         const balanceData = schedule.map(payment => payment.balance || 0);
 
-        const config = {
+        let config = {
             type: 'bar',
             data: {
                 labels: labels,
@@ -210,7 +210,7 @@ class ChartManager {
             return cumulativeAccrued;
         });
 
-        const config = {
+        let config = {
             type: 'bar',
             data: {
                 labels: labels,
@@ -334,7 +334,7 @@ class ChartManager {
         const totalInterest = schedule.reduce((sum, payment) => sum + (payment.interest || 0), 0);
         const totalPrincipal = schedule.reduce((sum, payment) => sum + (payment.principal || 0), 0);
 
-        const config = {
+        let config = {
             type: 'doughnut',
             data: {
                 labels: ['Total Interest', 'Total Principal'],
@@ -415,7 +415,7 @@ class ChartManager {
         const maxLTV = 100;
         const remainingLTV = maxLTV - currentLTV;
 
-        const config = {
+        let config = {
             type: 'doughnut',
             data: {
                 labels: ['Current LTV', 'Available'],
