@@ -115,6 +115,7 @@
         font-weight: 600;
     }
 
+
     .chart-card .card-body {
         padding: 1.25rem 1.4rem;
         min-height: 280px;
@@ -122,6 +123,7 @@
 
     .chart-card canvas {
         min-height: 280px;
+
     }
 
     .loan-detail-loading,
@@ -153,8 +155,10 @@
 
     .chart-grid {
         display: grid;
+
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 1.25rem;
+
     }
 
     @media (max-width: 991.98px) {
@@ -209,7 +213,9 @@
 <div id="loanDetailContent" class="d-none">
     <div class="row g-4">
         <div class="col-lg-5">
+
             <div class="loan-detail-card mb-3">
+
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-list-alt me-2"></i>Loan Parameters</span>
                     <span id="loanTypeBadge" class="loan-highlight-badge">-</span>
@@ -221,7 +227,9 @@
                 </div>
             </div>
 
+
             <div class="loan-detail-card mb-3">
+
                 <div class="card-header"><i class="fas fa-redo-alt me-2"></i>Repayment Profile</div>
                 <div class="card-body p-0">
                     <table class="table table-borderless align-middle">
@@ -230,7 +238,9 @@
                 </div>
             </div>
 
+
             <div class="loan-detail-card mb-3">
+
                 <div class="card-header"><i class="fas fa-receipt me-2"></i>Fees &amp; Costs</div>
                 <div class="card-body p-0">
                     <table class="table table-borderless align-middle">
@@ -240,6 +250,7 @@
             </div>
 
             <div class="loan-detail-card mb-0">
+
                 <div class="card-header"><i class="fas fa-clipboard-check me-2"></i>Loan Summary</div>
                 <div class="card-body p-0">
                     <table class="table table-borderless align-middle">
@@ -263,12 +274,14 @@
                         <canvas id="interestPrincipalChart"></canvas>
                     </div>
                 </div>
+
                 <div class="card chart-card d-none" id="ltvChartCard">
                     <div class="card-header"><i class="fas fa-gauge-high me-2"></i>LTV Position</div>
                     <div class="card-body">
                         <canvas id="loanLtvChart"></canvas>
                     </div>
                 </div>
+
                 <div class="card chart-card" id="paymentScheduleCard">
                     <div class="card-header"><i class="fas fa-stream me-2"></i>Payment Schedule Overview</div>
                     <div class="card-body">
@@ -305,10 +318,12 @@ class LoanHistoryDetailPage {
         this.currency = 'GBP';
         this.currencySymbol = '£';
         this.loanData = null;
+
         this.inputData = {};
         this.scheduleData = [];
         this.hasDevelopmentTranches = false;
         this.loanType = '';
+
         this.init();
     }
 
@@ -337,6 +352,7 @@ class LoanHistoryDetailPage {
                 throw new Error(data.error || 'Failed to fetch loan details');
             }
 
+
             this.loanData = data.loan || {};
             this.inputData = data.input_data || {};
             this.loanName = this.loanData.loan_name || this.inputData.loan_name || this.loanName;
@@ -354,6 +370,7 @@ class LoanHistoryDetailPage {
             const typeValue = this.getFromSources(['loan_type', 'loanType']) || '';
             this.loanType = typeValue.toString();
             this.hasDevelopmentTranches = this.loanType.toLowerCase().includes('development');
+
 
             this.renderHeader();
             this.renderSections();
@@ -386,14 +403,18 @@ class LoanHistoryDetailPage {
         const currencyEl = document.getElementById('loanCurrencyDisplay');
         const typeBadge = document.getElementById('loanTypeBadge');
 
+
         const displayName = this.getFromSources(['loan_name', 'loanName']) || this.loanName || 'Saved Loan';
         if (nameEl) nameEl.textContent = displayName;
+
         if (createdEl) {
             const created = this.loanData.created_at ? new Date(this.loanData.created_at.replace(' ', 'T')) : null;
             createdEl.textContent = created ? created.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
         }
         if (currencyEl) currencyEl.textContent = `${this.currencySymbol} (${this.currency})`;
+
         if (typeBadge) typeBadge.textContent = this.formatLoanType(this.loanType || this.loanData.loan_type);
+
 
         const docxButton = document.getElementById('downloadDocxButton');
         if (docxButton) {
@@ -443,6 +464,7 @@ class LoanHistoryDetailPage {
     populateTable(tbodyId, rows) {
         const tbody = document.getElementById(tbodyId);
         if (!tbody) return;
+
         if (!rows || rows.length === 0) {
             tbody.innerHTML = `
                 <tr>
@@ -451,6 +473,7 @@ class LoanHistoryDetailPage {
             `;
             return;
         }
+
 
         tbody.innerHTML = rows.map(row => `
             <tr>
@@ -461,6 +484,7 @@ class LoanHistoryDetailPage {
     }
 
     buildLoanParameters() {
+
         const rows = [];
         const name = this.getFromSources(['loan_name', 'loanName']) || this.loanName || '—';
         rows.push({ label: 'Loan Name', value: this.escapeHTML(name) });
@@ -713,6 +737,7 @@ class LoanHistoryDetailPage {
         }
 
         return rows;
+
     }
 
     renderCharts() {
@@ -720,6 +745,7 @@ class LoanHistoryDetailPage {
         if (breakdownCanvas && this.loanData) {
             this.renderLoanBreakdownChart(breakdownCanvas);
         }
+
 
         const chartCards = ['interestPrincipalCard', 'paymentScheduleCard', 'balanceChartCard'];
 
@@ -741,10 +767,12 @@ class LoanHistoryDetailPage {
             chartCards.forEach(id => document.getElementById(id)?.classList.remove('d-none'));
         } else {
             chartCards.forEach(id => {
+
                 const el = document.getElementById(id);
                 if (el) el.classList.add('d-none');
             });
         }
+
 
         const ltvCard = document.getElementById('ltvChartCard');
         if (ltvCard) {
@@ -764,6 +792,7 @@ class LoanHistoryDetailPage {
         }
         if (this.hasDevelopmentTranches) {
             const trancheData = this.getTrancheDataset();
+
             if (trancheData.length > 0) {
                 this.renderTrancheReleaseChart(trancheData);
             }
@@ -870,12 +899,16 @@ class LoanHistoryDetailPage {
                 },
                 scales: {
                     x: {
+
                         ticks: { color: '#f8f9fa' },
+
                         grid: { color: 'rgba(255,255,255,0.06)' }
                     },
                     y: {
                         ticks: {
+
                             color: '#f8f9fa',
+
                             callback: (value) => `${this.currencySymbol}${Number(value).toLocaleString('en-GB')}`
                         },
                         grid: { color: 'rgba(255,255,255,0.05)' }
@@ -884,6 +917,7 @@ class LoanHistoryDetailPage {
             }
         });
     }
+
 
     parseScheduleData(rawSchedule = []) {
         return rawSchedule.map((entry = {}, index) => {
@@ -904,15 +938,19 @@ class LoanHistoryDetailPage {
                 tranche_release: this.toNumber(getValue('tranche_release', 'tranche', 'drawdown', 'drawdown_amount')),
                 interest_accrued: this.toNumber(getValue('interest_accrued', 'interest_calculation')),
                 total_payment: this.toNumber(getValue('total_payment', 'payment_total'))
+
             };
         });
     }
 
     formatCurrency(value) {
+
         const num = this.normalizeNumber(value);
+
         if (!Number.isFinite(num)) return '—';
         return `${this.currencySymbol}${num.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
+
 
     formatNumber(value, decimals = 2) {
         const num = this.normalizeNumber(value);
@@ -932,10 +970,12 @@ class LoanHistoryDetailPage {
             minimumFractionDigits: decimals,
             maximumFractionDigits: decimals
         })}%`;
+
     }
 
     formatDate(value) {
         if (!value) return '—';
+
         let date = value instanceof Date ? value : null;
         if (!date) {
             if (typeof value === 'string' && value.includes('/')) {
@@ -948,6 +988,7 @@ class LoanHistoryDetailPage {
                 date = new Date(value);
             }
         }
+
         if (Number.isNaN(date.getTime())) {
             return value;
         }
@@ -956,6 +997,7 @@ class LoanHistoryDetailPage {
 
     formatLoanType(type) {
         if (!type) return '—';
+
         const normalized = type.toString().toLowerCase();
         const mapping = {
             bridge: 'Bridge',
@@ -966,11 +1008,13 @@ class LoanHistoryDetailPage {
             bridge_refurbishment: 'Bridge - Refurbishment'
         };
         return mapping[normalized] || this.capitalize(normalized.replace(/[_-]/g, ' '));
+
     }
 
     formatRepaymentOption(option) {
         if (!option) return '—';
         const mapping = {
+
             none: 'Interest Retained',
             interest_only: 'Interest Only',
             capital_and_interest: 'Capital & Interest',
@@ -983,9 +1027,11 @@ class LoanHistoryDetailPage {
             service_only: 'Interest Serviced',
             service_and_capital: 'Service & Capital',
             roll_up: 'Roll Up'
+
         };
         return mapping[option] || this.capitalize(option.replace(/[_-]/g, ' '));
     }
+
 
     formatInterestType(type) {
         if (!type) return '—';
@@ -1007,10 +1053,12 @@ class LoanHistoryDetailPage {
         return this.coerceBoolean(value) ? 'Yes' : 'No';
     }
 
+
     capitalize(str) {
         if (!str) return '';
         return str.charAt(0).toUpperCase() + str.slice(1);
     }
+
 
     applyChartTheme(chart, { includeScales = true } = {}) {
         if (!chart || !chart.options) return;
@@ -1141,6 +1189,7 @@ class LoanHistoryDetailPage {
 
         return dataset;
     }
+
 
     escapeHTML(value) {
         return String(value).replace(/[&<>"']/g, (char) => ({
