@@ -272,7 +272,7 @@ def generate_loan_summary_docx(loan, extra_fields=None):
     try:
         from docx import Document
         from docx.shared import Inches, Pt, RGBColor
-        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
         from docx.oxml.shared import OxmlElement, qn
         from docx.opc.constants import RELATIONSHIP_TYPE as RT
         from docx.oxml import parse_xml
