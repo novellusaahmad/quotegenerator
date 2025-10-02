@@ -163,27 +163,6 @@
         gap: 1.5rem;
     }
 
-    .schedule-card.loan-detail-card,
-    .notes-card.loan-detail-card {
-        background: #ffffff;
-        border: 1px solid #000;
-        box-shadow: 0 18px 32px rgba(2, 8, 20, 0.35);
-        color: #000;
-    }
-
-    .schedule-card.loan-detail-card .card-header,
-    .notes-card.loan-detail-card .card-header {
-        background: #f1f5f9;
-        color: #000;
-        border-bottom: 1px solid #000;
-    }
-
-    .schedule-card .card-body,
-    .notes-card .card-body {
-        padding: 1.25rem;
-        background: #ffffff;
-    }
-
     .detailed-payment-table {
         width: 100%;
         border: 1px solid #000;
@@ -498,9 +477,12 @@
 
     <div class="row g-4 mt-1">
         <div class="col-xl-8">
-            <div class="card-header" id="loanHistoryScheduleCard">
-                <div class="card-header"><i class="fas fa-table me-2"></i>Detailed Payment Schedule</div>
-                <div class="card-body">
+            <div class="loan-detail-card" id="loanHistoryScheduleCard">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="fas fa-table me-2"></i>
+                    <span>Detailed Payment Schedule</span>
+                </div>
+                <div class="card-body p-0">
                     <div id="detailedPaymentScheduleCard">
                         <table class="detailed-payment-table">
                             <thead>
@@ -528,9 +510,9 @@
             </div>
         </div>
         <div class="col-xl-4">
-            <div class="card-header">
-                <div class="card-header">
-                    <span><i class="fas fa-comment-dots me-2"></i>Loan Notes</span>
+            <div class="loan-detail-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="d-flex align-items-center gap-2"><i class="fas fa-comment-dots"></i>Loan Notes</span>
                     <span class="loan-highlight-badge" id="loanNotesCount">0 Notes</span>
                 </div>
                 <div class="card-body">
