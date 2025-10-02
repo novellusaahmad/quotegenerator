@@ -55,6 +55,51 @@
     padding: 1.5rem;
 }
 
+.novellus-detail-card .card-body {
+    padding: 1.25rem 1.5rem;
+}
+
+.novellus-detail-table tbody tr th,
+.novellus-detail-table tbody tr td {
+    border-color: var(--novellus-border);
+    padding: 0.65rem 0.75rem;
+}
+
+.novellus-detail-label {
+    color: var(--novellus-text-muted);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+.novellus-detail-value {
+    color: var(--novellus-text);
+    font-weight: 700;
+}
+
+.novellus-chart-card .card-header {
+    background: linear-gradient(135deg, var(--novellus-navy) 0%, var(--novellus-navy-light) 100%);
+    color: #fff;
+    border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+
+.novellus-chart-card .card-header h6,
+.novellus-chart-card .card-header i {
+    color: #fff;
+}
+
+.novellus-chart-card .card-body {
+    padding: 1.5rem;
+    background: radial-gradient(circle at top, rgba(30, 43, 58, 0.08) 0%, rgba(30, 43, 58, 0.02) 100%);
+}
+
+@media (max-width: 991.98px) {
+    .novellus-chart-card .card-body {
+        padding: 1rem;
+    }
+}
+
 /* Standard page title bar used across configuration and documentation pages */
 .page-title-bar {
     background-color: var(--novellus-gold);

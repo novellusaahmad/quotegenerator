@@ -539,326 +539,234 @@ class LoanHistoryManager {
         const currencySymbol = loan.currency_symbol || (loan.currency === 'EUR' ? '€' : '£');
         const formatMoney = (val) => `${currencySymbol}${(Number(val) || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         
-        content.innerHTML = `
-            <!-- User Input Values Section -->
-            <div class="card mb-4">
-                <div class="card-header" style="background: linear-gradient(135deg, #1E2B3A 0%, #2C3E50 100%); color: white; text-align: center; font-weight: bold; border: 1px solid #000;">
-                    User Input Parameters
-                </div>
-                <div class="card-body p-0">
-                    <table class="table mb-0" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+        const toTitleCase = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
+        const formatPercentage = (value, digits = 2) => `${(Number(value) || 0).toFixed(digits)}%`;
+        const buildTable = (rows) => `
+            <div class="table-responsive">
+                <table class="table table-sm table-striped table-hover align-middle mb-0 novellus-detail-table">
+                    <tbody>
+                        ${rows.filter(Boolean).map(row => `
+                            <tr>
+                                <th scope="row" class="novellus-detail-label">${row.label}</th>
+                                <td class="novellus-detail-value text-end">${row.value}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        const loanParametersRows = [
+            { label: 'Loan Type', value: toTitleCase(loan.loan_type) },
+            { label: 'Amount Input Type', value: loan.amountInputType === 'gross' ? 'Gross Amount' : 'Net Amount' },
+            loan.amountInputType === 'gross'
+                ? { label: 'User Input Gross Amount', value: formatMoney(loan.grossAmount) }
+                : { label: 'User Input Net Amount', value: formatMoney(loan.netAmount) },
+            { label: 'Interest Rate (Annual)', value: formatPercentage(loan.interestRate) },
+            { label: 'Repayment Option', value: this.formatRepaymentOption(loan.repaymentOption) },
+            loan.paymentTiming ? { label: 'Payment Timing', value: loan.paymentTiming === 'advance' ? 'In Advance' : 'In Arrears' } : null,
+            loan.paymentFrequency ? { label: 'Payment Frequency', value: toTitleCase(loan.paymentFrequency) } : null,
+            loan.capitalRepayment > 0 ? { label: 'Capital Repayment', value: formatMoney(loan.capitalRepayment) } : null,
+            loan.flexiblePayment > 0 ? { label: 'Flexible Payment Amount', value: formatMoney(loan.flexiblePayment) } : null,
+            { label: 'Arrangement Fee %', value: formatPercentage(loan.arrangementFeePercentage) },
+            loan.userInputDay1Advance > 0 ? { label: 'Day 1 Advance (User Input)', value: formatMoney(loan.userInputDay1Advance) } : null
+        ];
+
+        const loanSummaryRows = [
+            { label: 'Valuation', value: formatMoney(loan.propertyValue) },
+            { label: 'Gross Amount', value: formatMoney(loan.grossAmount) },
+            { label: 'Date of First Drawdown', value: loan.startDate || '-' },
+            { label: 'End Date', value: loan.endDate || '-' },
+            { label: 'Term (Months)', value: (Number(loan.loanTerm) || 0).toFixed(2) },
+            { label: 'Term (Days)', value: loan.loanTermDays || 0 },
+            { label: 'Arrangement Fee', value: `${formatMoney(loan.arrangementFee)} (${formatPercentage(loan.arrangementFeePercentage)})` },
+            { label: 'Legal Costs', value: formatMoney(loan.legalFees) },
+            { label: 'Site Visit Fee', value: formatMoney(loan.siteVisitFee) },
+            { label: 'Title Insurance', value: `${formatMoney(loan.titleInsurance)} (${formatPercentage(loan.titleInsuranceRate, 3)})` },
+            { label: 'Total Interest', value: `${formatMoney(loan.totalInterest)} (${formatPercentage(loan.interestRate)})` },
+            loan.paymentFrequency === 'quarterly'
+                ? { label: 'Quarterly Interest Payment', value: formatMoney(loan.quarterlyInterestPayment) }
+                : { label: 'Monthly Interest Payment', value: formatMoney(loan.monthlyInterestPayment) },
+            { label: 'Net Advance', value: formatMoney(loan.netAdvance) },
+            { label: 'Total Net Advance', value: formatMoney(loan.totalNetAdvance) },
+            { label: 'Start LTV', value: `${(loan.startLtv ?? 0).toFixed(1)}%` },
+            { label: 'End LTV', value: `${(loan.endLtv ?? 0).toFixed(1)}%` }
+        ];
+
+        const scheduleSection = (
+            (loan.loan_type === 'development' || loan.loan_type === 'development2') &&
+            loan.detailed_tranche_schedule &&
+            loan.detailed_tranche_schedule.length > 0
+        )
+            ? `
+        <div class="card shadow-sm mt-4">
+            <div class="card-header d-flex align-items-center">
+                <i class="fas fa-layer-group me-2 text-warning"></i>
+                <h6 class="mb-0">Tranche Schedule</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped mb-0" style="font-size: 0.8rem;">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th style="min-width:80px;">Period</th>
+                                <th style="min-width:120px;">Start</th>
+                                <th style="min-width:120px;">End</th>
+                                <th style="min-width:80px;">Days Held</th>
+                                <th style="min-width:140px;">Opening Balance</th>
+                                <th style="min-width:140px;">Calculation</th>
+                                <th style="min-width:140px;">Tranche Release</th>
+                                <th style="min-width:120px;">Interest</th>
+                                <th style="min-width:120px;">Principal</th>
+                                <th style="min-width:140px;">Total Payment</th>
+                                <th style="min-width:140px;">Closing Balance</th>
+                                <th style="min-width:120px;">Running LTV</th>
+                            </tr>
+                        </thead>
                         <tbody>
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Loan Type</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${loan.loan_type.charAt(0).toUpperCase() + loan.loan_type.slice(1)}</td>
+                            ${loan.detailed_tranche_schedule.map((row, index) => {
+                                const closing = Number(String(row.closing_balance).replace(/[^0-9.-]/g,'')) || 0;
+                                const propertyVal = Number(loan.propertyValue || 0);
+                                const runningLtv = propertyVal ? ((closing / propertyVal) * 100).toFixed(2) + '%' : '';
+                                return `
+                            <tr>
+                                <td>${row.period || index + 1}</td>
+                                <td>${row.start_period || ''}</td>
+                                <td>${row.end_period || ''}</td>
+                                <td>${row.days_held ?? ''}</td>
+                                <td class="text-end">${formatMoney(row.opening_balance)}</td>
+                                <td>${row.interest_calculation || ''}</td>
+                                <td class="text-end">${formatMoney(row.tranche_release)}</td>
+                                <td class="text-end text-danger">${formatMoney(row.interest)}</td>
+                                <td class="text-end text-primary">${formatMoney(row.principal)}</td>
+                                <td class="text-end fw-bold text-success">${formatMoney(row.total_payment)}</td>
+                                <td class="text-end">${formatMoney(row.closing_balance)}</td>
+                                <td class="text-end">${runningLtv}</td>
                             </tr>
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Amount Input Type</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${loan.amountInputType === 'gross' ? 'Gross Amount' : 'Net Amount'}</td>
-                            </tr>
-                            ${loan.amountInputType === 'gross' ? `
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">User Input Gross Amount</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${formatMoney(loan.grossAmount)}</td>
-                            </tr>
-                            ` : `
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">User Input Net Amount</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${formatMoney(loan.netAmount)}</td>
-                            </tr>
-                            `}
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Interest Rate (Annual)</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.interestRate || 0).toFixed(2)}%</td>
-                            </tr>
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Repayment Option</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${this.formatRepaymentOption(loan.repaymentOption)}</td>
-                            </tr>
-                            ${loan.paymentTiming ? `
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Payment Timing</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${loan.paymentTiming === 'advance' ? 'In Advance' : 'In Arrears'}</td>
-                            </tr>
-                            ` : ''}
-                            ${loan.paymentFrequency ? `
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Payment Frequency</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${loan.paymentFrequency.charAt(0).toUpperCase() + loan.paymentFrequency.slice(1)}</td>
-                            </tr>
-                            ` : ''}
-                            ${loan.capitalRepayment > 0 ? `
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Capital Repayment</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${formatMoney(loan.capitalRepayment)}</td>
-                            </tr>
-                            ` : ''}
-                            ${loan.flexiblePayment > 0 ? `
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Flexible Payment Amount</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${formatMoney(loan.flexiblePayment)}</td>
-                            </tr>
-                            ` : ''}
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Arrangement Fee %</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.arrangementFeePercentage || 0).toFixed(2)}%</td>
-                            </tr>
-                            ${loan.userInputDay1Advance > 0 ? `
-                            <tr style="border: 1px solid #000;">
-                                <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Day 1 Advance (User Input)</td>
-                                <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${formatMoney(loan.userInputDay1Advance)}</td>
-                            </tr>
-                            ` : ''}
+                            `;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
             </div>
+        </div>
+        `
+            : `
+        <div class="card shadow-sm mt-4">
+            <div class="card-header d-flex align-items-center">
+                <i class="fas fa-calendar-alt me-2 text-warning"></i>
+                <h6 class="mb-0">Detailed Payment Schedule</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped mb-0" style="font-size: 0.8rem;">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th style="min-width: 80px;">Period</th>
+                                <th style="min-width: 120px;">Payment Date</th>
+                                <th style="min-width: 140px;">Opening Balance</th>
+                                <th style="min-width: 140px;">Tranche Release</th>
+                                <th style="min-width: 160px;">Interest Calculation</th>
+                                <th style="min-width: 120px;">Interest</th>
+                                <th style="min-width: 120px;">Principal</th>
+                                <th style="min-width: 140px;">Total Payment</th>
+                                <th style="min-width: 140px;">Closing Balance</th>
+                                <th style="min-width: 140px;">Balance Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${loan.detailed_payment_schedule.map((payment, index) => `
+                            <tr>
+                                <td>${payment.period_number || index + 1}</td>
+                                <td>${payment.payment_date}</td>
+                                <td>${payment.opening_balance}</td>
+                                <td>${payment.tranche_release}</td>
+                                <td>${payment.interest_calculation}</td>
+                                <td class="text-danger">${payment.interest_amount}</td>
+                                <td class="text-primary">${payment.principal_payment}</td>
+                                <td class="fw-bold text-success">${payment.total_payment}</td>
+                                <td>${payment.closing_balance}</td>
+                                <td><small class="text-muted">${payment.balance_change}</small></td>
+                            </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        `;
 
-            <!-- Loan Summary Section (Same format as calculator) -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-center align-items-center position-relative bg-primary text-white fw-bold border border-dark">
-                    <span>Loan Summary</span>
-                </div>
-                <div class="card-body p-0">
-                    <table class="table mb-0" style="border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
-                            <tbody>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Valuation</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${(loan.propertyValue || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Gross Amount</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.grossAmount || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Date of First Drawdown</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${loan.startDate}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">End Date</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${loan.endDate}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Months)</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${(loan.loanTerm || 0).toFixed(2)}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Term (Days)</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${loan.loanTermDays || 0}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Arrangement Fee</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">${(loan.arrangementFeePercentage || 0).toFixed(2)}% ${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${formatMoney(loan.arrangementFee)}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Legal Costs</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${formatMoney(loan.legalFees)}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Site Visit Fee</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${formatMoney(loan.siteVisitFee)}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Title Insurance</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${(loan.titleInsuranceRate || 0).toFixed(3)}% ${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${formatMoney(loan.titleInsurance)}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Interest</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">${(loan.interestRate || 0).toFixed(2)}% ${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${formatMoney(loan.totalInterest)}</td>
-                                </tr>
-                                ${loan.paymentFrequency === 'quarterly' ? `
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Quarterly Interest Payment</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${formatMoney(loan.quarterlyInterestPayment)}</td>
-                                </tr>
-                                ` : `
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Monthly Interest Payment</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${formatMoney(loan.monthlyInterestPayment)}</td>
-                                </tr>
-                                `}
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Net Advance</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${formatMoney(loan.netAdvance)}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">Total Net Advance</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">${currencySymbol}</td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${formatMoney(loan.totalNetAdvance)}</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;">Start LTV</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: white;"></td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: white;">${(loan.startLtv ?? 0).toFixed(1)}%</td>
-                                </tr>
-                                <tr style="border: 1px solid #000;">
-                                    <td class="py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;">End LTV</td>
-                                    <td class="text-end py-2 px-3" style="color: #000 !important; border-right: 1px solid #000; background: #f8f9fa;"></td>
-                                    <td class="fw-bold py-2 px-3 text-end" style="color: #000 !important; background: #f8f9fa;">${(loan.endLtv ?? 0).toFixed(1)}%</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            ${
-                (loan.loan_type === 'development' || loan.loan_type === 'development2') && loan.detailed_tranche_schedule && loan.detailed_tranche_schedule.length > 0
-                ? `
-            <div class="card border-0 mt-4">
-                <div class="card-header bg-novellus-navy text-white">
-                    <h6 class="mb-0"><i class="fas fa-layer-group me-2"></i>Tranche Schedule</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped mb-0" style="font-size: 0.8rem;">
-                            <thead class="table-light sticky-top">
-                                <tr>
-                                    <th style="min-width:80px;">Period</th>
-                                    <th style="min-width:120px;">Start</th>
-                                    <th style="min-width:120px;">End</th>
-                                    <th style="min-width:80px;">Days Held</th>
-                                    <th style="min-width:140px;">Opening Balance</th>
-                                    <th style="min-width:140px;">Calculation</th>
-                                    <th style="min-width:140px;">Tranche Release</th>
-                                    <th style="min-width:120px;">Interest</th>
-                                    <th style="min-width:120px;">Principal</th>
-                                    <th style="min-width:140px;">Total Payment</th>
-                                    <th style="min-width:140px;">Closing Balance</th>
-                                    <th style="min-width:120px;">Running LTV</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${loan.detailed_tranche_schedule.map((row, index) => {
-                                    const closing = Number(String(row.closing_balance).replace(/[^0-9.-]/g,'')) || 0;
-                                    const propertyVal = Number(loan.propertyValue || 0);
-                                    const runningLtv = propertyVal ? ((closing / propertyVal) * 100).toFixed(2) + '%' : '';
-                                    return `
-                                    <tr>
-                                        <td>${row.period || index + 1}</td>
-                                        <td>${row.start_period || ''}</td>
-                                        <td>${row.end_period || ''}</td>
-                                        <td>${row.days_held ?? ''}</td>
-                                        <td class="text-end">${formatMoney(row.opening_balance)}</td>
-                                        <td>${row.interest_calculation || ''}</td>
-                                        <td class="text-end">${formatMoney(row.tranche_release)}</td>
-                                        <td class="text-end text-danger">${formatMoney(row.interest)}</td>
-                                        <td class="text-end text-primary">${formatMoney(row.principal)}</td>
-                                        <td class="text-end fw-bold text-success">${formatMoney(row.total_payment)}</td>
-                                        <td class="text-end">${formatMoney(row.closing_balance)}</td>
-                                        <td class="text-end">${runningLtv}</td>
-                                    </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            `
-                : `
-            <div class="card border-0 mt-4">
-                <div class="card-header bg-novellus-navy text-white">
-                    <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Detailed Payment Schedule</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-striped mb-0" style="font-size: 0.8rem;">
-                            <thead class="table-light sticky-top">
-                                <tr>
-                                    <th style="min-width: 80px;">Period</th>
-                                    <th style="min-width: 120px;">Payment Date</th>
-                                    <th style="min-width: 140px;">Opening Balance</th>
-                                    <th style="min-width: 140px;">Tranche Release</th>
-                                    <th style="min-width: 160px;">Interest Calculation</th>
-                                    <th style="min-width: 120px;">Interest</th>
-                                    <th style="min-width: 120px;">Principal</th>
-                                    <th style="min-width: 140px;">Total Payment</th>
-                                    <th style="min-width: 140px;">Closing Balance</th>
-                                    <th style="min-width: 140px;">Balance Change</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${loan.detailed_payment_schedule.map((payment, index) => `
-                                    <tr>
-                                        <td>${payment.period_number || index + 1}</td>
-                                        <td>${payment.payment_date}</td>
-                                        <td>${payment.opening_balance}</td>
-                                        <td>${payment.tranche_release}</td>
-                                        <td>${payment.interest_calculation}</td>
-                                        <td class="text-danger">${payment.interest_amount}</td>
-                                        <td class="text-primary">${payment.principal_payment}</td>
-                                        <td class="fw-bold text-success">${payment.total_payment}</td>
-                                        <td>${payment.closing_balance}</td>
-                                        <td><small class="text-muted">${payment.balance_change}</small></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            `
-            }
-
-            <div class="card border-0 mt-4" id="loanNotesCard">
-                <div class="card-header bg-novellus-navy text-white d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes</h6>
-                    <small class="text-white-50">Track status updates and interactions</small>
-                </div>
-                <div class="card-body">
-                    <form id="loanNotesForm" class="row g-2 align-items-start mb-3" data-loan-id="${loan.id}">
-                        <div class="col-md-3">
-                            <label for="loanNoteStatus" class="form-label visually-hidden">Note status</label>
-                            <select class="form-select" id="loanNoteStatus" name="status">
-                                <option value="General">General</option>
-                                <option value="Call">Call</option>
-                                <option value="Email">Email</option>
-                                <option value="Underwriting">Underwriting</option>
-                                <option value="Legal">Legal</option>
-                                <option value="Completed">Completed</option>
-                            </select>
+        content.innerHTML = `
+        <div class="container-fluid py-2">
+            <div class="row g-4 align-items-stretch">
+                <div class="col-12 col-xl-8 d-flex flex-column gap-4">
+                    <div class="card shadow-sm novellus-detail-card">
+                        <div class="card-header d-flex align-items-center">
+                            <i class="fas fa-sliders-h me-2 text-warning"></i>
+                            <h6 class="mb-0">Loan Parameters</h6>
                         </div>
-                        <div class="col-md-7">
-                            <label for="loanNoteText" class="form-label visually-hidden">Note text</label>
-                            <textarea class="form-control" id="loanNoteText" name="text" rows="2" placeholder="Add a note about this loan..." required></textarea>
+                        <div class="card-body py-0">
+                            ${buildTable(loanParametersRows)}
                         </div>
-                        <div class="col-md-2 d-grid">
-                            <button type="submit" class="btn btn-novellus-gold">
-                                <i class="fas fa-plus me-1"></i>Add Note
-                            </button>
-                        </div>
-                    </form>
-                    <div id="loanNotesLoading" class="text-center text-muted my-3" style="display:none;">
-                        <i class="fas fa-spinner fa-spin me-2"></i>Loading notes...
                     </div>
-                    <div id="loanNotesList" class="list-group"></div>
-                    <div id="loanNotesEmpty" class="text-muted text-center mt-3" style="display:none;">No notes yet. Be the first to add one.</div>
+                    <div class="card shadow-sm novellus-detail-card">
+                        <div class="card-header d-flex align-items-center">
+                            <i class="fas fa-scroll me-2 text-warning"></i>
+                            <h6 class="mb-0">Loan Summary</h6>
+                        </div>
+                        <div class="card-body py-0">
+                            ${buildTable(loanSummaryRows)}
+                        </div>
+                    </div>
+                    <div class="card shadow-sm novellus-detail-card" id="loanNotesCard">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="fas fa-sticky-note me-2 text-warning"></i>Notes</h6>
+                            <small class="text-muted">Track status updates and interactions</small>
+                        </div>
+                        <div class="card-body">
+                            <form id="loanNotesForm" class="row g-2 align-items-start mb-3" data-loan-id="${loan.id}">
+                                <div class="col-md-3">
+                                    <label for="loanNoteStatus" class="form-label visually-hidden">Note status</label>
+                                    <select class="form-select" id="loanNoteStatus" name="status">
+                                        <option value="General">General</option>
+                                        <option value="Call">Call</option>
+                                        <option value="Email">Email</option>
+                                        <option value="Underwriting">Underwriting</option>
+                                        <option value="Legal">Legal</option>
+                                        <option value="Completed">Completed</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-7">
+                                    <label for="loanNoteText" class="form-label visually-hidden">Note text</label>
+                                    <textarea class="form-control" id="loanNoteText" name="text" rows="2" placeholder="Add a note about this loan..." required></textarea>
+                                </div>
+                                <div class="col-md-2 d-grid">
+                                    <button type="submit" class="btn btn-novellus-gold">
+                                        <i class="fas fa-plus me-1"></i>Add Note
+                                    </button>
+                                </div>
+                            </form>
+                            <div id="loanNotesLoading" class="text-center text-muted my-3" style="display:none;">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Loading notes...
+                            </div>
+                            <div id="loanNotesList" class="list-group"></div>
+                            <div id="loanNotesEmpty" class="text-muted text-center mt-3" style="display:none;">No notes yet. Be the first to add one.</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-4 d-flex">
+                    <div class="card shadow-sm novellus-chart-card flex-fill">
+                        <div class="card-header text-center">
+                            <h6 class="mb-0"><i class="fas fa-chart-pie me-2 text-warning"></i>Loan Breakdown</h6>
+                        </div>
+                        <div class="card-body d-flex align-items-center justify-content-center">
+                            <canvas id="loanBreakdownChart" class="w-100" style="max-height: 420px;"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <div class="card border-0 mt-4">
-                <div class="card-header bg-novellus-navy text-white">
-                    <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Loan Breakdown</h6>
-                </div>
-                <div class="card-body">
-                    <canvas id="loanBreakdownChart" style="height:400px;"></canvas>
-                </div>
-            </div>
+            ${scheduleSection}
+        </div>
         `;
         this.setupLoanNotesSection(loan);
         this.createLoanBreakdownChart(loan);
@@ -874,34 +782,51 @@ class LoanHistoryManager {
         }
 
         const currency = loan.currency_symbol || (loan.currency === 'EUR' ? '€' : '£');
+        const breakdownValues = [
+            loan.totalNetAdvance || 0,
+            loan.arrangementFee || 0,
+            loan.legalFees || 0,
+            loan.siteVisitFee || 0,
+            loan.titleInsurance || 0,
+            loan.totalInterest || 0
+        ];
+
         const data = {
             labels: ['Total Net Advance', 'Arrangement Fee', 'Legal Costs', 'Site Visit Fee', 'Title Insurance', 'Total Interest'],
             datasets: [{
-                data: [
-                    loan.totalNetAdvance || 0,
-                    loan.arrangementFee || 0,
-                    loan.legalFees || 0,
-                    loan.siteVisitFee || 0,
-                    loan.titleInsurance || 0,
-                    loan.totalInterest || 0
-                ],
-                backgroundColor: ['#0b0b16', '#b49b5c', '#ffffff', '#3a3a3a', '#6b6b6b', '#9e9e9e'],
+                data: breakdownValues,
+                backgroundColor: ['#1E2B3A', '#AD965F', '#E8EBF0', '#3D4F64', '#6C7B7F', '#B0B7C3'],
+                borderColor: '#FFFFFF',
                 borderWidth: 2,
-                borderColor: '#0b0b16'
+                hoverOffset: 12
             }]
         };
 
         const options = {
             responsive: true,
+            maintainAspectRatio: false,
+            cutout: '58%',
+            layout: { padding: 16 },
             plugins: {
-                legend: { position: 'right' },
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#1E2B3A',
+                        usePointStyle: true,
+                        padding: 14,
+                        font: { size: 12 }
+                    }
+                },
                 tooltip: {
+                    backgroundColor: '#1E2B3A',
+                    titleColor: '#FFFFFF',
+                    bodyColor: '#FFFFFF',
                     callbacks: {
                         label: function(context) {
                             const label = context.label || '';
                             const value = context.parsed || 0;
-                            const total = context.dataset.data.reduce((a,b) => a + b, 0);
-                            const perc = total ? (value/total*100).toFixed(1) : 0;
+                            const total = breakdownValues.reduce((a, b) => a + b, 0);
+                            const perc = total ? (value / total * 100).toFixed(1) : 0;
                             return `${label}: ${currency}${value.toLocaleString('en-GB')} (${perc}%)`;
                         }
                     }
@@ -909,9 +834,8 @@ class LoanHistoryManager {
             }
         };
 
-        this.loanBreakdownChart = new Chart(ctx, {type: 'doughnut', data, options});
+        this.loanBreakdownChart = new Chart(ctx, { type: 'doughnut', data, options });
     }
-
     setupLoanNotesSection(loan) {
         const form = document.getElementById('loanNotesForm');
         const statusSelect = document.getElementById('loanNoteStatus');
