@@ -21,12 +21,12 @@
 
     .loan-detail-page .page-title {
         font-weight: 600;
-        color: #ffffff;
+        color: black;
         letter-spacing: 0.3px;
     }
 
     .loan-detail-page .subtitle {
-        color: rgba(255, 255, 255, 0.75);
+        color: white;
         font-size: 0.9rem;
     }
 
@@ -38,18 +38,18 @@
     }
 
     .loan-detail-actions .btn-outline-light {
-        border-color: rgba(255,255,255,0.35);
-        color: #ffffff;
+        border-color: black;
+        color: black;
     }
 
     .loan-detail-actions .btn-outline-light:hover {
         background: rgba(255,255,255,0.15);
-        color: #ffffff;
+        color: white;
     }
 
     .loan-detail-card {
         background-color: rgba(15, 23, 42, 0.95);
-        background-image: none;
+
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 16px;
         box-shadow: 0 18px 32px rgba(2, 8, 20, 0.55);
@@ -83,7 +83,7 @@
 
     .loan-detail-card .table td:first-child {
         font-weight: 500;
-        color: rgba(255, 255, 255, 0.72);
+        color: white;
         width: 55%;
     }
 
@@ -106,14 +106,13 @@
 
     .chart-card {
         background-color: rgba(14, 20, 34, 0.96);
-        background-image: none;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 0px solid rgba(255, 255, 255, 0.05);
         border-radius: 18px;
-        box-shadow: 0 22px 45px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 0px 0px rgba(0, 0, 0, 0.5);
     }
 
     .chart-card .card-header {
-        border-bottom: 1px solid rgba(255,255,255,0.08);
+        border-bottom: 0px solid rgba(255,255,255,0.08);
         background-color: var(--primary-dark, rgba(13,27,43,0.95));
         background-image: none;
         color: #fefefe;
@@ -122,12 +121,12 @@
 
 
     .chart-card .card-body {
-        padding: 1.25rem 1.4rem;
-        min-height: 280px;
+        padding: 0rem 0rem;
+        min-height: 650px;
     }
 
     .chart-card canvas {
-        min-height: 280px;
+        min-height: 650px;
 
     }
 
@@ -366,7 +365,7 @@
         }
     }
 
-    @media (max-width: 767.98px) {
+    @media (max-width: 700px) {
         .schedule-table-wrapper {
             max-height: none;
         }
@@ -387,7 +386,7 @@
         <div class="col-lg-7 col-md-12">
             <div class="d-flex flex-column flex-lg-row align-items-lg-center align-items-start justify-content-lg-end gap-3">
                 <div>
-                    <a href="{{ url_for('loan_history') }}" class="btn btn-outline-light"><i class="fas fa-arrow-left me-2"></i>Back to Loan History</a>
+                    <a href="{{ url_for('loan_history') }}" class="btn btn-outline-primary d-flex align-items-center"><i class="fas fa-arrow-left me-2"></i>Back to Loan History</a>
                 </div>
                 <div class="loan-detail-actions d-flex flex-wrap gap-2">
                     <a id="downloadDocxButton" class="btn btn-outline-primary d-flex align-items-center" href="#" target="_blank">
@@ -476,12 +475,6 @@
                     <div class="card-header"><i class="fas fa-chart-pie me-2"></i>Loan Summary Breakdown</div>
                     <div class="card-body">
                         <canvas id="loanBreakdownChart"></canvas>
-                    </div>
-                </div>
-                <div class="card chart-card d-none" id="ltvChartCard">
-                    <div class="card-header"><i class="fas fa-gauge-high me-2"></i>LTV Position</div>
-                    <div class="card-body">
-                        <canvas id="loanLtvChart"></canvas>
                     </div>
                 </div>
                 <div class="card chart-card d-none" id="balanceChartCard">
@@ -646,6 +639,7 @@ class LoanHistoryDetailPage {
                 || this.inputData.detailed_payment_schedule
                 || [];
 
+
             if (!Array.isArray(rawSchedule) && typeof rawSchedule === 'string') {
                 try {
                     const parsed = JSON.parse(rawSchedule);
@@ -656,6 +650,7 @@ class LoanHistoryDetailPage {
                     console.warn('Unable to parse stored schedule JSON', error);
                 }
             }
+
 
             this.rawSchedule = Array.isArray(rawSchedule) ? rawSchedule : [];
             this.scheduleData = this.parseScheduleData(this.rawSchedule);
@@ -1158,6 +1153,7 @@ class LoanHistoryDetailPage {
             const trancheRaw = getValue('tranche_release', 'tranche', 'drawdown', 'drawdown_amount');
             const accruedRaw = getValue('interest_accrued', 'interest_calculation', 'interest_accrued_amount');
 
+
             const periodDisplayRaw = getValue('period_label', 'period_display', 'period_number', 'period', 'index');
             const periodDisplay = (periodDisplayRaw !== undefined && periodDisplayRaw !== null)
                 ? periodDisplayRaw
@@ -1166,6 +1162,7 @@ class LoanHistoryDetailPage {
             return {
                 period: this.toNumber(getValue('period_number', 'period', 'index'), index + 1),
                 period_display: periodDisplay,
+
                 start_period: getValue('start_period', 'startPeriod', 'period_start', 'start_of_period', 'periodStart'),
                 end_period: getValue('end_period', 'endPeriod', 'period_end', 'end_of_period', 'periodEnd'),
                 days_held: getValue('days_held', 'daysHeld', 'days'),
@@ -1227,7 +1224,9 @@ class LoanHistoryDetailPage {
         const scheduleCard = document.getElementById('loanHistoryScheduleCard');
         const container = document.getElementById('detailedPaymentScheduleCard');
         const tbody = document.getElementById('paymentScheduleTableBody');
+
         const headerRow = container ? container.querySelector('thead tr') : null;
+
 
         if (!container || !tbody || !headerRow) {
             return;
@@ -1239,6 +1238,7 @@ class LoanHistoryDetailPage {
 
         const loanType = (this.loanType || this.getFromSources(['loan_type', 'loanType']) || '').toString().toLowerCase();
         const repaymentOption = (this.getFromSources(['repaymentOption', 'repayment_option']) || '').toString().toLowerCase();
+
 
         const schedule = Array.isArray(this.rawSchedule) ? this.rawSchedule : [];
         const currentSymbol = this.currencySymbol;
@@ -1273,6 +1273,7 @@ class LoanHistoryDetailPage {
             return String(value).replace(/[£€]/g, currentSymbol);
         };
 
+
         const getCurrencyValue = (entry, keys) => {
             const raw = pickValue(entry, keys, '');
             if (raw === '') {
@@ -1284,6 +1285,7 @@ class LoanHistoryDetailPage {
                 numeric: this.toNumber(normalized, 0)
             };
         };
+
 
         const safeDisplay = (value, placeholder = '') => {
             if (value === undefined || value === null || value === '') {
@@ -1300,19 +1302,23 @@ class LoanHistoryDetailPage {
             })}`;
         };
 
+
         if (scheduleCard) {
             scheduleCard.classList.remove('d-none');
         }
+
 
         if (!schedule.length) {
             headerRow.innerHTML = defaultHeader;
             tbody.innerHTML = `
                 <tr>
                     <td colspan="10" class="py-3 text-center text-muted">No payment schedule data is available for this loan.</td>
+
                 </tr>
             `;
             return;
         }
+
 
         const isServicedOnly = repaymentOption === 'service_only';
         const isServicedCapital = repaymentOption === 'service_and_capital';
@@ -1441,12 +1447,14 @@ class LoanHistoryDetailPage {
                     <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRetained))}</td>
                     <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRefund))}</td>
                     <td></td>
+
                 </tr>
             `);
 
             tbody.innerHTML = rows.join('');
             return;
         }
+
 
         if (isFlexiblePayment) {
             headerRow.innerHTML = `
@@ -1523,6 +1531,7 @@ class LoanHistoryDetailPage {
             tbody.innerHTML = rows.join('');
             return;
         }
+
 
         if (isCapitalPaymentOnly) {
             headerRow.innerHTML = `
