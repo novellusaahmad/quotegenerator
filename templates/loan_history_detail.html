@@ -21,12 +21,12 @@
 
     .loan-detail-page .page-title {
         font-weight: 600;
-        color: #ffffff;
+        color: black;
         letter-spacing: 0.3px;
     }
 
     .loan-detail-page .subtitle {
-        color: rgba(255, 255, 255, 0.75);
+        color: white;
         font-size: 0.9rem;
     }
 
@@ -38,18 +38,18 @@
     }
 
     .loan-detail-actions .btn-outline-light {
-        border-color: rgba(255,255,255,0.35);
-        color: #ffffff;
+        border-color: black;
+        color: black;
     }
 
     .loan-detail-actions .btn-outline-light:hover {
         background: rgba(255,255,255,0.15);
-        color: #ffffff;
+        color: white;
     }
 
     .loan-detail-card {
         background-color: rgba(15, 23, 42, 0.95);
-        background-image: none;
+
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 16px;
         box-shadow: 0 18px 32px rgba(2, 8, 20, 0.55);
@@ -83,7 +83,7 @@
 
     .loan-detail-card .table td:first-child {
         font-weight: 500;
-        color: rgba(255, 255, 255, 0.72);
+        color: white;
         width: 55%;
     }
 
@@ -106,14 +106,13 @@
 
     .chart-card {
         background-color: rgba(14, 20, 34, 0.96);
-        background-image: none;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 0px solid rgba(255, 255, 255, 0.05);
         border-radius: 18px;
-        box-shadow: 0 22px 45px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 0px 0px rgba(0, 0, 0, 0.5);
     }
 
     .chart-card .card-header {
-        border-bottom: 1px solid rgba(255,255,255,0.08);
+        border-bottom: 0px solid rgba(255,255,255,0.08);
         background-color: var(--primary-dark, rgba(13,27,43,0.95));
         background-image: none;
         color: #fefefe;
@@ -122,12 +121,12 @@
 
 
     .chart-card .card-body {
-        padding: 1.25rem 1.4rem;
-        min-height: 280px;
+        padding: 0rem 0rem;
+        min-height: 650px;
     }
 
     .chart-card canvas {
-        min-height: 280px;
+        min-height: 650px;
 
     }
 
@@ -366,7 +365,7 @@
         }
     }
 
-    @media (max-width: 767.98px) {
+    @media (max-width: 700px) {
         .schedule-table-wrapper {
             max-height: none;
         }
@@ -387,7 +386,7 @@
         <div class="col-lg-7 col-md-12">
             <div class="d-flex flex-column flex-lg-row align-items-lg-center align-items-start justify-content-lg-end gap-3">
                 <div>
-                    <a href="{{ url_for('loan_history') }}" class="btn btn-outline-light"><i class="fas fa-arrow-left me-2"></i>Back to Loan History</a>
+                    <a href="{{ url_for('loan_history') }}" class="btn btn-outline-primary d-flex align-items-center"><i class="fas fa-arrow-left me-2"></i>Back to Loan History</a>
                 </div>
                 <div class="loan-detail-actions d-flex flex-wrap gap-2">
                     <a id="downloadDocxButton" class="btn btn-outline-primary d-flex align-items-center" href="#" target="_blank">
@@ -476,12 +475,6 @@
                     <div class="card-header"><i class="fas fa-chart-pie me-2"></i>Loan Summary Breakdown</div>
                     <div class="card-body">
                         <canvas id="loanBreakdownChart"></canvas>
-                    </div>
-                </div>
-                <div class="card chart-card d-none" id="ltvChartCard">
-                    <div class="card-header"><i class="fas fa-gauge-high me-2"></i>LTV Position</div>
-                    <div class="card-body">
-                        <canvas id="loanLtvChart"></canvas>
                     </div>
                 </div>
                 <div class="card chart-card d-none" id="balanceChartCard">
@@ -646,6 +639,7 @@ class LoanHistoryDetailPage {
                 || this.inputData.detailed_payment_schedule
                 || [];
 
+
             if (!Array.isArray(rawSchedule) && typeof rawSchedule === 'string') {
                 try {
                     const parsed = JSON.parse(rawSchedule);
@@ -656,6 +650,7 @@ class LoanHistoryDetailPage {
                     console.warn('Unable to parse stored schedule JSON', error);
                 }
             }
+
 
             this.rawSchedule = Array.isArray(rawSchedule) ? rawSchedule : [];
             this.scheduleData = this.parseScheduleData(this.rawSchedule);
@@ -1232,6 +1227,7 @@ class LoanHistoryDetailPage {
         const loanType = (this.loanType || this.getFromSources(['loan_type', 'loanType']) || '').toString().toLowerCase();
         const repaymentOption = (this.getFromSources(['repaymentOption', 'repayment_option']) || '').toString().toLowerCase();
 
+
         const schedule = Array.isArray(this.rawSchedule) ? this.rawSchedule : [];
         const currentSymbol = this.currencySymbol;
 
@@ -1299,10 +1295,84 @@ class LoanHistoryDetailPage {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="10" class="py-3 text-center text-muted">No payment schedule data is available for this loan.</td>
+
                 </tr>
-            `;
+            `);
+
+            tbody.innerHTML = rows.join('');
             return;
         }
+
+        if (isCapitalPaymentOnly) {
+            headerRow.innerHTML = `
+                <th class="text-center">Period</th>
+                <th class="text-center">Start of Period</th>
+                <th class="text-center">End of Period</th>
+                <th class="text-center">Days Held</th>
+                <th class="text-center">Capital Outstanding</th>
+                <th class="text-center">Annual Interest %</th>
+                <th class="text-center">Interest Factor P.D.</th>
+                <th class="text-center">Scheduled Repayment</th>
+                <th class="text-center">Interest Accrued</th>
+                <th class="text-center">Interest Retained</th>
+                <th class="text-center">Interest Refund</th>
+                <th class="text-center">Running LTV</th>
+            `;
+
+            let totalScheduled = 0;
+            let totalAccrued = 0;
+            let totalRetained = 0;
+            let totalRefund = 0;
+            let totalDays = 0;
+
+            const rows = schedule.map((entry, index) => {
+                const capitalOutstanding = getCurrencyValue(entry, ['capital_outstanding', 'capitalOutstanding', 'opening_balance', 'openingBalance']);
+                const scheduled = getCurrencyValue(entry, ['scheduled_repayment', 'scheduledRepayment', 'scheduled_payment']);
+                const accrued = getCurrencyValue(entry, ['interest_accrued', 'interestAccrued']);
+                const retained = getCurrencyValue(entry, ['interest_retained', 'retained_interest']);
+                const refund = getCurrencyValue(entry, ['interest_refund', 'interest_refunded']);
+
+                totalScheduled += scheduled.numeric;
+                totalAccrued += accrued.numeric;
+                totalRetained += retained.numeric;
+                totalRefund += refund.numeric;
+                totalDays += Number(pickValue(entry, ['days_held', 'daysHeld', 'days'])) || 0;
+
+                return `
+                    <tr>
+                        <td class="text-center">${this.escapeHTML(String(index + 1))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['start_period', 'startPeriod', 'period_start', 'start_of_period', 'periodStart']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['end_period', 'endPeriod', 'period_end', 'end_of_period', 'periodEnd']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['days_held', 'daysHeld', 'days']))}</td>
+                        <td class="text-end">${safeDisplay(capitalOutstanding.display)}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['annual_interest_rate', 'interest_rate']))}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['interest_pa', 'interest_factor_pd']))}</td>
+                        <td class="text-end">${safeDisplay(scheduled.display)}</td>
+                        <td class="text-end">${safeDisplay(accrued.display)}</td>
+                        <td class="text-end">${safeDisplay(retained.display)}</td>
+                        <td class="text-end">${safeDisplay(refund.display)}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['running_ltv', 'runningLtv']))}</td>
+                    </tr>
+                `;
+            });
+
+            rows.push(`
+                <tr class="schedule-total-row">
+                    <td colspan="3" class="text-end">Total</td>
+                    <td class="text-center">${this.escapeHTML(String(totalDays))}</td>
+                    <td colspan="3"></td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalScheduled))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalAccrued))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRetained))}</td>
+                    <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalRefund))}</td>
+                    <td></td>
+                </tr>
+            `);
+
+            tbody.innerHTML = rows.join('');
+            return;
+        }
+
 
         const isServicedOnly = repaymentOption === 'service_only';
         const isServicedCapital = repaymentOption === 'service_and_capital';
