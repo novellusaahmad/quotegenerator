@@ -40,7 +40,9 @@ except ModuleNotFoundError:  # pragma: no cover - optional dependency
     REPORTLAB_AVAILABLE = False
 
 
+
 BROTHER_FONT = "Brother 1816 Regular"
+
 BROTHER_STYLES = [
     "Normal",
     "Heading 1",
