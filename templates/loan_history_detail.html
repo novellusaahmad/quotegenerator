@@ -1096,27 +1096,51 @@ class LoanHistoryDetailPage {
             canvas.chartInstance.destroy();
         }
 
-        const palette = this.getThemeColors();
-        const border = this.addAlpha(palette[0] || '#0b0b16', 0.85);
+        const darkPalette = ['#0b0b16', '#b49b5c', '#ffffff', '#3a3a3a', '#6b6b6b', '#9e9e9e'];
+        const borderColor = '#0b0b16';
 
-        canvas.chartInstance = new Chart(canvas.getContext('2d'), {
+        const chartData = {
+            labels: dataset.map(item => item.label),
+            datasets: [{
+                data: dataValues,
+                backgroundColor: darkPalette.slice(0, dataValues.length),
+                borderColor,
+                borderWidth: 2,
+                hoverOffset: 20
+            }]
+        };
+
+        let chartConfig = {
             type: 'doughnut',
-            data: {
-                labels: dataset.map(item => item.label),
-                datasets: [{
-                    data: dataValues,
-                    backgroundColor: palette,
-                    borderColor: border,
-                    borderWidth: 2
-                }]
-            },
+            data: chartData,
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                cutout: '60%',
+                layout: {
+                    padding: {
+                        right: 20,
+                        bottom: 36
+                    }
+                },
                 plugins: {
                     legend: {
                         position: 'right',
-                        labels: { color: '#212529' }
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            font: { size: 12 },
+                            color: '#f8f9fa'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Loan Amount Breakdown',
+                        color: '#f8f9fa',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
                     },
                     tooltip: {
                         callbacks: {
@@ -1131,7 +1155,16 @@ class LoanHistoryDetailPage {
                     }
                 }
             }
-        });
+        };
+
+        if (typeof window.ChartDataLabelsEnhancer !== 'undefined') {
+            chartConfig = window.ChartDataLabelsEnhancer.enhancePieChart(chartConfig, {
+                currency: this.currencySymbol || '£',
+                baseFontSize: 20
+            });
+        }
+
+        canvas.chartInstance = new Chart(canvas.getContext('2d'), chartConfig);
     }
 
     parseScheduleData(rawSchedule = []) {
