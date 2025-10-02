@@ -2711,19 +2711,30 @@ def get_loan_details(loan_id):
         # Get payment schedule
         payment_schedule = PaymentSchedule.query.filter_by(loan_summary_id=loan_id).order_by(PaymentSchedule.period_number).all()
         
+        # Determine currency symbol for presentation
+        currency_symbol = '€' if loan.currency == 'EUR' else '£'
+
+        def format_amount(value):
+            if value is None:
+                return f"{currency_symbol}0.00"
+            try:
+                return f"{currency_symbol}{Decimal(value):,.2f}"
+            except Exception:
+                return f"{currency_symbol}{float(value):,.2f}"
+
         # Convert payment schedule to list
         schedule_data = []
         for payment in payment_schedule:
             schedule_data.append({
                 'period_number': payment.period_number,
                 'payment_date': payment.payment_date.strftime('%d/%m/%Y') if payment.payment_date else '',
-                'opening_balance': f"£{payment.opening_balance:,.2f}" if payment.opening_balance else '£0.00',
-                'closing_balance': f"£{payment.closing_balance:,.2f}" if payment.closing_balance else '£0.00',
+                'opening_balance': format_amount(payment.opening_balance),
+                'closing_balance': format_amount(payment.closing_balance),
                 'balance_change': payment.balance_change or '',
-                'total_payment': f"£{payment.total_payment:,.2f}" if payment.total_payment else '£0.00',
-                'interest_amount': f"£{payment.interest_amount:,.2f}" if payment.interest_amount else '£0.00',
-                'principal_payment': f"£{payment.principal_payment:,.2f}" if payment.principal_payment else '£0.00',
-                'tranche_release': f"£{payment.tranche_release:,.2f}" if payment.tranche_release else '£0.00',
+                'total_payment': format_amount(payment.total_payment),
+                'interest_amount': format_amount(payment.interest_amount),
+                'principal_payment': format_amount(payment.principal_payment),
+                'tranche_release': format_amount(payment.tranche_release),
                 'interest_calculation': payment.interest_calculation or ''
             })
         
@@ -2760,7 +2771,7 @@ def get_loan_details(loan_id):
             'loan_term': loan.loan_term,
             'start_date': loan.start_date.strftime('%Y-%m-%d') if loan.start_date else '',
             'end_date': loan.end_date.strftime('%Y-%m-%d') if loan.end_date else '',
-            'currency_symbol': '€' if loan.currency == 'EUR' else '£',
+            'currency_symbol': currency_symbol,
             
             # Repayment and fee parameters
             'repayment_option': loan.repayment_option,
