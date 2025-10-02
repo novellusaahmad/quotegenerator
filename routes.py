@@ -2587,6 +2587,27 @@ def get_saved_loans():
                 'tranches': []
             }
 
+            # Include a summary of saved history notes so the UI can surface
+            # note activity without loading the full loan record.
+            try:
+                note_count = loan.history_notes.count()
+                latest_note = loan.history_notes.order_by(LoanHistoryNote.created_at.desc()).first()
+            except Exception:
+                note_count = 0
+                latest_note = None
+
+            loan_data['history_note_count'] = note_count
+            if latest_note:
+                loan_data['last_note'] = {
+                    'id': latest_note.id,
+                    'status': latest_note.status,
+                    'author': latest_note.author,
+                    'created_at': latest_note.created_at.isoformat() if latest_note.created_at else None,
+                    'text_preview': (latest_note.text or '')[:160],
+                }
+            else:
+                loan_data['last_note'] = None
+
             # Derive reference monthly and quarterly interest payments
             try:
                 gross_decimal = Decimal(str(loan_data['gross_amount']))
@@ -2693,18 +2714,73 @@ def get_loan_details(loan_id):
         # Convert payment schedule to list
         schedule_data = []
         for payment in payment_schedule:
-            schedule_data.append({
-                'period_number': payment.period_number,
-                'payment_date': payment.payment_date.strftime('%d/%m/%Y') if payment.payment_date else '',
-                'opening_balance': f"£{payment.opening_balance:,.2f}" if payment.opening_balance else '£0.00',
-                'closing_balance': f"£{payment.closing_balance:,.2f}" if payment.closing_balance else '£0.00',
-                'balance_change': payment.balance_change or '',
-                'total_payment': f"£{payment.total_payment:,.2f}" if payment.total_payment else '£0.00',
-                'interest_amount': f"£{payment.interest_amount:,.2f}" if payment.interest_amount else '£0.00',
-                'principal_payment': f"£{payment.principal_payment:,.2f}" if payment.principal_payment else '£0.00',
-                'tranche_release': f"£{payment.tranche_release:,.2f}" if payment.tranche_release else '£0.00',
-                'interest_calculation': payment.interest_calculation or ''
-            })
+            raw_schedule = {}
+            if payment.schedule_data:
+                try:
+                    raw_schedule = json.loads(payment.schedule_data)
+                except (TypeError, ValueError) as exc:
+                    app.logger.warning(
+                        "Failed to parse stored schedule_data for payment %s: %s",
+                        payment.id,
+                        exc,
+                    )
+
+            entry = {}
+            if isinstance(raw_schedule, dict):
+                entry.update(raw_schedule)
+
+            entry.update(
+                {
+                    'period_number': payment.period_number,
+                    'payment_date': payment.payment_date.strftime('%d/%m/%Y')
+                    if payment.payment_date
+                    else entry.get('payment_date', ''),
+                    'opening_balance': (
+                        f"£{payment.opening_balance:,.2f}"
+                        if payment.opening_balance is not None
+                        else entry.get('opening_balance', '£0.00')
+                    ),
+                    'closing_balance': (
+                        f"£{payment.closing_balance:,.2f}"
+                        if payment.closing_balance is not None
+                        else entry.get('closing_balance', '£0.00')
+                    ),
+                    'balance_change': payment.balance_change
+                    if payment.balance_change is not None
+                    else entry.get('balance_change', ''),
+                    'total_payment': (
+                        f"£{payment.total_payment:,.2f}"
+                        if payment.total_payment is not None
+                        else entry.get('total_payment', '£0.00')
+                    ),
+                    'interest_amount': (
+                        f"£{payment.interest_amount:,.2f}"
+                        if payment.interest_amount is not None
+                        else entry.get('interest_amount', '£0.00')
+                    ),
+                    'principal_payment': (
+                        f"£{payment.principal_payment:,.2f}"
+                        if payment.principal_payment is not None
+                        else entry.get('principal_payment', '£0.00')
+                    ),
+                    'tranche_release': (
+                        f"£{payment.tranche_release:,.2f}"
+                        if payment.tranche_release is not None
+                        else entry.get('tranche_release', '£0.00')
+                    ),
+                    'interest_calculation': payment.interest_calculation
+                    if payment.interest_calculation
+                    else entry.get('interest_calculation', ''),
+                }
+            )
+
+            # Ensure any derived schedule metadata is present for UI rendering
+            if 'start_period' not in entry and payment.payment_date:
+                entry['start_period'] = entry.get('start_period', entry['payment_date'])
+            if 'end_period' not in entry and payment.payment_date:
+                entry['end_period'] = entry.get('end_period', entry['payment_date'])
+
+            schedule_data.append(entry)
         
         # Parse original input data for use in tranche schedules
         try:

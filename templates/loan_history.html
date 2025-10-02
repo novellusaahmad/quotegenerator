@@ -92,6 +92,7 @@
                                     <th>Total Interest</th>
                                     <th>Created</th>
                                     <th>Power BI Report</th>
+                                    <th>Notes</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -135,6 +136,121 @@
 </div>
 
 <!-- Bootstrap JS already loaded in base template -->
+
+<!-- Visualization Modals -->
+<div class="modal fade modal-edge-to-edge" id="paymentScheduleModal" tabindex="-1" aria-labelledby="paymentScheduleLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="paymentScheduleLabel">Detailed Payment Schedule</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="detailedPaymentScheduleCard">
+          <div>
+            <table class="table table-sm" style="width: 100%; border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+              <thead>
+                <tr style="background: #f8f9fa; border: 1px solid #000;">
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Capital Outstanding</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Annual Interest %</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Factor P.D.</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Scheduled Repayment</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Repayment</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Accrued</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Retained</th>
+                  <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Refund</th>
+                  <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Running LTV</th>
+                </tr>
+              </thead>
+              <tbody id="detailedPaymentScheduleBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="exportPaymentScheduleBtn" style="display: none;">Export</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade modal-edge-to-edge" id="trancheScheduleModal" tabindex="-1" aria-labelledby="trancheScheduleLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="trancheScheduleLabel">Calculation Breakdown</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <table class="table table-sm" style="width: 100%; border: 1px solid #000; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+              <tr style="background: #f8f9fa; border: 1px solid #000;">
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Tranche Release</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Calculation</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
+                <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Running LTV</th>
+              </tr>
+            </thead>
+            <tbody id="trancheScheduleBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="exportTrancheScheduleBtn" style="display: none;">Export</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade modal-edge-to-edge" id="loanBreakdownModal" tabindex="-1" aria-labelledby="loanBreakdownLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="loanBreakdownLabel">Loan Breakdown</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <canvas id="loanBreakdownChart" class="w-100" style="height:80vh;"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade modal-edge-to-edge" id="balanceModal" tabindex="-1" aria-labelledby="balanceLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-novellus-navy text-white">
+        <h5 class="modal-title" id="balanceLabel">Balance Over Time</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <canvas id="balanceOverTimeChart" class="w-100" style="height:80vh;"></canvas>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 class LoanHistoryManager {
     constructor() {
@@ -143,6 +259,9 @@ class LoanHistoryManager {
         this.currentLoanId = null;
         this.powerBIReports = {};
         this.loanBreakdownChart = null;
+
+        this.focusNotesAfterLoad = false;
+
         this.noteStatuses = ['General', 'Call', 'Email', 'Underwriting', 'Legal', 'Completed'];
         this.noteStatusClasses = {
             'General': 'bg-secondary',
@@ -157,6 +276,7 @@ class LoanHistoryManager {
 
     async init() {
         this.bindEvents();
+        this.setupModalChartHandlers();
         await this.loadPowerBIReports();
         this.loadLoans();
         // BIRT status check removed for simplified deployment
@@ -390,6 +510,122 @@ class LoanHistoryManager {
         return items.join('');
     }
 
+    renderNotesSummary(loan) {
+        const count = Number(loan.history_note_count || 0);
+        const lastNote = loan.last_note || null;
+        const countLabel = count === 1 ? 'note' : 'notes';
+        const countBadge = `<span class="badge rounded-pill note-count-badge">${count}</span>`;
+
+        let summaryHtml = `<div class="d-flex flex-column gap-1 notes-summary">`;
+        summaryHtml += `
+            <div class="d-flex align-items-center flex-wrap gap-2">
+                ${countBadge}
+                <span class="small text-muted">${countLabel}</span>
+                ${lastNote ? `<span class="badge ${this.getStatusBadgeClass(lastNote.status || 'General')}">${this.escapeHtml(lastNote.status || 'General')}</span>` : ''}
+            </div>
+        `;
+
+        if (lastNote) {
+            const timestamp = this.formatNoteTimestamp(lastNote.created_at);
+            const author = this.escapeHtml(lastNote.author || 'System');
+            const previewText = this.escapeHtml(lastNote.text_preview || '');
+            summaryHtml += `
+                <div class="small text-muted">${author}${timestamp ? ` • ${timestamp}` : ''}</div>
+                ${previewText ? `<div class="small text-muted note-preview" title="${previewText}">${this.truncateText(previewText, 120)}</div>` : ''}
+            `;
+        } else {
+            summaryHtml += `<div class="small text-muted">No notes yet</div>`;
+        }
+
+        summaryHtml += `
+            <button class="btn btn-sm btn-outline-primary note-action-button align-self-start" onclick="loanHistory.viewLoanDetails(${loan.id}, { focusNotes: true })">
+                <i class="fas fa-sticky-note me-1"></i>${count ? 'View notes' : 'Add note'}
+            </button>
+        `;
+        summaryHtml += '</div>';
+
+        return summaryHtml;
+    }
+
+    truncateText(value, maxLength = 120) {
+        if (!value) {
+            return '';
+        }
+        const str = String(value);
+        return str.length > maxLength ? `${str.slice(0, maxLength).trim()}…` : str;
+    }
+
+    updateLoanCollections(loanId, updater) {
+        let updated = false;
+        const targetId = Number(loanId);
+        const applyUpdate = (collection) => {
+            if (!Array.isArray(collection)) {
+                return;
+            }
+            const loan = collection.find(item => Number(item.id) === targetId);
+            if (loan) {
+                const result = updater(loan);
+                if (result !== false) {
+                    updated = true;
+                }
+            }
+        };
+
+        applyUpdate(this.loans);
+        applyUpdate(this.filteredLoans);
+        return updated;
+    }
+
+    syncLoanNotesSummary(loanId, notes = [], options = {}) {
+        const { reRender = true } = options;
+        const noteArray = Array.isArray(notes) ? notes : [];
+        const count = noteArray.length;
+        const latestNote = count ? noteArray[0] : null;
+
+        const didUpdate = this.updateLoanCollections(loanId, (loan) => {
+            const previousCount = Number(loan.history_note_count || 0);
+            const previousSummary = JSON.stringify(loan.last_note || null);
+            const nextSummary = latestNote
+                ? {
+                    status: latestNote.status || 'General',
+                    author: latestNote.author || 'System',
+                    created_at: latestNote.created_at || null,
+                    text_preview: this.truncateText(latestNote.text || '', 160)
+                }
+                : null;
+
+            if (previousCount === count && JSON.stringify(nextSummary) === previousSummary) {
+                return false;
+            }
+
+            loan.history_note_count = count;
+            loan.last_note = nextSummary;
+            return true;
+        });
+
+        if (didUpdate && reRender) {
+            this.renderLoansTable();
+        }
+    }
+
+    scrollToNotesSection() {
+        this.focusNotesAfterLoad = false;
+        const card = document.getElementById('loanNotesCard');
+        if (!card) {
+            return;
+        }
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        card.classList.add('note-focus-highlight');
+        setTimeout(() => card.classList.remove('note-focus-highlight'), 2000);
+
+        setTimeout(() => {
+            const textArea = document.getElementById('loanNoteText');
+            if (textArea) {
+                textArea.focus();
+            }
+        }, 350);
+    }
+
     clearFilters() {
         document.getElementById('searchInput').value = '';
         document.getElementById('loanTypeFilter').value = '';
@@ -415,7 +651,7 @@ class LoanHistoryManager {
         }
         
         if (this.filteredLoans.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">No loans match your filters</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">No loans match your filters</td></tr>';
             return;
         }
 
@@ -454,6 +690,7 @@ class LoanHistoryManager {
                     </div>
                     <div class="small text-muted mt-1">${loan.currency}</div>
                 </td>
+                <td>${this.renderNotesSummary(loan)}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-secondary bg-white text-dark me-1" onclick="loanHistory.viewLoanDetails(${loan.id})" title="View Details">
                         <i class="fas fa-eye"></i>
@@ -489,9 +726,11 @@ class LoanHistoryManager {
         }, 100);
     }
 
-    async viewLoanDetails(loanId) {
+    async viewLoanDetails(loanId, options = {}) {
         try {
             this.currentLoanId = loanId;
+            const { focusNotes = false } = options;
+            this.focusNotesAfterLoad = focusNotes;
             const modal = new bootstrap.Modal(document.getElementById('loanDetailsModal'));
             
             // Show loading state
@@ -519,8 +758,13 @@ class LoanHistoryManager {
                 docxBtn.href = `/loan/${loanId}/summary-docx`;
                 docxBtn.style.display = 'inline-block';
             }
-            
+
+            if (this.focusNotesAfterLoad) {
+                setTimeout(() => this.scrollToNotesSection(), 300);
+            }
+
         } catch (error) {
+            this.focusNotesAfterLoad = false;
             console.error('Error loading loan details:', error);
             document.getElementById('loanDetailsContent').innerHTML = `
                 <div class="alert alert-danger">
@@ -538,6 +782,7 @@ class LoanHistoryManager {
         const content = document.getElementById('loanDetailsContent');
         const currencySymbol = loan.currency_symbol || (loan.currency === 'EUR' ? '€' : '£');
         const formatMoney = (val) => `${currencySymbol}${(Number(val) || 0).toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
         
         const toTitleCase = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : '';
         const formatPercentage = (value, digits = 2) => `${(Number(value) || 0).toFixed(digits)}%`;
@@ -549,6 +794,7 @@ class LoanHistoryManager {
                             <tr>
                                 <th scope="row" class="novellus-detail-label">${row.label}</th>
                                 <td class="novellus-detail-value text-end">${row.value}</td>
+
                             </tr>
                         `).join('')}
                     </tbody>
@@ -709,6 +955,7 @@ class LoanHistoryManager {
                             ${buildTable(loanParametersRows)}
                         </div>
                     </div>
+
                     <div class="card shadow-sm novellus-detail-card">
                         <div class="card-header d-flex align-items-center">
                             <i class="fas fa-scroll me-2 text-warning"></i>
@@ -758,18 +1005,711 @@ class LoanHistoryManager {
                     <div class="card shadow-sm novellus-chart-card flex-fill">
                         <div class="card-header text-center">
                             <h6 class="mb-0"><i class="fas fa-chart-pie me-2 text-warning"></i>Loan Breakdown</h6>
+
                         </div>
                         <div class="card-body d-flex align-items-center justify-content-center">
                             <canvas id="loanBreakdownChart" class="w-100" style="max-height: 420px;"></canvas>
                         </div>
                     </div>
+
                 </div>
             </div>
             ${scheduleSection}
         </div>
+
         `;
         this.setupLoanNotesSection(loan);
+        this.populateDetailedPaymentSchedule(loan);
+        this.populateTrancheSchedule(loan);
         this.createLoanBreakdownChart(loan);
+        this.createBalanceOverTimeChart(loan);
+        this.setupVisualizationButtons(loan);
+    }
+
+    getCurrencySymbol(currency) {
+        if (!currency) {
+            return '£';
+        }
+        const code = String(currency).trim().toUpperCase();
+        switch (code) {
+            case 'EUR':
+            case '€':
+                return '€';
+            case 'USD':
+            case 'US$':
+            case '$':
+                return '$';
+            case 'GBP':
+            case '£':
+            default:
+                return '£';
+        }
+    }
+
+    populateDetailedPaymentSchedule(loan) {
+        const container = document.getElementById('detailedPaymentScheduleCard');
+        const scheduleBody = document.getElementById('detailedPaymentScheduleBody');
+        const exportBtn = document.getElementById('exportPaymentScheduleBtn');
+
+        if (!container || !scheduleBody) {
+            this.scheduleVisible = false;
+            return;
+        }
+
+        const schedule = Array.isArray(loan.detailed_payment_schedule) ? loan.detailed_payment_schedule : [];
+        const loanType = (loan.loan_type || '').toLowerCase();
+        const repaymentOption = loan.repaymentOption || loan.repayment_option || '';
+        const hideSchedule = loanType === 'development' || ((loanType === 'term' || loanType === 'bridge') && repaymentOption === 'none');
+
+        if (hideSchedule || schedule.length === 0) {
+            container.style.display = 'none';
+            if (exportBtn) { exportBtn.style.display = 'none'; }
+            this.scheduleVisible = false;
+            return;
+        }
+
+        container.style.display = 'block';
+        if (exportBtn) { exportBtn.style.display = 'none'; }
+        scheduleBody.innerHTML = '';
+
+        const headerRow = container.querySelector('thead tr');
+        if (headerRow && !this.defaultScheduleHeader) {
+            this.defaultScheduleHeader = headerRow.innerHTML;
+        }
+
+        const currentSymbol = this.getCurrencySymbol(loan.currency_symbol || loan.currency || 'GBP');
+
+        const parseNumber = (value) => {
+            if (typeof value === 'number') {
+                return value;
+            }
+            if (typeof value === 'string') {
+                const cleaned = value.replace(/[^0-9.-]/g, '');
+                const parsed = parseFloat(cleaned);
+                return Number.isFinite(parsed) ? parsed : 0;
+            }
+            return 0;
+        };
+
+        const formatCurrency = (value) => {
+            if (value === null || value === undefined) {
+                return `${currentSymbol}0.00`;
+            }
+            if (typeof value === 'number') {
+                return `${currentSymbol}${value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+            const stringValue = String(value).trim();
+            if (stringValue === '' || stringValue === '—') {
+                return stringValue || `${currentSymbol}0.00`;
+            }
+            return stringValue.replace(/[£€$]/g, currentSymbol);
+        };
+
+        const formatText = (value) => {
+            if (value === null || value === undefined) {
+                return '';
+            }
+            return String(value).replace(/[£€$]/g, currentSymbol);
+        };
+
+        const headers = {
+            servicedOnly: `
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
+                <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Interest Serviced</th>
+            `,
+            servicedCapital: `
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Capital Outstanding</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Annual Interest %</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Factor P.D.</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Scheduled Repayment</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Repayment</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Accrued</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Retained</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Refund</th>
+                <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Running LTV</th>
+            `,
+            flexible: `
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Capital Outstanding</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Annual Interest %</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Factor P.D.</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Repayment</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Capital Repayment</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Accrued</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Retained</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Refund</th>
+                <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Running LTV</th>
+            `,
+            capitalOnly: `
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Start of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">End of Period</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Days Held</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Capital Outstanding</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Annual Interest %</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Factor P.D.</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Scheduled Repayment</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Accrued</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Retained</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Refund</th>
+                <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Running LTV</th>
+            `,
+            default: `
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Payment Date</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Opening Balance</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Tranche Release</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Calculation</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Interest Saving</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Principal</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Total Payment</th>
+                <th class="px-2 text-center" style="border-right: 1px solid #000; color: #000; font-weight: bold; font-size: 0.875rem;">Closing Balance</th>
+                <th class="px-2 text-center" style="color: #000; font-weight: bold; font-size: 0.875rem;">Balance Change</th>
+            `
+        };
+
+        const setHeader = (key) => {
+            if (headerRow && headers[key]) {
+                headerRow.innerHTML = headers[key];
+            }
+        };
+
+        if (repaymentOption === 'service_only') {
+            setHeader('servicedOnly');
+            let totalInterest = 0;
+            let totalDays = 0;
+
+            schedule.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.style.border = '1px solid #000';
+                tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
+
+                const startPeriod = row.start_period || '';
+                const endPeriod = row.end_period || '';
+                const daysHeld = row.days_held ?? '';
+                const openingBalance = formatCurrency(row.opening_balance);
+                const interestCalculation = formatText(row.interest_calculation);
+                const interestAmount = formatCurrency(row.interest_amount);
+
+                totalInterest += parseNumber(row.interest_amount);
+                totalDays += parseNumber(daysHeld);
+
+                tr.innerHTML = `
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${startPeriod}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${endPeriod}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${daysHeld}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${openingBalance}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${interestCalculation}</td>
+                    <td class="py-1 px-2 text-end" style="color: #000; font-size: 0.875rem;">${interestAmount}</td>
+                `;
+
+                scheduleBody.appendChild(tr);
+            });
+
+            const totalRow = document.createElement('tr');
+            totalRow.style.border = '1px solid #000';
+            totalRow.style.background = '#f8f9fa';
+            totalRow.innerHTML = `
+                <td colspan="2" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">Total</td>
+                <td class="py-1 px-2 text-center fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">${totalDays}</td>
+                <td class="py-1 px-2" style="border-right: 1px solid #000;"></td>
+                <td class="py-1 px-2" style="border-right: 1px solid #000;"></td>
+                <td class="py-1 px-2 text-end fw-bold" style="color: #000; font-size: 0.875rem;">${currentSymbol}${totalInterest.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            `;
+            scheduleBody.appendChild(totalRow);
+
+            this.scheduleVisible = true;
+            return;
+        }
+
+        if (repaymentOption === 'service_and_capital') {
+            setHeader('servicedCapital');
+            let totalScheduled = 0;
+            let totalRepayment = 0;
+            let totalAccrued = 0;
+            let totalRetained = 0;
+            let totalRefund = 0;
+            let totalDays = 0;
+
+            schedule.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.style.border = '1px solid #000';
+                tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
+
+                const capitalOutstanding = row.capital_outstanding !== undefined ? formatCurrency(row.capital_outstanding) : '';
+                const scheduledRepayment = formatCurrency(row.scheduled_repayment);
+                const totalRepaymentValue = formatCurrency(row.total_repayment);
+                const interestAccrued = formatCurrency(row.interest_accrued);
+                const interestRetained = formatCurrency(row.interest_retained);
+                const interestRefund = formatCurrency(row.interest_refund);
+
+                totalScheduled += parseNumber(row.scheduled_repayment);
+                totalRepayment += parseNumber(row.total_repayment);
+                totalAccrued += parseNumber(row.interest_accrued);
+                totalRetained += parseNumber(row.interest_retained);
+                totalRefund += parseNumber(row.interest_refund);
+                totalDays += parseNumber(row.days_held);
+
+                tr.innerHTML = `
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${index + 1}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.start_period || ''}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.end_period || ''}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.days_held ?? ''}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${capitalOutstanding}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.annual_interest_rate ?? ''}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.interest_pa ?? ''}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${scheduledRepayment}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${totalRepaymentValue}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${interestAccrued}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${interestRetained}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${interestRefund}</td>
+                    <td class="py-1 px-2 text-center" style="color: #000; font-size: 0.875rem;">${row.running_ltv ?? ''}</td>
+                `;
+
+                scheduleBody.appendChild(tr);
+            });
+
+            const totalRow = document.createElement('tr');
+            totalRow.style.border = '1px solid #000';
+            totalRow.style.background = '#f8f9fa';
+            totalRow.innerHTML = `
+                <td colspan="3" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">Total</td>
+                <td class="py-1 px-2 text-center fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">${totalDays}</td>
+                <td colspan="3" class="py-1 px-2" style="border-right: 1px solid #000;"></td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalScheduled.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalRepayment.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalAccrued.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalRetained.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalRefund.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2"></td>
+            `;
+            scheduleBody.appendChild(totalRow);
+
+            this.scheduleVisible = true;
+            return;
+        }
+
+        if (repaymentOption === 'flexible_payment') {
+            setHeader('flexible');
+            let totalRepayment = 0;
+            let totalCapital = 0;
+            let totalAccrued = 0;
+            let totalRetained = 0;
+            let totalRefund = 0;
+            let totalDays = 0;
+
+            schedule.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.style.border = '1px solid #000';
+                tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
+
+                const capitalOutstanding = row.capital_outstanding !== undefined ? formatCurrency(row.capital_outstanding) : '';
+                const totalRepaymentVal = formatCurrency(row.total_repayment);
+                const capitalRepayment = formatCurrency(row.capital_repayment);
+                const interestAccrued = formatCurrency(row.interest_accrued);
+                const interestRetained = formatCurrency(row.interest_retained);
+                const interestRefund = formatCurrency(row.interest_refund);
+
+                totalRepayment += parseNumber(row.total_repayment);
+                totalCapital += parseNumber(row.capital_repayment);
+                totalAccrued += parseNumber(row.interest_accrued);
+                totalRetained += parseNumber(row.interest_retained);
+                totalRefund += parseNumber(row.interest_refund);
+                totalDays += parseNumber(row.days_held);
+
+                tr.innerHTML = `
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${index + 1}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.start_period || ''}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.end_period || ''}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.days_held ?? ''}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${capitalOutstanding}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.annual_interest_rate ?? ''}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.interest_pa ?? ''}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${totalRepaymentVal}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${capitalRepayment}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${interestAccrued}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${interestRetained}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${interestRefund}</td>
+                    <td class="py-1 px-2 text-center" style="color: #000; font-size: 0.875rem;">${row.running_ltv ?? ''}</td>
+                `;
+
+                scheduleBody.appendChild(tr);
+            });
+
+            const totalRow = document.createElement('tr');
+            totalRow.style.border = '1px solid #000';
+            totalRow.style.background = '#f8f9fa';
+            totalRow.innerHTML = `
+                <td colspan="3" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">Total</td>
+                <td class="py-1 px-2 text-center fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">${totalDays}</td>
+                <td colspan="3" class="py-1 px-2" style="border-right: 1px solid #000;"></td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalRepayment.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalCapital.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalAccrued.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalRetained.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalRefund.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2"></td>
+            `;
+            scheduleBody.appendChild(totalRow);
+
+            this.scheduleVisible = true;
+            return;
+        }
+
+        if (repaymentOption === 'capital_payment_only') {
+            setHeader('capitalOnly');
+            let totalScheduled = 0;
+            let totalAccrued = 0;
+            let totalRetained = 0;
+            let totalRefund = 0;
+            let totalDays = 0;
+
+            schedule.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.style.border = '1px solid #000';
+                tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
+
+                const capitalOutstanding = row.capital_outstanding !== undefined ? formatCurrency(row.capital_outstanding) : '';
+                const scheduledRepayment = formatCurrency(row.scheduled_repayment);
+                const interestAccrued = formatCurrency(row.interest_accrued);
+                const interestRetained = formatCurrency(row.interest_retained);
+                const interestRefund = formatCurrency(row.interest_refund);
+
+                totalScheduled += parseNumber(row.scheduled_repayment);
+                totalAccrued += parseNumber(row.interest_accrued);
+                totalRetained += parseNumber(row.interest_retained);
+                totalRefund += parseNumber(row.interest_refund);
+                totalDays += parseNumber(row.days_held);
+
+                tr.innerHTML = `
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${index + 1}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.start_period || ''}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.end_period || ''}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.days_held ?? ''}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${capitalOutstanding}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.annual_interest_rate ?? ''}</td>
+                    <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.interest_pa ?? ''}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${scheduledRepayment}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${interestAccrued}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${interestRetained}</td>
+                    <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${interestRefund}</td>
+                    <td class="py-1 px-2 text-center" style="color: #000; font-size: 0.875rem;">${row.running_ltv ?? ''}</td>
+                `;
+
+                scheduleBody.appendChild(tr);
+            });
+
+            const totalRow = document.createElement('tr');
+            totalRow.style.border = '1px solid #000';
+            totalRow.style.background = '#f8f9fa';
+            totalRow.innerHTML = `
+                <td colspan="3" class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">Total</td>
+                <td class="py-1 px-2 text-center fw-bold" style="border-right: 1px solid #000; color: #000; font-size:0.875rem;">${totalDays}</td>
+                <td colspan="3" class="py-1 px-2" style="border-right: 1px solid #000;"></td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalScheduled.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalAccrued.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalRetained.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2 text-end fw-bold" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${currentSymbol}${totalRefund.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td class="py-1 px-2"></td>
+            `;
+            scheduleBody.appendChild(totalRow);
+
+            this.scheduleVisible = true;
+            return;
+        }
+
+        setHeader('default');
+
+        schedule.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            tr.style.border = '1px solid #000';
+            tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
+
+            const fixedRow = {
+                payment_date: row.payment_date || row.start_period || '',
+                opening_balance: formatCurrency(row.opening_balance),
+                tranche_release: formatCurrency(row.tranche_release),
+                interest_calculation: formatText(row.interest_calculation),
+                interest_amount: formatCurrency(row.interest_amount),
+                interest_saving: formatCurrency(row.interest_saving || row.interest_refund || ''),
+                principal_payment: formatCurrency(row.principal_payment),
+                total_payment: formatCurrency(row.total_payment),
+                closing_balance: formatCurrency(row.closing_balance),
+                balance_change: row.balance_change || ''
+            };
+
+            tr.innerHTML = `
+                <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.payment_date}</td>
+                <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.opening_balance}</td>
+                <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.tranche_release}</td>
+                <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.interest_calculation}</td>
+                <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.interest_amount}</td>
+                <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.interest_saving}</td>
+                <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.principal_payment}</td>
+                <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.total_payment}</td>
+                <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${fixedRow.closing_balance}</td>
+                <td class="py-1 px-2 text-center" style="color: #000; font-size: 0.875rem;">${fixedRow.balance_change}</td>
+            `;
+
+            scheduleBody.appendChild(tr);
+        });
+
+        this.scheduleVisible = true;
+    }
+
+    populateTrancheSchedule(loan) {
+        const body = document.getElementById('trancheScheduleBody');
+        const exportBtn = document.getElementById('exportTrancheScheduleBtn');
+        if (!body) {
+            this.trancheVisible = false;
+            return;
+        }
+
+        body.innerHTML = '';
+        if (exportBtn) { exportBtn.style.display = 'none'; }
+
+        const schedule = Array.isArray(loan.detailed_tranche_schedule) ? loan.detailed_tranche_schedule : [];
+        if (!schedule.length) {
+            this.trancheVisible = false;
+            return;
+        }
+
+        const currencySymbol = this.getCurrencySymbol(loan.currency_symbol || loan.currency || 'GBP');
+        const formatCurrency = (value) => {
+            if (value === null || value === undefined) {
+                return `${currencySymbol}0.00`;
+            }
+            if (typeof value === 'number') {
+                return `${currencySymbol}${value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+            const stringValue = String(value).trim();
+            if (stringValue === '' || stringValue === '—') {
+                return stringValue || `${currencySymbol}0.00`;
+            }
+            return stringValue.replace(/[£€$]/g, currencySymbol);
+        };
+        const parseNumber = (value) => {
+            if (typeof value === 'number') { return value; }
+            if (typeof value === 'string') {
+                const parsed = parseFloat(value.replace(/[^0-9.-]/g, ''));
+                return Number.isFinite(parsed) ? parsed : 0;
+            }
+            return 0;
+        };
+
+        const propertyValue = Number(loan.propertyValue || loan.property_value || 0);
+
+        schedule.forEach((row, index) => {
+            const tr = document.createElement('tr');
+            tr.style.border = '1px solid #000';
+            tr.style.background = index % 2 === 0 ? '#f8f9fa' : 'white';
+
+            const closingBalanceNumeric = parseNumber(row.closing_balance);
+            const runningLtv = row.running_ltv || (propertyValue ? `${((closingBalanceNumeric / propertyValue) * 100).toFixed(2)}%` : '');
+
+            tr.innerHTML = `
+                <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.period || index + 1}</td>
+                <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.start_period || ''}</td>
+                <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.end_period || ''}</td>
+                <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.days_held ?? ''}</td>
+                <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${formatCurrency(row.opening_balance)}</td>
+                <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${formatCurrency(row.tranche_release)}</td>
+                <td class="py-1 px-2 text-center" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${row.interest_calculation || ''}</td>
+                <td class="py-1 px-2 text-end text-danger" style="border-right: 1px solid #000; font-size: 0.875rem;">${formatCurrency(row.interest ?? row.interest_amount)}</td>
+                <td class="py-1 px-2 text-end text-primary" style="border-right: 1px solid #000; font-size: 0.875rem;">${formatCurrency(row.principal ?? row.principal_payment)}</td>
+                <td class="py-1 px-2 text-end fw-bold text-success" style="border-right: 1px solid #000; font-size: 0.875rem;">${formatCurrency(row.total_payment ?? row.total_repayment)}</td>
+                <td class="py-1 px-2 text-end" style="border-right: 1px solid #000; color: #000; font-size: 0.875rem;">${formatCurrency(row.closing_balance)}</td>
+                <td class="py-1 px-2 text-center" style="color: #000; font-size: 0.875rem;">${runningLtv}</td>
+            `;
+
+            body.appendChild(tr);
+        });
+
+        this.trancheVisible = true;
+    }
+
+    createBalanceOverTimeChart(loan) {
+        const ctx = document.getElementById('balanceOverTimeChart');
+        if (!ctx) {
+            this.balanceChartAvailable = false;
+            return;
+        }
+
+        if (this.balanceOverTimeChart) {
+            try { this.balanceOverTimeChart.destroy(); } catch (e) {}
+            this.balanceOverTimeChart = null;
+        }
+
+        const schedule = Array.isArray(loan.detailed_payment_schedule) ? loan.detailed_payment_schedule : [];
+        const loanType = (loan.loan_type || '').toLowerCase();
+        const repaymentOption = loan.repaymentOption || loan.repayment_option || '';
+        const hideAll = loanType === 'bridge' && repaymentOption === 'none';
+        const isServicedOnly = repaymentOption === 'service_only';
+
+        if (!schedule.length || hideAll || isServicedOnly) {
+            this.balanceChartAvailable = false;
+            return;
+        }
+
+        const parseValue = (val) => {
+            if (typeof val === 'number') {
+                return val;
+            }
+            if (typeof val === 'string') {
+                const parsed = parseFloat(val.replace(/[^0-9.-]/g, ''));
+                return Number.isFinite(parsed) ? parsed : 0;
+            }
+            return 0;
+        };
+
+        const labels = schedule.map((_, index) => index + 1);
+        const balanceData = schedule.map(entry => {
+            if (entry.closing_balance !== undefined && entry.closing_balance !== null && entry.closing_balance !== '') {
+                return parseValue(entry.closing_balance);
+            }
+            if (entry.capital_outstanding !== undefined) {
+                return parseValue(entry.capital_outstanding);
+            }
+            return 0;
+        });
+
+        let cumulativeAccrued = 0;
+        const interestAccruedData = schedule.map(entry => {
+            const raw = entry.interest_accrued_raw ?? entry.interest_accrued ?? entry.interest_amount ?? entry.interest;
+            const value = parseValue(raw);
+            cumulativeAccrued += value;
+            return cumulativeAccrued;
+        });
+
+        const currencySymbol = this.getCurrencySymbol(loan.currency_symbol || loan.currency || 'GBP');
+
+        const data = {
+            labels,
+            datasets: [
+                {
+                    label: 'Remaining Balance',
+                    data: balanceData,
+                    type: 'bar',
+                    backgroundColor: 'rgba(184, 134, 11, 0.6)',
+                    borderColor: 'rgba(184, 134, 11, 1)',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Interest Accrued',
+                    data: interestAccruedData,
+                    type: 'line',
+                    borderColor: 'rgba(70, 130, 180, 1)',
+                    backgroundColor: 'rgba(70, 130, 180, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.1,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgba(70, 130, 180, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    yAxisID: 'y1'
+                }
+            ]
+        };
+
+        const chartConfig = {
+            type: 'bar',
+            data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 0 },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Payment Period' }
+                    },
+                    y: {
+                        title: { display: true, text: `Balance (${currencySymbol})` },
+                        beginAtZero: true
+                    },
+                    y1: {
+                        title: { display: true, text: `Interest (${currencySymbol})` },
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: { drawOnChartArea: false }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Loan Balance & Interest Over Time',
+                        font: { size: 14, weight: 'bold' }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${currencySymbol}${context.parsed.y.toLocaleString('en-GB')}`;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        this.balanceOverTimeChart = new Chart(ctx, chartConfig);
+        this.balanceChartAvailable = true;
+    }
+
+    setupVisualizationButtons(loan) {
+        const scheduleBtn = document.getElementById('loanHistoryScheduleBtn');
+        const trancheBtn = document.getElementById('loanHistoryTrancheBtn');
+        const breakdownBtn = document.getElementById('loanHistoryBreakdownBtn');
+        const balanceBtn = document.getElementById('loanHistoryBalanceBtn');
+
+        const loanType = (loan.loan_type || '').toLowerCase();
+        const repaymentOption = loan.repaymentOption || loan.repayment_option || '';
+        const hideAll = loanType === 'bridge' && repaymentOption === 'none';
+        const isServicedOnly = repaymentOption === 'service_only';
+
+        if (scheduleBtn) {
+            scheduleBtn.style.display = (!hideAll && this.scheduleVisible) ? 'inline-flex' : 'none';
+        }
+        if (trancheBtn) {
+            trancheBtn.style.display = this.trancheVisible ? 'inline-flex' : 'none';
+        }
+        if (breakdownBtn) {
+            breakdownBtn.style.display = 'inline-flex';
+        }
+        if (balanceBtn) {
+            balanceBtn.style.display = (!hideAll && !isServicedOnly && this.balanceChartAvailable) ? 'inline-flex' : 'none';
+        }
+    }
+
+    setupModalChartHandlers() {
+        const mappings = [
+            { modalId: 'loanBreakdownModal', chartGetter: () => this.loanBreakdownChart },
+            { modalId: 'balanceModal', chartGetter: () => this.balanceOverTimeChart }
+        ];
+
+        mappings.forEach(({ modalId, chartGetter }) => {
+            const modalEl = document.getElementById(modalId);
+            if (modalEl) {
+                modalEl.addEventListener('shown.bs.modal', () => {
+                    const chart = chartGetter();
+                    if (chart) {
+                        chart.resize();
+                    }
+                });
+            }
+        });
     }
 
 
@@ -779,7 +1719,9 @@ class LoanHistoryManager {
 
         if (this.loanBreakdownChart) {
             try { this.loanBreakdownChart.destroy(); } catch (e) {}
+            this.loanBreakdownChart = null;
         }
+
 
         const currency = loan.currency_symbol || (loan.currency === 'EUR' ? '€' : '£');
         const breakdownValues = [
@@ -790,6 +1732,7 @@ class LoanHistoryManager {
             loan.titleInsurance || 0,
             loan.totalInterest || 0
         ];
+
 
         const data = {
             labels: ['Total Net Advance', 'Arrangement Fee', 'Legal Costs', 'Site Visit Fee', 'Title Insurance', 'Total Interest'],
@@ -849,6 +1792,11 @@ class LoanHistoryManager {
         form.dataset.loanId = loan.id;
         form.addEventListener('submit', (event) => this.handleAddLoanNote(event));
 
+        this.syncLoanNotesSummary(
+            loan.id,
+            Array.isArray(loan.history_notes) ? loan.history_notes : [],
+            { reRender: false }
+        );
         this.renderLoanNotesList(Array.isArray(loan.history_notes) ? loan.history_notes : []);
         this.loadLoanNotes(loan.id);
     }
@@ -868,7 +1816,9 @@ class LoanHistoryManager {
                 throw new Error(data.error || 'Failed to load notes');
             }
 
-            this.renderLoanNotesList(Array.isArray(data.notes) ? data.notes : []);
+            const notes = Array.isArray(data.notes) ? data.notes : [];
+            this.renderLoanNotesList(notes);
+            this.syncLoanNotesSummary(loanId, notes);
         } catch (error) {
             console.error('Failed to load loan notes:', error);
             if (window.notifications) {
@@ -1322,6 +2272,39 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .bg-novellus-navy {
     background-color: #1E2B3A !important;
+}
+
+.notes-summary {
+    min-width: 180px;
+}
+
+.note-count-badge {
+    background-color: rgba(30, 43, 58, 0.1);
+    color: #1E2B3A;
+    border: 1px solid rgba(30, 43, 58, 0.2);
+    font-weight: 600;
+}
+
+.note-preview {
+    max-width: 220px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.note-action-button {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.note-action-button i {
+    font-size: 0.7rem;
+}
+
+.note-focus-highlight {
+    box-shadow: 0 0 0 0.3rem rgba(184, 134, 11, 0.2);
+    border-radius: 0.75rem;
+    transition: box-shadow 0.3s ease;
 }
 .bg-novellus-gold {
     background-color: #B8860B !important;
