@@ -1103,6 +1103,9 @@ class LoanHistoryDetailPage {
         const darkPalette = ['#0b0b16', '#b49b5c', '#ffffff', '#3a3a3a', '#6b6b6b', '#9e9e9e'];
         const borderColor = '#0b0b16';
 
+        const legendTextColor = this.getThemeColor('--bs-body-color', '#212529');
+        const titleColor = this.getThemeColor('--bs-heading-color', legendTextColor);
+
         const chartData = {
             labels: dataset.map(item => item.label),
             datasets: [{
@@ -1134,13 +1137,13 @@ class LoanHistoryDetailPage {
                             usePointStyle: true,
                             padding: 15,
                             font: { size: 12 },
-                            color: '#f8f9fa'
+                            color: legendTextColor
                         }
                     },
                     title: {
                         display: true,
                         text: 'Loan Amount Breakdown',
-                        color: '#f8f9fa',
+                        color: titleColor,
                         font: {
                             size: 16,
                             weight: 'bold'
