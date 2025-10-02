@@ -89,11 +89,27 @@ LOAN_HISTORY_NOTE_STATUSES = {
     'Completed'
 }
 
+LOAN_HISTORY_NOTE_BADGES = {
+    'General': 'bg-secondary',
+    'Call': 'bg-info text-dark',
+    'Email': 'bg-primary',
+    'Underwriting': 'bg-warning text-dark',
+    'Legal': 'bg-danger',
+    'Completed': 'bg-success',
+}
+
 LOAN_TYPE_LABELS = {
     'bridge': 'Bridge',
     'term': 'Term',
     'development': 'Development',
     'development2': 'Development',
+}
+
+LOAN_TYPE_BADGES = {
+    'bridge': 'bg-primary',
+    'term': 'bg-success',
+    'development': 'bg-warning text-dark',
+    'development2': 'bg-warning text-dark',
 }
 
 REPAYMENT_OPTION_LABELS = {
@@ -313,6 +329,63 @@ def _serialize_loan_detail(loan):
     currency_code = loan.currency or (_input_value('currency') or 'GBP')
     currency_display = f"{currency_code} ({currency_symbol})"
 
+    try:
+        notes_query = (
+            LoanHistoryNote.query.filter_by(loan_summary_id=loan.id)
+            .order_by(LoanHistoryNote.created_at.desc())
+            .all()
+        )
+    except Exception as exc:
+        current_app.logger.warning(
+            "Could not load history notes for loan %s: %s", loan.id, exc
+        )
+        notes_query = []
+
+    history_notes = []
+    for note in notes_query:
+        status_value = (note.status or 'General').strip()
+        if not status_value:
+            status_value = 'General'
+        badge_class = LOAN_HISTORY_NOTE_BADGES.get(status_value, 'bg-secondary')
+        history_notes.append({
+            'id': note.id,
+            'status': status_value,
+            'status_badge_class': badge_class,
+            'status_display': status_value,
+            'author': note.author or 'Unassigned',
+            'text': note.text or '',
+            'created_at_display': note.created_at.strftime('%d/%m/%Y %H:%M')
+            if note.created_at
+            else '',
+            'created_at_iso': note.created_at.isoformat() if note.created_at else '',
+        })
+
+    report_fields_obj = getattr(loan, 'report_fields', None)
+    report_fields_data = None
+    if report_fields_obj is not None:
+        report_fields_data = {
+            'client_name': report_fields_obj.client_name or '',
+            'property_address': report_fields_obj.property_address or '',
+            'debenture': report_fields_obj.debenture or '',
+            'corporate_guarantor': report_fields_obj.corporate_guarantor or '',
+            'broker_name': report_fields_obj.broker_name or '',
+            'brokerage': report_fields_obj.brokerage or '',
+            'max_ltv': _safe_float(report_fields_obj.max_ltv),
+            'exit_fee_percent': _safe_float(report_fields_obj.exit_fee_percent),
+            'commitment_fee': _safe_float(report_fields_obj.commitment_fee),
+            'include_valuation': bool(report_fields_obj.include_valuation),
+            'include_planning_appraisal': bool(report_fields_obj.include_planning_appraisal),
+            'include_qs_appraisal': bool(report_fields_obj.include_qs_appraisal),
+            'include_due_diligence': bool(report_fields_obj.include_due_diligence),
+            'include_legals': bool(report_fields_obj.include_legals),
+            'created_at_display': report_fields_obj.created_at.strftime('%d/%m/%Y %H:%M')
+            if getattr(report_fields_obj, 'created_at', None)
+            else '',
+            'updated_at_display': report_fields_obj.updated_at.strftime('%d/%m/%Y %H:%M')
+            if getattr(report_fields_obj, 'updated_at', None)
+            else '',
+        }
+
     return {
         'id': loan.id,
         'loan_name': loan.loan_name,
@@ -397,6 +470,11 @@ def _serialize_loan_detail(loan):
         'savings_percentage': _safe_float(getattr(loan, 'savings_percentage', 0.0)),
         'payment_schedule': schedule_rows,
         'input_data': raw_input_data,
+        'loan_version_display': f"v{loan.version}" if loan.version else 'v1',
+        'loan_type_badge_class': LOAN_TYPE_BADGES.get(loan.loan_type, 'bg-secondary'),
+        'history_notes': history_notes,
+        'history_note_count': len(history_notes),
+        'report_fields': report_fields_data,
     }
 
 # Initialize Power BI scheduler if available
