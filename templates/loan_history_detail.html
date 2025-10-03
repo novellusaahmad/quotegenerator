@@ -514,11 +514,12 @@
                                     <th class="text-center">Total Payment</th>
                                     <th class="text-center">Closing Balance</th>
                                     <th class="text-center">Balance Change</th>
+                                    <th class="text-center">Running LTV</th>
                                 </tr>
                             </thead>
                             <tbody id="paymentScheduleTableBody">
                                 <tr>
-                                    <td colspan="10" class="py-4 text-center text-muted">Payment schedule will appear once loaded.</td>
+                                    <td colspan="11" class="py-4 text-center text-muted">Payment schedule will appear once loaded.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -1300,6 +1301,7 @@ class LoanHistoryDetailPage {
             <th class="text-center">Total Payment</th>
             <th class="text-center">Closing Balance</th>
             <th class="text-center">Balance Change</th>
+            <th class="text-center">Running LTV</th>
         `;
 
         const pickValue = (entry, keys, fallback = '') => {
@@ -1358,7 +1360,7 @@ class LoanHistoryDetailPage {
             headerRow.innerHTML = defaultHeader;
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="10" class="py-3 text-center text-muted">No payment schedule data is available for this loan.</td>
+                    <td colspan="11" class="py-3 text-center text-muted">No payment schedule data is available for this loan.</td>
 
                 </tr>
             `;
@@ -1379,6 +1381,7 @@ class LoanHistoryDetailPage {
                 <th class="text-center">Opening Balance</th>
                 <th class="text-center">Interest Calculation</th>
                 <th class="text-center">Interest Serviced</th>
+                <th class="text-center">Running LTV</th>
             `;
 
             let totalInterest = 0;
@@ -1406,6 +1409,7 @@ class LoanHistoryDetailPage {
                         <td class="text-end">${safeDisplay(opening.display)}</td>
                         <td class="text-center">${safeDisplay(interestCalculation)}</td>
                         <td class="text-end">${safeDisplay(interestAmount.display)}</td>
+                        <td class="text-center">${safeDisplay(pickValue(entry, ['running_ltv', 'runningLtv']))}</td>
                     </tr>
                 `;
             });
@@ -1417,6 +1421,7 @@ class LoanHistoryDetailPage {
                     <td></td>
                     <td></td>
                     <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalInterest))}</td>
+                    <td></td>
                 </tr>
             `);
 
@@ -1662,6 +1667,7 @@ class LoanHistoryDetailPage {
             const totalPayment = getCurrencyValue(entry, ['total_payment', 'payment_total']);
             const closing = getCurrencyValue(entry, ['closing_balance', 'closingBalance', 'balance']);
             const balanceChange = pickValue(entry, ['balance_change', 'balanceChange']);
+            const runningLtv = pickValue(entry, ['running_ltv', 'runningLtv']);
 
             return `
                 <tr>
@@ -1675,6 +1681,7 @@ class LoanHistoryDetailPage {
                     <td class="text-end">${safeDisplay(totalPayment.display)}</td>
                     <td class="text-end">${safeDisplay(closing.display)}</td>
                     <td class="text-center">${safeDisplay(balanceChange, '—')}</td>
+                    <td class="text-center">${safeDisplay(runningLtv)}</td>
                 </tr>
             `;
         });
