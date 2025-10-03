@@ -3429,7 +3429,7 @@ def reorder_loan_note(note_id):
             404,
         )
 
-    target_index = None
+    desired_index = None
     if resolved_direction:
         if resolved_direction == 'up':
             if current_index == 0:
@@ -3437,14 +3437,14 @@ def reorder_loan_note(note_id):
                     jsonify({'success': False, 'message': 'Note is already at the top'}),
                     400,
                 )
-            target_index = current_index - 1
+            desired_index = current_index - 1
         else:
             if current_index == len(group_notes) - 1:
                 return (
                     jsonify({'success': False, 'message': 'Note is already at the bottom'}),
                     400,
                 )
-            target_index = current_index + 1
+            desired_index = current_index + 1
     else:
         if position < 0 or position >= len(group_notes):
             return (
@@ -3464,13 +3464,20 @@ def reorder_loan_note(note_id):
                     ],
                 }
             )
+        desired_index = position
         resolved_direction = 'up' if position < current_index else 'down'
-        target_index = current_index - 1 if resolved_direction == 'up' else current_index + 1
 
-    target_note = group_notes[target_index]
+    desired_index = desired_index if desired_index is not None else current_index
+
+    reordered_notes = list(group_notes)
+    moved_note = reordered_notes.pop(current_index)
+    insertion_index = min(max(desired_index, 0), len(reordered_notes))
+    reordered_notes.insert(insertion_index, moved_note)
 
     try:
-        note.sort_order, target_note.sort_order = target_note.sort_order, note.sort_order
+        for idx, group_note in enumerate(reordered_notes):
+            if group_note.sort_order != idx:
+                group_note.sort_order = idx
         db.session.commit()
     except Exception as exc:
         db.session.rollback()
@@ -3480,15 +3487,27 @@ def reorder_loan_note(note_id):
             500,
         )
 
-    updated_notes = (
-        LoanNote.query.filter_by(group=note.group, deleted_at=None)
-        .order_by(LoanNote.sort_order, LoanNote.id)
-        .all()
-    )
-    updated_note = next((n for n in updated_notes if n.id == note.id), note)
-    updated_target = next((n for n in updated_notes if n.id == target_note.id), target_note)
+    updated_order = [
+        {'id': n.id, 'sort_order': n.sort_order}
+        for n in reordered_notes
+    ]
+    updated_note = next((n for n in reordered_notes if n.id == note.id), note)
 
-    message = 'Moved note up' if resolved_direction == 'up' else 'Moved note down'
+    swapped_with = None
+    new_index = reordered_notes.index(updated_note)
+    if resolved_direction == 'up' and new_index + 1 < len(reordered_notes):
+        swapped_with = reordered_notes[new_index + 1]
+    elif resolved_direction == 'down' and new_index - 1 >= 0:
+        swapped_with = reordered_notes[new_index - 1]
+
+    message = (
+        'Moved note up'
+        if resolved_direction == 'up'
+        else 'Moved note down'
+        if resolved_direction == 'down'
+        else 'Reordered note'
+    )
+
     return jsonify(
         {
             'success': True,
@@ -3496,11 +3515,8 @@ def reorder_loan_note(note_id):
             'direction': resolved_direction,
             'group': note.group,
             'note': updated_note.to_dict(),
-            'swapped_with': updated_target.to_dict(),
-            'order': [
-                {'id': n.id, 'sort_order': n.sort_order}
-                for n in updated_notes
-            ],
+            'swapped_with': swapped_with.to_dict() if swapped_with else None,
+            'order': updated_order,
         }
     )
 
