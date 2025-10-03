@@ -475,6 +475,7 @@ class LoanNote(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     group = db.Column('group', db.String(100), nullable=False)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
     name = db.Column(db.Text, nullable=False)
     placeholder_map = db.Column(db.JSON, default=dict)
     add_flag = db.Column(db.Boolean, default=False)
@@ -483,6 +484,16 @@ class LoanNote(db.Model):
 
     def __repr__(self) -> str:
         return f'<LoanNote {self.group}: {self.name[:20]}>'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'group': self.group,
+            'name': self.name,
+            'placeholder_map': self.placeholder_map or {},
+            'add_flag': self.add_flag,
+            'sort_order': self.sort_order,
+        }
 
 
 class LoanSummaryNote(db.Model):

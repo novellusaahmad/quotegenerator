@@ -110,6 +110,85 @@ def test_loan_notes_grouped_headings_and_numbering():
     assert text_lines[cond_idx + 1].startswith("1. ")
 
 
+def test_docx_respects_note_sort_order():
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        loan = LoanSummary(loan_name="TestLoan", loan_type="bridge")
+        db.session.add(loan)
+        notes = [
+            LoanNote(
+                group="General",
+                name="Second general note",
+                add_flag=True,
+                sort_order=1,
+            ),
+            LoanNote(
+                group="General",
+                name="First general note",
+                add_flag=True,
+                sort_order=0,
+            ),
+            LoanNote(
+                group="General",
+                name="Third general note",
+                add_flag=True,
+                sort_order=2,
+            ),
+        ]
+        db.session.add_all(notes)
+        db.session.commit()
+        loan_id = loan.id
+
+    client = app.test_client()
+    res = client.get(f"/loan/{loan_id}/summary-docx")
+    assert res.status_code == 200
+    text_lines = _extract_text(res.data).splitlines()
+    bullet_lines = [
+        line.strip()
+        for line in text_lines
+        if "general note" in line.lower()
+    ]
+    assert bullet_lines[:3] == [
+        "1. First general note",
+        "2. Second general note",
+        "3. Third general note",
+    ]
+
+
+def test_reorder_endpoint_resequences_duplicate_sort_orders():
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        notes = [
+            LoanNote(group="General", name="First", add_flag=True, sort_order=0),
+            LoanNote(group="General", name="Second", add_flag=True, sort_order=0),
+            LoanNote(group="General", name="Third", add_flag=True, sort_order=0),
+        ]
+        db.session.add_all(notes)
+        db.session.commit()
+        note_ids = [note.id for note in notes]
+
+    client = app.test_client()
+    res = client.post(
+        f"/loan-notes/{note_ids[0]}/reorder",
+        json={"direction": "down"},
+    )
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["success"] is True
+    assert [item["sort_order"] for item in data["order"]] == [0, 1, 2]
+
+    with app.app_context():
+        ordered = (
+            LoanNote.query.filter_by(group="General", deleted_at=None)
+            .order_by(LoanNote.sort_order, LoanNote.id)
+            .all()
+        )
+        assert [n.sort_order for n in ordered] == [0, 1, 2]
+        assert [n.id for n in ordered] == [note_ids[1], note_ids[0], note_ids[2]]
+
+
 def test_multiple_property_addresses_numbered():
     with app.app_context():
         db.drop_all()

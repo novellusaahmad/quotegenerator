@@ -2400,13 +2400,18 @@ def save_loan():
 
 @app.route('/api/loan-notes', methods=['GET'])
 def get_loan_notes():
-    notes = LoanNote.query.filter_by(deleted_at=None).all()
+    notes = (
+        LoanNote.query.filter_by(deleted_at=None)
+        .order_by(LoanNote.group, LoanNote.sort_order, LoanNote.id)
+        .all()
+    )
     grouped = defaultdict(list)
     for n in notes:
         grouped[n.group].append({
             'id': n.id,
             'text': n.name,
             'add_flag': n.add_flag,
+            'sort_order': n.sort_order,
         })
     return jsonify(grouped)
 
@@ -2485,7 +2490,14 @@ def manage_report_fields(loan_id):
 
     note_ids = data.get('note_ids', [])
     if note_ids:
-        loan.loan_notes = LoanNote.query.filter(LoanNote.id.in_(note_ids)).all()
+        loan.loan_notes = (
+            LoanNote.query.filter(
+                LoanNote.id.in_(note_ids),
+                LoanNote.deleted_at.is_(None),
+            )
+            .order_by(LoanNote.group, LoanNote.sort_order, LoanNote.id)
+            .all()
+        )
     else:
         loan.loan_notes = []
 
@@ -2535,18 +2547,18 @@ def download_loan_summary_docx(loan_id):
             LoanNote.query.filter(
                 LoanNote.id.in_(note_ids), LoanNote.deleted_at.is_(None)
             )
-            .order_by(LoanNote.group, LoanNote.id)
+            .order_by(LoanNote.group, LoanNote.sort_order, LoanNote.id)
             .all()
         )
     elif loan.loan_notes:
         notes = sorted(
             (n for n in loan.loan_notes if n.deleted_at is None),
-            key=lambda n: (n.group, n.id),
+            key=lambda n: (n.group, n.sort_order, n.id),
         )
     else:
         notes = (
             LoanNote.query.filter_by(deleted_at=None, add_flag=True)
-            .order_by(LoanNote.group, LoanNote.id)
+            .order_by(LoanNote.group, LoanNote.sort_order, LoanNote.id)
             .all()
         )
 
@@ -3304,7 +3316,9 @@ def loan_notes():
     query = LoanNote.query.filter_by(deleted_at=None)
     if group_filter:
         query = query.filter(LoanNote.group == group_filter)
-    notes = query.order_by(LoanNote.group, LoanNote.id).all()
+    notes = (
+        query.order_by(LoanNote.group, LoanNote.sort_order, LoanNote.id).all()
+    )
 
     group_options = [
         g[0]
@@ -3348,15 +3362,163 @@ def add_loan_note():
         except json.JSONDecodeError:
             placeholder_map = {}
     if group and name:
+        max_sort = (
+            db.session.query(sa.func.max(LoanNote.sort_order))
+            .filter(LoanNote.group == group, LoanNote.deleted_at.is_(None))
+            .scalar()
+        )
+        next_sort = 0 if max_sort is None else max_sort + 1
         note = LoanNote(
             group=group,
             name=name,
             add_flag=add_flag,
             placeholder_map=placeholder_map,
+            sort_order=next_sort,
         )
         db.session.add(note)
         db.session.commit()
     return redirect(url_for('loan_notes', toast='Loan note added'))
+
+
+@app.route('/loan-notes/<int:note_id>/reorder', methods=['POST'])
+def reorder_loan_note(note_id):
+    note = (
+        LoanNote.query.filter_by(id=note_id, deleted_at=None)
+        .first_or_404()
+    )
+
+    data = request.get_json(silent=True) or {}
+    direction = data.get('direction')
+    position = data.get('position')
+
+    resolved_direction = None
+    if direction is not None:
+        direction = str(direction).lower()
+        if direction not in {'up', 'down'}:
+            return (
+                jsonify({'success': False, 'message': 'Invalid direction supplied'}),
+                400,
+            )
+        resolved_direction = direction
+
+    if position is not None:
+        try:
+            position = int(position)
+        except (TypeError, ValueError):
+            return (
+                jsonify({'success': False, 'message': 'Position must be an integer'}),
+                400,
+            )
+
+    if resolved_direction is None and position is None:
+        return (
+            jsonify({'success': False, 'message': 'Direction or position is required'}),
+            400,
+        )
+
+    group_notes = (
+        LoanNote.query.filter_by(group=note.group, deleted_at=None)
+        .order_by(LoanNote.sort_order, LoanNote.id)
+        .all()
+    )
+    index_map = {n.id: idx for idx, n in enumerate(group_notes)}
+    current_index = index_map.get(note.id)
+    if current_index is None:
+        return (
+            jsonify({'success': False, 'message': 'Note not found in group'}),
+            404,
+        )
+
+    desired_index = None
+    if resolved_direction:
+        if resolved_direction == 'up':
+            if current_index == 0:
+                return (
+                    jsonify({'success': False, 'message': 'Note is already at the top'}),
+                    400,
+                )
+            desired_index = current_index - 1
+        else:
+            if current_index == len(group_notes) - 1:
+                return (
+                    jsonify({'success': False, 'message': 'Note is already at the bottom'}),
+                    400,
+                )
+            desired_index = current_index + 1
+    else:
+        if position < 0 or position >= len(group_notes):
+            return (
+                jsonify({'success': False, 'message': 'Position out of range'}),
+                400,
+            )
+        if position == current_index:
+            return jsonify(
+                {
+                    'success': True,
+                    'message': 'Note order unchanged',
+                    'group': note.group,
+                    'note': note.to_dict(),
+                    'order': [
+                        {'id': n.id, 'sort_order': n.sort_order}
+                        for n in group_notes
+                    ],
+                }
+            )
+        desired_index = position
+        resolved_direction = 'up' if position < current_index else 'down'
+
+    desired_index = desired_index if desired_index is not None else current_index
+
+    reordered_notes = list(group_notes)
+    moved_note = reordered_notes.pop(current_index)
+    insertion_index = min(max(desired_index, 0), len(reordered_notes))
+    reordered_notes.insert(insertion_index, moved_note)
+
+    try:
+        for idx, group_note in enumerate(reordered_notes):
+            if group_note.sort_order != idx:
+                group_note.sort_order = idx
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.error('Failed to reorder loan note %s: %s', note_id, exc)
+        return (
+            jsonify({'success': False, 'message': 'Failed to reorder loan note'}),
+            500,
+        )
+
+    updated_order = [
+        {'id': n.id, 'sort_order': n.sort_order}
+        for n in reordered_notes
+    ]
+    updated_note = next((n for n in reordered_notes if n.id == note.id), note)
+
+    swapped_with = None
+    new_index = reordered_notes.index(updated_note)
+    if resolved_direction == 'up' and new_index + 1 < len(reordered_notes):
+        swapped_with = reordered_notes[new_index + 1]
+    elif resolved_direction == 'down' and new_index - 1 >= 0:
+        swapped_with = reordered_notes[new_index - 1]
+
+    message = (
+        'Moved note up'
+        if resolved_direction == 'up'
+        else 'Moved note down'
+        if resolved_direction == 'down'
+        else 'Reordered note'
+    )
+
+    return jsonify(
+        {
+            'success': True,
+            'message': message,
+            'direction': resolved_direction,
+            'group': note.group,
+            'note': updated_note.to_dict(),
+            'swapped_with': swapped_with.to_dict() if swapped_with else None,
+            'order': updated_order,
+        }
+    )
 
 
 @app.route('/loan-notes/<int:note_id>/update', methods=['POST', 'PUT'])
