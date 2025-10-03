@@ -514,11 +514,12 @@
                                     <th class="text-center">Total Payment</th>
                                     <th class="text-center">Closing Balance</th>
                                     <th class="text-center">Balance Change</th>
+                                    <th class="text-center">Running LTV</th>
                                 </tr>
                             </thead>
                             <tbody id="paymentScheduleTableBody">
                                 <tr>
-                                    <td colspan="10" class="py-4 text-center text-muted">Payment schedule will appear once loaded.</td>
+                                    <td colspan="11" class="py-4 text-center text-muted">Payment schedule will appear once loaded.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -606,6 +607,7 @@ class LoanHistoryDetailPage {
         this.loanType = '';
         this.notes = [];
         this.noteError = '';
+        this.cachedPropertyValue = null;
 
         this.init();
     }
@@ -644,6 +646,9 @@ class LoanHistoryDetailPage {
                 || this.inputData.currency_symbol
                 || this.inputData.currencySymbol
                 || (this.currency === 'EUR' ? '€' : '£');
+
+            this.cachedPropertyValue = null;
+            this.getPropertyValue();
 
             let rawSchedule = this.loanData.detailed_payment_schedule
                 || this.inputData.detailed_payment_schedule
@@ -1181,6 +1186,12 @@ class LoanHistoryDetailPage {
     }
 
     parseScheduleData(rawSchedule = []) {
+        if (!Array.isArray(rawSchedule)) {
+            return [];
+        }
+
+        const propertyValue = this.getPropertyValue();
+
         return rawSchedule.map((entry = {}, index) => {
             const getValue = (...keys) => {
                 for (const key of keys) {
@@ -1204,6 +1215,8 @@ class LoanHistoryDetailPage {
             const periodDisplay = (periodDisplayRaw !== undefined && periodDisplayRaw !== null)
                 ? periodDisplayRaw
                 : index + 1;
+
+            const runningLtv = this.deriveRunningLtv(entry, propertyValue);
 
             return {
                 period: this.toNumber(getValue('period_number', 'period', 'index'), index + 1),
@@ -1234,7 +1247,7 @@ class LoanHistoryDetailPage {
                 interest_serviced_raw: getValue('interest_serviced', 'serviced_interest'),
                 annual_interest_rate: getValue('annual_interest_rate', 'interest_rate', 'annual_interest'),
                 interest_pa: getValue('interest_pa', 'interest_factor_pd', 'interestFactor'),
-                running_ltv: getValue('running_ltv', 'runningLtv'),
+                running_ltv: runningLtv,
                 scheduled_repayment_raw: getValue('scheduled_repayment', 'scheduledRepayment', 'scheduled_payment'),
                 capital_repayment_raw: getValue('capital_repayment', 'principal_payment', 'principal')
             };
@@ -1288,6 +1301,7 @@ class LoanHistoryDetailPage {
 
         const schedule = Array.isArray(this.rawSchedule) ? this.rawSchedule : [];
         const currentSymbol = this.currencySymbol;
+        const propertyValue = this.getPropertyValue();
 
         const defaultHeader = `
             <th class="text-center">Payment Date</th>
@@ -1300,6 +1314,7 @@ class LoanHistoryDetailPage {
             <th class="text-center">Total Payment</th>
             <th class="text-center">Closing Balance</th>
             <th class="text-center">Balance Change</th>
+            <th class="text-center">Running LTV</th>
         `;
 
         const pickValue = (entry, keys, fallback = '') => {
@@ -1311,6 +1326,8 @@ class LoanHistoryDetailPage {
             }
             return fallback;
         };
+
+        const computeRunningLtvDisplay = (entry) => this.deriveRunningLtv(entry, propertyValue);
 
         const replaceCurrency = (value) => {
             if (value === undefined || value === null) {
@@ -1358,7 +1375,7 @@ class LoanHistoryDetailPage {
             headerRow.innerHTML = defaultHeader;
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="10" class="py-3 text-center text-muted">No payment schedule data is available for this loan.</td>
+                    <td colspan="11" class="py-3 text-center text-muted">No payment schedule data is available for this loan.</td>
 
                 </tr>
             `;
@@ -1379,6 +1396,7 @@ class LoanHistoryDetailPage {
                 <th class="text-center">Opening Balance</th>
                 <th class="text-center">Interest Calculation</th>
                 <th class="text-center">Interest Serviced</th>
+                <th class="text-center">Running LTV</th>
             `;
 
             let totalInterest = 0;
@@ -1406,6 +1424,7 @@ class LoanHistoryDetailPage {
                         <td class="text-end">${safeDisplay(opening.display)}</td>
                         <td class="text-center">${safeDisplay(interestCalculation)}</td>
                         <td class="text-end">${safeDisplay(interestAmount.display)}</td>
+                        <td class="text-center">${safeDisplay(computeRunningLtvDisplay(entry))}</td>
                     </tr>
                 `;
             });
@@ -1417,6 +1436,7 @@ class LoanHistoryDetailPage {
                     <td></td>
                     <td></td>
                     <td class="text-end">${this.escapeHTML(formatTotalCurrency(totalInterest))}</td>
+                    <td></td>
                 </tr>
             `);
 
@@ -1477,7 +1497,7 @@ class LoanHistoryDetailPage {
                         <td class="text-end">${safeDisplay(accrued.display)}</td>
                         <td class="text-end">${safeDisplay(retained.display)}</td>
                         <td class="text-end">${safeDisplay(refund.display)}</td>
-                        <td class="text-center">${safeDisplay(pickValue(entry, ['running_ltv', 'runningLtv']))}</td>
+                        <td class="text-center">${safeDisplay(computeRunningLtvDisplay(entry))}</td>
                     </tr>
                 `;
             });
@@ -1555,7 +1575,7 @@ class LoanHistoryDetailPage {
                         <td class="text-end">${safeDisplay(accrued.display)}</td>
                         <td class="text-end">${safeDisplay(retained.display)}</td>
                         <td class="text-end">${safeDisplay(refund.display)}</td>
-                        <td class="text-center">${safeDisplay(pickValue(entry, ['running_ltv', 'runningLtv']))}</td>
+                        <td class="text-center">${safeDisplay(computeRunningLtvDisplay(entry))}</td>
                     </tr>
                 `;
             });
@@ -1627,7 +1647,7 @@ class LoanHistoryDetailPage {
                         <td class="text-end">${safeDisplay(accrued.display)}</td>
                         <td class="text-end">${safeDisplay(retained.display)}</td>
                         <td class="text-end">${safeDisplay(refund.display)}</td>
-                        <td class="text-center">${safeDisplay(pickValue(entry, ['running_ltv', 'runningLtv']))}</td>
+                        <td class="text-center">${safeDisplay(computeRunningLtvDisplay(entry))}</td>
                     </tr>
                 `;
             });
@@ -1662,6 +1682,7 @@ class LoanHistoryDetailPage {
             const totalPayment = getCurrencyValue(entry, ['total_payment', 'payment_total']);
             const closing = getCurrencyValue(entry, ['closing_balance', 'closingBalance', 'balance']);
             const balanceChange = pickValue(entry, ['balance_change', 'balanceChange']);
+            const runningLtv = computeRunningLtvDisplay(entry);
 
             return `
                 <tr>
@@ -1675,6 +1696,7 @@ class LoanHistoryDetailPage {
                     <td class="text-end">${safeDisplay(totalPayment.display)}</td>
                     <td class="text-end">${safeDisplay(closing.display)}</td>
                     <td class="text-center">${safeDisplay(balanceChange, '—')}</td>
+                    <td class="text-center">${safeDisplay(runningLtv)}</td>
                 </tr>
             `;
         });
@@ -1893,6 +1915,128 @@ class LoanHistoryDetailPage {
             return this.formatDate(value);
         }
         return date.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    getPropertyValue() {
+        if (this.cachedPropertyValue !== null) {
+            return this.cachedPropertyValue;
+        }
+
+        const propertyKeys = ['propertyValue', 'property_value', 'valuation'];
+        for (const key of propertyKeys) {
+            const value = this.getFromSources([key]);
+            const numeric = this.toNumber(value, NaN);
+            if (Number.isFinite(numeric) && numeric > 0) {
+                this.cachedPropertyValue = numeric;
+                return this.cachedPropertyValue;
+            }
+        }
+
+        this.cachedPropertyValue = 0;
+        return this.cachedPropertyValue;
+    }
+
+    formatRunningLtvValue(value) {
+        if (value === undefined || value === null) {
+            return '';
+        }
+
+        if (typeof value === 'number') {
+            if (!Number.isFinite(value)) {
+                return '';
+            }
+            return `${value.toFixed(2)}%`;
+        }
+
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed === '') {
+                return '';
+            }
+
+            const numeric = this.toNumber(trimmed.replace(/%/g, ''), NaN);
+            if (Number.isFinite(numeric)) {
+                return `${numeric.toFixed(2)}%`;
+            }
+
+            if (trimmed.includes('%')) {
+                return trimmed;
+            }
+
+            return '';
+        }
+
+        return '';
+    }
+
+    deriveRunningLtv(entry, propertyValueOverride) {
+        if (!entry || typeof entry !== 'object') {
+            return '';
+        }
+
+        const existing = this.formatRunningLtvValue(
+            entry.running_ltv ?? entry.runningLtv ?? entry.runningLTV
+        );
+
+        if (existing) {
+            return existing;
+        }
+
+        let propertyValue = Number.isFinite(propertyValueOverride) && propertyValueOverride > 0
+            ? propertyValueOverride
+            : NaN;
+
+        const entryPropertyValue = this.toNumber(
+            entry.property_value ?? entry.propertyValue ?? entry.valuation,
+            NaN
+        );
+
+        if (!Number.isFinite(propertyValue) || propertyValue <= 0) {
+            if (Number.isFinite(entryPropertyValue) && entryPropertyValue > 0) {
+                propertyValue = entryPropertyValue;
+            } else {
+                const globalValue = this.getPropertyValue();
+                if (Number.isFinite(globalValue) && globalValue > 0) {
+                    propertyValue = globalValue;
+                }
+            }
+        }
+
+        if (!Number.isFinite(propertyValue) || propertyValue <= 0) {
+            return '';
+        }
+
+        const outstandingKeys = [
+            'capital_outstanding_raw',
+            'capitalOutstandingRaw',
+            'capital_outstanding',
+            'capitalOutstanding',
+            'opening_balance_raw',
+            'openingBalanceRaw',
+            'opening_balance',
+            'openingBalance',
+            'closing_balance_raw',
+            'closingBalanceRaw',
+            'closing_balance',
+            'closingBalance',
+            'balance_raw',
+            'balanceRaw',
+            'balance'
+        ];
+
+        for (const key of outstandingKeys) {
+            if (entry[key] === undefined || entry[key] === null || entry[key] === '') {
+                continue;
+            }
+
+            const numeric = this.toNumber(entry[key], NaN);
+            if (Number.isFinite(numeric)) {
+                const ratio = (numeric / propertyValue) * 100;
+                return this.formatRunningLtvValue(ratio);
+            }
+        }
+
+        return '';
     }
 
     formatLoanType(type) {
