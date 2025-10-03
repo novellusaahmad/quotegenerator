@@ -110,6 +110,52 @@ def test_loan_notes_grouped_headings_and_numbering():
     assert text_lines[cond_idx + 1].startswith("1. ")
 
 
+def test_docx_respects_note_sort_order():
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        loan = LoanSummary(loan_name="TestLoan", loan_type="bridge")
+        db.session.add(loan)
+        notes = [
+            LoanNote(
+                group="General",
+                name="Second general note",
+                add_flag=True,
+                sort_order=1,
+            ),
+            LoanNote(
+                group="General",
+                name="First general note",
+                add_flag=True,
+                sort_order=0,
+            ),
+            LoanNote(
+                group="General",
+                name="Third general note",
+                add_flag=True,
+                sort_order=2,
+            ),
+        ]
+        db.session.add_all(notes)
+        db.session.commit()
+        loan_id = loan.id
+
+    client = app.test_client()
+    res = client.get(f"/loan/{loan_id}/summary-docx")
+    assert res.status_code == 200
+    text_lines = _extract_text(res.data).splitlines()
+    bullet_lines = [
+        line.strip()
+        for line in text_lines
+        if "general note" in line.lower()
+    ]
+    assert bullet_lines[:3] == [
+        "1. First general note",
+        "2. Second general note",
+        "3. Third general note",
+    ]
+
+
 def test_multiple_property_addresses_numbered():
     with app.app_context():
         db.drop_all()
