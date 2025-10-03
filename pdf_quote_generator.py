@@ -416,7 +416,7 @@ def generate_loan_summary_docx(loan, extra_fields=None):
             run.bold = bold
             run.font.color.rgb = RGBColor(0, 0, 0)
 
-    property_address = extra_fields.get('property_address')
+    property_address = extra_fields.get('1')
     if property_address:
         addresses = [
             re.sub(r'^\d+\.\s*', '', a.strip())
