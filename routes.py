@@ -184,7 +184,7 @@ def parse_payment_date_flexible(payment_date_str):
     """Parse payment date with flexible format support (DD/MM/YYYY or YYYY-MM-DD)"""
     if not payment_date_str:
         return datetime.now().date()
-    
+
     # Try DD/MM/YYYY format first (most common from calculations)
     try:
         return datetime.strptime(payment_date_str, '%d/%m/%Y').date()
@@ -195,6 +195,118 @@ def parse_payment_date_flexible(payment_date_str):
         except ValueError:
             app.logger.warning(f"Could not parse payment date '{payment_date_str}', using current date")
             return datetime.now().date()
+
+
+def serialize_payment_schedule_entry(payment_record, currency_symbol):
+    """Convert a PaymentSchedule row to the enriched schedule dictionary."""
+
+    def is_empty(value):
+        return value is None or (isinstance(value, str) and value.strip() == '')
+
+    def format_amount(value):
+        if value is None:
+            return f"{currency_symbol}0.00"
+        try:
+            return f"{currency_symbol}{Decimal(value):,.2f}"
+        except (InvalidOperation, ValueError, TypeError):
+            try:
+                return f"{currency_symbol}{float(value):,.2f}"
+            except (ValueError, TypeError):
+                return f"{currency_symbol}0.00"
+
+    def ensure_currency(entry, keys, attr):
+        value = getattr(payment_record, attr, None)
+        if value is None:
+            return
+        formatted = format_amount(value)
+        key_list = keys if isinstance(keys, (list, tuple)) else [keys]
+        for key in key_list:
+            if is_empty(entry.get(key)):
+                entry[key] = formatted
+
+    def ensure_raw(entry, display_keys, raw_keys):
+        key_list = display_keys if isinstance(display_keys, (list, tuple)) else [display_keys]
+        display_value = None
+        for key in key_list:
+            if not is_empty(entry.get(key)):
+                display_value = entry.get(key)
+                break
+        if display_value is None:
+            return
+        cleaned = str(display_value).replace('£', '').replace('€', '').replace(',', '').strip()
+        if cleaned == '':
+            return
+        raw_list = raw_keys if isinstance(raw_keys, (list, tuple)) else [raw_keys]
+        for raw_key in raw_list:
+            if is_empty(entry.get(raw_key)):
+                entry[raw_key] = cleaned
+
+    entry = {}
+    raw_data = {}
+    if payment_record.schedule_data:
+        try:
+            raw_data = json.loads(payment_record.schedule_data)
+        except (TypeError, ValueError) as exc:
+            app.logger.warning(
+                "Could not parse schedule_data for payment %s: %s",
+                payment_record.id,
+                exc,
+            )
+            raw_data = {}
+
+    if isinstance(raw_data, dict):
+        entry.update(raw_data)
+
+    period_number = payment_record.period_number
+    if not is_empty(entry.get('period_number')):
+        period_number = entry.get('period_number')
+    entry.setdefault('period_number', period_number)
+    entry.setdefault('periodNumber', period_number)
+    entry.setdefault('period', period_number)
+
+    payment_date = payment_record.payment_date.strftime('%d/%m/%Y') if payment_record.payment_date else ''
+    if not is_empty(entry.get('payment_date')):
+        payment_date = entry.get('payment_date')
+    elif not is_empty(entry.get('paymentDate')):
+        payment_date = entry.get('paymentDate')
+    entry.setdefault('payment_date', payment_date)
+    entry.setdefault('paymentDate', payment_date)
+
+    ensure_currency(entry, ['opening_balance', 'openingBalance', 'capital_outstanding', 'capitalOutstanding'], 'opening_balance')
+    ensure_currency(entry, ['closing_balance', 'closingBalance'], 'closing_balance')
+    ensure_currency(entry, ['total_payment', 'totalPayment', 'payment_total', 'total_repayment', 'totalRepayment'], 'total_payment')
+    ensure_currency(entry, ['interest_amount', 'interestAmount', 'interest_serviced'], 'interest_amount')
+    ensure_currency(entry, ['principal_payment', 'principalPayment', 'capital_repayment', 'capitalRepayment'], 'principal_payment')
+    ensure_currency(entry, ['tranche_release', 'trancheRelease'], 'tranche_release')
+
+    if is_empty(entry.get('interest_calculation')) and payment_record.interest_calculation:
+        entry['interest_calculation'] = payment_record.interest_calculation
+
+    if is_empty(entry.get('balance_change')) and payment_record.balance_change:
+        entry['balance_change'] = payment_record.balance_change
+
+    ensure_raw(entry, ['opening_balance', 'openingBalance', 'capital_outstanding', 'capitalOutstanding'], ['opening_balance_raw', 'capital_outstanding_raw'])
+    ensure_raw(entry, ['closing_balance', 'closingBalance'], 'closing_balance_raw')
+    ensure_raw(entry, ['total_payment', 'totalPayment', 'payment_total', 'total_repayment', 'totalRepayment'], ['total_payment_raw', 'total_repayment_raw'])
+    ensure_raw(entry, ['interest_amount', 'interestAmount', 'interest_serviced'], ['interest_amount_raw', 'interest_serviced_raw'])
+    ensure_raw(entry, ['principal_payment', 'principalPayment', 'capital_repayment', 'capitalRepayment'], ['principal_payment_raw', 'capital_repayment_raw'])
+    ensure_raw(entry, ['tranche_release', 'trancheRelease'], 'tranche_release_raw')
+
+    if is_empty(entry.get('tranche_schedule')):
+        if payment_record.tranche_details:
+            try:
+                entry['tranche_schedule'] = json.loads(payment_record.tranche_details)
+            except (TypeError, ValueError) as exc:
+                app.logger.warning(
+                    "Could not parse tranche_details for payment %s: %s",
+                    payment_record.id,
+                    exc,
+                )
+                entry['tranche_schedule'] = []
+        else:
+            entry['tranche_schedule'] = []
+
+    return entry
 
 def ensure_loan_tables():
     """Create loan-related tables and ensure they contain required columns."""
@@ -2714,29 +2826,11 @@ def get_loan_details(loan_id):
         # Determine currency symbol for presentation
         currency_symbol = '€' if loan.currency == 'EUR' else '£'
 
-        def format_amount(value):
-            if value is None:
-                return f"{currency_symbol}0.00"
-            try:
-                return f"{currency_symbol}{Decimal(value):,.2f}"
-            except Exception:
-                return f"{currency_symbol}{float(value):,.2f}"
-
         # Convert payment schedule to list
-        schedule_data = []
-        for payment in payment_schedule:
-            schedule_data.append({
-                'period_number': payment.period_number,
-                'payment_date': payment.payment_date.strftime('%d/%m/%Y') if payment.payment_date else '',
-                'opening_balance': format_amount(payment.opening_balance),
-                'closing_balance': format_amount(payment.closing_balance),
-                'balance_change': payment.balance_change or '',
-                'total_payment': format_amount(payment.total_payment),
-                'interest_amount': format_amount(payment.interest_amount),
-                'principal_payment': format_amount(payment.principal_payment),
-                'tranche_release': format_amount(payment.tranche_release),
-                'interest_calculation': payment.interest_calculation or ''
-            })
+        schedule_data = [
+            serialize_payment_schedule_entry(payment, currency_symbol)
+            for payment in payment_schedule
+        ]
         
         # Parse original input data for use in tranche schedules
         try:
@@ -2952,19 +3046,10 @@ def generate_saved_quote(loan_id):
         
         # Add payment schedule
         payment_schedule = PaymentSchedule.query.filter_by(loan_summary_id=loan_id).order_by(PaymentSchedule.period_number).all()
-        schedule_data = []
-        for payment in payment_schedule:
-            schedule_data.append({
-                'payment_date': payment.payment_date.strftime('%d/%m/%Y') if payment.payment_date else '',
-                'opening_balance': f"£{payment.opening_balance:,.2f}" if payment.opening_balance else '£0.00',
-                'closing_balance': f"£{payment.closing_balance:,.2f}" if payment.closing_balance else '£0.00',
-                'balance_change': payment.balance_change or '',
-                'total_payment': f"£{payment.total_payment:,.2f}" if payment.total_payment else '£0.00',
-                'interest_amount': f"£{payment.interest_amount:,.2f}" if payment.interest_amount else '£0.00',
-                'principal_payment': f"£{payment.principal_payment:,.2f}" if payment.principal_payment else '£0.00',
-                'tranche_release': f"£{payment.tranche_release:,.2f}" if payment.tranche_release else '£0.00',
-                'interest_calculation': payment.interest_calculation or ''
-            })
+        schedule_data = [
+            serialize_payment_schedule_entry(payment, calculation_data['currencySymbol'])
+            for payment in payment_schedule
+        ]
         calculation_data['detailed_payment_schedule'] = schedule_data
         
         # Generate quote based on type
