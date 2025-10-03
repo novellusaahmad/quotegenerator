@@ -155,6 +155,26 @@ def _format_currency(value, currency_symbol):
 
 def _serialize_payment_schedule(loan, currency_symbol):
     property_value = _safe_float(loan.property_value)
+
+    raw_input_data = {}
+    if getattr(loan, 'input_data', None):
+        try:
+            raw_input_data = json.loads(loan.input_data)
+            if isinstance(raw_input_data, str):
+                raw_input_data = json.loads(raw_input_data)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            raw_input_data = {}
+
+    if property_value == 0:
+        property_value_candidate = _get_raw_value(
+            raw_input_data,
+            'property_value',
+            'propertyValue',
+            'property_value_input',
+            'propertyValueInput',
+        )
+        if property_value_candidate is not None:
+            property_value = _parse_numeric(property_value_candidate)
     schedule = PaymentSchedule.query.filter_by(loan_summary_id=loan.id).order_by(PaymentSchedule.period_number).all()
     schedule_rows = []
 
@@ -205,12 +225,28 @@ def _serialize_payment_schedule(loan, currency_symbol):
         balance_change = _get_raw_value(raw, 'balance_change', 'balanceChange') or (payment.balance_change or '')
 
         closing_numeric = _parse_numeric(closing_display)
-        running_ltv = ''
-        if property_value:
-            try:
-                running_ltv = f"{(closing_numeric / property_value) * 100:.2f}%"
-            except ZeroDivisionError:
-                running_ltv = ''
+
+        running_ltv_value = _get_raw_value(raw, 'running_ltv', 'runningLtv')
+        if isinstance(running_ltv_value, (int, float)):
+            running_ltv = f"{float(running_ltv_value):.2f}%"
+        elif isinstance(running_ltv_value, str) and running_ltv_value.strip():
+            running_ltv = running_ltv_value
+        else:
+            running_ltv = ''
+
+        if not running_ltv and property_value:
+            capital_outstanding_display = _get_raw_value(
+                raw,
+                'capital_outstanding',
+                'capitalOutstanding',
+            )
+            balance_for_ltv = capital_outstanding_display or closing_display
+            balance_numeric = _parse_numeric(balance_for_ltv)
+            if balance_numeric and property_value:
+                try:
+                    running_ltv = f"{(balance_numeric / property_value) * 100:.2f}%"
+                except ZeroDivisionError:
+                    running_ltv = ''
 
         schedule_rows.append({
             'period': payment.period_number,
