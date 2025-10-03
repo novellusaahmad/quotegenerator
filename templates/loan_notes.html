@@ -32,7 +32,7 @@
             </thead>
             <tbody>
                 {% for note in notes %}
-                <tr data-note-id="{{ note.id }}" style="border:1px solid #000;">
+                <tr data-note-id="{{ note.id }}" data-group="{{ note.group }}" data-sort-order="{{ note.sort_order }}" style="border:1px solid #000;">
                     <td class="px-3" style="color:#000!important; border-right:1px solid #000;">
                         <span class="view">{{ note.group }}</span>
                         <input type="text" class="form-control edit d-none" name="group" form="edit-form-{{ note.id }}" value="{{ note.group }}" data-original="{{ note.group }}">
@@ -61,8 +61,12 @@
                             <input type="hidden" name="placeholder_map" form="edit-form-{{ note.id }}" value='{{ note.placeholder_map|tojson }}' data-original='{{ note.placeholder_map|tojson }}'>
                         </div>
                     </td>
-                    <td class="px-3 text-center" style="width:130px;">
+                    <td class="px-3 text-center" style="width:210px;">
                         <div class="view loan-note-actions">
+                            <div class="btn-group btn-group-sm mb-2" role="group" aria-label="Reorder">
+                                <button type="button" class="btn btn-outline-secondary move-note" data-direction="up">Move Up</button>
+                                <button type="button" class="btn btn-outline-secondary move-note" data-direction="down">Move Down</button>
+                            </div>
                             <button type="button" class="btn btn-sm btn-primary edit-note">Edit</button>
                             <form method="post" action="{{ url_for('delete_loan_note', note_id=note.id) }}" style="display:inline;" onsubmit="return confirm('Delete this note?');">
                                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
@@ -146,7 +150,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     initPlaceholderMaps();
     initRowEditing();
+    initReorderControls();
 });
+
+function showToast(message, level = 'success') {
+    if (Novellus?.utils?.showToast) {
+        Novellus.utils.showToast(message, level);
+    } else if (level === 'success') {
+        console.log(message);
+    } else {
+        console.error(message);
+    }
+}
 
 function initPlaceholderMap(wrapper) {
     const hiddenInput = wrapper.querySelector('input[type="hidden"]');
@@ -237,6 +252,151 @@ function initRowEditing() {
             viewEls.forEach(el => el.classList.remove('d-none'));
             editEls.forEach(el => el.classList.add('d-none'));
         });
+    });
+}
+
+function initReorderControls() {
+    document.querySelectorAll('tr[data-note-id]').forEach(row => {
+        row.querySelectorAll('.move-note').forEach(button => {
+            button.addEventListener('click', () => handleReorder(row, button));
+        });
+    });
+    updateMoveButtons();
+}
+
+async function handleReorder(row, button) {
+    const noteId = row.dataset.noteId;
+    if (!noteId) {
+        return;
+    }
+
+    const payload = {};
+    const direction = button.dataset.direction;
+    if (direction) {
+        payload.direction = direction;
+    }
+    if (!payload.direction && button.dataset.position) {
+        payload.position = parseInt(button.dataset.position, 10);
+    }
+
+    const controls = row.querySelectorAll('.move-note');
+    controls.forEach(btn => (btn.disabled = true));
+
+    try {
+        const response = await fetch(`/loan-notes/${noteId}/reorder`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (err) {
+            data = null;
+        }
+
+        if (!response.ok || !data?.success) {
+            const message = data?.message || 'Failed to reorder note';
+            showToast(message, 'danger');
+            return;
+        }
+
+        applyReorderUpdate(data);
+        if (data.message) {
+            showToast(data.message, 'success');
+        }
+    } catch (error) {
+        console.error(error);
+        showToast('Failed to reorder note', 'danger');
+    } finally {
+        controls.forEach(btn => (btn.disabled = false));
+        updateMoveButtons();
+    }
+}
+
+function applyReorderUpdate(data) {
+    if (!data?.group || !Array.isArray(data.order)) {
+        updateMoveButtons();
+        return;
+    }
+
+    reorderGroupRows(data.group, data.order);
+    data.order.forEach(item => {
+        const row = document.querySelector(`tr[data-note-id="${item.id}"]`);
+        if (row) {
+            row.dataset.sortOrder = item.sort_order;
+        }
+    });
+}
+
+function reorderGroupRows(group, order) {
+    const tbody = document.querySelector('table tbody');
+    if (!tbody) {
+        return;
+    }
+
+    const groupRows = Array.from(tbody.querySelectorAll('tr[data-note-id]')).filter(
+        row => row.dataset.group === group
+    );
+    if (!groupRows.length) {
+        return;
+    }
+
+    let afterGroupNode = groupRows[groupRows.length - 1].nextElementSibling;
+    if (afterGroupNode && afterGroupNode.tagName === 'FORM') {
+        afterGroupNode = afterGroupNode.nextElementSibling;
+    }
+
+    const fragment = document.createDocumentFragment();
+    order.forEach(item => {
+        const row = tbody.querySelector(`tr[data-note-id="${item.id}"]`);
+        if (!row || row.dataset.group !== group) {
+            return;
+        }
+        const form = row.nextElementSibling && row.nextElementSibling.tagName === 'FORM'
+            ? row.nextElementSibling
+            : null;
+        fragment.appendChild(row);
+        if (form) {
+            fragment.appendChild(form);
+        }
+    });
+
+    tbody.insertBefore(fragment, afterGroupNode);
+}
+
+function updateMoveButtons() {
+    const groupMap = {};
+    document.querySelectorAll('tr[data-note-id]').forEach(row => {
+        const group = row.dataset.group || '';
+        if (!groupMap[group]) {
+            groupMap[group] = [];
+        }
+        groupMap[group].push(row);
+    });
+
+    Object.values(groupMap).forEach(rows => {
+        rows.forEach(row => {
+            row.querySelectorAll('.move-note').forEach(btn => {
+                btn.disabled = false;
+            });
+        });
+        if (!rows.length) {
+            return;
+        }
+        rows[0].querySelectorAll('.move-note[data-direction="up"]').forEach(btn => {
+            btn.disabled = true;
+        });
+        rows[rows.length - 1]
+            .querySelectorAll('.move-note[data-direction="down"]')
+            .forEach(btn => {
+                btn.disabled = true;
+            });
+        if (rows.length === 1) {
+            rows[0].querySelectorAll('.move-note[data-direction="down"]').forEach(btn => {
+                btn.disabled = true;
+            });
+        }
     });
 }
 </script>
